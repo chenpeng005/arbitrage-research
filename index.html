@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="低风险套利线索发现、人工审阅、研究与复盘工作台。" />
-    <title>套利研究系统 · 每日线索审阅台</title>
+    <meta name="description" content="低风险套利线索发现、个案研究、人工判断与规则沉淀工作台。" />
+    <title>套利研究系统 · 大轮次工作台</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -12,24 +12,24 @@
       <aside class="sidebar">
         <div class="brand"><div class="brand-mark" aria-hidden="true">AR</div><div><strong>套利研究</strong><span>Research System</span></div></div>
         <nav class="nav" aria-label="主导航">
-          <button class="nav-item active" data-target="inbox"><span>01</span>今日线索</button>
-          <button class="nav-item" data-target="queue"><span>02</span>研究队列</button>
-          <button class="nav-item" data-target="strategies"><span>03</span>策略地图</button>
-          <button class="nav-item" data-target="iteration"><span>04</span>系统迭代</button>
+          <button class="nav-item active" data-target="inbox"><span>01</span>每日线索</button>
+          <button class="nav-item" data-target="cases"><span>02</span>个案研究</button>
+          <button class="nav-item" data-target="round"><span>03</span>轮次报告</button>
+          <button class="nav-item" data-target="principles"><span>04</span>策略与原则</button>
         </nav>
-        <div class="principle-card"><span class="eyebrow">系统原则</span><p>AI广泛发现并提出建议，你审阅全部线索并作最终判断。</p></div>
+        <div class="principle-card"><span class="eyebrow">分工</span><p>AI负责发现与研究，你负责审阅、纠错和最终判断。</p></div>
       </aside>
 
       <main class="main">
         <header class="topbar">
-          <div><p class="eyebrow">套利研究系统 · V0.2</p><h1 id="pageTitle">今日线索</h1></div>
-          <div class="snapshot"><span>试运行批次</span><strong>2026-09-04 · 第2轮</strong></div>
+          <div><p class="eyebrow">套利研究系统 · V0.3</p><h1 id="pageTitle">每日线索</h1></div>
+          <div class="snapshot"><span>当前大轮次</span><strong>2026-09-04 · 第2轮进行中</strong></div>
         </header>
 
         <section id="inbox" class="view active-view" aria-labelledby="inbox-title">
           <div class="workspace-head">
-            <div><h2 id="inbox-title">逐条审阅，不自动删除</h2><p>先看我的摘要，需要时返回集思录原文。你的判断会覆盖流程状态，但不会抹掉AI原始建议。</p></div>
-            <div class="progress-block"><div><span>本轮进度</span><strong id="progressText">0 / 9</strong></div><div class="progress-track" aria-label="审阅进度"><i id="progressBar"></i></div></div>
+            <div><span class="stage-kicker">阶段 1–2 · 发现与初审</span><h2 id="inbox-title">逐条审阅，不自动删除</h2><p>先看AI摘要，需要时返回原文。无论选择哪种结果，都可以留下你的判断依据。</p></div>
+            <div class="progress-block"><div><span>本轮初审进度</span><strong id="progressText">0 / 9</strong></div><div class="progress-track" aria-label="审阅进度"><i id="progressBar"></i></div></div>
           </div>
 
           <div class="metrics" aria-label="审阅统计">
@@ -37,7 +37,7 @@
             <article><span>待审阅</span><strong id="metricPending">9</strong></article>
             <article><span>重点研究</span><strong id="metricResearch">0</strong></article>
             <article><span>观察/待定</span><strong id="metricWatch">0</strong></article>
-            <article><span>暂时排除</span><strong id="metricReject">0</strong></article>
+            <article><span>排除</span><strong id="metricReject">0</strong></article>
           </div>
 
           <div class="toolbar">
@@ -46,35 +46,52 @@
               <button class="filter" data-filter="research">重点研究</button><button class="filter" data-filter="watch">继续观察</button>
               <button class="filter" data-filter="reject">排除</button><button class="filter" data-filter="unclear">说不清楚</button>
             </div>
-            <button id="copyFeedback" class="copy-button" type="button">复制本轮反馈</button>
+            <button id="copyFeedback" class="copy-button" type="button">复制初审反馈</button>
           </div>
           <div id="signalList" class="signal-list"></div>
           <div id="emptyState" class="empty-state" hidden>这个分类暂时没有线索。</div>
         </section>
 
-        <section id="queue" class="view" aria-labelledby="queue-title">
-          <div class="page-heading"><div><p class="eyebrow">研究工作台</p><h2 id="queue-title">研究队列</h2></div><p>你标记为“重点研究”的线索会自动进入这里。</p></div>
-          <div id="researchQueue" class="queue-list"></div>
+        <section id="cases" class="view" aria-labelledby="cases-title">
+          <div class="page-heading"><div><p class="eyebrow">阶段 3–5 · 研究与定级</p><h2 id="cases-title">个案研究</h2></div><p>这里承接初审后的重点标的。AI先完成研究稿，你再反馈、纠错并作最终判断。</p></div>
+          <div class="case-summary">
+            <div><span>深度研究</span><strong>3</strong><small>南航、洽洽、芳源</small></div>
+            <div><span>公告核查</span><strong>1</strong><small>优彩资源 / 优彩转债</small></div>
+            <div><span>完成研究</span><strong>0</strong><small>当前尚无定稿</small></div>
+          </div>
+          <div id="caseList" class="case-list"></div>
         </section>
 
-        <section id="strategies" class="view" aria-labelledby="strategies-title">
-          <div class="page-heading"><div><p class="eyebrow">逐步归类</p><h2 id="strategies-title">策略地图</h2></div><p>现在只做暂定标签；同类案例反复出现后，再固化为成熟策略。</p></div>
+        <section id="round" class="view" aria-labelledby="round-title">
+          <div class="page-heading"><div><p class="eyebrow">阶段 6 · 本轮收口</p><h2 id="round-title">第2大轮次报告</h2></div><span class="status-pill working">进行中</span></div>
+          <div class="round-flow" aria-label="轮次进度">
+            <article class="done"><span>01</span><div><strong>广泛发现</strong><small>9条线索</small></div></article>
+            <article class="done"><span>02</span><div><strong>人工初审</strong><small>已收到完整反馈</small></div></article>
+            <article class="active"><span>03</span><div><strong>个案研究</strong><small>4项待处理</small></div></article>
+            <article><span>04</span><div><strong>最终定级</strong><small>等待研究反馈</small></div></article>
+            <article><span>05</span><div><strong>规则沉淀</strong><small>已有候选规则</small></div></article>
+          </div>
+          <div class="report-grid">
+            <article class="report-card"><span class="eyebrow">本轮结果</span><h3>9条线索如何流转</h3><dl><div><dt>重点研究</dt><dd>3</dd></div><div><dt>继续观察</dt><dd>1</dd></div><div><dt>排除</dt><dd>5</dd></div></dl></article>
+            <article class="report-card"><span class="eyebrow">核心修正</span><h3>AI在本轮学到了什么</h3><ul><li>下修到底本身不构成套利。</li><li>低评级是风险参数，不是机械否决项。</li><li>普通策略、规则闲谈和调仓记录不进入具体机会池。</li><li>进入研究前应尽可能取得官方公告。</li></ul></article>
+            <article class="report-card wide"><span class="eyebrow">收口条件</span><h3>本轮什么时候结束</h3><p>完成4项研究任务，你作第二次判断；我回应分歧、修订个案，并把经验证的内容写入策略模板、候选原则或负面清单。完成后，第2轮才正式关闭。</p></article>
+          </div>
+        </section>
+
+        <section id="principles" class="view" aria-labelledby="principles-title">
+          <div class="page-heading"><div><p class="eyebrow">跨轮次积累</p><h2 id="principles-title">策略与原则</h2></div><p>纪律保持稳定；研究规则先作为候选，经过多个案例验证后再升级。</p></div>
+          <div class="principle-layout">
+            <article class="rule-panel locked"><header><div><span class="eyebrow">已经锁定</span><h3>长期纪律</h3></div><span class="status-pill">4条</span></header><ul><li>盘中不临时决策。</li><li>不使用负债或杠杆参与。</li><li>必须研究悲观情景。</li><li>允许没有符合条件的机会。</li></ul></article>
+            <article class="rule-panel"><header><div><span class="eyebrow">等待验证</span><h3>候选原则</h3></div><span class="status-pill candidate">候选</span></header><ul><li>事件标签不等于套利机会。</li><li>先确定下行保护，再研究向上空间。</li><li>具体标的、具体事件、具体价格和时间窗口优先。</li><li>社区负责发现，公告构成事实底座。</li><li>风险不机械否决，应与赔率一起评估。</li></ul></article>
+          </div>
+          <div class="section-title"><span class="eyebrow">策略地图</span><h3>逐步形成研究模板</h3></div>
           <div class="strategy-grid">
             <article><span>明确退出权</span><h3>公司行动套利</h3><p>主动退市现金选择权、私有化、全面要约、换股合并。</p></article>
-            <article><span>本金锚＋上行权</span><h3>临期转债</h3><p>到期或回售提供下行锚，转股价值保留不确定上行。</p></article>
-            <article><span>事件待验证</span><h3>控制权与重组</h3><p>先记录协议、受让方与要约义务，不把停牌传闻当套利。</p></article>
-            <article><span>探索层</span><h3>新策略线索</h3><p>REITs发行、基金申赎、数据规则变化、期权期货价差等。</p></article>
+            <article><span>本金锚＋上行权</span><h3>临期转债</h3><p>重点核算税后回收、资金占用、转股价值与发行人信用。</p></article>
+            <article><span>完整事件链</span><h3>转债下修</h3><p>提议、表决、定价和落地分开研究；下修本身不是保底。</p></article>
+            <article><span>先查交易结构</span><h3>控制权变更</h3><p>核查受让方、比例、协议状态及是否触发要约义务。</p></article>
           </div>
-        </section>
-
-        <section id="iteration" class="view" aria-labelledby="iteration-title">
-          <div class="page-heading"><div><p class="eyebrow">从运行中学习</p><h2 id="iteration-title">系统迭代</h2></div><p>记录真正改变系统设计的发现，不做流水账。</p></div>
-          <div class="iteration-list">
-            <article><time>第1轮</time><div><h3>线索不等于机会</h3><p>没有实时价格、期限和失败损失时，只能称为事件线索，不能给A级机会评级。</p></div></article>
-            <article><time>第2轮</time><div><h3>帖子层与线索层必须分开</h3><p>一篇每日提示可包含多个事件；每条线索都要保留原帖、具体回复和公告入口。</p></div></article>
-            <article><time>第2轮</time><div><h3>税费和数据时点必须校验</h3><p>临期转债要计算税后回收额；页面日期与行情实际截止时间不能混为一谈。</p></div></article>
-            <article><time>长期纪律</time><div><h3>研究与交易分离</h3><p>盘中不临时决策，不负债操作，必须检查悲观情景，允许当天没有机会。</p></div></article>
-          </div>
+          <div class="negative-list"><span class="eyebrow">负面清单 · 精简版</span><p>不把“打新”“下修”“停牌”“高股息”等标签天然视作低风险；不把泛策略讨论和日常调仓记录当成具体套利机会。</p></div>
         </section>
       </main>
     </div>
