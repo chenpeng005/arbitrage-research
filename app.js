@@ -1,156 +1,72 @@
-const opportunities = [
-  {
-    id: "konka",
-    name: "*ST康佳 A / B",
-    code: "000016 / 200016 · A股 / B股",
-    strategy: "主动退市现金选择权",
-    anchor: "A ¥2.48 / B $0.73",
-    floor: "公司行动形成的现金权利",
-    status: "research",
-    statusText: "研究中",
-    next: "2026-09-14 股东大会",
-    summary: "以现金选择权作为主要退出锚点，重点核查方案通过、持有人资格、申报安排以及A/B股汇率与交易摩擦。",
-    condition: "在规定登记日持有且不属于公告列明的除外主体；最终以实施公告为准。",
-    risk: "主动退市方案未获通过、实施安排变化，或B股汇兑和流动性成本高于预期。",
-    upside: "在现金退出之外，二级市场价格上涨仍可提前退出；B股折价可能提供更厚的安全垫。",
-    scenarios: [
-      ["顺利实施", "按现金选择权退出", "主要承担时间与交易摩擦"],
-      ["进程延期", "继续等待或二级市场退出", "资金占用时间延长"],
-      ["方案未通过", "现金锚点消失", "回到基本面和流动性定价"]
-    ],
-    source: "https://static.cninfo.com.cn/finalpage/2026-09-01/1225537108.PDF",
-    sourceText: "公司正式公告"
-  },
-  {
-    id: "gtjai",
-    name: "国泰君安国际",
-    code: "01788 · 港股通",
-    strategy: "协议安排私有化",
-    anchor: "HK$3.00",
-    floor: "附带前置条件的现金对价",
-    status: "wait",
-    statusText: "等待条件",
-    next: "等待方案文件与审批进展",
-    summary: "市场价格与私有化对价之间存在价差，但方案仍需经过前置条件、股东及法院等程序，不能把价差直接视为无风险收益。",
-    condition: "方案文件生效、所需批准取得，并满足适用的协议安排条件。",
-    risk: "条件未满足、时间显著延长、汇率变化或方案终止后股价回落。",
-    upside: "潜在提价或进程推进带来的价差收敛。",
-    scenarios: [
-      ["方案完成", "取得每股HK$3.00", "收益取决于买入价与完成时间"],
-      ["进程延期", "价差继续存在", "年化下降并承担汇率波动"],
-      ["方案失败", "现金锚点消失", "重新按公司基本面定价"]
-    ],
-    source: "https://www.gtjai.com/sc/ir_announcement",
-    sourceText: "公司公告页面"
-  },
-  {
-    id: "dashen",
-    name: "大参转债",
-    code: "113605 · 可转债",
-    strategy: "临期到期＋低转股溢价",
-    anchor: "到期赎回约 ¥110",
-    floor: "信用支持的到期偿付",
-    status: "reject",
-    statusText: "暂不符合",
-    next: "距到期约48日（快照时点）",
-    summary: "虽然期限短、转股溢价率不高，但快照价格明显高于到期赎回额，向下并未被债底充分保护，不符合当前核心标准。",
-    condition: "发行人正常兑付；若依靠转股价值退出，则需正股价值在剩余期限内维持。",
-    risk: "正股下跌导致转股价值下降，同时转债价格向到期赎回额收敛。",
-    upside: "正股上涨可通过接近零的转股溢价参与，但并非免费期权。",
-    scenarios: [
-      ["正股上涨", "跟随转股价值", "保留有限上行"],
-      ["正股横盘", "逐步向到期价值收敛", "可能损失当前溢价"],
-      ["正股下跌", "依赖到期赎回", "价格到债底仍有明显距离"]
-    ],
-    source: "https://www.jisilu.cn/data/convert_bond_detail/113605",
-    sourceText: "转债资料页"
-  }
+const signals = [
+  {id:"01",instrument:"南航转债",code:"110075 · 可转债",event:"临近到期",aiDecision:"research",aiLabel:"建议研究",confidence:"中等置信",summary:"页面价格106.35元接近税前赎回价106.50元，表面上是小幅下行、保留正股弹性的结构。",caution:"个人投资者可能需对利息部分缴税，社区测算税后回收约105.20元；“最多亏1.5元”并不严谨。",data:"现价 106.35 · 税前赎回 106.50 · 最后交易日 10-09",source:"https://app.jisilu.cn/question/522483?gopage-true__page-1__item_id=5518045",sourceLabel:"集思录原帖",official:"",tag:"临期转债"},
+  {id:"02",instrument:"洽洽转债",code:"128135 · 可转债",event:"临近到期",aiDecision:"watch",aiLabel:"建议观察",confidence:"中等置信",summary:"价格114.785元接近115元税前赎回价，但转股价值仅34.49元，向上期权非常弱。",caution:"需要确认利息税后的实际回收额；如果税后低于买入价，结构可能只是确定小亏且几乎没有上行。",data:"现价 114.785 · 税前赎回 115.00 · 最后交易日 10-14",source:"https://app.jisilu.cn/question/524995",sourceLabel:"9月4日投资提示",official:"",tag:"临期转债"},
+  {id:"03",instrument:"晶能转债",code:"118034 · 可转债",event:"下修到底",aiDecision:"watch",aiLabel:"建议观察",confidence:"中等置信",summary:"转股价由6.35元降至4.36元，9月7日生效，属于已经落地的明确事件。",caution:"下修本身不是本金保护。需要补齐新转股价值、复牌价格、溢价率和发行人信用后才能判断。",data:"新转股价 4.36 · 9月7日生效",source:"https://app.jisilu.cn/question/524566",sourceLabel:"集思录讨论",official:"https://static.cninfo.com.cn/finalpage/2026-09-04/1225547209.PDF",tag:"转债下修"},
+  {id:"04",instrument:"芳源转债",code:"118020 · 可转债",event:"再次提议下修",aiDecision:"watch",aiLabel:"建议观察",confidence:"较高置信",summary:"转股价此前已由18.63元两次下修至9元，董事会再次提议下修，股东会尚未表决。",caution:"集思录估算下修到底后仍有约29%溢价；即使下修通过，也未自然形成低风险收益。",data:"当前转股价 9.00 · 股东会 09-11 · 估算到底溢价 29.02%",source:"https://app.jisilu.cn/question/524995",sourceLabel:"9月4日投资提示",official:"https://static.cninfo.com.cn/finalpage/2026-09-04/1225545926.PDF",tag:"转债下修"},
+  {id:"05",instrument:"优彩资源 / 优彩转债",code:"002998 / 127078",event:"筹划控制权变更",aiDecision:"research",aiLabel:"建议研究",confidence:"中等置信",summary:"这是可能扩展策略边界的新事件：控制权变化或影响正股，并可能传导至关联转债。",caution:"协议尚未签署且可能终止。控制权变更不等于触发要约，需要等待受让方、比例和交易方式。",data:"9月4日起停牌 · 预计不超过2个交易日",source:"https://app.jisilu.cn/question/524995",sourceLabel:"集思录汇总",official:"https://static.cninfo.com.cn/finalpage/2026-09-04/1225547328.PDF",tag:"控制权变更"},
+  {id:"06",instrument:"创金合信北京国资公司REIT",code:"公募REIT",event:"上市大幅破发",aiDecision:"watch",aiLabel:"策略层观察",confidence:"中等置信",summary:"社区称认购中签率约80%、开盘跌约25%，暴露高比例中签与高发行定价叠加的非对称风险。",caution:"这不是当前套利机会，更像发行申购策略的失败样本；社区数字仍需以基金公告和行情核实。",data:"社区描述：中签约80% · 开盘跌约25%",source:"https://app.jisilu.cn/question/524995",sourceLabel:"集思录原帖",official:"",tag:"REITs发行"},
+  {id:"07",instrument:"公募基金披露规则",code:"ETF / LOF",event:"十大持有人数据减少",aiDecision:"watch",aiLabel:"系统情报",confidence:"较低置信",summary:"帖子称公募基金不再继续披露十大持有人，可能影响ETF、LOF套利的拥挤度与持有人结构判断。",caution:"目前只有社区讨论，尚未核实正式规则和适用范围；它影响研究能力，不是直接交易机会。",data:"最新回复 09-04 14:29",source:"https://app.jisilu.cn/question/524925?show_all_answer-TRUE__item_id-5534477__answer_id-5534477__single-TRUE=",sourceLabel:"具体讨论与回复",official:"",tag:"系统情报"},
+  {id:"08",instrument:"AI高股息轮动",code:"A股策略",event:"自动化选股实践",aiDecision:"reject",aiLabel:"暂不纳入",confidence:"较高置信",summary:"低估值、高股息与门票股轮动可能偏低波，但它不是严格的套利或事件驱动。",caution:"是否纳入取决于系统边界：只做套利，还是扩大到所有低风险策略。",data:"最新回复 09-04 15:13",source:"https://app.jisilu.cn/question/524983",sourceLabel:"集思录原帖",official:"",tag:"策略边界"},
+  {id:"09",instrument:"可转债调仓记录",code:"可转债组合",event:"高抛低吸与做T",aiDecision:"reject",aiLabel:"建议排除",confidence:"较高置信",summary:"帖子主要记录转债仓位、市场情绪、高抛低吸和做T，没有发现明确事件或退出权。",caution:"日内操作与临时判断还可能触碰“盘中不决策”的交易纪律。",data:"最新回复 09-04 14:44",source:"https://app.jisilu.cn/question/524999",sourceLabel:"集思录原帖",official:"",tag:"日常交易"}
 ];
 
-const statusMarkup = item => `<span class="status-pill ${item.status}"><i class="dot ${item.status === "research" ? "green" : item.status === "wait" ? "amber" : "red"}"></i>${item.statusText}</span>`;
+const decisionOptions=[["research","重点研究"],["watch","继续观察"],["reject","排除"],["unclear","暂时说不清"]];
+const reasonOptions=["未选择原因","没有下行锚","上行空间不足","信用风险太大","时间过长","交易摩擦太大","信息不足","直觉上有意思","不属于套利范围"];
+const storageKey="arbitrage-review-2026-09-04-v2";
+let reviews=loadReviews();
+let activeFilter="all";
 
-function renderRows() {
-  document.querySelector("#overviewRows").innerHTML = opportunities.map(item => `
-    <tr data-case="${item.id}" tabindex="0" aria-label="查看${item.name}研究详情">
-      <td class="instrument"><strong>${item.name}</strong><span>${item.code}</span></td>
-      <td>${item.strategy}</td>
-      <td class="anchor">${item.anchor}</td>
-      <td>${item.floor}</td>
-      <td>${statusMarkup(item)}</td>
-      <td>${item.next}</td>
-    </tr>`).join("");
+function loadReviews(){try{return JSON.parse(localStorage.getItem(storageKey))||{}}catch{return {}}}
+function saveReviews(){localStorage.setItem(storageKey,JSON.stringify(reviews));updateDashboard();renderQueue()}
+function visibleSignals(){return signals.filter(item=>{const d=reviews[item.id]?.decision;if(activeFilter==="all")return true;if(activeFilter==="pending")return !d;return d===activeFilter})}
+
+function renderSignals(){
+  const visible=visibleSignals();
+  document.querySelector("#emptyState").hidden=visible.length>0;
+  document.querySelector("#signalList").innerHTML=visible.map(signalCard).join("");
+  bindCardEvents();
 }
 
-function renderResearch() {
-  document.querySelector("#researchCards").innerHTML = opportunities.map(item => `
-    <article class="research-card" data-case="${item.id}" tabindex="0">
-      <div><p class="eyebrow">${item.strategy}</p><h3>${item.name}</h3></div>
-      <p>${item.summary}</p>
-      <button type="button">查看研究</button>
-    </article>`).join("");
+function signalCard(item){
+  const review=reviews[item.id]||{};const reviewed=Boolean(review.decision);
+  return `<article class="signal-card ${reviewed?"reviewed":""}" data-id="${item.id}">
+    <div class="signal-index"><span>${item.id}</span><i class="review-mark">${reviewed?"已审":"待审"}</i></div>
+    <div class="signal-content">
+      <header class="signal-title"><div><span class="tag">${item.tag}</span><h3>${item.instrument}</h3><p>${item.code} · ${item.event}</p></div><div class="ai-badge ${item.aiDecision}"><span>AI建议</span><strong>${item.aiLabel}</strong><small>${item.confidence}</small></div></header>
+      <div class="signal-data">${item.data}</div>
+      <div class="analysis-grid"><div><span>为什么进入视野</span><p>${item.summary}</p></div><div><span>当前疑点</span><p>${item.caution}</p></div></div>
+      <div class="source-row"><a href="${item.source}" target="_blank" rel="noreferrer">${item.sourceLabel} ↗</a>${item.official?`<a href="${item.official}" target="_blank" rel="noreferrer">公司公告 ↗</a>`:""}</div>
+      <div class="human-review"><div class="decision-group" role="group" aria-label="你对${item.instrument}的判断">${decisionOptions.map(([value,label])=>`<button type="button" data-decision="${value}" class="decision ${review.decision===value?"selected":""}">${label}</button>`).join("")}</div>
+      <div class="review-note"><select aria-label="选择判断原因">${reasonOptions.map(reason=>`<option ${review.reason===reason?"selected":""}>${reason}</option>`).join("")}</select><input type="text" maxlength="100" aria-label="补充一句判断" placeholder="补充一句判断（可选）" value="${escapeHtml(review.note||"")}" /></div></div>
+    </div></article>`;
 }
 
-function renderTimeline() {
-  document.querySelector("#timelineList").innerHTML = [
-    ["2026-09-14", "*ST康佳", "第二次临时股东大会，核对表决结果及后续实施安排。"],
-    ["待公告", "国泰君安国际", "关注方案文件、监管审批和法院程序更新。"],
-    ["临近到期", "大参转债", "跟踪最后交易、最后转股及到期赎回安排。"]
-  ].map(item => `<article class="timeline-item"><time>${item[0]}</time><div><strong>${item[1]}</strong><span>${item[2]}</span></div></article>`).join("");
-}
-
-function openCase(id) {
-  const item = opportunities.find(x => x.id === id);
-  if (!item) return;
-  document.querySelector("#dialogContent").innerHTML = `
-    <div class="dialog-body">
-      <p class="eyebrow">${item.strategy}</p>
-      <h2 id="dialogTitle">${item.name}</h2>
-      <p class="dialog-sub">${item.code}</p>
-      <div class="case-summary">${item.summary}</div>
-      <div class="fact-grid">
-        <div><span>当前状态</span><strong>${item.statusText}</strong></div>
-        <div><span>退出锚点</span><strong>${item.anchor}</strong></div>
-        <div><span>下一节点</span><strong>${item.next}</strong></div>
-      </div>
-      <section class="dialog-section"><h3>资格与成立条件</h3><p>${item.condition}</p></section>
-      <section class="dialog-section"><h3>主要风险</h3><p>${item.risk}</p></section>
-      <section class="dialog-section"><h3>向上空间</h3><p>${item.upside}</p></section>
-      <section class="dialog-section">
-        <h3>情景树</h3>
-        <table class="scenario-table"><thead><tr><th>情景</th><th>退出路径</th><th>影响</th></tr></thead><tbody>
-          ${item.scenarios.map(row => `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td></tr>`).join("")}
-        </tbody></table>
-      </section>
-      <section class="dialog-section"><h3>原始资料</h3><a class="source-link" href="${item.source}" target="_blank" rel="noreferrer">${item.sourceText} ↗</a></section>
-      <p class="data-note">本页是系统首版研究快照，用于验证研究结构；价格、条件和日期在形成实际决策前必须重新核验。</p>
-    </div>`;
-  document.querySelector("#caseDialog").showModal();
-}
-
-document.querySelectorAll(".nav-item").forEach(button => {
-  button.addEventListener("click", () => {
-    const target = button.dataset.target;
-    document.querySelectorAll(".nav-item").forEach(x => x.classList.toggle("active", x === button));
-    document.querySelectorAll(".view").forEach(x => x.classList.toggle("active-view", x.id === target));
-    document.querySelector(".topbar h1").textContent = button.textContent.replace(/^\d+/, "").trim();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+function bindCardEvents(){
+  document.querySelectorAll(".signal-card").forEach(card=>{const id=card.dataset.id;
+    card.querySelectorAll("[data-decision]").forEach(button=>button.addEventListener("click",()=>{reviews[id]={...(reviews[id]||{}),decision:button.dataset.decision};saveReviews();renderSignals();showToast("判断已保存在当前浏览器")}));
+    card.querySelector("select").addEventListener("change",event=>{reviews[id]={...(reviews[id]||{}),reason:event.target.value};saveReviews()});
+    card.querySelector("input").addEventListener("change",event=>{reviews[id]={...(reviews[id]||{}),note:event.target.value.trim()};saveReviews()});
   });
-});
+}
 
-document.addEventListener("click", event => {
-  const target = event.target.closest("[data-case]");
-  if (target) openCase(target.dataset.case);
-});
-document.addEventListener("keydown", event => {
-  const target = event.target.closest?.("[data-case]");
-  if (target && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); openCase(target.dataset.case); }
-  if (event.key === "Escape") document.querySelector("#caseDialog").close();
-});
-document.querySelector(".dialog-close").addEventListener("click", () => document.querySelector("#caseDialog").close());
-document.querySelector("#caseDialog").addEventListener("click", event => {
-  if (event.target === event.currentTarget) event.currentTarget.close();
-});
+function updateDashboard(){
+  const decisions=signals.map(x=>reviews[x.id]?.decision).filter(Boolean);const count=key=>decisions.filter(x=>x===key).length;const reviewed=decisions.length;
+  document.querySelector("#progressText").textContent=`${reviewed} / ${signals.length}`;document.querySelector("#progressBar").style.width=`${reviewed/signals.length*100}%`;
+  document.querySelector("#metricTotal").textContent=signals.length;document.querySelector("#metricPending").textContent=signals.length-reviewed;document.querySelector("#metricResearch").textContent=count("research");document.querySelector("#metricWatch").textContent=count("watch")+count("unclear");document.querySelector("#metricReject").textContent=count("reject");
+}
 
-renderRows();
-renderResearch();
-renderTimeline();
+function renderQueue(){
+  const items=signals.filter(item=>reviews[item.id]?.decision==="research");
+  document.querySelector("#researchQueue").innerHTML=items.length?items.map(item=>{const review=reviews[item.id]||{};return `<article><span>${item.id} · ${item.tag}</span><div><h3>${item.instrument}</h3><p>${review.note||((review.reason&&review.reason!=="未选择原因")?review.reason:"等待进一步研究")}</p></div><a href="${item.source}" target="_blank" rel="noreferrer">返回原文 ↗</a></article>`}).join(""):`<div class="empty-state">尚未选择重点研究线索。完成今日审阅后，它们会自动出现在这里。</div>`;
+}
+
+function feedbackText(){return `套利研究系统｜2026-09-04 第2轮反馈\n${signals.map(item=>{const review=reviews[item.id];if(!review?.decision)return `${item.id} ${item.instrument}：未审阅`;const label=decisionOptions.find(x=>x[0]===review.decision)?.[1]||review.decision;const extras=[review.reason&&review.reason!=="未选择原因"?review.reason:"",review.note||""].filter(Boolean).join("；");return `${item.id} ${item.instrument}：${label}${extras?`（${extras}）`:""}`}).join("\n")}`}
+
+async function copyFeedback(){const text=feedbackText();try{await navigator.clipboard.writeText(text);showToast("本轮反馈已复制，可以粘贴到对话中")}catch{const area=document.createElement("textarea");area.value=text;document.body.appendChild(area);area.select();document.execCommand("copy");area.remove();showToast("本轮反馈已复制")}}
+function escapeHtml(value){return value.replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[ch]))}
+let toastTimer;function showToast(message){const toast=document.querySelector("#toast");toast.textContent=message;toast.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("show"),2200)}
+
+document.querySelectorAll(".nav-item").forEach(button=>button.addEventListener("click",()=>{document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x===button));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active-view",x.id===button.dataset.target));document.querySelector("#pageTitle").textContent=button.textContent.replace(/^\d+/,"").trim();if(button.dataset.target==="queue")renderQueue();window.scrollTo({top:0,behavior:"smooth"})}));
+document.querySelectorAll(".filter").forEach(button=>button.addEventListener("click",()=>{activeFilter=button.dataset.filter;document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x===button));renderSignals()}));
+document.querySelector("#copyFeedback").addEventListener("click",copyFeedback);
+updateDashboard();renderSignals();renderQueue();
