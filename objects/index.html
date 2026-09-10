@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="转债研究对象逐项审查工作台。" />
+    <title>研究对象审查 · 套利研究</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="object-nav">
+        <header class="nav-head">
+          <a href="../" class="back-link">← 返回原工作台</a>
+          <p class="eyebrow">研究对象审查 · V0.1</p>
+          <h1>3.1 转股结构</h1>
+          <p>按照“转股价值”样例逐项填写，再由你决定保留、修改或合并。</p>
+        </header>
+
+        <div class="progress-card">
+          <div><span>审查进度</span><strong id="progressText">0 / 9</strong></div>
+          <div class="progress-track"><i id="progressBar"></i></div>
+          <small id="saveState">尚未填写 · 输入后自动保存在本机</small>
+        </div>
+
+        <nav id="objectList" class="object-list" aria-label="转股结构研究对象"></nav>
+
+        <div class="nav-actions">
+          <button id="exportAll" class="primary-action" type="button">导出全部反馈</button>
+          <label class="secondary-action" for="importFile">导入反馈包</label>
+          <input id="importFile" type="file" accept="application/json,.json" hidden />
+          <p>导出的JSON可直接上传到与我的对话中。</p>
+        </div>
+      </aside>
+
+      <main class="research-pane">
+        <header class="research-head">
+          <div>
+            <p class="eyebrow" id="objectCode">对象 3.1.1</p>
+            <h2 id="objectName">正股价格</h2>
+          </div>
+          <div id="draftBadge" class="draft-badge">AI初稿</div>
+        </header>
+
+        <div class="notice">
+          左侧是AI研究稿，右侧保留你的独立判断。你的文字不会覆盖AI原稿。
+        </div>
+
+        <article id="researchContent" class="research-content"></article>
+
+        <footer class="object-pagination">
+          <button id="previousObject" type="button">← 上一个</button>
+          <span id="positionText">1 / 9</span>
+          <button id="nextObject" type="button">下一个 →</button>
+        </footer>
+      </main>
+
+      <aside class="review-pane">
+        <header class="review-head">
+          <div>
+            <p class="eyebrow">你的审查</p>
+            <h2>判断与修改</h2>
+          </div>
+          <span id="reviewStatus" class="review-status">未审查</span>
+        </header>
+
+        <section class="review-section">
+          <h3>这个对象如何处理？</h3>
+          <div id="objectDecision" class="choice-grid" role="group" aria-label="对象处理方式"></div>
+        </section>
+
+        <section class="review-section">
+          <h3>研究稿总体判断</h3>
+          <div id="contentVerdict" class="choice-row" role="group" aria-label="研究稿总体判断"></div>
+        </section>
+
+        <section class="review-section field-reviews">
+          <div class="section-intro">
+            <h3>逐项修改或补充</h3>
+            <p>不需要每项都写，只填写你有意见的部分。</p>
+          </div>
+          <div id="fieldEditors"></div>
+        </section>
+
+        <section class="review-section free-review">
+          <label for="overallNote">自由讨论区</label>
+          <p>可以完整写下你的判断、疑问、反驳或新的研究方向，不必服从上面的结构。</p>
+          <textarea id="overallNote" rows="9" placeholder="我的整体看法……"></textarea>
+        </section>
+
+        <section class="review-section">
+          <label for="followupQuestion">希望我继续处理什么？</label>
+          <textarea id="followupQuestion" rows="4" placeholder="例如：重新定义参数类型；比较它与转股价值是否重复……"></textarea>
+        </section>
+
+        <div class="review-actions">
+          <button id="markComplete" class="primary-action" type="button">完成这个对象的审查</button>
+          <button id="exportCurrent" class="secondary-button" type="button">只导出当前对象</button>
+          <p id="localHint">所有输入仅自动保存在当前浏览器。</p>
+        </div>
+      </aside>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>
