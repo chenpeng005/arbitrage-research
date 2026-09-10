@@ -207,11 +207,14 @@ function renderReview() {
   const review = reviewFor(item.id);
   $("#objectDecision").innerHTML = choiceButtons(objectDecisions, review.objectDecision, "object-decision");
   $("#contentVerdict").innerHTML = choiceButtons(verdicts, review.verdict, "content-verdict");
-  $("#fieldEditors").innerHTML = sectionMeta.map(([key, title]) => `
-    <details class="field-editor" ${review.fieldNotes[key] ? "open" : ""}>
-      <summary>${title}<span>${review.fieldNotes[key] ? "已填写" : "可选"}</span></summary>
-      <textarea data-field="${key}" placeholder="我的修改稿、补充或反驳……">${escapeHtml(review.fieldNotes[key] || "")}</textarea>
-    </details>
+  $("#fieldEditors").innerHTML = sectionMeta.map(([key, title], index) => `
+    <section class="field-editor">
+      <div class="field-editor-head">
+        <label for="field-${key}">${index + 1}. ${title}</label>
+        <span>${review.fieldNotes[key] ? "已填写" : `${index + 1} / 4`}</span>
+      </div>
+      <textarea id="field-${key}" data-field="${key}" rows="7" placeholder="写下对这一项的修改、补充、反驳或疑问……">${escapeHtml(review.fieldNotes[key] || "")}</textarea>
+    </section>
   `).join("");
   $("#overallNote").value = review.overallNote;
   $("#followupQuestion").value = review.followupQuestion;

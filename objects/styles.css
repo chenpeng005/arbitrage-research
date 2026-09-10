@@ -31,7 +31,7 @@ button, label { -webkit-tap-highlight-color: transparent; }
 
 .app-shell {
   display: grid;
-  grid-template-columns: 280px minmax(430px, 1fr) 430px;
+  grid-template-columns: 270px minmax(440px, 1fr) minmax(520px, 38vw);
   min-height: 100vh;
 }
 
@@ -172,8 +172,8 @@ button, label { -webkit-tap-highlight-color: transparent; }
 .review-status.editing { color: #765722; background: var(--amber-soft); }
 .review-section { margin-top: 22px; padding-top: 20px; border-top: 1px solid #e5e9e6; }
 .review-section h3, .review-section label { display: block; margin: 0 0 10px; font-size: 15px; font-weight: 800; }
-.section-intro { display: flex; justify-content: space-between; gap: 15px; align-items: baseline; }
-.section-intro p, .free-review p { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+.section-intro { display: block; }
+.section-intro p, .free-review p { margin: -3px 0 13px; color: var(--muted); font-size: 14px; }
 .choice-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
 .choice-row { display: flex; flex-wrap: wrap; gap: 7px; }
 .choice-button {
@@ -188,12 +188,12 @@ button, label { -webkit-tap-highlight-color: transparent; }
 }
 .choice-button.selected { color: #fff; background: var(--green); border-color: var(--green); }
 
-.field-editor { margin-top: 10px; }
-.field-editor summary { display: flex; justify-content: space-between; gap: 14px; padding: 10px 12px; color: #34433d; background: #f5f7f5; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 750; list-style: none; }
-.field-editor summary::-webkit-details-marker { display: none; }
-.field-editor summary::after { content: "+"; color: var(--green); }
-.field-editor[open] summary::after { content: "−"; }
-.field-editor textarea { margin-top: 8px; min-height: 115px; }
+.field-editor { margin-top: 14px; }
+.field-editor:first-child { margin-top: 0; }
+.field-editor-head { display: flex; justify-content: space-between; gap: 14px; align-items: baseline; margin-bottom: 7px; }
+.field-editor-head label { margin: 0; color: #34433d; font-size: 15px; }
+.field-editor-head span { flex: 0 0 auto; color: var(--green); font-size: 12px; font-weight: 800; }
+.field-editor textarea { min-height: 175px; }
 
 textarea {
   width: 100%;
@@ -206,7 +206,8 @@ textarea {
   resize: vertical;
 }
 textarea:focus { outline: 3px solid rgba(23,105,79,.12); border-color: var(--green); }
-.free-review textarea { min-height: 220px; }
+.free-review textarea { min-height: 290px; }
+#followupQuestion { min-height: 125px; }
 .review-actions { margin-top: 24px; }
 .review-actions .primary-action { width: 100%; }
 .secondary-button { width: 100%; margin-top: 8px; padding: 9px 12px; color: var(--green); background: #fff; border: 1px solid var(--green); }
@@ -215,7 +216,7 @@ textarea:focus { outline: 3px solid rgba(23,105,79,.12); border-color: var(--gre
 .toast { position: fixed; z-index: 30; right: 24px; bottom: 24px; max-width: 360px; padding: 11px 15px; color: #fff; background: var(--deep); border-radius: 9px; box-shadow: var(--shadow); opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s ease; }
 .toast.show { opacity: 1; transform: translateY(0); }
 
-@media (max-width: 1180px) {
+@media (max-width: 1260px) {
   .app-shell { grid-template-columns: 250px minmax(420px, 1fr); }
   .review-pane { position: relative; grid-column: 2; height: auto; }
 }
