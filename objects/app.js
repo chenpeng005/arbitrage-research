@@ -6,8 +6,8 @@ const objects = [
     sections: {
       type: `<span class="type-label">基础参数</span>`,
       definition: `<p>正股价格是可转债对应股票在某一时点的市场价格。</p>`,
-      standalone: `<p class="standalone-answer">有。</p>`,
-      meaning: `<p>在其他条件近似不变时，正股价格上升会提高转股价值，通常推动转债价格上升；正股价格下降则相反。因此，正股价格通过改变转股价值，影响转债未来收益率概率分布。</p>`
+      standalone: `<p class="standalone-answer">无。</p>`,
+      meaning: ``
     }
   },
   {
@@ -40,7 +40,7 @@ const objects = [
       type: `<span class="type-label">派生参数</span>`,
       definition: `<p>转股溢价率衡量转债价格相对于当前转股价值高出或低出的比例。</p><blockquote>转股溢价率 = 转债价格 ÷ 转股价值 − 1</blockquote><p>它表示投资者按当前价格买入转债并立即转股，相对于取得股票市场价值所支付的溢价。</p>`,
       standalone: `<p class="standalone-answer">有。</p>`,
-      meaning: `<p>转股溢价率越低，转债价格与转股价值衔接越紧，正股价格变化通常越容易传导至转债价格；转股溢价率越高，正股需要更大幅度上涨，转股价值才可能对当前转债价格形成支撑。因此，它会影响转债对正股上涨的响应程度和未来收益率概率分布。</p>`
+      meaning: `<p>转股溢价率刻画转债价格相对转股价值的距离。溢价率越低，正股价格变化通常越容易传导到转债价格；溢价率越高，正股需要更大幅度上涨，转股价值才可能对当前转债价格形成支撑。</p><p>因此，转股溢价率会改变转债对正股涨跌的敏感程度：低溢价率通常增加股价上涨向转债收益右侧传导的程度，高溢价率则削弱这种传导。全市场或同类转债的溢价率水平，还可以反映市场对转债内含期权的系统性估值高低。</p><p class="research-note">待讨论：“实值/虚值”严格来说由正股价格与转股价格的关系决定；转股溢价率衡量的是转债价格相对转股价值的距离。两者相关，但是否应直接用实值、虚值描述转股溢价率，需要进一步统一。</p>`
     }
   },
   {
@@ -49,9 +49,9 @@ const objects = [
     status: "clarify",
     sections: {
       type: `<span class="type-label">模型派生参数</span>`,
-      definition: `<p>转债原始 Delta 是转债理论价值对正股价格的一阶敏感度；为便于不同转债之间比较，再除以转股比例，得到0至1之间的标准化 Delta。</p><blockquote>原始 Delta = ∂V<sub>转债</sub> ÷ ∂S<sub>正股</sub><br>标准化 Delta = 原始 Delta ÷ 转股比例<br>转股比例 = 100 ÷ 转股价格</blockquote><p>例如，标准化 Delta 为0.8，表示正股发生小幅变化时，转债理论价值大约承接了完全转股状态下80%的价格变化。</p>`,
+      definition: `<p>转债原始 Delta 是期权定价模型给出的转债理论价值对正股价格的一阶敏感度；为便于不同转债之间比较，再除以转股比例，得到标准化 Delta。</p><blockquote>原始 Delta ≈ [V(S + ε) − V(S − ε)] ÷ 2ε<br>标准化 Delta = 原始 Delta ÷ 转股比例<br>转股比例 = 100 ÷ 转股价格</blockquote><p>这里采用模型输入计算的理论 Delta，不采用历史价格回归得到的后验跟涨数据。</p>`,
       standalone: `<p class="standalone-answer">有。</p>`,
-      meaning: `<p>Delta 越高，正股价格的小幅变化对转债价格的影响通常越大，转债的股性越强；Delta 越低，转债对正股小幅变化越不敏感。因此，Delta 描述了转债未来收益率概率分布对正股变化的局部敏感程度。</p>`
+      meaning: `<p>Delta 描述转债收益分布对正股小幅变动的局部敏感度。Delta 越高，正股收益分布向转债收益分布传导得越充分，转债的股性越强；Delta 越低，转债收益对正股小幅变化越不敏感。</p><p>它主要影响概率分布随正股变化时的局部斜率，而不能单独说明最大下行、整体上涨空间或条款事件造成的跳跃变化。Delta 也会随正股价格、波动率、剩余期限、信用和条款状态变化，不是固定参数。</p>`
     }
   }
 ];
@@ -79,7 +79,7 @@ const verdicts = [
   ["pending", "暂不判断"]
 ];
 
-const storageKey = "arbitrage-object-review-3.1-v2";
+const storageKey = "arbitrage-object-review-3.1-v3";
 let state = loadState();
 let activeIndex = Number.isInteger(state.activeIndex) ? Math.min(state.activeIndex, objects.length - 1) : 0;
 
@@ -96,9 +96,9 @@ function reviewFor(id) {
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(storageKey));
-    return parsed && parsed.schemaVersion === 2 ? parsed : { schemaVersion: 2, activeIndex: 0, reviews: {}, updatedAt: "" };
+    return parsed && parsed.schemaVersion === 3 ? parsed : { schemaVersion: 3, activeIndex: 0, reviews: {}, updatedAt: "" };
   } catch {
-    return { schemaVersion: 2, activeIndex: 0, reviews: {}, updatedAt: "" };
+    return { schemaVersion: 3, activeIndex: 0, reviews: {}, updatedAt: "" };
   }
 }
 
@@ -123,7 +123,7 @@ function render() {
   const item = objects[activeIndex];
   $("#objectCode").textContent = `对象 ${item.id}`;
   $("#objectName").textContent = item.name;
-  $("#draftBadge").textContent = item.status === "clarify" ? "待澄清稿" : "第二版";
+  $("#draftBadge").textContent = item.status === "clarify" ? "重点讨论" : "第三版";
   $("#draftBadge").classList.toggle("approved", item.status === "revision");
   $("#positionText").textContent = `${activeIndex + 1} / ${objects.length}`;
   $("#previousObject").disabled = activeIndex === 0;
@@ -164,12 +164,12 @@ function renderReview() {
   $("#objectDecision").innerHTML = choiceButtons(objectDecisions, review.objectDecision, "object-decision");
   $("#contentVerdict").innerHTML = choiceButtons(verdicts, review.verdict, "content-verdict");
   $("#fieldEditors").innerHTML = sectionMeta.map(([key, title], index) => `
-    <section class="field-editor">
+    <section class="field-editor ${key === "meaning" ? "priority-editor" : "compact-editor"}">
       <div class="field-editor-head">
         <label for="field-${key}">${index + 1}. ${title}</label>
-        <span>${review.fieldNotes[key] ? "已填写" : `${index + 1} / 4`}</span>
+        <span>${review.fieldNotes[key] ? "已填写" : key === "meaning" ? "重点讨论" : `${index + 1} / 4`}</span>
       </div>
-      <textarea id="field-${key}" data-field="${key}" rows="7" placeholder="写下对这一项的修改、补充、反驳或疑问……">${escapeHtml(review.fieldNotes[key] || "")}</textarea>
+      <textarea id="field-${key}" data-field="${key}" rows="${key === "meaning" ? 12 : 3}" placeholder="${key === "meaning" ? "重点讨论它影响概率分布的方向、幅度、路径和适用条件……" : "如无修改可留空；有问题时直接纠正……"}">${escapeHtml(review.fieldNotes[key] || "")}</textarea>
     </section>
   `).join("");
   $("#overallNote").value = review.overallNote;
@@ -256,11 +256,11 @@ function completeCurrent() {
 function feedbackPackage(ids) {
   const selected = objects.filter(item => ids.includes(item.id));
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     packageType: ids.length === 1 ? "single-object-review" : "batch-review",
-    batch: "3.1 转股结构·第二版",
-    draftVersion: "v2",
-    sourceTemplate: "03 研究对象样例｜转股价值 + 2026-09-10 第一轮反馈",
+    batch: "3.1 转股结构·第三版",
+    draftVersion: "v3",
+    sourceTemplate: "03 研究对象样例｜转股价值 + 2026-09-10 第一、二轮反馈",
     exportedAt: new Date().toISOString(),
     objects: selected.map(item => ({
       id: item.id,
@@ -276,7 +276,7 @@ function exportFeedback(ids, fileSuffix) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `转股结构审查反馈-V2-${fileSuffix}-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = `转股结构审查反馈-V3-${fileSuffix}-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -289,7 +289,7 @@ function importFeedback(file) {
   reader.onload = () => {
     try {
       const data = JSON.parse(reader.result);
-      if (data.schemaVersion !== 2 || data.draftVersion !== "v2" || !Array.isArray(data.objects)) throw new Error("invalid");
+      if (data.schemaVersion !== 3 || data.draftVersion !== "v3" || !Array.isArray(data.objects)) throw new Error("invalid");
       data.objects.forEach(item => {
         if (objects.some(object => object.id === item.id) && item.review) state.reviews[item.id] = item.review;
       });

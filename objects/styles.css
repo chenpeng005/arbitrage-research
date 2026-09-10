@@ -193,7 +193,11 @@ button, label { -webkit-tap-highlight-color: transparent; }
 .field-editor-head { display: flex; justify-content: space-between; gap: 14px; align-items: baseline; margin-bottom: 7px; }
 .field-editor-head label { margin: 0; color: #34433d; font-size: 15px; }
 .field-editor-head span { flex: 0 0 auto; color: var(--green); font-size: 12px; font-weight: 800; }
-.field-editor textarea { min-height: 175px; }
+.field-editor textarea { min-height: 92px; }
+.field-editor.priority-editor { margin-top: 20px; padding: 16px; background: #f2f7f4; border: 1px solid #cfe0d8; border-radius: 11px; }
+.field-editor.priority-editor .field-editor-head label { color: var(--deep); font-size: 16px; }
+.field-editor.priority-editor .field-editor-head span { padding: 3px 7px; color: #fff; background: var(--green); border-radius: 999px; }
+.field-editor.priority-editor textarea { min-height: 310px; background: #fff; }
 
 textarea {
   width: 100%;
