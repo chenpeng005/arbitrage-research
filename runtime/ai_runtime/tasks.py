@@ -37,10 +37,36 @@ def market_map_semantic_audit_spec(root: Path) -> AITaskSpec:
                 "resolutions": {"type": "array"},
             },
         },
-        allowed_tools=[],
+        allowed_tools=[
+            {
+                "name": "evidence_search",
+                "description": "只围绕本次 conflict 在巨潮资讯正式公告中搜索候选证据。股票身份由 Program 根据 conflict_id 决定，AI 不能自行扩展对象。",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["conflict_id"],
+                    "properties": {
+                        "conflict_id": {"type": "string"},
+                        "keyword": {"type": "string"},
+                        "start_date": {"type": "string", "description": "YYYY-MM-DD，可省略"},
+                        "end_date": {"type": "string", "description": "YYYY-MM-DD，可省略"},
+                    },
+                },
+            },
+            {
+                "name": "evidence_fetch",
+                "description": "读取本 AI Job 之前 evidence_search 返回过的巨潮公告 PDF，并由 Program 保存 PDF、提取文本、计算 hash。",
+                "input_schema": {
+                    "type": "object",
+                    "required": ["evidence_id"],
+                    "properties": {
+                        "evidence_id": {"type": "string"},
+                    },
+                },
+            },
+        ],
         validator="runtime.market_map.semantic_resolution.validate_resolution",
-        max_tool_rounds=0,
-        timeout_seconds=60,
+        max_tool_rounds=4,
+        timeout_seconds=120,
     )
 
 
