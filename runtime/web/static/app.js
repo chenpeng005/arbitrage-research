@@ -14,7 +14,7 @@ const calculationSteps=[
   ["C2","拟合基础价值曲线"],
   ["C3","基础模型硬审计"],
   ["C4","拟合剩余期限调整"],
-  ["C5","拟合剩余规模候选调整"],
+  ["C5","拟合剩余规模调整"],
   ["C6","计算残差分布并冻结快照"]
 ];
 
@@ -114,6 +114,8 @@ let currentJob=null;
 let timer=null;
 let calcJob=null;
 let calcTimer=null;
+let pipelineJob=null;
+let pipelineTimer=null;
 
 function localDateString(){
   const d=new Date();
@@ -123,6 +125,7 @@ function localDateString(){
 
 $("#cutoff").value=localDateString();
 $("#calcCutoff").value=localDateString();
+$("#pipelineCutoff").value=localDateString();
 
 function esc(x){
   return String(x==null?"":x).replace(/[&<>"']/g,function(m){
@@ -312,6 +315,47 @@ async function pollAcquisition(){
   }
 }
 
+const pipelinePhaseLabels={
+  PENDING:"等待启动",
+  ACQUISITION:"数据获取与确定性审计",
+  AI_SEMANTIC_AUDIT:"AI 语义审计",
+  CALCULATION:"市场价值映射计算",
+  COMPLETE:"完成",
+  STOPPED_AT_AI:"停止在 AI 审计",
+  STOPPED_AFTER_AI_VALIDATION:"AI 结果未形成可信输入",
+  STOPPED_AT_ACQUISITION:"停止在数据获取",
+  STOPPED_AT_CALCULATION:"停止在计算",
+  CONTROLLER_ERROR:"Controller 错误"
+};
+
+async function pollPipeline(){
+  if(!pipelineJob)return;
+  const r=await fetch("api/runs/"+pipelineJob);
+  const data=await r.json();
+  setOverall("#pipelineOverall",data.status);
+
+  const phase=pipelinePhaseLabels[data.phase]||data.phase||"等待";
+  $("#pipelineMeta").innerHTML='<div class="meta-grid">'
+    +'<span><b>Pipeline</b> '+esc(data.job_id)+'</span>'
+    +'<span><b>阶段</b> '+esc(phase)+'</span>'
+    +'<span><b>市场截面</b> '+esc(data.market_cutoff||"-")+'</span>'
+    +(data.acquisition_job_id?'<span><b>Acquisition</b> '+esc(data.acquisition_job_id)+'</span>':"")
+    +(data.ai_job_id?'<span><b>AI Job</b> '+esc(data.ai_job_id)+'</span>':"")
+    +(data.ai_status?'<span><b>AI 状态</b> '+esc(statusText(data.ai_status))+'</span>':"")
+    +(data.calculation_job_id?'<span><b>Calculation</b> '+esc(data.calculation_job_id)+'</span>':"")
+    +(data.error?'<span><b>错误</b> '+esc(data.error)+'</span>':"")
+    +'</div>';
+
+  if(["PASS","WARNING","FAIL","NEEDS_REVIEW"].includes(data.status)){
+    clearInterval(pipelineTimer);
+    pipelineTimer=null;
+    $("#pipelineRunBtn").disabled=false;
+    if(["PASS","WARNING"].includes(data.status) && data.snapshot_mode==="CLOSE"){
+      try{await loadMarketMap();}catch(_err){}
+    }
+  }
+}
+
 async function pollCalculation(){
   if(!calcJob)return;
   const r=await fetch("api/runs/"+calcJob);
@@ -336,6 +380,35 @@ async function pollCalculation(){
     $("#calcRunBtn").disabled=false;
   }
 }
+
+$("#pipelineRunBtn").addEventListener("click",async function(){
+  setOverall("#pipelineOverall","PENDING");
+  $("#pipelineRunBtn").disabled=true;
+
+  const payload={
+    snapshot_mode:$("#pipelineMode").value,
+    market_cutoff:$("#pipelineCutoff").value
+  };
+
+  $("#pipelineMeta").textContent="Controller 正在启动完整藏宝图 Runtime。";
+
+  try{
+    const r=await fetch("api/market-map-runs",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
+    });
+    if(!r.ok)throw new Error(await r.text());
+    const data=await r.json();
+    pipelineJob=data.job_id;
+    await pollPipeline();
+    pipelineTimer=setInterval(pollPipeline,1000);
+  }catch(err){
+    setOverall("#pipelineOverall","FAIL");
+    $("#pipelineMeta").textContent="无法启动完整 Runtime："+err.message;
+    $("#pipelineRunBtn").disabled=false;
+  }
+});
 
 $("#runBtn").addEventListener("click",async function(){
   renderSkeleton("#steps",acquisitionSteps,"step-");
