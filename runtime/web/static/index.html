@@ -3,37 +3,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>机会发现 Runtime · Market Map Builder</title>
+  <title>机会发现运行台 · 市场价值映射构建器</title>
   <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
   <main class="shell">
     <header class="hero">
       <div>
-        <p class="eyebrow">Opportunity Discovery Runtime</p>
-        <h1>Market Map Builder · 单元测试</h1>
-        <p class="sub">网页触发 → 程序外循环 → 数据获取与审计 → 逐步反馈 → 结果持久化</p>
+        <p class="eyebrow">机会发现运行台</p>
+        <h1>市场价值映射构建器 · 单元测试</h1>
+        <p class="sub">网页触发 → 程序控制 → 数据获取与审计 → 逐步反馈 → 结果持久化</p>
       </div>
-      <div id="overall" class="overall idle">IDLE</div>
+      <div id="overall" class="overall idle">尚未运行</div>
     </header>
 
     <section class="control card">
       <div>
         <label>运行模式</label>
         <select id="mode">
-          <option value="LIVE_TEST">LIVE_TEST · 盘中测试</option>
-          <option value="CLOSE">CLOSE · 正式收盘截面</option>
+          <option value="LIVE_TEST">盘中测试</option>
+          <option value="CLOSE">正式收盘截面</option>
         </select>
       </div>
       <div>
-        <label>Market Cutoff</label>
+        <label>市场截面日期</label>
         <input id="cutoff" type="date">
       </div>
-      <button id="runBtn">运行 Market Map Builder 数据获取</button>
+      <button id="runBtn">运行数据获取单元</button>
     </section>
 
     <section id="runMeta" class="meta card muted">
-      尚未运行。点击按钮后，程序会自动推进；只有出现 BLOCKED / NEEDS_REVIEW 才需要人工介入。
+      尚未运行。点击按钮后程序自动推进；只有出现“需要人工处理”时才暂停。
     </section>
 
     <section class="progress card">
@@ -41,12 +41,19 @@
       <div class="track"><i id="bar"></i></div>
     </section>
 
+    <section id="summary" class="summary card hidden">
+      <div class="section-head">
+        <div><p class="eyebrow">本次运行结果</p><h2>数据准备汇总</h2></div>
+      </div>
+      <div id="summaryMetrics" class="summary-grid"></div>
+    </section>
+
     <section id="steps" class="steps"></section>
 
     <section class="card tech">
       <details>
         <summary>技术说明</summary>
-        <p>页面只展示业务有意义的小步骤；原始数据、异常对象和最终 JSON 均保存在服务器 Runtime Store。</p>
+        <p>主界面只展示业务上有意义的步骤；原始数据、异常对象和完整 JSON 同时保存在服务器运行记录中。</p>
       </details>
     </section>
   </main>
