@@ -652,6 +652,7 @@ def get_market_map_view() -> dict:
         "bond_code",
         "bond_name",
         "P",
+        "trusted_CV",
         "source_CV",
         "remaining_months",
         "remaining_size",
