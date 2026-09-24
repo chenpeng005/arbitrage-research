@@ -101,7 +101,128 @@ def call_with_retry(
 
 
 def save_frame(df: pd.DataFrame, out: Path, name: str) -> None:
+    out.mkdir(parents=True, exist_ok=True)
     df.to_csv(out / name, index=False)
+
+
+def persist_source_manifest(manifest: dict[str, Any], output_dir: Path) -> None:
+    (output_dir / "source_manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def register_source(
+    manifest: dict[str, Any],
+    output_dir: Path,
+    *,
+    source: str,
+    adapter: str,
+    role: str,
+    status: str,
+    fetched_at: str,
+    row_count: int | None = None,
+    raw_file: str | None = None,
+    degraded: bool = False,
+    error: str | None = None,
+) -> None:
+    record = {
+        "source": source,
+        "adapter": adapter,
+        "role": role,
+        "status": status,
+        "fetched_at": fetched_at,
+        "market_cutoff": manifest["market_cutoff"],
+        "row_count": row_count,
+        "raw_file": raw_file,
+        "degraded": degraded,
+    }
+    if error:
+        record["error"] = error
+    manifest["sources"].append(record)
+    persist_source_manifest(manifest, output_dir)
+
+
+def fetch_and_freeze(
+    fn: Callable[[], pd.DataFrame],
+    current: Step,
+    *,
+    raw_dir: Path,
+    manifest: dict[str, Any],
+    output_dir: Path,
+    source: str,
+    adapter: str,
+    role: str,
+    filename: str,
+    attempts: int = 3,
+    delay_seconds: float = 2.0,
+    degraded: bool = False,
+) -> pd.DataFrame:
+    try:
+        df = call_with_retry(
+            fn,
+            current,
+            attempts=attempts,
+            delay_seconds=delay_seconds,
+        )
+    except Exception as exc:
+        register_source(
+            manifest,
+            output_dir,
+            source=source,
+            adapter=adapter,
+            role=role,
+            status="FAIL",
+            fetched_at=now_utc(),
+            degraded=degraded,
+            error=f"{type(exc).__name__}: {str(exc)[:300]}",
+        )
+        raise
+
+    raw_path = raw_dir / filename
+    df.to_csv(raw_path, index=False)
+    register_source(
+        manifest,
+        output_dir,
+        source=source,
+        adapter=adapter,
+        role=role,
+        status="PASS",
+        fetched_at=now_utc(),
+        row_count=len(df),
+        raw_file=str(raw_path.relative_to(output_dir)),
+        degraded=degraded,
+    )
+    return df
+
+
+def freeze_existing_frame(
+    df: pd.DataFrame,
+    *,
+    raw_dir: Path,
+    manifest: dict[str, Any],
+    output_dir: Path,
+    source: str,
+    adapter: str,
+    role: str,
+    filename: str,
+    degraded: bool = False,
+) -> pd.DataFrame:
+    raw_path = raw_dir / filename
+    df.to_csv(raw_path, index=False)
+    register_source(
+        manifest,
+        output_dir,
+        source=source,
+        adapter=adapter,
+        role=role,
+        status="PASS",
+        fetched_at=now_utc(),
+        row_count=len(df),
+        raw_file=str(raw_path.relative_to(output_dir)),
+        degraded=degraded,
+    )
+    return df
 
 
 def records(df: pd.DataFrame, columns: list[str] | None = None, limit: int = 50) -> list[dict[str, Any]]:
@@ -137,18 +258,17 @@ def classify_exclusion(row: pd.Series) -> str:
     return "其他数据完整性异常"
 
 
-def fetch_fallback_market_snapshot() -> pd.DataFrame:
+def build_fallback_market_snapshot(jsl: pd.DataFrame, em: pd.DataFrame) -> pd.DataFrame:
     """
-    Fallback when Eastmoney push2 comparison endpoint is unavailable.
+    Build a normalized fallback market snapshot from already-frozen raw sources.
 
-    - Jisilu redeem list supplies the current active candidate set and an audit quote.
-    - Eastmoney datacenter bond_zh_cov supplies P/S/K/CV and listing metadata.
+    - Jisilu supplies the active candidate set and audit quote.
+    - Eastmoney datacenter supplies P/S/K/CV and listing metadata.
     - P/S/K/CV remain from one economic quote source (Eastmoney datacenter).
     """
-    jsl = ak.bond_cb_redeem_jsl().copy()
+    jsl = jsl.copy()
+    em = em.copy()
     jsl["代码"] = jsl["代码"].astype(str).str.zfill(6)
-
-    em = ak.bond_zh_cov().copy()
     em["债券代码"] = em["债券代码"].astype(str).str.zfill(6)
 
     meta = em[
@@ -217,6 +337,17 @@ def run_acquisition(
         started_at=now_utc(),
     )
 
+    raw_dir = output_dir / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    source_manifest: dict[str, Any] = {
+        "run_id": run_id,
+        "snapshot_mode": snapshot_mode,
+        "market_cutoff": market_cutoff,
+        "created_at": now_utc(),
+        "sources": [],
+    }
+    persist_source_manifest(source_manifest, output_dir)
+
     s0 = step(result, "S0", "冻结本次运行")
     s0.metrics = {
         "run_id": run_id,
@@ -246,7 +377,19 @@ def run_acquisition(
             )
 
         try:
-            trade_dates = ak.tool_trade_date_hist_sina().copy()
+            trade_dates = fetch_and_freeze(
+                lambda: ak.tool_trade_date_hist_sina().copy(),
+                s0,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="新浪交易日历",
+                adapter="ak.tool_trade_date_hist_sina",
+                role="close_trade_day_gate",
+                filename="trade_calendar_sina.csv",
+                attempts=2,
+                delay_seconds=1.0,
+            )
             trade_dates["trade_date"] = pd.to_datetime(
                 trade_dates["trade_date"], errors="coerce"
             ).dt.date
@@ -275,13 +418,30 @@ def run_acquisition(
 
     if snapshot_mode == "REPLAY_TEST":
         comp = pd.read_csv(fixture_dir / "comparison_raw.csv", dtype={"转债代码": str})
+        freeze_existing_frame(
+            comp,
+            raw_dir=raw_dir,
+            manifest=source_manifest,
+            output_dir=output_dir,
+            source="固定历史样本",
+            adapter="fixture:comparison_raw.csv",
+            role="market_snapshot_replay",
+            filename="market_replay_fixture.csv",
+        )
         s1.metrics["data_mode"] = "fixture_replay"
     else:
         market_source = "EASTMONEY_PUSH2"
         try:
-            comp = call_with_retry(
+            comp = fetch_and_freeze(
                 lambda: ak.bond_cov_comparison().copy(),
                 s1,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="东方财富 push2",
+                adapter="ak.bond_cov_comparison",
+                role="market_primary",
+                filename="market_primary_eastmoney_push2.csv",
                 attempts=2,
                 delay_seconds=1.5,
             )
@@ -296,12 +456,35 @@ def run_acquisition(
             emit(s1)
 
             try:
-                comp = call_with_retry(
-                    fetch_fallback_market_snapshot,
+                jsl_market = fetch_and_freeze(
+                    lambda: ak.bond_cb_redeem_jsl().copy(),
                     s1,
+                    raw_dir=raw_dir,
+                    manifest=source_manifest,
+                    output_dir=output_dir,
+                    source="集思录强赎列表",
+                    adapter="ak.bond_cb_redeem_jsl",
+                    role="market_fallback_universe_and_audit",
+                    filename="market_fallback_jisilu.csv",
                     attempts=2,
                     delay_seconds=1.5,
+                    degraded=True,
                 )
+                em_market = fetch_and_freeze(
+                    lambda: ak.bond_zh_cov().copy(),
+                    s1,
+                    raw_dir=raw_dir,
+                    manifest=source_manifest,
+                    output_dir=output_dir,
+                    source="东方财富 datacenter",
+                    adapter="ak.bond_zh_cov",
+                    role="market_fallback_economic_quote",
+                    filename="market_fallback_eastmoney_datacenter.csv",
+                    attempts=2,
+                    delay_seconds=1.5,
+                    degraded=True,
+                )
+                comp = build_fallback_market_snapshot(jsl_market, em_market)
             except Exception as fallback_exc:
                 return fail(
                     result,
@@ -429,14 +612,36 @@ def run_acquisition(
     try:
         if snapshot_mode == "REPLAY_TEST":
             info = pd.read_csv(fixture_dir / "info_raw.csv", dtype={"债券代码": str})
+            freeze_existing_frame(
+                info,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="固定历史样本",
+                adapter="fixture:info_raw.csv",
+                role="maturity_replay",
+                filename="maturity_replay_fixture.csv",
+            )
         else:
-            info = call_with_retry(lambda: ak.bond_zh_cov_info_ths().copy(), s3)
+            info = fetch_and_freeze(
+                lambda: ak.bond_zh_cov_info_ths().copy(),
+                s3,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="同花顺可转债基础信息",
+                adapter="ak.bond_zh_cov_info_ths",
+                role="maturity_primary",
+                filename="maturity_ths.csv",
+                attempts=3,
+                delay_seconds=2.0,
+            )
     except Exception as exc:
         return fail(
             result,
             s3,
             output_dir,
-            f"到期日数据获取失败，自动重试后仍不可用；基础样本已生成，但期限/规模模型无法继续。错误：{type(exc).__name__}",
+            f"到期日主数据源获取失败，自动重试后仍不可用；本次尚未进入逐券 fallback，运行停止在 S3。错误：{type(exc).__name__}",
         )
     info["债券代码"] = info["债券代码"].astype(str).str.zfill(6)
     maturity = info.rename(columns={"债券代码": "bond_code", "到期时间": "maturity_date"})[
@@ -444,6 +649,51 @@ def run_acquisition(
     ].drop_duplicates("bond_code")
     enriched = base.merge(maturity, on="bond_code", how="left", validate="one_to_one")
     enriched["maturity_date"] = pd.to_datetime(enriched["maturity_date"], errors="coerce")
+    maturity_missing = enriched[enriched["maturity_date"].isna()].copy()
+
+    fallback_rows: list[pd.DataFrame] = []
+    fallback_errors: list[str] = []
+    if snapshot_mode != "REPLAY_TEST" and len(maturity_missing):
+        for code in maturity_missing["bond_code"].astype(str):
+            try:
+                one = ak.bond_zh_cov_info(symbol=code, indicator="基本信息").copy()
+                if len(one):
+                    one["_requested_bond_code"] = code
+                    fallback_rows.append(one)
+            except Exception as exc:
+                fallback_errors.append(f"{code}: {type(exc).__name__}")
+
+        if fallback_rows:
+            maturity_fb_raw = pd.concat(fallback_rows, ignore_index=True)
+            freeze_existing_frame(
+                maturity_fb_raw,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="东方财富单券可转债详情",
+                adapter="ak.bond_zh_cov_info(indicator=基本信息)",
+                role="maturity_missing_only_fallback",
+                filename="maturity_eastmoney_fallback.csv",
+                degraded=True,
+            )
+            maturity_fb = maturity_fb_raw.rename(
+                columns={
+                    "SECURITY_CODE": "bond_code",
+                    "EXPIRE_DATE": "maturity_date",
+                }
+            )[["bond_code", "maturity_date"]].copy()
+            maturity_fb["bond_code"] = maturity_fb["bond_code"].astype(str).str.zfill(6)
+            maturity_fb["maturity_date"] = pd.to_datetime(
+                maturity_fb["maturity_date"], errors="coerce"
+            )
+            resolved_map = maturity_fb.dropna(subset=["maturity_date"]).drop_duplicates(
+                "bond_code"
+            ).set_index("bond_code")["maturity_date"]
+            miss_mask = enriched["maturity_date"].isna()
+            enriched.loc[miss_mask, "maturity_date"] = enriched.loc[
+                miss_mask, "bond_code"
+            ].map(resolved_map)
+
     duration_sample = enriched[enriched["maturity_date"].notna()].copy()
     maturity_missing = enriched[enriched["maturity_date"].isna()].copy()
     s3.metrics.update(
@@ -451,10 +701,15 @@ def run_acquisition(
             "base_sample": len(base),
             "maturity_covered": len(duration_sample),
             "maturity_missing": len(maturity_missing),
+            "maturity_fallback_resolved": int(len(fallback_rows)),
         }
     )
     s3.details = {
-        "notes": ["到期日主源：同花顺可转债基础信息。T 由程序根据到期日与市场截面日期自行计算。"],
+        "notes": [
+            "到期日主源：同花顺可转债基础信息。T 由程序根据到期日与市场截面日期自行计算。",
+            "只有主源缺失对象才按需调用东方财富单券详情，不对全市场逐券重复请求。",
+            *([f"单券 fallback 失败：{', '.join(fallback_errors[:10])}"] if fallback_errors else []),
+        ],
         "tables": [
             table(
                 "缺少到期日的对象",
@@ -474,8 +729,30 @@ def run_acquisition(
     try:
         if snapshot_mode == "REPLAY_TEST":
             size_raw = pd.read_csv(fixture_dir / "redeem_raw.csv", dtype={"代码": str})
+            freeze_existing_frame(
+                size_raw,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="固定历史样本",
+                adapter="fixture:redeem_raw.csv",
+                role="size_replay",
+                filename="size_replay_fixture.csv",
+            )
         else:
-            size_raw = call_with_retry(lambda: ak.bond_cb_redeem_jsl().copy(), s4)
+            size_raw = fetch_and_freeze(
+                lambda: ak.bond_cb_redeem_jsl().copy(),
+                s4,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="集思录强赎列表",
+                adapter="ak.bond_cb_redeem_jsl",
+                role="remaining_size_primary",
+                filename="size_jisilu.csv",
+                attempts=3,
+                delay_seconds=2.0,
+            )
     except Exception as exc:
         return fail(
             result,
