@@ -4,7 +4,8 @@ import argparse
 import base64
 import json
 import os
-from datetime import datetime, timezone
+import uuid
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +42,144 @@ def task_path(data_root: Path, task_id: str) -> Path:
     return task_dir(data_root, task_id) / "chat_task.json"
 
 
+CLAIM_TTL_SECONDS = 45 * 60
+
+
+def claim_path(data_root: Path, task_id: str) -> Path:
+    return task_dir(data_root, task_id) / "claim.json"
+
+
+def _parse_time(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except Exception:
+        return None
+
+
+def _claim_is_active(payload: dict[str, Any]) -> bool:
+    expires = _parse_time(payload.get("expires_at"))
+    if expires is None:
+        return False
+    return expires > datetime.now(timezone.utc)
+
+
+def read_active_claim(data_root: Path, task_id: str) -> dict[str, Any] | None:
+    path = claim_path(data_root, task_id)
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except Exception:
+        return None
+    if _claim_is_active(payload):
+        return payload
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+    return None
+
+
+def claim_task(
+    data_root: Path,
+    task_id: str,
+    claimant: str = "chatgpt",
+) -> dict[str, Any]:
+    task = load_task(data_root, task_id)
+    if task.get("status") not in {"WAITING_FOR_CHAT", "CLAIMED_BY_CHAT"}:
+        raise RuntimeError(
+            f"task is not claimable: status={task.get('status')}"
+        )
+
+    existing = read_active_claim(data_root, task_id)
+    if existing is not None:
+        raise RuntimeError(
+            f"task is already claimed until {existing.get('expires_at')}"
+        )
+
+    now = datetime.now(timezone.utc)
+    claim_id = uuid.uuid4().hex
+    payload = {
+        "task_id": task_id,
+        "claim_id": claim_id,
+        "claimant": claimant,
+        "claimed_at": now.isoformat(),
+        "expires_at": (
+            now + timedelta(seconds=CLAIM_TTL_SECONDS)
+        ).isoformat(),
+    }
+
+    path = claim_path(data_root, task_id)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    try:
+        fd = os.open(path, flags, 0o600)
+    except FileExistsError:
+        existing = read_active_claim(data_root, task_id)
+        if existing is not None:
+            raise RuntimeError(
+                f"task was claimed concurrently until {existing.get('expires_at')}"
+            )
+        fd = os.open(path, flags, 0o600)
+
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2)
+
+    task["status"] = "CLAIMED_BY_CHAT"
+    task["claim"] = payload
+    write_json(task_path(data_root, task_id), task)
+    return {"task": task, "claim": payload}
+
+
+def claim_next_task(
+    data_root: Path,
+    claimant: str = "chatgpt",
+) -> dict[str, Any] | None:
+    for task in list_tasks(data_root, status="WAITING_FOR_CHAT"):
+        try:
+            return claim_task(data_root, task["task_id"], claimant)
+        except RuntimeError:
+            continue
+    return None
+
+
+def require_claim(
+    data_root: Path,
+    task_id: str,
+    claim_id: str,
+) -> dict[str, Any]:
+    claim = read_active_claim(data_root, task_id)
+    if claim is None:
+        raise RuntimeError("task has no active claim")
+    if claim.get("claim_id") != claim_id:
+        raise RuntimeError("claim_id does not own this task")
+
+    now = datetime.now(timezone.utc)
+    claim["expires_at"] = (
+        now + timedelta(seconds=CLAIM_TTL_SECONDS)
+    ).isoformat()
+    write_json(claim_path(data_root, task_id), claim)
+    return claim
+
+
+def release_claim(
+    data_root: Path,
+    task_id: str,
+    claim_id: str,
+) -> dict[str, Any]:
+    require_claim(data_root, task_id, claim_id)
+    path = claim_path(data_root, task_id)
+    if path.exists():
+        path.unlink()
+    task = load_task(data_root, task_id)
+    if task.get("status") == "CLAIMED_BY_CHAT":
+        task["status"] = "WAITING_FOR_CHAT"
+        task.pop("claim", None)
+        write_json(task_path(data_root, task_id), task)
+    return {"task_id": task_id, "status": "WAITING_FOR_CHAT"}
+
+
 def load_task(data_root: Path, task_id: str) -> dict[str, Any]:
     path = task_path(data_root, task_id)
     if not path.exists():
@@ -72,6 +211,15 @@ def list_tasks(data_root: Path, status: str | None = None) -> list[dict[str, Any
                     task["validation_status"] = validation.get("status")
             except Exception:
                 task["validation_status"] = "INVALID"
+
+        active_claim = read_active_claim(data_root, task.get("task_id", ""))
+        if active_claim is not None:
+            task["status"] = "CLAIMED_BY_CHAT"
+            task["claim"] = active_claim
+        elif task.get("status") == "CLAIMED_BY_CHAT":
+            task["status"] = "WAITING_FOR_CHAT"
+            task.pop("claim", None)
+            write_json(path, task)
 
         if status and task.get("status") != status:
             continue
@@ -117,9 +265,11 @@ def run_tool(
     *,
     data_root: Path,
     task_id: str,
+    claim_id: str,
     name: str,
     arguments: dict[str, Any],
 ) -> dict[str, Any]:
+    require_claim(data_root, task_id, claim_id)
     task, tdir, ctx = get_context(data_root, task_id)
     index = next_tool_index(tdir)
     req = {
@@ -135,6 +285,8 @@ def run_tool(
 
     task["last_tool_at"] = now_utc()
     task["tool_call_count"] = index
+    task["status"] = "CLAIMED_BY_CHAT"
+    task["claim"] = read_active_claim(data_root, task_id)
     write_json(tdir / "chat_task.json", task)
     return result
 
@@ -220,9 +372,11 @@ def submit_resolution(
     *,
     data_root: Path,
     task_id: str,
+    claim_id: str,
     resolution_file: Path,
     auto_resume: bool,
 ) -> dict[str, Any]:
+    require_claim(data_root, task_id, claim_id)
     task, tdir, _ = get_context(data_root, task_id)
     business_run_dir = Path(task["business_run_dir"])
 
@@ -242,8 +396,13 @@ def submit_resolution(
 
     if validation.get("status") == "PASS":
         task["status"] = "PASS"
+        cp = claim_path(data_root, task_id)
+        if cp.exists():
+            cp.unlink()
+        task.pop("claim", None)
     else:
-        task["status"] = "NEEDS_REVIEW"
+        task["status"] = "CLAIMED_BY_CHAT"
+        task["claim"] = read_active_claim(data_root, task_id)
 
     task["evidence_count"] = manifest.get("evidence_count", 0)
     write_json(tdir / "chat_task.json", task)
@@ -270,11 +429,23 @@ def main() -> None:
     p_list = sub.add_parser("list")
     p_list.add_argument("--status", default="WAITING_FOR_CHAT")
 
+    p_claim_next = sub.add_parser("claim-next")
+    p_claim_next.add_argument("--claimant", default="chatgpt")
+
+    p_claim = sub.add_parser("claim")
+    p_claim.add_argument("--task-id", required=True)
+    p_claim.add_argument("--claimant", default="chatgpt")
+
+    p_release = sub.add_parser("release")
+    p_release.add_argument("--task-id", required=True)
+    p_release.add_argument("--claim-id", required=True)
+
     p_show = sub.add_parser("show")
     p_show.add_argument("--task-id", required=True)
 
     p_search = sub.add_parser("search")
     p_search.add_argument("--task-id", required=True)
+    p_search.add_argument("--claim-id", required=True)
     p_search.add_argument("--conflict-id", required=True)
     p_search.add_argument("--keyword", default="转债")
     p_search.add_argument("--start-date")
@@ -282,10 +453,12 @@ def main() -> None:
 
     p_fetch = sub.add_parser("fetch")
     p_fetch.add_argument("--task-id", required=True)
+    p_fetch.add_argument("--claim-id", required=True)
     p_fetch.add_argument("--evidence-id", required=True)
 
     p_submit = sub.add_parser("submit")
     p_submit.add_argument("--task-id", required=True)
+    p_submit.add_argument("--claim-id", required=True)
     p_submit.add_argument("--resolution-file", required=True)
     p_submit.add_argument("--no-resume", action="store_true")
 
@@ -294,12 +467,29 @@ def main() -> None:
 
     if args.command == "list":
         result = list_tasks(data_root, status=args.status or None)
+    elif args.command == "claim-next":
+        result = claim_next_task(data_root, claimant=args.claimant)
+        if result is None:
+            result = {"status": "NO_PENDING_CHAT_TASK"}
+    elif args.command == "claim":
+        result = claim_task(
+            data_root,
+            args.task_id,
+            claimant=args.claimant,
+        )
+    elif args.command == "release":
+        result = release_claim(
+            data_root,
+            args.task_id,
+            args.claim_id,
+        )
     elif args.command == "show":
         result = load_task(data_root, args.task_id)
     elif args.command == "search":
         result = run_tool(
             data_root=data_root,
             task_id=args.task_id,
+            claim_id=args.claim_id,
             name="evidence_search",
             arguments={
                 "conflict_id": args.conflict_id,
@@ -312,6 +502,7 @@ def main() -> None:
         result = run_tool(
             data_root=data_root,
             task_id=args.task_id,
+            claim_id=args.claim_id,
             name="evidence_fetch",
             arguments={"evidence_id": args.evidence_id},
         )
@@ -319,6 +510,7 @@ def main() -> None:
         result = submit_resolution(
             data_root=data_root,
             task_id=args.task_id,
+            claim_id=args.claim_id,
             resolution_file=Path(args.resolution_file).resolve(),
             auto_resume=not args.no_resume,
         )
