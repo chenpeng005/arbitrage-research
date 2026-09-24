@@ -445,7 +445,7 @@ async function pollPipeline(){
     )+'</span>'
     +'<span><b>市场截面</b> '+esc(data.market_cutoff||"-")+'</span>'
     +(data.historical_snapshot_id?'<span><b>历史来源</b> '+esc(data.historical_snapshot_id)+'</span>':"")
-    +'<span><b>AI方式</b> +esc(data.ai_execution_mode==="INTERACTIVE_CHAT"?"ChatGPT交互":"自动API（DeepSeek）")+'</span>'
+    +'<span><b>AI方式</b> '+esc(data.ai_execution_mode==="INTERACTIVE_CHAT"?"ChatGPT交互":"自动API（DeepSeek）")+'</span>'
     +(data.acquisition_job_id?'<span><b>Acquisition</b> '+esc(data.acquisition_job_id)+'</span>':"")
     +(data.ai_job_id?'<span><b>AI Job</b> '+esc(data.ai_job_id)+'</span>':"")
     +(data.ai_status?'<span><b>AI 状态</b> '+esc(statusText(data.ai_status))+'</span>':"")
