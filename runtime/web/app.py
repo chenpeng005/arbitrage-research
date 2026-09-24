@@ -25,6 +25,7 @@ DATA_ROOT = Path(os.environ.get("RUNTIME_DATA_ROOT", ROOT / "runtime_data"))
 DEPLOYMENT_MANIFEST_PATH = DATA_ROOT / "deployment_manifest.json"
 MARKET_MAP_REGISTRY_DIR = DATA_ROOT / "registry" / "market_map_snapshots"
 LATEST_FORMAL_MARKET_MAP_PATH = DATA_ROOT / "registry" / "latest_formal_market_map.json"
+CHAT_TASK_ROOT = DATA_ROOT / "chat_tasks"
 
 ACQ_SCRIPT = ROOT / "runtime" / "market_map" / "acquisition.py"
 CALC_SCRIPT = ROOT / "runtime" / "market_map" / "calculation.py"
@@ -69,6 +70,7 @@ class CalculationRunRequest(BaseModel):
 class MarketMapPipelineRequest(BaseModel):
     snapshot_mode: str = "CLOSE"
     market_cutoff: str | None = None
+    ai_execution_mode: str = "AUTO_API"
 
 
 TERMINAL_JOB_STATUSES = {"PASS", "WARNING", "FAIL", "NEEDS_REVIEW"}
@@ -484,6 +486,130 @@ def update_controller_job(
     persist_job(job_id)
 
 
+def create_interactive_chat_task(
+    *,
+    pipeline_job_id: str,
+    acquisition_job_id: str,
+    acquisition_run_dir: Path,
+    market_cutoff: str,
+) -> dict:
+    request_path = acquisition_run_dir / "semantic_review_request.json"
+    if not request_path.exists():
+        raise RuntimeError("semantic_review_request.json is missing")
+
+    request_payload = json.loads(request_path.read_text(encoding="utf-8"))
+    task_id = (
+        datetime.now().strftime("%Y%m%d_%H%M%S")
+        + "_chat_"
+        + uuid.uuid4().hex[:6]
+    )
+    task_dir = CHAT_TASK_ROOT / task_id
+    task_dir.mkdir(parents=True, exist_ok=False)
+
+    task = {
+        "task_id": task_id,
+        "task_type": "MARKET_MAP_SEMANTIC_AUDIT",
+        "execution_mode": "INTERACTIVE_CHAT",
+        "status": "WAITING_FOR_CHAT",
+        "created_at": utcnow(),
+        "pipeline_job_id": pipeline_job_id,
+        "acquisition_job_id": acquisition_job_id,
+        "business_run_dir": str(acquisition_run_dir),
+        "market_cutoff": market_cutoff,
+        "semantic_review_request": request_payload,
+        "expected_output": "semantic_resolution.json",
+        "resume_endpoint": (
+            f"/api/market-map-runs/{pipeline_job_id}/resume-after-chat"
+        ),
+        "chat_instruction": (
+            "处理机会发现 Runtime 的 Chat Task："
+            f"{task_id}。请读取服务器标准任务，使用项目证据工具完成语义审计，"
+            "提交结构化 Resolution，通过 Program Validator 后自动恢复 Pipeline。"
+        ),
+    }
+    (task_dir / "chat_task.json").write_text(
+        json.dumps(task, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    (task_dir / "input.json").write_text(
+        json.dumps(request_payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    prompt_path = (
+        ROOT
+        / "runtime"
+        / "ai_runtime"
+        / "prompts"
+        / "market_map_semantic_audit_v0.1.md"
+    )
+    if prompt_path.exists():
+        (task_dir / "prompt_snapshot.md").write_text(
+            prompt_path.read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+
+    with _lock:
+        if acquisition_job_id in _jobs:
+            _jobs[acquisition_job_id]["chat_task_id"] = task_id
+            _jobs[acquisition_job_id]["chat_task_path"] = str(
+                task_dir / "chat_task.json"
+            )
+    if acquisition_job_id in _jobs:
+        persist_job(acquisition_job_id)
+
+    return task
+
+
+def continue_pipeline_calculation(
+    pipeline_job_id: str,
+    acquisition_job_id: str,
+    cutoff: str,
+) -> None:
+    update_controller_job(
+        pipeline_job_id,
+        status="RUNNING",
+        phase="CALCULATION",
+    )
+
+    calculation_request = CalculationRunRequest(
+        input_mode="LATEST_SUCCESS",
+        market_cutoff=cutoff,
+        source_job_id=acquisition_job_id,
+    )
+    calculation_job_id = create_calculation_run(
+        calculation_request
+    )["job_id"]
+    update_controller_job(
+        pipeline_job_id,
+        calculation_job_id=calculation_job_id,
+    )
+
+    calculation_job = wait_for_job_terminal(calculation_job_id)
+    calculation_status = calculation_job.get("status")
+
+    if calculation_status in {"PASS", "WARNING"}:
+        update_controller_job(
+            pipeline_job_id,
+            status=calculation_status,
+            phase="COMPLETE",
+            completed_at=utcnow(),
+            snapshot_path=calculation_job.get("snapshot_path"),
+            calculated_table_path=calculation_job.get(
+                "calculated_table_path"
+            ),
+        )
+        return
+
+    update_controller_job(
+        pipeline_job_id,
+        status="FAIL",
+        phase="STOPPED_AT_CALCULATION",
+        completed_at=utcnow(),
+        error=f"calculation ended with status={calculation_status}",
+    )
+
+
 def run_semantic_ai_for_acquisition(
     *,
     acquisition_job_id: str,
@@ -583,9 +709,31 @@ def market_map_pipeline_worker(
         acquisition_run_dir = DATA_ROOT / "runs" / acquisition_job_id
 
         if acquisition_status == "NEEDS_REVIEW":
+            if request.ai_execution_mode == "INTERACTIVE_CHAT":
+                chat_task = create_interactive_chat_task(
+                    pipeline_job_id=pipeline_job_id,
+                    acquisition_job_id=acquisition_job_id,
+                    acquisition_run_dir=acquisition_run_dir,
+                    market_cutoff=cutoff,
+                )
+                update_controller_job(
+                    pipeline_job_id,
+                    status="WAITING_FOR_CHAT",
+                    phase="WAITING_FOR_CHAT",
+                    chat_task_id=chat_task["task_id"],
+                    chat_task_path=str(
+                        CHAT_TASK_ROOT
+                        / chat_task["task_id"]
+                        / "chat_task.json"
+                    ),
+                    ai_execution_mode="INTERACTIVE_CHAT",
+                )
+                return
+
             update_controller_job(
                 pipeline_job_id,
                 phase="AI_SEMANTIC_AUDIT",
+                ai_execution_mode="AUTO_API",
             )
             ai_result = run_semantic_ai_for_acquisition(
                 acquisition_job_id=acquisition_job_id,
@@ -641,46 +789,10 @@ def market_map_pipeline_worker(
             )
             return
 
-        update_controller_job(
+        continue_pipeline_calculation(
             pipeline_job_id,
-            phase="CALCULATION",
-        )
-
-        calculation_request = CalculationRunRequest(
-            input_mode="LATEST_SUCCESS",
-            market_cutoff=cutoff,
-            source_job_id=acquisition_job_id,
-        )
-        calculation_job_id = create_calculation_run(
-            calculation_request
-        )["job_id"]
-        update_controller_job(
-            pipeline_job_id,
-            calculation_job_id=calculation_job_id,
-        )
-
-        calculation_job = wait_for_job_terminal(calculation_job_id)
-        calculation_status = calculation_job.get("status")
-
-        if calculation_status in {"PASS", "WARNING"}:
-            update_controller_job(
-                pipeline_job_id,
-                status=calculation_status,
-                phase="COMPLETE",
-                completed_at=utcnow(),
-                snapshot_path=calculation_job.get("snapshot_path"),
-                calculated_table_path=calculation_job.get(
-                    "calculated_table_path"
-                ),
-            )
-            return
-
-        update_controller_job(
-            pipeline_job_id,
-            status="FAIL",
-            phase="STOPPED_AT_CALCULATION",
-            completed_at=utcnow(),
-            error=f"calculation ended with status={calculation_status}",
+            acquisition_job_id,
+            cutoff,
         )
 
     except Exception as exc:
@@ -783,6 +895,7 @@ def create_run(request: RunRequest) -> dict:
             "unit": "Market Map Builder / Acquisition",
             "status": "PENDING",
             "snapshot_mode": request.snapshot_mode,
+            "ai_execution_mode": request.ai_execution_mode,
             "market_cutoff": cutoff,
             "created_at": utcnow(),
             "updated_at": utcnow(),
@@ -909,6 +1022,90 @@ def create_market_map_pipeline(
     ).start()
 
     return {"job_id": job_id}
+
+
+@app.get("/api/chat-tasks/{task_id}")
+def get_chat_task(task_id: str) -> dict:
+    task_path = CHAT_TASK_ROOT / task_id / "chat_task.json"
+    if not task_path.exists():
+        raise HTTPException(404, "chat task not found")
+    task = json.loads(task_path.read_text(encoding="utf-8"))
+
+    business_run_dir = Path(task["business_run_dir"])
+    validation_path = business_run_dir / "semantic_resolution_validation.json"
+    if validation_path.exists():
+        try:
+            validation = json.loads(
+                validation_path.read_text(encoding="utf-8")
+            )
+            task["validation_status"] = validation.get("status")
+        except Exception:
+            task["validation_status"] = "INVALID"
+    return task
+
+
+@app.post("/api/market-map-runs/{pipeline_job_id}/resume-after-chat")
+def resume_market_map_after_chat(pipeline_job_id: str) -> dict:
+    with _lock:
+        job = dict(_jobs.get(pipeline_job_id, {}))
+
+    if not job:
+        persisted = DATA_ROOT / "jobs" / pipeline_job_id / "live_status.json"
+        if not persisted.exists():
+            raise HTTPException(404, "pipeline job not found")
+        job = json.loads(persisted.read_text(encoding="utf-8"))
+        with _lock:
+            _jobs[pipeline_job_id] = job
+
+    if job.get("status") != "WAITING_FOR_CHAT":
+        raise HTTPException(
+            400,
+            f"pipeline is not waiting for chat: {job.get('status')}",
+        )
+
+    acquisition_job_id = job.get("acquisition_job_id")
+    if not acquisition_job_id:
+        raise HTTPException(400, "pipeline has no acquisition job")
+
+    acquisition_run_dir = DATA_ROOT / "runs" / acquisition_job_id
+    result_path = acquisition_run_dir / "acquisition_result.json"
+    if not result_path.exists():
+        raise HTTPException(400, "acquisition result is missing")
+    source_status = json.loads(
+        result_path.read_text(encoding="utf-8")
+    ).get("status")
+
+    if not acquisition_input_is_trusted(
+        acquisition_run_dir,
+        source_status,
+    ):
+        raise HTTPException(
+            409,
+            "Chat result has not passed Program Validator yet",
+        )
+
+    update_controller_job(
+        pipeline_job_id,
+        status="RUNNING",
+        phase="RESUMING_AFTER_CHAT",
+        ai_status="PASS",
+    )
+
+    threading.Thread(
+        target=continue_pipeline_calculation,
+        args=(
+            pipeline_job_id,
+            acquisition_job_id,
+            job.get("market_cutoff") or datetime.now().date().isoformat(),
+        ),
+        daemon=True,
+    ).start()
+
+    return {
+        "pipeline_job_id": pipeline_job_id,
+        "status": "RUNNING",
+        "phase": "RESUMING_AFTER_CHAT",
+    }
 
 
 @app.get("/api/runs/{job_id}")
