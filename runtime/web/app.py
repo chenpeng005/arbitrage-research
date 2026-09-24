@@ -43,6 +43,20 @@ app = FastAPI(title="Opportunity Discovery Runtime")
 RUNTIME_USER = os.environ.get("RUNTIME_USER")
 RUNTIME_PASSWORD = os.environ.get("RUNTIME_PASSWORD")
 
+_jobs: dict[str, dict] = {}
+_lock = threading.Lock()
+
+
+class RunRequest(BaseModel):
+    snapshot_mode: str = "LIVE_TEST"
+    market_cutoff: str | None = None
+
+
+class CalculationRunRequest(BaseModel):
+    input_mode: str = "REPLAY_TEST"
+    market_cutoff: str | None = None
+    source_job_id: str | None = None
+
 
 @app.middleware("http")
 async def runtime_basic_auth(request, call_next):
@@ -72,20 +86,6 @@ async def runtime_basic_auth(request, call_next):
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-_jobs: dict[str, dict] = {}
-_lock = threading.Lock()
-
-
-class RunRequest(BaseModel):
-    snapshot_mode: str = "LIVE_TEST"
-    market_cutoff: str | None = None
-
-
-class CalculationRunRequest(BaseModel):
-    input_mode: str = "REPLAY_TEST"
-    market_cutoff: str | None = None
-    source_job_id: str | None = None
-
 
 def utcnow() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -97,7 +97,8 @@ def persist_job(job_id: str) -> None:
     path = DATA_ROOT / "jobs" / job_id
     path.mkdir(parents=True, exist_ok=True)
     (path / "live_status.json").write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
     )
 
 
@@ -109,6 +110,7 @@ def update_step(job_id: str, event: dict) -> None:
         if sid:
             steps[sid] = event
         job["updated_at"] = utcnow()
+
         statuses = [x.get("status") for x in steps.values()]
         if "FAIL" in statuses:
             job["status"] = "FAIL"
@@ -116,125 +118,15 @@ def update_step(job_id: str, event: dict) -> None:
             job["status"] = "RUNNING_WARNING"
         else:
             job["status"] = "RUNNING"
+
     persist_job(job_id)
-
-
-def update_calculation_step(job_id: str, event: dict) -> None:
-    sid = event.get("id")
-    with _lock:
-        job = _jobs[job_id]
-        steps = job.setdefault("calculation_steps", {})
-        if sid:
-            steps[sid] = event
-        job["updated_at"] = utcnow()
-        statuses = [x.get("status") for x in steps.values()]
-        if "FAIL" in statuses:
-            job["calculation_status"] = "FAIL"
-        elif "WARNING" in statuses:
-            job["calculation_status"] = "RUNNING_WARNING"
-        else:
-            job["calculation_status"] = "RUNNING"
-    persist_job(job_id)
-
-
-def calculation_worker(job_id: str) -> None:
-    with _lock:
-        job = _jobs[job_id]
-        cutoff = job["market_cutoff"]
-        acquisition_status = job.get("status")
-
-    if acquisition_status not in {"PASS", "WARNING"}:
-        with _lock:
-            job = _jobs[job_id]
-            job["calculation_status"] = "FAIL"
-            job["calculation_error"] = "上游数据获取尚未成功完成，不能开始计算。"
-            job["calculation_completed_at"] = utcnow()
-        persist_job(job_id)
-        return
-
-    input_dir = DATA_ROOT / "runs" / job_id
-    output_dir = input_dir / "calculation"
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    cmd = [
-        ACQ_PYTHON,
-        str(CALC_SCRIPT),
-        "--input-dir", str(input_dir),
-        "--output", str(output_dir),
-        "--market-cutoff", cutoff,
-    ]
-
-    with _lock:
-        job = _jobs[job_id]
-        job["calculation_status"] = "RUNNING"
-        job["calculation_started_at"] = utcnow()
-        job["calculation_steps"] = {}
-    persist_job(job_id)
-
-    try:
-        proc = subprocess.Popen(
-            cmd,
-            cwd=ROOT,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
-        )
-        assert proc.stdout is not None
-        raw_lines = []
-        for line in proc.stdout:
-            line = line.strip()
-            if not line:
-                continue
-            raw_lines.append(line)
-            try:
-                event = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if event.get("type") == "step":
-                update_calculation_step(job_id, event)
-            elif event.get("type") == "run_complete":
-                with _lock:
-                    _jobs[job_id]["calculation_runtime_status"] = event.get("status")
-                    _jobs[job_id]["calculation_run_id"] = event.get("run_id")
-                persist_job(job_id)
-
-        code = proc.wait()
-        result_path = output_dir / "calculation_result.json"
-        snapshot_path = output_dir / "market_map_snapshot.json"
-        final_result = None
-        if result_path.exists():
-            final_result = json.loads(result_path.read_text(encoding="utf-8"))
-
-        with _lock:
-            job = _jobs[job_id]
-            job["calculation_exit_code"] = code
-            job["calculation_completed_at"] = utcnow()
-            job["calculation_result_path"] = str(result_path)
-            job["snapshot_path"] = str(snapshot_path) if snapshot_path.exists() else None
-            job["calculation_result"] = final_result
-            job["calculation_status"] = (
-                final_result.get("status") if isinstance(final_result, dict)
-                else ("PASS" if code == 0 else "FAIL")
-            )
-            if code != 0 and not final_result:
-                job["calculation_error"] = "计算进程退出，但没有生成结构化结果。"
-            job["calculation_raw_output_tail"] = raw_lines[-20:]
-        persist_job(job_id)
-
-    except Exception as exc:
-        with _lock:
-            job = _jobs[job_id]
-            job["calculation_status"] = "FAIL"
-            job["calculation_completed_at"] = utcnow()
-            job["calculation_error"] = f"{type(exc).__name__}: {exc}"
-        persist_job(job_id)
 
 
 def execute_job(
     job_id: str,
     cmd: list[str],
     result_path: Path,
+    extra_result_paths: dict[str, Path] | None = None,
 ) -> None:
     with _lock:
         _jobs[job_id]["status"] = "RUNNING"
@@ -258,6 +150,7 @@ def execute_job(
             if not line:
                 continue
             raw_lines.append(line)
+
             try:
                 event = json.loads(line)
             except json.JSONDecodeError:
@@ -272,6 +165,7 @@ def execute_job(
                 persist_job(job_id)
 
         code = proc.wait()
+
         final_result = None
         if result_path.exists():
             final_result = json.loads(result_path.read_text(encoding="utf-8"))
@@ -287,9 +181,16 @@ def execute_job(
                 if isinstance(final_result, dict)
                 else ("PASS" if code == 0 else "FAIL")
             )
+
+            if extra_result_paths:
+                for key, path in extra_result_paths.items():
+                    job[key] = str(path) if path.exists() else None
+
             if code != 0 and not final_result:
                 job["error"] = "Runtime process exited without a structured result."
+
             job["raw_output_tail"] = raw_lines[-20:]
+
         persist_job(job_id)
 
     except Exception as exc:
@@ -316,54 +217,19 @@ def acquisition_worker(job_id: str, request: RunRequest) -> None:
         "--market-cutoff",
         cutoff,
     ]
+
     if request.snapshot_mode == "REPLAY_TEST":
         cmd.extend(["--fixture-dir", str(RAW_FIXTURE_DIR)])
 
-    execute_job(job_id, cmd, out / "acquisition_result.json")
-
-
-def load_persisted_jobs() -> list[dict]:
-    jobs: list[dict] = []
-    jobs_dir = DATA_ROOT / "jobs"
-    if not jobs_dir.exists():
-        return jobs
-    for path in jobs_dir.glob("*/live_status.json"):
-        try:
-            jobs.append(json.loads(path.read_text(encoding="utf-8")))
-        except Exception:
-            continue
-    return jobs
-
-
-def find_latest_acquisition_input() -> tuple[str, Path] | None:
-    candidates: list[dict] = []
-
-    with _lock:
-        candidates.extend(_jobs.values())
-    candidates.extend(load_persisted_jobs())
-
-    valid: list[dict] = []
-    seen: set[str] = set()
-    for job in candidates:
-        job_id = job.get("job_id")
-        if not job_id or job_id in seen:
-            continue
-        seen.add(job_id)
-        if job.get("unit") != "Market Map Builder / Acquisition":
-            continue
-        if job.get("status") not in {"PASS", "WARNING"}:
-            continue
-        path = DATA_ROOT / "runs" / job_id
-        if not (path / "market_input_audit.csv").exists():
-            continue
-        valid.append(job)
-
-    if not valid:
-        return None
-
-    valid.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-    latest = valid[0]
-    return latest["job_id"], DATA_ROOT / "runs" / latest["job_id"]
+    execute_job(
+        job_id,
+        cmd,
+        out / "acquisition_result.json",
+        extra_result_paths={
+            "market_input_path": out / "market_input_audit.csv",
+            "excluded_path": out / "universe_excluded.csv",
+        },
+    )
 
 
 def calculation_worker(
@@ -386,7 +252,65 @@ def calculation_worker(
         cutoff,
     ]
 
-    execute_job(job_id, cmd, out / "calculation_result.json")
+    execute_job(
+        job_id,
+        cmd,
+        out / "calculation_result.json",
+        extra_result_paths={
+            "snapshot_path": out / "market_map_snapshot.json",
+            "calculated_table_path": out / "market_map_calculated.csv",
+        },
+    )
+
+
+def load_persisted_jobs() -> list[dict]:
+    jobs: list[dict] = []
+    jobs_dir = DATA_ROOT / "jobs"
+    if not jobs_dir.exists():
+        return jobs
+
+    for path in jobs_dir.glob("*/live_status.json"):
+        try:
+            jobs.append(json.loads(path.read_text(encoding="utf-8")))
+        except Exception:
+            continue
+
+    return jobs
+
+
+def find_latest_acquisition_input() -> tuple[str, Path] | None:
+    candidates: list[dict] = []
+
+    with _lock:
+        candidates.extend(_jobs.values())
+    candidates.extend(load_persisted_jobs())
+
+    valid: list[dict] = []
+    seen: set[str] = set()
+
+    for job in candidates:
+        job_id = job.get("job_id")
+        if not job_id or job_id in seen:
+            continue
+        seen.add(job_id)
+
+        if job.get("unit") != "Market Map Builder / Acquisition":
+            continue
+        if job.get("status") not in {"PASS", "WARNING"}:
+            continue
+
+        path = DATA_ROOT / "runs" / job_id
+        if not (path / "market_input_audit.csv").exists():
+            continue
+
+        valid.append(job)
+
+    if not valid:
+        return None
+
+    valid.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    latest = valid[0]
+    return latest["job_id"], DATA_ROOT / "runs" / latest["job_id"]
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -398,6 +322,7 @@ def home() -> HTMLResponse:
 def create_run(request: RunRequest) -> dict:
     if request.snapshot_mode not in {"LIVE_TEST", "CLOSE", "REPLAY_TEST"}:
         raise HTTPException(400, "unsupported snapshot_mode")
+
     if request.snapshot_mode == "REPLAY_TEST" and not RAW_FIXTURE_DIR.exists():
         raise HTTPException(400, "replay fixture is not available")
 
@@ -417,11 +342,13 @@ def create_run(request: RunRequest) -> dict:
         }
 
     persist_job(job_id)
+
     threading.Thread(
         target=acquisition_worker,
         args=(job_id, request),
         daemon=True,
     ).start()
+
     return {"job_id": job_id}
 
 
@@ -431,14 +358,17 @@ def create_calculation_run(request: CalculationRunRequest) -> dict:
         raise HTTPException(400, "unsupported input_mode")
 
     source_job_id = None
+
     if request.input_mode == "REPLAY_TEST":
         input_dir = CALC_FIXTURE_DIR
         if not (input_dir / "market_input_audit.csv").exists():
             raise HTTPException(400, "calculation replay fixture is not available")
+
     else:
         if request.source_job_id:
             input_dir = DATA_ROOT / "runs" / request.source_job_id
             source_job_id = request.source_job_id
+
             if not (input_dir / "market_input_audit.csv").exists():
                 raise HTTPException(400, "source acquisition job is not usable")
         else:
@@ -465,32 +395,14 @@ def create_calculation_run(request: CalculationRunRequest) -> dict:
         }
 
     persist_job(job_id)
+
     threading.Thread(
         target=calculation_worker,
         args=(job_id, request, input_dir),
         daemon=True,
     ).start()
+
     return {"job_id": job_id}
-
-
-@app.post("/api/runs/{job_id}/calculate")
-def calculate_run(job_id: str) -> dict:
-    with _lock:
-        if job_id not in _jobs:
-            path = DATA_ROOT / "jobs" / job_id / "live_status.json"
-            if not path.exists():
-                raise HTTPException(404, "run not found")
-            _jobs[job_id] = json.loads(path.read_text(encoding="utf-8"))
-        job = _jobs[job_id]
-        if job.get("status") not in {"PASS", "WARNING"}:
-            raise HTTPException(400, "acquisition is not ready")
-        if job.get("calculation_status") in {"RUNNING", "RUNNING_WARNING"}:
-            raise HTTPException(409, "calculation already running")
-        job["calculation_status"] = "PENDING"
-        job["calculation_steps"] = {}
-    persist_job(job_id)
-    threading.Thread(target=calculation_worker, args=(job_id,), daemon=True).start()
-    return {"job_id": job_id, "calculation_status": "PENDING"}
 
 
 @app.get("/api/runs/{job_id}")
@@ -501,6 +413,7 @@ def get_run(job_id: str) -> dict:
             if not path.exists():
                 raise HTTPException(404, "run not found")
             _jobs[job_id] = json.loads(path.read_text(encoding="utf-8"))
+
         return _jobs[job_id]
 
 
