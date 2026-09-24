@@ -812,7 +812,16 @@ def market_map_pipeline_worker(
     pipeline_job_id: str,
     request: MarketMapPipelineRequest,
 ) -> None:
-    cutoff = request.market_cutoff or datetime.now().date().isoformat()
+    if (
+        request.snapshot_mode == "HISTORICAL_REPLAY"
+        and request.historical_snapshot_id
+    ):
+        historical_entry, _ = resolve_historical_source(
+            request.historical_snapshot_id
+        )
+        cutoff = historical_entry.get("market_cutoff")
+    else:
+        cutoff = request.market_cutoff or datetime.now().date().isoformat()
 
     try:
         update_controller_job(
