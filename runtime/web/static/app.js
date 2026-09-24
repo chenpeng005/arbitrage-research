@@ -467,14 +467,18 @@ function renderMapSummary(){
 function renderMapMeta(){
   if(!marketMapData)return;
   const z=marketMapData.zones||{};
-  const source=marketMapData.source_type==="CLOSE"?"正式收盘结果":"最近一次计算结果";
-  const scaleStatus=((((marketMapData||{}).components||{}).scale_neutral||{}).status||"CANDIDATE")==="CANDIDATE"?"候选":"正式";
+  const source=marketMapData.source_type==="FORMAL_REGISTRY"?"正式收盘 Registry":"未知来源";
+  const scaleStatus=((((marketMapData||{}).components||{}).scale_neutral||{}).status||"") === "REQUIRED" ? "正式" : "非正式";
+  const warningCount=(marketMapData.acquisition_warnings||[]).length;
   $("#mapMeta").innerHTML='<div class="meta-grid">'
     +'<span><b>来源</b> '+esc(source)+'</span>'
     +'<span><b>市场截面</b> '+esc(marketMapData.market_cutoff)+'</span>'
+    +'<span><b>Snapshot</b> '+esc(marketMapData.snapshot_id||"-")+'</span>'
+    +'<span><b>模型版本</b> '+esc(marketMapData.model_version||"-")+'</span>'
     +'<span><b>Support</b> '+esc((z.support||[]).join("–"))+'</span>'
     +'<span><b>Core</b> '+esc((z.core||[]).join("–"))+'</span>'
     +'<span><b>规模调整</b> '+esc(scaleStatus)+'</span>'
+    +'<span><b>上游警告</b> '+esc(warningCount)+'</span>'
     +'</div>';
 }
 
@@ -485,7 +489,7 @@ function renderMapSelected(row){
     el.textContent="鼠标移到散点上查看单券；点击散点可以固定查看。";
     return;
   }
-  const diff=Number(row.diff_candidate);
+  const diff=Number(row.diff_to_reference);
   el.className="map-selected";
   el.innerHTML='<div class="selected-title"><strong>'+esc(row.bond_name)+'</strong><span>'+esc(row.bond_code)+'</span></div>'
     +'<div class="selected-grid">'
@@ -495,8 +499,8 @@ function renderMapSelected(row){
     +'<span>剩余规模 <b>'+prettyNumber(row.remaining_size,2)+' 亿</b></span>'
     +'<span>Base <b>'+prettyNumber(row.base_anchor,2)+'</b></span>'
     +'<span>期限调整 <b>'+prettyNumber(row.duration_adjustment,2)+'</b></span>'
-    +'<span>规模调整（候选） <b>'+prettyNumber(row.scale_neutral,2)+'</b></span>'
-    +'<span>藏宝图参考（候选） <b>'+prettyNumber(row.discovery_reference_candidate,2)+'</b></span>'
+    +'<span>规模调整 <b>'+prettyNumber(row.scale_neutral,2)+'</b></span>'
+    +'<span>藏宝图参考 <b>'+prettyNumber(row.discovery_reference,2)+'</b></span>'
     +'<span>实际 - 参考 <b class="'+(diff<0?"diff-low":"diff-high")+'">'+prettyNumber(diff,2)+'</b></span>'
     +'</div>';
 }
@@ -504,10 +508,10 @@ function renderMapSelected(row){
 function renderMapTable(){
   if(!marketMapData)return;
   const rows=(marketMapData.rows||[]).slice().sort(function(a,b){
-    return Number(a.diff_candidate)-Number(b.diff_candidate);
+    return Number(a.diff_to_reference)-Number(b.diff_to_reference);
   });
   $("#mapTableBody").innerHTML=rows.map(function(r){
-    const diff=Number(r.diff_candidate);
+    const diff=Number(r.diff_to_reference);
     return '<tr data-bond="'+esc(r.bond_code)+'">'
       +'<td>'+esc(r.bond_code)+'</td>'
       +'<td>'+esc(r.bond_name)+'</td>'
@@ -518,7 +522,7 @@ function renderMapTable(){
       +'<td>'+prettyNumber(r.base_anchor,2)+'</td>'
       +'<td>'+prettyNumber(r.duration_adjustment,2)+'</td>'
       +'<td>'+prettyNumber(r.scale_neutral,2)+'</td>'
-      +'<td>'+prettyNumber(r.discovery_reference_candidate,2)+'</td>'
+      +'<td>'+prettyNumber(r.discovery_reference,2)+'</td>'
       +'<td class="'+(diff<0?"diff-low":"diff-high")+'">'+prettyNumber(diff,2)+'</td>'
       +'</tr>';
   }).join("");
@@ -605,7 +609,7 @@ function renderMarketMap(){
     const x=Number(r.source_CV), y=mapY(r);
     if(y<yMin || y>yMax)return;
     const selected=r.bond_code===marketMapSelectedCode;
-    const title=esc(r.bond_name+'｜价格 '+prettyNumber(r.P,2)+'｜CV '+prettyNumber(r.source_CV,2)+'｜实际-参考 '+prettyNumber(r.diff_candidate,2));
+    const title=esc(r.bond_name+'｜价格 '+prettyNumber(r.P,2)+'｜CV '+prettyNumber(r.source_CV,2)+'｜实际-参考 '+prettyNumber(r.diff_to_reference,2));
     svg+='<g class="bond-point" data-code="'+esc(r.bond_code)+'">';
     svg+='<circle cx="'+sx(x).toFixed(1)+'" cy="'+sy(y).toFixed(1)+'" r="'+(selected?6:4)+'" class="'+(selected?"point selected":"point")+'"><title>'+title+'</title></circle>';
     if(showLabels){
