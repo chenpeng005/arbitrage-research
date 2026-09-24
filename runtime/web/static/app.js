@@ -393,3 +393,283 @@ $("#calcRunBtn").addEventListener("click",async function(){
 
 renderSkeleton("#steps",acquisitionSteps,"step-");
 renderSkeleton("#calcSteps",calculationSteps,"calc-step-");
+
+
+let marketMapData=null;
+let marketMapMode="raw";
+let marketMapSelectedCode=null;
+
+function qtile(values,q){
+  const xs=values.filter(Number.isFinite).slice().sort(function(a,b){return a-b;});
+  if(!xs.length)return NaN;
+  const pos=(xs.length-1)*q;
+  const lo=Math.floor(pos), hi=Math.ceil(pos);
+  if(lo===hi)return xs[lo];
+  return xs[lo]+(xs[hi]-xs[lo])*(pos-lo);
+}
+
+function baseAnchorAt(cv){
+  const base=((marketMapData||{}).components||{}).base||{};
+  const p=base.params||{};
+  const z=(cv-90)/20;
+  return Number(p.beta0)+Number(p.beta1)*z+Number(p.beta2)*z*z;
+}
+
+function mapY(row){
+  let y=Number(row.P);
+  if(marketMapMode==="standard"){
+    if($("#mapDuration").checked)y-=Number(row.duration_adjustment||0);
+    if($("#mapScale").checked)y-=Number(row.scale_neutral||0);
+  }
+  return y;
+}
+
+function mapModeTitle(){
+  if(marketMapMode==="raw"){
+    return {
+      title:"市场原貌",
+      subtitle:"横轴：转股价值 CV｜纵轴：实际转债价格｜红线：BaseAnchor"
+    };
+  }
+  const parts=[];
+  if($("#mapDuration").checked)parts.push("期限");
+  if($("#mapScale").checked)parts.push("规模");
+  return {
+    title:"标准化藏宝图",
+    subtitle:"横轴：转股价值 CV｜纵轴：实际价格扣除"+(parts.length?parts.join("、"):"未扣除额外因素")+"｜红线：BaseAnchor"
+  };
+}
+
+function updateMapControlState(){
+  const raw=marketMapMode==="raw";
+  $("#mapRawBtn").classList.toggle("active",raw);
+  $("#mapStdBtn").classList.toggle("active",!raw);
+  $("#mapDuration").disabled=raw;
+  $("#mapScale").disabled=raw;
+}
+
+function renderMapSummary(){
+  if(!marketMapData)return;
+  const d=marketMapData.diagnostics||{};
+  const q=marketMapData.residual_core_after_scale||{};
+  $("#mapSummary").classList.remove("hidden");
+  const items=[
+    ["仅基础曲线 MAE",d.base_core_mae],
+    ["加入期限后",d.base_duration_core_mae],
+    ["加入规模后",d.base_duration_scale_core_mae],
+    ["最终残差 Q50",q.q50]
+  ];
+  $("#mapSummaryMetrics").innerHTML=items.map(function(item){
+    return '<article><span>'+esc(item[0])+'</span><strong>'+esc(prettyNumber(item[1],2))+'</strong></article>';
+  }).join("");
+}
+
+function renderMapMeta(){
+  if(!marketMapData)return;
+  const z=marketMapData.zones||{};
+  const source=marketMapData.source_type==="CLOSE"?"正式收盘结果":"最近一次计算结果";
+  const scaleStatus=((((marketMapData||{}).components||{}).scale_neutral||{}).status||"CANDIDATE")==="CANDIDATE"?"候选":"正式";
+  $("#mapMeta").innerHTML='<div class="meta-grid">'
+    +'<span><b>来源</b> '+esc(source)+'</span>'
+    +'<span><b>市场截面</b> '+esc(marketMapData.market_cutoff)+'</span>'
+    +'<span><b>Support</b> '+esc((z.support||[]).join("–"))+'</span>'
+    +'<span><b>Core</b> '+esc((z.core||[]).join("–"))+'</span>'
+    +'<span><b>规模调整</b> '+esc(scaleStatus)+'</span>'
+    +'</div>';
+}
+
+function renderMapSelected(row){
+  const el=$("#mapSelected");
+  if(!row){
+    el.className="map-selected muted";
+    el.textContent="鼠标移到散点上查看单券；点击散点可以固定查看。";
+    return;
+  }
+  const diff=Number(row.diff_candidate);
+  el.className="map-selected";
+  el.innerHTML='<div class="selected-title"><strong>'+esc(row.bond_name)+'</strong><span>'+esc(row.bond_code)+'</span></div>'
+    +'<div class="selected-grid">'
+    +'<span>实际价格 <b>'+prettyNumber(row.P,2)+'</b></span>'
+    +'<span>转股价值 <b>'+prettyNumber(row.source_CV,2)+'</b></span>'
+    +'<span>剩余期限 <b>'+prettyNumber(row.remaining_months,1)+' 月</b></span>'
+    +'<span>剩余规模 <b>'+prettyNumber(row.remaining_size,2)+' 亿</b></span>'
+    +'<span>Base <b>'+prettyNumber(row.base_anchor,2)+'</b></span>'
+    +'<span>期限调整 <b>'+prettyNumber(row.duration_adjustment,2)+'</b></span>'
+    +'<span>规模调整（候选） <b>'+prettyNumber(row.scale_neutral,2)+'</b></span>'
+    +'<span>藏宝图参考（候选） <b>'+prettyNumber(row.discovery_reference_candidate,2)+'</b></span>'
+    +'<span>实际 - 参考 <b class="'+(diff<0?"diff-low":"diff-high")+'">'+prettyNumber(diff,2)+'</b></span>'
+    +'</div>';
+}
+
+function renderMapTable(){
+  if(!marketMapData)return;
+  const rows=(marketMapData.rows||[]).slice().sort(function(a,b){
+    return Number(a.diff_candidate)-Number(b.diff_candidate);
+  });
+  $("#mapTableBody").innerHTML=rows.map(function(r){
+    const diff=Number(r.diff_candidate);
+    return '<tr data-bond="'+esc(r.bond_code)+'">'
+      +'<td>'+esc(r.bond_code)+'</td>'
+      +'<td>'+esc(r.bond_name)+'</td>'
+      +'<td>'+prettyNumber(r.P,2)+'</td>'
+      +'<td>'+prettyNumber(r.source_CV,2)+'</td>'
+      +'<td>'+prettyNumber(r.remaining_months,1)+'</td>'
+      +'<td>'+prettyNumber(r.remaining_size,2)+'</td>'
+      +'<td>'+prettyNumber(r.base_anchor,2)+'</td>'
+      +'<td>'+prettyNumber(r.duration_adjustment,2)+'</td>'
+      +'<td>'+prettyNumber(r.scale_neutral,2)+'</td>'
+      +'<td>'+prettyNumber(r.discovery_reference_candidate,2)+'</td>'
+      +'<td class="'+(diff<0?"diff-low":"diff-high")+'">'+prettyNumber(diff,2)+'</td>'
+      +'</tr>';
+  }).join("");
+
+  $("#mapTableBody").querySelectorAll("tr[data-bond]").forEach(function(tr){
+    tr.addEventListener("click",function(){
+      const code=tr.getAttribute("data-bond");
+      const row=(marketMapData.rows||[]).find(function(x){return x.bond_code===code;});
+      marketMapSelectedCode=code;
+      renderMapSelected(row);
+      renderMarketMap();
+    });
+  });
+}
+
+function renderMarketMap(){
+  if(!marketMapData)return;
+  updateMapControlState();
+  const mode=mapModeTitle();
+  $("#mapTitle").textContent=mode.title;
+  $("#mapSubtitle").textContent=mode.subtitle;
+
+  const zone=(marketMapData.zones||{}).support||[50,130];
+  const xMin=Number(zone[0]||50), xMax=Number(zone[1]||130);
+  const visible=(marketMapData.rows||[]).filter(function(r){
+    const x=Number(r.source_CV);
+    return Number.isFinite(x) && x>=xMin && x<=xMax && Number.isFinite(mapY(r));
+  });
+
+  if(!visible.length){
+    $("#mapChart").innerHTML='<div class="chart-empty">当前范围没有可绘制样本。</div>';
+    return;
+  }
+
+  const ys=visible.map(mapY);
+  let yMin=qtile(ys,0.02), yMax=qtile(ys,0.98);
+  const spread=Math.max(10,yMax-yMin);
+  yMin-=spread*0.10;
+  yMax+=spread*0.10;
+
+  const W=1000,H=560;
+  const m={l:72,r:28,t:26,b:58};
+  const pw=W-m.l-m.r, ph=H-m.t-m.b;
+  const sx=function(x){return m.l+(x-xMin)/(xMax-xMin)*pw;};
+  const sy=function(y){return m.t+(yMax-y)/(yMax-yMin)*ph;};
+
+  const xTicks=[];
+  for(let x=Math.ceil(xMin/10)*10;x<=xMax;x+=10)xTicks.push(x);
+  const stepY=Math.max(5,Math.ceil((yMax-yMin)/7/5)*5);
+  const yStart=Math.ceil(yMin/stepY)*stepY;
+  const yTicks=[];
+  for(let y=yStart;y<=yMax;y+=stepY)yTicks.push(y);
+
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="可转债藏宝图">';
+  svg+='<rect x="'+m.l+'" y="'+m.t+'" width="'+pw+'" height="'+ph+'" class="plot-bg"/>';
+
+  xTicks.forEach(function(x){
+    const px=sx(x);
+    svg+='<line x1="'+px+'" y1="'+m.t+'" x2="'+px+'" y2="'+(H-m.b)+'" class="grid-line"/>';
+    svg+='<text x="'+px+'" y="'+(H-m.b+24)+'" class="axis-text" text-anchor="middle">'+x+'</text>';
+  });
+  yTicks.forEach(function(y){
+    const py=sy(y);
+    svg+='<line x1="'+m.l+'" y1="'+py+'" x2="'+(W-m.r)+'" y2="'+py+'" class="grid-line"/>';
+    svg+='<text x="'+(m.l-12)+'" y="'+(py+4)+'" class="axis-text" text-anchor="end">'+y+'</text>';
+  });
+
+  svg+='<line x1="'+m.l+'" y1="'+(H-m.b)+'" x2="'+(W-m.r)+'" y2="'+(H-m.b)+'" class="axis-line"/>';
+  svg+='<line x1="'+m.l+'" y1="'+m.t+'" x2="'+m.l+'" y2="'+(H-m.b)+'" class="axis-line"/>';
+  svg+='<text x="'+(m.l+pw/2)+'" y="'+(H-12)+'" class="axis-label" text-anchor="middle">转股价值 CV</text>';
+  svg+='<text x="18" y="'+(m.t+ph/2)+'" class="axis-label" text-anchor="middle" transform="rotate(-90 18 '+(m.t+ph/2)+')">'
+    +(marketMapMode==="raw"?"实际转债价格":"标准化价格")+'</text>';
+
+  const linePts=[];
+  for(let i=0;i<=100;i++){
+    const x=xMin+(xMax-xMin)*i/100;
+    const y=baseAnchorAt(x);
+    if(y>=yMin && y<=yMax)linePts.push(sx(x).toFixed(1)+','+sy(y).toFixed(1));
+  }
+  if(linePts.length>1)svg+='<polyline points="'+linePts.join(" ")+'" class="base-line"/>';
+
+  const showLabels=$("#mapLabels").checked;
+  visible.forEach(function(r){
+    const x=Number(r.source_CV), y=mapY(r);
+    if(y<yMin || y>yMax)return;
+    const selected=r.bond_code===marketMapSelectedCode;
+    const title=esc(r.bond_name+'｜价格 '+prettyNumber(r.P,2)+'｜CV '+prettyNumber(r.source_CV,2)+'｜实际-参考 '+prettyNumber(r.diff_candidate,2));
+    svg+='<g class="bond-point" data-code="'+esc(r.bond_code)+'">';
+    svg+='<circle cx="'+sx(x).toFixed(1)+'" cy="'+sy(y).toFixed(1)+'" r="'+(selected?6:4)+'" class="'+(selected?"point selected":"point")+'"><title>'+title+'</title></circle>';
+    if(showLabels){
+      svg+='<text x="'+(sx(x)+6).toFixed(1)+'" y="'+(sy(y)-6).toFixed(1)+'" class="point-label">'+esc(r.bond_name)+'</text>';
+    }
+    svg+='</g>';
+  });
+
+  const clipped=visible.filter(function(r){
+    const y=mapY(r); return y<yMin || y>yMax;
+  }).length;
+  svg+='</svg>';
+  if(clipped){
+    svg+='<div class="chart-note">为保持主体可读，纵轴自动聚焦 2%–98% 分位；'+clipped+' 个极端点未画出，但仍保留在下方明细表。</div>';
+  }
+  $("#mapChart").innerHTML=svg;
+
+  $("#mapChart").querySelectorAll(".bond-point").forEach(function(g){
+    const code=g.getAttribute("data-code");
+    const row=(marketMapData.rows||[]).find(function(x){return x.bond_code===code;});
+    g.addEventListener("mouseenter",function(){renderMapSelected(row);});
+    g.addEventListener("mouseleave",function(){
+      const fixed=(marketMapData.rows||[]).find(function(x){return x.bond_code===marketMapSelectedCode;});
+      renderMapSelected(fixed||null);
+    });
+    g.addEventListener("click",function(){
+      marketMapSelectedCode=code;
+      renderMapSelected(row);
+      renderMarketMap();
+    });
+  });
+}
+
+async function loadMarketMap(){
+  $("#mapOverall").textContent="加载中";
+  $("#mapOverall").className="overall running";
+  try{
+    const r=await fetch("api/market-map/view");
+    if(!r.ok)throw new Error(await r.text());
+    marketMapData=await r.json();
+    $("#mapOverall").textContent="已加载";
+    $("#mapOverall").className="overall pass";
+    renderMapMeta();
+    renderMapSummary();
+    renderMapTable();
+    renderMarketMap();
+  }catch(err){
+    $("#mapOverall").textContent="加载失败";
+    $("#mapOverall").className="overall fail";
+    $("#mapMeta").textContent="藏宝图加载失败："+err.message;
+  }
+}
+
+$("#mapRawBtn").addEventListener("click",function(){
+  marketMapMode="raw";
+  renderMarketMap();
+});
+$("#mapStdBtn").addEventListener("click",function(){
+  marketMapMode="standard";
+  renderMarketMap();
+});
+$("#mapDuration").addEventListener("change",renderMarketMap);
+$("#mapScale").addEventListener("change",renderMarketMap);
+$("#mapLabels").addEventListener("change",renderMarketMap);
+$("#mapReloadBtn").addEventListener("click",loadMarketMap);
+
+loadMarketMap();
