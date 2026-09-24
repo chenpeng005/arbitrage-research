@@ -11,6 +11,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, Response
@@ -110,6 +111,21 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 def utcnow() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def china_now() -> datetime:
+    return datetime.now(ZoneInfo("Asia/Shanghai"))
+
+
+def close_mode_precheck() -> dict:
+    now = china_now()
+    after_close_gate = (now.hour, now.minute) >= (15, 10)
+    return {
+        "china_time": now.isoformat(timespec="minutes"),
+        "china_date": now.date().isoformat(),
+        "after_close_gate": after_close_gate,
+        "close_gate_time": "15:10",
+    }
 
 
 def load_deployment_manifest() -> dict:
@@ -1165,6 +1181,17 @@ def create_market_map_pipeline(
     if request.ai_execution_mode not in {"AUTO_API", "INTERACTIVE_CHAT"}:
         raise HTTPException(400, "unsupported ai_execution_mode")
 
+    if request.snapshot_mode == "CLOSE":
+        market_status = close_mode_precheck()
+        if not market_status["after_close_gate"]:
+            raise HTTPException(
+                409,
+                "今天正式收盘截面尚未可用：中国市场时间 "
+                f"{market_status['china_time']}，请在 15:10 后运行；"
+                "当前请使用历史回放或盘中测试。",
+            )
+        request.market_cutoff = market_status["china_date"]
+
     job_id = (
         datetime.now().strftime("%Y%m%d_%H%M%S")
         + "_pipeline_"
@@ -1493,6 +1520,26 @@ def get_market_map_view(calculation_job_id: str | None = None) -> dict:
         ),
         "rows": rows,
     }
+
+
+@app.get("/api/market-status")
+def market_status() -> dict:
+    status = close_mode_precheck()
+    history = list_formal_market_map_entries()
+    latest_replay = next(
+        (x for x in history if x.get("replay_ready")),
+        None,
+    )
+    status["latest_replay"] = (
+        {
+            "snapshot_id": latest_replay.get("snapshot_id"),
+            "market_cutoff": latest_replay.get("market_cutoff"),
+            "model_version": latest_replay.get("model_version"),
+        }
+        if latest_replay
+        else None
+    )
+    return status
 
 
 @app.get("/api/health")
