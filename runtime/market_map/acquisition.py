@@ -931,6 +931,7 @@ def run_acquisition(
     for _, row in k_conflicts.iterrows():
         unresolved.append(
             {
+                "conflict_id": f"{run_id}:{str(row['bond_code'])}:K",
                 "type": "PROGRAM_CONFLICT",
                 "field": "K",
                 "bond_code": str(row["bond_code"]),
@@ -945,6 +946,7 @@ def run_acquisition(
     for _, row in maturity_material.iterrows():
         unresolved.append(
             {
+                "conflict_id": f"{run_id}:{str(row['bond_code'])}:maturity_date",
                 "type": "PROGRAM_CONFLICT",
                 "field": "maturity_date",
                 "bond_code": str(row["bond_code"]),
@@ -1109,6 +1111,41 @@ def run_acquisition(
         encoding="utf-8",
     )
 
+    semantic_request_path = output_dir / "semantic_review_request.json"
+    if semantic_request_path.exists():
+        semantic_request_path.unlink()
+
+    if unresolved:
+        semantic_request = {
+            "run_id": run_id,
+            "market_cutoff": market_cutoff,
+            "status": "NEEDS_REVIEW",
+            "created_at": now_utc(),
+            "requests": [
+                {
+                    "conflict_id": item["conflict_id"],
+                    "bond_code": item["bond_code"],
+                    "bond_name": item["bond_name"],
+                    "field": item["field"],
+                    "primary_value": item.get("primary_value"),
+                    "auxiliary_value": item.get("auxiliary_value"),
+                    "difference": item.get("difference"),
+                    "difference_days": item.get("difference_days"),
+                    "resolution_question": item["resolution_required"],
+                    "evidence_context": {
+                        "source_manifest_ref": "source_manifest.json",
+                        "acquisition_audit_ref": "acquisition_audit.json",
+                        "raw_dir_ref": "raw/",
+                    },
+                }
+                for item in unresolved
+            ],
+        }
+        semantic_request_path.write_text(
+            json.dumps(semantic_request, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
     trusted_path = output_dir / "trusted_market_input.csv"
     if trusted_path.exists():
         trusted_path.unlink()
@@ -1183,8 +1220,8 @@ def run_acquisition(
     if unresolved:
         s5.status = "NEEDS_REVIEW"
         s5.warnings.append(
-            f"程序发现 {len(unresolved)} 个实质数据冲突，已写入 acquisition_audit.json / unresolved；"
-            "在语义审计解决前不得进入正式计算。"
+            f"程序发现 {len(unresolved)} 个实质数据冲突，已写入 acquisition_audit.json / unresolved，"
+            "并生成 semantic_review_request.json；在语义审计解决前不得进入正式计算。"
         )
         s5.conclusion = "确定性审计发现实质冲突，本次数据停在 R2，等待语义审计。"
     else:
