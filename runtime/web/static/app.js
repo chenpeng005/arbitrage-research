@@ -204,7 +204,7 @@ function formatCell(key,value){
   if(value===null || value===undefined || value==="")return "—";
   if(key==="cv_diff_pct")return Number(value).toFixed(4)+"%";
   if([
-    "calc_CV","source_CV","P","S","K","K_aux","K_aux_diff",
+    "calc_CV","trusted_CV","source_CV","P","S","K","K_aux","K_aux_diff",
     "remaining_size","issue_size","anchor","adjustment",
     "anchor_neutral","residual_final","value","months","size"
   ].includes(key)){
@@ -494,7 +494,7 @@ function renderMapSelected(row){
   el.innerHTML='<div class="selected-title"><strong>'+esc(row.bond_name)+'</strong><span>'+esc(row.bond_code)+'</span></div>'
     +'<div class="selected-grid">'
     +'<span>实际价格 <b>'+prettyNumber(row.P,2)+'</b></span>'
-    +'<span>转股价值 <b>'+prettyNumber(row.source_CV,2)+'</b></span>'
+    +'<span>转股价值 <b>'+prettyNumber(row.trusted_CV,2)+'</b></span>'
     +'<span>剩余期限 <b>'+prettyNumber(row.remaining_months,1)+' 月</b></span>'
     +'<span>剩余规模 <b>'+prettyNumber(row.remaining_size,2)+' 亿</b></span>'
     +'<span>Base <b>'+prettyNumber(row.base_anchor,2)+'</b></span>'
@@ -516,7 +516,7 @@ function renderMapTable(){
       +'<td>'+esc(r.bond_code)+'</td>'
       +'<td>'+esc(r.bond_name)+'</td>'
       +'<td>'+prettyNumber(r.P,2)+'</td>'
-      +'<td>'+prettyNumber(r.source_CV,2)+'</td>'
+      +'<td>'+prettyNumber(r.trusted_CV,2)+'</td>'
       +'<td>'+prettyNumber(r.remaining_months,1)+'</td>'
       +'<td>'+prettyNumber(r.remaining_size,2)+'</td>'
       +'<td>'+prettyNumber(r.base_anchor,2)+'</td>'
@@ -548,7 +548,7 @@ function renderMarketMap(){
   const zone=(marketMapData.zones||{}).support||[50,130];
   const xMin=Number(zone[0]||50), xMax=Number(zone[1]||130);
   const visible=(marketMapData.rows||[]).filter(function(r){
-    const x=Number(r.source_CV);
+    const x=Number(r.trusted_CV);
     return Number.isFinite(x) && x>=xMin && x<=xMax && Number.isFinite(mapY(r));
   });
 
@@ -606,10 +606,10 @@ function renderMarketMap(){
 
   const showLabels=$("#mapLabels").checked;
   visible.forEach(function(r){
-    const x=Number(r.source_CV), y=mapY(r);
+    const x=Number(r.trusted_CV), y=mapY(r);
     if(y<yMin || y>yMax)return;
     const selected=r.bond_code===marketMapSelectedCode;
-    const title=esc(r.bond_name+'｜价格 '+prettyNumber(r.P,2)+'｜CV '+prettyNumber(r.source_CV,2)+'｜实际-参考 '+prettyNumber(r.diff_to_reference,2));
+    const title=esc(r.bond_name+'｜价格 '+prettyNumber(r.P,2)+'｜CV '+prettyNumber(r.trusted_CV,2)+'｜实际-参考 '+prettyNumber(r.diff_to_reference,2));
     svg+='<g class="bond-point" data-code="'+esc(r.bond_code)+'">';
     svg+='<circle cx="'+sx(x).toFixed(1)+'" cy="'+sy(y).toFixed(1)+'" r="'+(selected?6:4)+'" class="'+(selected?"point selected":"point")+'"><title>'+title+'</title></circle>';
     if(showLabels){
