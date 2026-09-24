@@ -24,6 +24,17 @@
 - INSUFFICIENT_EVIDENCE
 - NOT_APPLICABLE
 
+## 工具使用
+
+当前允许工具：
+
+- evidence_search：只围绕本次 conflict 搜索巨潮正式公告；
+- evidence_fetch：只能读取本 AI Job 已经 search 返回过的公告。
+
+优先使用正式披露证据。不要声称访问过未通过工具返回的网页或文件。
+
+如果现有工具无法取得足够证据，返回 INSUFFICIENT_EVIDENCE，不得猜测。
+
 ## RESOLVED 要求
 
 每个 RESOLVED 必须包含：
@@ -37,6 +48,16 @@
 - reason_short
 
 K 冲突若涉及生效日，应提供 effective_from。
+
+每条 evidence 必须至少包含：
+
+- evidence_id：必须来自 evidence_fetch；
+- source_type；
+- title；
+- published_at；
+- locator：必须与 Program 抓取的公告 detail_url 或 pdf_url 一致。
+
+AI 不得自行编造 evidence_id。
 
 ## 输出
 
