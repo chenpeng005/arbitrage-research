@@ -34,6 +34,7 @@ const metricLabels={
   run_id:"运行编号",
   snapshot_mode:"运行模式",
   market_cutoff:"市场截面",
+  market_source:"行情来源",
   attempt:"取数尝试",
   data_mode:"数据方式",
   candidate_count:"候选对象",
@@ -153,6 +154,11 @@ function metricText(key,value){
     return "正式收盘截面";
   }
   if(key==="data_mode" && value==="fixture_replay")return "固定历史样本";
+  if(key==="market_source"){
+    if(value==="EASTMONEY_PUSH2")return "东方财富主行情";
+    if(value==="FALLBACK_EM_DATACENTER_PLUS_JSL")return "备用：东方财富数据中心 + 集思录";
+    if(value==="REPLAY_FIXTURE")return "固定历史样本";
+  }
   if(key==="component_status" && value==="CANDIDATE")return "候选";
   if(["fit_parameters_finite","shape_monotonic"].includes(key))return value?"是":"否";
   if([
