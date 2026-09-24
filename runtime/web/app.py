@@ -6,6 +6,7 @@ import os
 import secrets
 import subprocess
 import threading
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,6 +17,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import pandas as pd
+
+from runtime.ai_runtime.engine import run_ai_job
 
 ROOT = Path(os.environ.get("RUNTIME_ROOT", Path(__file__).resolve().parents[2]))
 DATA_ROOT = Path(os.environ.get("RUNTIME_DATA_ROOT", ROOT / "runtime_data"))
@@ -61,6 +64,14 @@ class CalculationRunRequest(BaseModel):
     input_mode: str = "REPLAY_TEST"
     market_cutoff: str | None = None
     source_job_id: str | None = None
+
+
+class MarketMapPipelineRequest(BaseModel):
+    snapshot_mode: str = "CLOSE"
+    market_cutoff: str | None = None
+
+
+TERMINAL_JOB_STATUSES = {"PASS", "WARNING", "FAIL", "NEEDS_REVIEW"}
 
 
 @app.middleware("http")
@@ -147,6 +158,9 @@ def persist_run_metadata_payload(job: dict) -> None:
         "source_manifest": job.get("source_manifest_path"),
         "acquisition_audit": job.get("acquisition_audit_path"),
         "semantic_review_request": job.get("semantic_review_request_path"),
+        "semantic_resolution": job.get("semantic_resolution_path"),
+        "semantic_resolution_validation": job.get("semantic_resolution_validation_path"),
+        "semantic_evidence_manifest": job.get("semantic_evidence_manifest_path"),
         "trusted_market_input": job.get("trusted_market_input_path"),
         "market_input_audit": job.get("market_input_path"),
         "snapshot": job.get("snapshot_path"),
@@ -159,7 +173,12 @@ def persist_run_metadata_payload(job: dict) -> None:
         "job_id": job_id,
         "unit": job.get("unit"),
         "status": job.get("status"),
+        "phase": job.get("phase"),
         "source_job_id": job.get("source_job_id"),
+        "acquisition_job_id": job.get("acquisition_job_id"),
+        "ai_job_id": job.get("ai_job_id"),
+        "ai_status": job.get("ai_status"),
+        "calculation_job_id": job.get("calculation_job_id"),
         "snapshot_mode": job.get("snapshot_mode"),
         "input_mode": job.get("input_mode"),
         "market_cutoff": job.get("market_cutoff"),
