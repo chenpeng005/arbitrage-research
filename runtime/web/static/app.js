@@ -771,7 +771,8 @@ function renderMapMeta(){
     +'<span><b>市场截面</b> '+esc(marketMapData.market_cutoff)+'</span>'
     +'<span><b>Snapshot</b> '+esc(marketMapData.snapshot_id||"-")+'</span>'
     +'<span><b>模型版本</b> '+esc(marketMapData.model_version||"-")+'</span>'
-    +'<span><b>Support</b> '+esc((z.support||[]).join("–"))+'</span>'
+    +'<span><b>展示横轴</b> 20–'+esc(((z.support||[])[1]||130))+'</span>'
+    +'<span><b>模型 Support</b> '+esc((z.support||[]).join("–"))+'</span>'
     +'<span><b>Core</b> '+esc((z.core||[]).join("–"))+'</span>'
     +'<span><b>规模调整</b> '+esc(scaleStatus)+'</span>'
     +'<span><b>上游警告</b> '+esc(warningCount)+'</span>'
@@ -842,10 +843,17 @@ function renderMarketMap(){
   $("#mapSubtitle").textContent=mode.subtitle;
 
   const zone=(marketMapData.zones||{}).support||[50,130];
-  const xMin=Number(zone[0]||50), xMax=Number(zone[1]||130);
-  const visible=(marketMapData.rows||[]).filter(function(r){
+  const rows=(marketMapData.rows||[]).filter(function(r){
+    return Number.isFinite(Number(r.trusted_CV)) && Number.isFinite(mapY(r));
+  });
+  const dataMinCv=rows.length
+    ?Math.min.apply(null,rows.map(function(r){return Number(r.trusted_CV);}))
+    :20;
+  const xMin=Math.min(20,Math.floor(dataMinCv/10)*10);
+  const xMax=Number(zone[1]||130);
+  const visible=rows.filter(function(r){
     const x=Number(r.trusted_CV);
-    return Number.isFinite(x) && x>=xMin && x<=xMax && Number.isFinite(mapY(r));
+    return x>=xMin && x<=xMax;
   });
 
   if(!visible.length){
@@ -858,6 +866,10 @@ function renderMarketMap(){
   const spread=Math.max(10,yMax-yMin);
   yMin-=spread*0.10;
   yMax+=spread*0.10;
+
+  const actualMin=Math.min.apply(null,ys);
+  const roundedActualMin=Math.floor(actualMin/5)*5;
+  yMin=Math.min(yMin,roundedActualMin);
 
   const W=1000,H=560;
   const m={l:72,r:28,t:26,b:58};
@@ -919,7 +931,7 @@ function renderMarketMap(){
   }).length;
   svg+='</svg>';
   if(clipped){
-    svg+='<div class="chart-note">为保持主体可读，纵轴自动聚焦 2%–98% 分位；'+clipped+' 个极端点未画出，但仍保留在下方明细表。</div>';
+    svg+='<div class="chart-note">纵轴下沿已扩展到当前最低样本；上沿仍聚焦主体区间。'+clipped+' 个高价极端点未画出，但仍保留在下方明细表。</div>';
   }
   $("#mapChart").innerHTML=svg;
 
