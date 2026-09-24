@@ -424,6 +424,27 @@ def calculation_worker(
     )
 
 
+def acquisition_input_is_trusted(path: Path, status: str | None) -> bool:
+    trusted_path = path / "trusted_market_input.csv"
+    if not trusted_path.exists():
+        return False
+
+    if status in {"PASS", "WARNING"}:
+        return True
+
+    if status == "NEEDS_REVIEW":
+        validation_path = path / "semantic_resolution_validation.json"
+        if not validation_path.exists():
+            return False
+        try:
+            validation = json.loads(validation_path.read_text(encoding="utf-8"))
+            return validation.get("status") == "PASS"
+        except Exception:
+            return False
+
+    return False
+
+
 def load_persisted_jobs() -> list[dict]:
     jobs: list[dict] = []
     jobs_dir = DATA_ROOT / "jobs"
@@ -457,11 +478,8 @@ def find_latest_acquisition_input() -> tuple[str, Path] | None:
 
         if job.get("unit") != "Market Map Builder / Acquisition":
             continue
-        if job.get("status") not in {"PASS", "WARNING"}:
-            continue
-
         path = DATA_ROOT / "runs" / job_id
-        if not (path / "trusted_market_input.csv").exists():
+        if not acquisition_input_is_trusted(path, job.get("status")):
             continue
 
         valid.append(job)
@@ -537,7 +555,10 @@ def create_calculation_run(request: CalculationRunRequest) -> dict:
             if not result_path.exists():
                 raise HTTPException(400, "source acquisition result is missing")
             source_result = json.loads(result_path.read_text(encoding="utf-8"))
-            if source_result.get("status") not in {"PASS", "WARNING"}:
+            if not acquisition_input_is_trusted(
+                input_dir,
+                source_result.get("status"),
+            ):
                 raise HTTPException(
                     400,
                     "source acquisition job is not trusted for calculation",
