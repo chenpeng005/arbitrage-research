@@ -9,6 +9,7 @@ from typing import Any
 
 from runtime.market_map.semantic_resolution import validate_resolution
 
+from .deepseek_provider import DeepSeekProvider
 from .mock_provider import MockProvider
 from .provider import AIProvider
 from .tasks import get_task_spec
@@ -39,6 +40,15 @@ def build_provider(provider_name: str, provider_config: dict[str, Any]) -> AIPro
         if not response_file:
             raise ValueError("Mock provider requires response_file")
         return MockProvider(Path(response_file))
+
+    if provider_name == "deepseek":
+        return DeepSeekProvider(
+            api_key=str(provider_config.get("api_key") or ""),
+            base_url=str(provider_config.get("base_url") or ""),
+            timeout_seconds=int(provider_config.get("timeout_seconds") or 60),
+            max_retries=int(provider_config.get("max_retries") or 2),
+        )
+
     raise ValueError(f"Unsupported AI provider: {provider_name}")
 
 
