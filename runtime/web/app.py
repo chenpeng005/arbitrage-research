@@ -443,6 +443,256 @@ def calculation_worker(
     )
 
 
+def wait_for_job_terminal(
+    job_id: str,
+    *,
+    timeout_seconds: int = 900,
+    poll_seconds: float = 0.5,
+) -> dict:
+    deadline = time.time() + timeout_seconds
+
+    while time.time() < deadline:
+        with _lock:
+            job = dict(_jobs.get(job_id, {}))
+
+        if not job:
+            persisted = DATA_ROOT / "jobs" / job_id / "live_status.json"
+            if persisted.exists():
+                try:
+                    job = json.loads(persisted.read_text(encoding="utf-8"))
+                except Exception:
+                    job = {}
+
+        status = job.get("status")
+        if status in TERMINAL_JOB_STATUSES:
+            return job
+
+        time.sleep(poll_seconds)
+
+    raise TimeoutError(f"job did not finish within {timeout_seconds}s: {job_id}")
+
+
+def update_controller_job(
+    job_id: str,
+    **fields,
+) -> None:
+    with _lock:
+        if job_id not in _jobs:
+            return
+        _jobs[job_id].update(fields)
+        _jobs[job_id]["updated_at"] = utcnow()
+    persist_job(job_id)
+
+
+def run_semantic_ai_for_acquisition(
+    *,
+    acquisition_job_id: str,
+    acquisition_run_dir: Path,
+) -> dict:
+    request_path = acquisition_run_dir / "semantic_review_request.json"
+    if not request_path.exists():
+        return {
+            "status": "FAIL",
+            "error": "semantic_review_request.json is missing",
+        }
+
+    provider_name = os.environ.get("AI_PROVIDER")
+    model = os.environ.get("AI_MODEL")
+
+    if not provider_name or not model:
+        return {
+            "status": "FAIL",
+            "error": "AI provider/model is not configured",
+        }
+
+    result = run_ai_job(
+        root=ROOT,
+        data_root=DATA_ROOT,
+        task_type="MARKET_MAP_SEMANTIC_AUDIT",
+        input_file=request_path,
+        business_run_dir=acquisition_run_dir,
+        provider_name=provider_name,
+        provider_config={},
+        model_config={
+            "model": model,
+            "temperature": 0,
+            "max_tokens": 1800,
+        },
+    )
+
+    ai_job_id = result.get("ai_job_id")
+    ai_status = result.get("status")
+
+    with _lock:
+        if acquisition_job_id in _jobs:
+            _jobs[acquisition_job_id]["ai_job_id"] = ai_job_id
+            _jobs[acquisition_job_id]["ai_status"] = ai_status
+            _jobs[acquisition_job_id]["semantic_resolution_path"] = (
+                str(acquisition_run_dir / "semantic_resolution.json")
+                if (acquisition_run_dir / "semantic_resolution.json").exists()
+                else None
+            )
+            _jobs[acquisition_job_id]["semantic_resolution_validation_path"] = (
+                str(acquisition_run_dir / "semantic_resolution_validation.json")
+                if (acquisition_run_dir / "semantic_resolution_validation.json").exists()
+                else None
+            )
+            _jobs[acquisition_job_id]["semantic_evidence_manifest_path"] = (
+                str(acquisition_run_dir / "semantic_evidence_manifest.json")
+                if (acquisition_run_dir / "semantic_evidence_manifest.json").exists()
+                else None
+            )
+            _jobs[acquisition_job_id]["trusted_market_input_path"] = (
+                str(acquisition_run_dir / "trusted_market_input.csv")
+                if (acquisition_run_dir / "trusted_market_input.csv").exists()
+                else None
+            )
+
+    if acquisition_job_id in _jobs:
+        persist_job(acquisition_job_id)
+
+    return result
+
+
+def market_map_pipeline_worker(
+    pipeline_job_id: str,
+    request: MarketMapPipelineRequest,
+) -> None:
+    cutoff = request.market_cutoff or datetime.now().date().isoformat()
+
+    try:
+        update_controller_job(
+            pipeline_job_id,
+            status="RUNNING",
+            phase="ACQUISITION",
+            command_started_at=utcnow(),
+        )
+
+        acquisition_request = RunRequest(
+            snapshot_mode=request.snapshot_mode,
+            market_cutoff=cutoff,
+        )
+        acquisition_job_id = create_run(acquisition_request)["job_id"]
+        update_controller_job(
+            pipeline_job_id,
+            acquisition_job_id=acquisition_job_id,
+        )
+
+        acquisition_job = wait_for_job_terminal(acquisition_job_id)
+        acquisition_status = acquisition_job.get("status")
+        acquisition_run_dir = DATA_ROOT / "runs" / acquisition_job_id
+
+        if acquisition_status == "NEEDS_REVIEW":
+            update_controller_job(
+                pipeline_job_id,
+                phase="AI_SEMANTIC_AUDIT",
+            )
+            ai_result = run_semantic_ai_for_acquisition(
+                acquisition_job_id=acquisition_job_id,
+                acquisition_run_dir=acquisition_run_dir,
+            )
+            update_controller_job(
+                pipeline_job_id,
+                ai_job_id=ai_result.get("ai_job_id"),
+                ai_status=ai_result.get("status"),
+            )
+
+            if ai_result.get("status") != "PASS":
+                update_controller_job(
+                    pipeline_job_id,
+                    status=(
+                        "NEEDS_REVIEW"
+                        if ai_result.get("status") == "NEEDS_REVIEW"
+                        else "FAIL"
+                    ),
+                    phase="STOPPED_AT_AI",
+                    completed_at=utcnow(),
+                    error=ai_result.get("error"),
+                )
+                return
+
+            source_result_path = acquisition_run_dir / "acquisition_result.json"
+            source_status = None
+            if source_result_path.exists():
+                source_status = json.loads(
+                    source_result_path.read_text(encoding="utf-8")
+                ).get("status")
+
+            if not acquisition_input_is_trusted(
+                acquisition_run_dir,
+                source_status,
+            ):
+                update_controller_job(
+                    pipeline_job_id,
+                    status="FAIL",
+                    phase="STOPPED_AFTER_AI_VALIDATION",
+                    completed_at=utcnow(),
+                    error="AI job passed but acquisition input is still not trusted",
+                )
+                return
+
+        elif acquisition_status not in {"PASS", "WARNING"}:
+            update_controller_job(
+                pipeline_job_id,
+                status="FAIL",
+                phase="STOPPED_AT_ACQUISITION",
+                completed_at=utcnow(),
+                error=f"acquisition ended with status={acquisition_status}",
+            )
+            return
+
+        update_controller_job(
+            pipeline_job_id,
+            phase="CALCULATION",
+        )
+
+        calculation_request = CalculationRunRequest(
+            input_mode="LATEST_SUCCESS",
+            market_cutoff=cutoff,
+            source_job_id=acquisition_job_id,
+        )
+        calculation_job_id = create_calculation_run(
+            calculation_request
+        )["job_id"]
+        update_controller_job(
+            pipeline_job_id,
+            calculation_job_id=calculation_job_id,
+        )
+
+        calculation_job = wait_for_job_terminal(calculation_job_id)
+        calculation_status = calculation_job.get("status")
+
+        if calculation_status in {"PASS", "WARNING"}:
+            update_controller_job(
+                pipeline_job_id,
+                status=calculation_status,
+                phase="COMPLETE",
+                completed_at=utcnow(),
+                snapshot_path=calculation_job.get("snapshot_path"),
+                calculated_table_path=calculation_job.get(
+                    "calculated_table_path"
+                ),
+            )
+            return
+
+        update_controller_job(
+            pipeline_job_id,
+            status="FAIL",
+            phase="STOPPED_AT_CALCULATION",
+            completed_at=utcnow(),
+            error=f"calculation ended with status={calculation_status}",
+        )
+
+    except Exception as exc:
+        update_controller_job(
+            pipeline_job_id,
+            status="FAIL",
+            phase="CONTROLLER_ERROR",
+            completed_at=utcnow(),
+            error=f"{type(exc).__name__}: {exc}",
+        )
+
+
 def acquisition_input_is_trusted(path: Path, status: str | None) -> bool:
     trusted_path = path / "trusted_market_input.csv"
     if not trusted_path.exists():
@@ -610,6 +860,51 @@ def create_calculation_run(request: CalculationRunRequest) -> dict:
     threading.Thread(
         target=calculation_worker,
         args=(job_id, request, input_dir),
+        daemon=True,
+    ).start()
+
+    return {"job_id": job_id}
+
+
+@app.post("/api/market-map-runs")
+def create_market_map_pipeline(
+    request: MarketMapPipelineRequest,
+) -> dict:
+    if request.snapshot_mode not in {"LIVE_TEST", "CLOSE", "REPLAY_TEST"}:
+        raise HTTPException(400, "unsupported snapshot_mode")
+
+    if request.snapshot_mode == "REPLAY_TEST" and not RAW_FIXTURE_DIR.exists():
+        raise HTTPException(400, "replay fixture is not available")
+
+    job_id = (
+        datetime.now().strftime("%Y%m%d_%H%M%S")
+        + "_pipeline_"
+        + uuid.uuid4().hex[:6]
+    )
+    cutoff = request.market_cutoff or datetime.now().date().isoformat()
+
+    with _lock:
+        _jobs[job_id] = {
+            "job_id": job_id,
+            "unit": "Market Map / Full Runtime",
+            "status": "PENDING",
+            "phase": "PENDING",
+            "snapshot_mode": request.snapshot_mode,
+            "market_cutoff": cutoff,
+            "created_at": utcnow(),
+            "updated_at": utcnow(),
+            "acquisition_job_id": None,
+            "ai_job_id": None,
+            "ai_status": None,
+            "calculation_job_id": None,
+            "steps": {},
+        }
+
+    persist_job(job_id)
+
+    threading.Thread(
+        target=market_map_pipeline_worker,
+        args=(job_id, request),
         daemon=True,
     ).start()
 
