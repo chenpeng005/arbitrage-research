@@ -34,11 +34,37 @@
         <label>市场截面日期</label>
         <input id="pipelineCutoff" type="date">
       </div>
+      <div>
+        <label>AI执行方式</label>
+        <select id="pipelineAiMode">
+          <option value="AUTO_API">自动 API（DeepSeek）</option>
+          <option value="INTERACTIVE_CHAT">ChatGPT 交互</option>
+        </select>
+      </div>
       <button id="pipelineRunBtn">一键运行完整藏宝图</button>
     </section>
 
     <section id="pipelineMeta" class="meta card muted">
       Controller 将自动运行数据获取；只有程序识别出实质语义冲突时才调用 AI。AI 通过 Program Validator 后，才会继续计算。
+    </section>
+
+    <section id="chatHandoff" class="card hidden">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">INTERACTIVE CHAT</p>
+          <h2>等待 ChatGPT 处理</h2>
+        </div>
+        <div id="chatTaskBadge" class="overall idle">WAITING_FOR_CHAT</div>
+      </div>
+      <p id="chatTaskSummary" class="muted">
+        只有真正出现语义冲突时才会生成 Chat Task。
+      </p>
+      <div class="control">
+        <button id="chatCopyBtn" type="button">复制一句话给 ChatGPT</button>
+        <button id="chatCopyFullBtn" type="button">复制完整任务 JSON</button>
+        <button id="chatResumeBtn" type="button">检查结果并继续</button>
+      </div>
+      <pre id="chatTaskPreview" class="hidden"></pre>
     </section>
 
     <div class="unit-separator"></div>
