@@ -648,15 +648,28 @@ def run_calculation(
             "rule": "CLOSE + TRUSTED_MARKET_INPUT + MODEL_AUDIT_PASS",
         },
         "model_audit_ref": "model_audit.json",
+        "calculated_table_ref": "market_map_calculated.csv",
         "input": {
             "input_dir": str(input_dir),
             "input_contract": input_contract,
             "acquisition_run_id": acquisition.get("run_id"),
             "acquisition_status": acquisition.get("status"),
             "acquisition_snapshot_mode": acquisition_mode,
-            "source_manifest_ref": str(input_dir / "source_manifest.json"),
-            "acquisition_audit_ref": str(input_dir / "acquisition_audit.json"),
-            "trusted_market_input_ref": str(input_dir / "trusted_market_input.csv"),
+            "source_manifest_ref": (
+                str(input_dir / "source_manifest.json")
+                if (input_dir / "source_manifest.json").exists()
+                else None
+            ),
+            "acquisition_audit_ref": (
+                str(input_dir / "acquisition_audit.json")
+                if (input_dir / "acquisition_audit.json").exists()
+                else None
+            ),
+            "trusted_market_input_ref": (
+                str(input_dir / "trusted_market_input.csv")
+                if (input_dir / "trusted_market_input.csv").exists()
+                else None
+            ),
             "acquisition_warnings": acquisition_step_warnings,
         },
         "universe": acquisition.get("counts", {}),
