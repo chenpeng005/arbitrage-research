@@ -548,6 +548,39 @@ def run_acquisition(
     for c in ["P", "S", "K", "source_CV"]:
         main[c] = pd.to_numeric(main[c], errors="coerce")
 
+    duplicate_codes = main[
+        main["bond_code"].duplicated(keep=False)
+    ].sort_values("bond_code")
+    if len(duplicate_codes):
+        s2.metrics = {
+            "candidate": len(main),
+            "duplicate_code_rows": len(duplicate_codes),
+            "duplicate_codes": int(duplicate_codes["bond_code"].nunique()),
+        }
+        s2.details = {
+            "tables": [
+                table(
+                    "重复转债代码",
+                    [
+                        ("bond_code", "代码"),
+                        ("bond_name", "名称"),
+                        ("P", "转债价格"),
+                    ],
+                    records(
+                        duplicate_codes,
+                        ["bond_code", "bond_name", "P"],
+                        50,
+                    ),
+                )
+            ]
+        }
+        return fail(
+            result,
+            s2,
+            output_dir,
+            "主行情存在重复转债代码，无法形成唯一 Universe；本次运行停止在 S2。",
+        )
+
     cutoff_ts = pd.Timestamp(market_cutoff)
     main["_standard_prefix"] = main["bond_code"].astype(str).str[:3].isin(STANDARD_CB_PREFIXES)
     main["_public_name"] = ~main["bond_name"].astype(str).str.contains("定转", na=False)
@@ -863,16 +896,84 @@ def run_acquisition(
     save_frame(enriched, output_dir, "market_input_audit.csv")
 
     top_cv = enriched.sort_values("cv_diff_ratio", ascending=False).head(10)
-    k_conflicts = enriched[enriched["K_aux_diff"] > 0.001].sort_values("K_aux_diff", ascending=False)
+
+    p_diff_nonzero = enriched[
+        enriched["P_aux_diff"].notna() & (enriched["P_aux_diff"] > 1e-9)
+    ].sort_values("P_aux_diff", ascending=False)
+    s_diff_nonzero = enriched[
+        enriched["S_aux_diff"].notna() & (enriched["S_aux_diff"] > 1e-9)
+    ].sort_values("S_aux_diff", ascending=False)
+    k_conflicts = enriched[
+        enriched["K_aux_diff"].notna() & (enriched["K_aux_diff"] > 0.001)
+    ].sort_values("K_aux_diff", ascending=False)
+
     maturity_mismatch = enriched[
-        enriched["maturity_day_diff"].notna() & (enriched["maturity_day_diff"] != 0)
+        enriched["maturity_day_diff"].notna()
+        & (enriched["maturity_day_diff"] != 0)
     ].copy()
+    maturity_convention = maturity_mismatch[
+        maturity_mismatch["maturity_day_diff"].abs() <= 1
+    ].copy()
+    maturity_material = maturity_mismatch[
+        maturity_mismatch["maturity_day_diff"].abs() > 1
+    ].copy()
+
+    name_conflicts = enriched[
+        enriched["size_source_name"].notna()
+        & (
+            enriched["bond_name"].astype(str).str.strip()
+            != enriched["size_source_name"].astype(str).str.strip()
+        )
+    ].copy()
+
+    unresolved: list[dict[str, Any]] = []
+    for _, row in k_conflicts.iterrows():
+        unresolved.append(
+            {
+                "type": "PROGRAM_CONFLICT",
+                "field": "K",
+                "bond_code": str(row["bond_code"]),
+                "bond_name": str(row["bond_name"]),
+                "primary_value": None if pd.isna(row["K"]) else float(row["K"]),
+                "auxiliary_value": None if pd.isna(row["K_aux"]) else float(row["K_aux"]),
+                "difference": None if pd.isna(row["K_aux_diff"]) else float(row["K_aux_diff"]),
+                "resolution_required": "确认 market_cutoff 时已经生效的最后一个有效转股价",
+            }
+        )
+
+    for _, row in maturity_material.iterrows():
+        unresolved.append(
+            {
+                "type": "PROGRAM_CONFLICT",
+                "field": "maturity_date",
+                "bond_code": str(row["bond_code"]),
+                "bond_name": str(row["bond_name"]),
+                "primary_value": (
+                    None
+                    if pd.isna(row["maturity_date"])
+                    else pd.Timestamp(row["maturity_date"]).date().isoformat()
+                ),
+                "auxiliary_value": (
+                    None
+                    if pd.isna(row["maturity_aux"])
+                    else pd.Timestamp(row["maturity_aux"]).date().isoformat()
+                ),
+                "difference_days": int(row["maturity_day_diff"]),
+                "resolution_required": "确认合同到期日及不同数据源日期口径",
+            }
+        )
 
     s5.metrics = {
         "cv_diff_ratio_median": float(enriched["cv_diff_ratio"].median()),
         "cv_diff_ratio_max": float(enriched["cv_diff_ratio"].max()),
+        "p_cross_source_diff": len(p_diff_nonzero),
+        "s_cross_source_diff": len(s_diff_nonzero),
         "k_conflicts": len(k_conflicts),
         "maturity_mismatch": len(maturity_mismatch),
+        "maturity_convention_diff": len(maturity_convention),
+        "maturity_material_conflict": len(maturity_material),
+        "identity_name_conflicts": len(name_conflicts),
+        "unresolved_conflicts": len(unresolved),
     }
     s5.details = {
         "notes": [
@@ -890,6 +991,36 @@ def run_acquisition(
                     ("cv_diff_pct", "差异%"),
                 ],
                 records(top_cv, ["bond_code", "bond_name", "source_CV", "calc_CV", "cv_diff_pct"], 10),
+            ),
+            table(
+                "转债价格跨源差异",
+                [
+                    ("bond_code", "代码"),
+                    ("bond_name", "名称"),
+                    ("P", "主源价格"),
+                    ("P_aux", "辅助源价格"),
+                    ("P_aux_diff", "绝对差"),
+                ],
+                records(
+                    p_diff_nonzero,
+                    ["bond_code", "bond_name", "P", "P_aux", "P_aux_diff"],
+                    30,
+                ),
+            ),
+            table(
+                "正股价格跨源差异",
+                [
+                    ("bond_code", "代码"),
+                    ("bond_name", "名称"),
+                    ("S", "主源正股价"),
+                    ("S_aux", "辅助源正股价"),
+                    ("S_aux_diff", "绝对差"),
+                ],
+                records(
+                    s_diff_nonzero,
+                    ["bond_code", "bond_name", "S", "S_aux", "S_aux_diff"],
+                    30,
+                ),
             ),
             table(
                 "转股价跨源冲突",
@@ -919,12 +1050,78 @@ def run_acquisition(
             ),
         ],
     }
-    s5.status = "WARNING" if snapshot_mode in {"LIVE_TEST", "REPLAY_TEST"} else "PASS"
-    if snapshot_mode == "LIVE_TEST":
-        s5.warnings.append("当前为盘中测试，字段存在异步刷新可能，本次结果不可冻结为正式市场快照。")
-    elif snapshot_mode == "REPLAY_TEST":
-        s5.warnings.append("当前为固定历史样本回放，仅用于单元测试，不生成正式市场快照。")
-    s5.conclusion = "多来源交叉审计完成；未发现程序必须立即停止的结构性冲突。"
+    acquisition_audit = {
+        "run_id": run_id,
+        "snapshot_mode": snapshot_mode,
+        "market_cutoff": market_cutoff,
+        "audit_status": "NEEDS_REVIEW" if unresolved else "PASS",
+        "field_coverage": {
+            "rows": len(enriched),
+            "P_missing": int(enriched["P"].isna().sum()),
+            "S_missing": int(enriched["S"].isna().sum()),
+            "K_missing": int(enriched["K"].isna().sum()),
+            "source_CV_missing": int(enriched["source_CV"].isna().sum()),
+            "maturity_missing": int(enriched["maturity_date"].isna().sum()),
+            "remaining_size_missing": int(enriched["remaining_size"].isna().sum()),
+        },
+        "cv_crosscheck": {
+            "median_diff_ratio": float(enriched["cv_diff_ratio"].median()),
+            "max_diff_ratio": float(enriched["cv_diff_ratio"].max()),
+        },
+        "cross_source": {
+            "P_nonzero_diff_count": len(p_diff_nonzero),
+            "S_nonzero_diff_count": len(s_diff_nonzero),
+            "K_conflict_count": len(k_conflicts),
+            "maturity_mismatch_count": len(maturity_mismatch),
+            "maturity_convention_diff_count": len(maturity_convention),
+            "maturity_material_conflict_count": len(maturity_material),
+            "identity_name_conflict_count": len(name_conflicts),
+        },
+        "size_sanity": {
+            "invalid_or_missing": int(len(size_problem)),
+            "scale_sample": int(len(scale_sample)),
+        },
+        "warnings": [],
+        "errors": [],
+        "unresolved": unresolved,
+    }
+
+    if len(maturity_convention):
+        acquisition_audit["warnings"].append(
+            f"{len(maturity_convention)} 只到期日存在 ±1 天已知口径差，保留主口径并记录审计。"
+        )
+    if len(p_diff_nonzero):
+        acquisition_audit["warnings"].append(
+            f"{len(p_diff_nonzero)} 只转债价格存在跨源差异；当前只记录，不设置拍脑袋硬阈值。"
+        )
+    if len(s_diff_nonzero):
+        acquisition_audit["warnings"].append(
+            f"{len(s_diff_nonzero)} 只正股价格存在跨源差异；当前只记录，不设置拍脑袋硬阈值。"
+        )
+    if len(name_conflicts):
+        acquisition_audit["warnings"].append(
+            f"{len(name_conflicts)} 只债券名称跨源不完全一致，已记录供身份审计。"
+        )
+
+    (output_dir / "acquisition_audit.json").write_text(
+        json.dumps(acquisition_audit, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    if unresolved:
+        s5.status = "NEEDS_REVIEW"
+        s5.warnings.append(
+            f"程序发现 {len(unresolved)} 个实质数据冲突，已写入 acquisition_audit.json / unresolved；"
+            "在语义审计解决前不得进入正式计算。"
+        )
+        s5.conclusion = "确定性审计发现实质冲突，本次数据停在 R2，等待语义审计。"
+    else:
+        s5.status = "WARNING" if snapshot_mode in {"LIVE_TEST", "REPLAY_TEST"} else "PASS"
+        if snapshot_mode == "LIVE_TEST":
+            s5.warnings.append("当前为盘中测试，字段存在异步刷新可能，本次结果不可冻结为正式市场快照。")
+        elif snapshot_mode == "REPLAY_TEST":
+            s5.warnings.append("当前为固定历史样本回放，仅用于单元测试，不生成正式市场快照。")
+        s5.conclusion = "多来源交叉审计完成；未发现需要阻断 Runtime 的实质冲突。"
     emit(s5)
 
     s6 = step(result, "S6", "数据准备完成")
@@ -945,11 +1142,25 @@ def run_acquisition(
             f"当前支持区间（CV 50–130）{int(support)} 只；核心区间（CV 70–100）{int(core)} 只。",
         ]
     }
-    s6.status = "PASS"
-    s6.conclusion = "数据获取单元已生成结构化、可审计样本，可以交给市场价值映射计算单元。"
+    if unresolved:
+        s6.status = "NEEDS_REVIEW"
+        s6.warnings = [
+            "存在未解决的 PROGRAM_CONFLICT，本次不能形成 Trusted Market Input，也不能进入市场价值映射计算。"
+        ]
+        s6.conclusion = "数据获取与确定性审计已完成，但存在未解决冲突；等待语义审计后重新生成可信输入。"
+    else:
+        s6.status = "PASS"
+        s6.conclusion = "数据获取与确定性审计完成，可以进入 Trusted Market Input / 市场价值映射计算。"
     emit(s6)
 
-    result.status = "WARNING" if any(s.status == "WARNING" for s in result.steps) else "PASS"
+    if any(s.status == "FAIL" for s in result.steps):
+        result.status = "FAIL"
+    elif any(s.status == "NEEDS_REVIEW" for s in result.steps):
+        result.status = "NEEDS_REVIEW"
+    elif any(s.status == "WARNING" for s in result.steps):
+        result.status = "WARNING"
+    else:
+        result.status = "PASS"
     result.completed_at = now_utc()
     persist(result, output_dir)
     return result
