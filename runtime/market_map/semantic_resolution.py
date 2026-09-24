@@ -147,7 +147,7 @@ def validate_resolution(
         evidence = item.get("evidence")
         if not isinstance(evidence, list) or not evidence:
             errors.append(f"{conflict_id}: RESOLVED 但缺少 evidence。")
-        elif evidence_map:
+        elif evidence_manifest_path.exists():
             for ev in evidence:
                 evidence_id = str(ev.get("evidence_id") or "")
                 if not evidence_id:
