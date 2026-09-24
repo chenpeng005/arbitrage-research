@@ -41,7 +41,7 @@ function updateProgress(data){
 }
 async function poll(){
   if(!currentJob)return;
-  const r=await fetch("/api/runs/"+currentJob);
+  const r=await fetch("api/runs/"+currentJob);
   const data=await r.json();
   setOverall(data.status);
   $("#runMeta").innerHTML=`<div class="meta-grid"><span><b>Job</b> ${esc(data.job_id)}</span><span><b>模式</b> ${esc(data.snapshot_mode)}</span><span><b>Cutoff</b> ${esc(data.market_cutoff)}</span></div>`;
@@ -54,7 +54,7 @@ async function poll(){
 $("#runBtn").addEventListener("click",async()=>{
   renderSkeleton(); setOverall("PENDING"); $("#runBtn").disabled=true;
   const payload={snapshot_mode:$("#mode").value,market_cutoff:$("#cutoff").value};
-  const r=await fetch("/api/runs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  const r=await fetch("api/runs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
   const data=await r.json(); currentJob=data.job_id;
   await poll(); timer=setInterval(poll,1000);
 });
