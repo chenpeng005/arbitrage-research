@@ -4,3 +4,4 @@ akshare==1.18.97
 pandas>=2.2,<3
 
 statsmodels>=0.14,<1
+pypdf>=6,<7
