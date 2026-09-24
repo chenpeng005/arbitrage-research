@@ -34,7 +34,61 @@ def market_map_semantic_audit_spec(root: Path) -> AITaskSpec:
                 "market_cutoff": {"type": "string"},
                 "resolver_type": {"type": "string"},
                 "completed_at": {"type": "string"},
-                "resolutions": {"type": "array"},
+                "resolutions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "conflict_id",
+                            "bond_code",
+                            "field",
+                            "status",
+                            "resolved_value",
+                            "evidence",
+                            "confidence",
+                            "reason_short",
+                        ],
+                        "properties": {
+                            "conflict_id": {"type": "string"},
+                            "bond_code": {"type": "string"},
+                            "field": {"type": "string"},
+                            "status": {
+                                "type": "string",
+                                "enum": [
+                                    "RESOLVED",
+                                    "INSUFFICIENT_EVIDENCE",
+                                    "NOT_APPLICABLE",
+                                ],
+                            },
+                            "resolved_value": {},
+                            "effective_from": {
+                                "type": ["string", "null"],
+                            },
+                            "evidence": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "required": [
+                                        "evidence_id",
+                                        "source_type",
+                                        "title",
+                                        "published_at",
+                                        "locator",
+                                    ],
+                                    "properties": {
+                                        "evidence_id": {"type": "string"},
+                                        "source_type": {"type": "string"},
+                                        "title": {"type": "string"},
+                                        "published_at": {"type": "string"},
+                                        "locator": {"type": "string"},
+                                    },
+                                },
+                            },
+                            "confidence": {"type": "string"},
+                            "reason_short": {"type": "string"},
+                        },
+                    },
+                },
             },
         },
         allowed_tools=[
