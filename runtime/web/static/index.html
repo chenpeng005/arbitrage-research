@@ -26,13 +26,20 @@
       <div>
         <label>运行模式</label>
         <select id="pipelineMode">
-          <option value="CLOSE">正式收盘截面</option>
+          <option value="CLOSE">今日正式运行</option>
           <option value="LIVE_TEST">盘中测试</option>
+          <option value="HISTORICAL_REPLAY">历史回放</option>
         </select>
       </div>
-      <div>
-        <label>市场截面日期</label>
+      <div id="pipelineCutoffWrap">
+        <label id="pipelineCutoffLabel">市场截面日期</label>
         <input id="pipelineCutoff" type="date">
+      </div>
+      <div id="pipelineHistoryWrap" class="hidden">
+        <label>历史正式截面</label>
+        <select id="pipelineHistorySnapshot">
+          <option value="">正在读取历史快照…</option>
+        </select>
       </div>
       <div>
         <label>AI执行方式</label>
@@ -45,7 +52,7 @@
     </section>
 
     <section id="pipelineMeta" class="meta card muted">
-      Controller 将自动运行数据获取；只有程序识别出实质语义冲突时才调用 AI。AI 通过 Program Validator 后，才会继续计算。
+      Controller 将自动运行数据获取；历史回放只读取当时已冻结的正式 Raw，不联网、不覆盖当前正式藏宝图。只有程序识别出实质语义冲突时才调用 AI。
     </section>
 
     <section id="chatHandoff" class="card hidden">
