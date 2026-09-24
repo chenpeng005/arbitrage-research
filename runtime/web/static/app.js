@@ -270,7 +270,7 @@ function setOverall(selector,status){
 
 function updateProgress(data,textSelector,barSelector,total){
   const done=Object.values(data.steps||{}).filter(function(x){
-    return ["PASS","WARNING","FAIL"].includes(x.status);
+    return ["PASS","WARNING","FAIL","NEEDS_REVIEW"].includes(x.status);
   }).length;
   $(textSelector).textContent=done+" / "+total;
   $(barSelector).style.width=Math.min(done/total*100,100)+"%";
@@ -305,7 +305,7 @@ async function pollAcquisition(){
   updateProgress(data,"#progressText","#bar",7);
   renderSummary((data.steps||{}).S6,"#summary","#summaryMetrics",acquisitionSummaryLabels);
 
-  if(["PASS","WARNING","FAIL"].includes(data.status)){
+  if(["PASS","WARNING","FAIL","NEEDS_REVIEW"].includes(data.status)){
     clearInterval(timer);
     timer=null;
     $("#runBtn").disabled=false;
@@ -330,7 +330,7 @@ async function pollCalculation(){
   updateProgress(data,"#calcProgressText","#calcBar",7);
   renderSummary((data.steps||{}).C6,"#calcSummary","#calcSummaryMetrics",calculationSummaryLabels);
 
-  if(["PASS","WARNING","FAIL"].includes(data.status)){
+  if(["PASS","WARNING","FAIL","NEEDS_REVIEW"].includes(data.status)){
     clearInterval(calcTimer);
     calcTimer=null;
     $("#calcRunBtn").disabled=false;
