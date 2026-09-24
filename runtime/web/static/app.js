@@ -128,9 +128,22 @@ function localDateString(){
   return local.toISOString().slice(0,10);
 }
 
-$("#cutoff").value=localDateString();
-$("#calcCutoff").value=localDateString();
-$("#pipelineCutoff").value=localDateString();
+function chinaDateString(){
+  try{
+    return new Intl.DateTimeFormat("en-CA",{
+      timeZone:"Asia/Shanghai",
+      year:"numeric",
+      month:"2-digit",
+      day:"2-digit"
+    }).format(new Date());
+  }catch(_err){
+    return localDateString();
+  }
+}
+
+$("#cutoff").value=chinaDateString();
+$("#calcCutoff").value=chinaDateString();
+$("#pipelineCutoff").value=chinaDateString();
 
 function esc(x){
   return String(x==null?"":x).replace(/[&<>"']/g,function(m){
@@ -383,6 +396,45 @@ async function renderChatHandoff(data){
       :'<br><span class="muted">推荐：点击“复制一句话给 ChatGPT”，回到任意一个可访问本项目服务器的 Chat 直接粘贴。第一个 Chat 会先领取任务。</span>');
 
   $("#chatTaskPreview").textContent=JSON.stringify(currentChatTask,null,2);
+}
+
+async function initializeMarketStatus(){
+  try{
+    const r=await fetch("api/market-status");
+    if(!r.ok)throw new Error(await r.text());
+    const status=await r.json();
+
+    if(status.china_date){
+      $("#pipelineCutoff").value=status.china_date;
+      $("#cutoff").value=status.china_date;
+      $("#calcCutoff").value=status.china_date;
+    }
+
+    if(!status.after_close_gate){
+      if(status.latest_replay){
+        $("#pipelineMode").value="HISTORICAL_REPLAY";
+        $("#pipelineMeta").innerHTML=
+          '<b>当前中国市场时间：</b>'+esc(status.china_time)
+          +'。今日正式收盘尚未冻结，已默认切换到最近正式历史截面：'
+          +esc(status.latest_replay.market_cutoff)
+          +'。你也可以改选盘中测试。';
+      }else{
+        $("#pipelineMode").value="LIVE_TEST";
+        $("#pipelineMeta").innerHTML=
+          '<b>当前中国市场时间：</b>'+esc(status.china_time)
+          +'。今日正式收盘尚未冻结，且暂无可回放正式历史截面，已默认切换到盘中测试。';
+      }
+    }else{
+      $("#pipelineMode").value="CLOSE";
+      $("#pipelineMeta").innerHTML=
+        '<b>当前中国市场时间：</b>'+esc(status.china_time)
+        +'。今日正式收盘模式已可用。';
+    }
+
+    updatePipelineModeUi();
+  }catch(err){
+    $("#pipelineMeta").textContent="市场时间状态读取失败："+err.message;
+  }
 }
 
 async function loadHistoricalSnapshots(){
@@ -928,6 +980,6 @@ $("#mapReloadBtn").addEventListener("click",function(){
 
 $("#pipelineMode").addEventListener("change",updatePipelineModeUi);
 $("#pipelineHistorySnapshot").addEventListener("change",syncHistoricalSelection);
-updatePipelineModeUi();
+initializeMarketStatus();
 
 loadMarketMap();
