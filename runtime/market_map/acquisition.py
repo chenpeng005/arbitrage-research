@@ -14,6 +14,7 @@ import pandas as pd
 
 
 STANDARD_CB_PREFIXES = {"110", "111", "113", "118", "123", "127", "128"}
+DAYS_PER_MONTH = 365.2425 / 12.0
 
 
 @dataclass
@@ -1108,6 +1109,77 @@ def run_acquisition(
         encoding="utf-8",
     )
 
+    trusted_path = output_dir / "trusted_market_input.csv"
+    if trusted_path.exists():
+        trusted_path.unlink()
+
+    if not unresolved:
+        trusted = enriched[
+            [
+                "bond_code",
+                "bond_name",
+                "stock_code",
+                "P",
+                "S",
+                "K",
+                "source_CV",
+                "calc_CV",
+                "maturity_date",
+                "remaining_size",
+                "issue_size",
+                "maturity_day_diff",
+                "P_aux_diff",
+                "S_aux_diff",
+                "size_source_name",
+            ]
+        ].copy()
+
+        trusted["remaining_months"] = (
+            pd.to_datetime(trusted["maturity_date"], errors="coerce")
+            - pd.Timestamp(market_cutoff)
+        ).dt.days / DAYS_PER_MONTH
+
+        def _warning_flags(row: pd.Series) -> str:
+            flags: list[str] = []
+            maturity_diff = row.get("maturity_day_diff")
+            if pd.notna(maturity_diff) and 0 < abs(float(maturity_diff)) <= 1:
+                flags.append("MATURITY_CONVENTION_DIFF")
+            p_diff = row.get("P_aux_diff")
+            if pd.notna(p_diff) and float(p_diff) > 1e-9:
+                flags.append("P_CROSS_SOURCE_DIFF")
+            s_diff = row.get("S_aux_diff")
+            if pd.notna(s_diff) and float(s_diff) > 1e-9:
+                flags.append("S_CROSS_SOURCE_DIFF")
+            aux_name = row.get("size_source_name")
+            if pd.notna(aux_name) and str(row.get("bond_name", "")).strip() != str(aux_name).strip():
+                flags.append("IDENTITY_NAME_DIFF")
+            return ";".join(flags)
+
+        trusted["warning_flags"] = trusted.apply(_warning_flags, axis=1)
+        trusted["data_status"] = "TRUSTED"
+        trusted["source_manifest_ref"] = "source_manifest.json"
+
+        trusted = trusted[
+            [
+                "bond_code",
+                "bond_name",
+                "stock_code",
+                "P",
+                "S",
+                "K",
+                "source_CV",
+                "calc_CV",
+                "maturity_date",
+                "remaining_months",
+                "remaining_size",
+                "issue_size",
+                "data_status",
+                "warning_flags",
+                "source_manifest_ref",
+            ]
+        ]
+        trusted.to_csv(trusted_path, index=False)
+
     if unresolved:
         s5.status = "NEEDS_REVIEW"
         s5.warnings.append(
@@ -1140,6 +1212,11 @@ def run_acquisition(
         "notes": [
             f"基础样本 {len(base)} 只；期限样本 {len(duration_sample)} 只；规模样本 {len(scale_sample)} 只。",
             f"当前支持区间（CV 50–130）{int(support)} 只；核心区间（CV 70–100）{int(core)} 只。",
+            (
+                "已生成 trusted_market_input.csv，作为后续计算的正式可信输入。"
+                if not unresolved
+                else "存在 unresolved，未生成 trusted_market_input.csv。"
+            ),
         ]
     }
     if unresolved:
