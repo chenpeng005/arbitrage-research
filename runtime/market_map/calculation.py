@@ -695,6 +695,7 @@ def run_calculation(
         "snapshot_id": f"market-map-{market_cutoff}-{run_id}",
         "market_cutoff": market_cutoff,
         "model_version": MODEL_VERSION,
+        "cv_field": "trusted_CV",
         "created_at": now_utc(),
         "snapshot_class": snapshot_class,
         "freeze": {
