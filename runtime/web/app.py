@@ -587,44 +587,64 @@ def get_run(job_id: str) -> dict:
 
 
 
-def find_latest_market_map_output() -> tuple[Path, str] | None:
+def find_latest_market_map_output() -> tuple[dict, Path, Path] | None:
     """
-    Visualization prefers a formally generated CLOSE snapshot.
-    If none exists yet, fall back to the latest calculated Runtime output.
+    Visualization only follows the Formal Snapshot Registry.
+
+    The web layer must not guess the latest model from file mtimes and must
+    not silently fall back to TEST_ONLY calculation outputs.
     """
-    close_candidates = list(DATA_ROOT.glob("close_*/calculation/market_map_snapshot.json"))
-    close_candidates = [
-        p for p in close_candidates
-        if (p.parent / "market_map_calculated.csv").exists()
-    ]
-    if close_candidates:
-        latest = max(close_candidates, key=lambda p: p.stat().st_mtime)
-        return latest.parent, "CLOSE"
+    if not LATEST_FORMAL_MARKET_MAP_PATH.exists():
+        return None
 
-    candidates = list(DATA_ROOT.glob("runs/*/market_map_snapshot.json"))
-    candidates = [
-        p for p in candidates
-        if (p.parent / "market_map_calculated.csv").exists()
-    ]
-    if candidates:
-        latest = max(candidates, key=lambda p: p.stat().st_mtime)
-        return latest.parent, "RUNTIME"
+    try:
+        entry = json.loads(
+            LATEST_FORMAL_MARKET_MAP_PATH.read_text(encoding="utf-8")
+        )
+    except Exception:
+        return None
 
-    return None
+    snapshot_path_raw = entry.get("snapshot_path")
+    table_path_raw = entry.get("calculated_table_path")
+    if not snapshot_path_raw or not table_path_raw:
+        return None
+
+    snapshot_path = Path(snapshot_path_raw)
+    table_path = Path(table_path_raw)
+    if not snapshot_path.exists() or not table_path.exists():
+        return None
+
+    try:
+        snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+    if snapshot.get("snapshot_class") != "FORMAL_CLOSE":
+        return None
+    if snapshot.get("snapshot_id") != entry.get("snapshot_id"):
+        return None
+
+    return entry, snapshot_path, table_path
 
 
 @app.get("/api/market-map/view")
 def get_market_map_view() -> dict:
     found = find_latest_market_map_output()
     if found is None:
-        raise HTTPException(404, "no market map output is available")
+        raise HTTPException(
+            404,
+            "no formal market map snapshot is registered",
+        )
 
-    out_dir, source_type = found
-    snapshot_path = out_dir / "market_map_snapshot.json"
-    table_path = out_dir / "market_map_calculated.csv"
-
+    registry_entry, snapshot_path, table_path = found
     snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
     df = pd.read_csv(table_path, dtype={"bond_code": str})
+
+    reference_col = (
+        "discovery_reference"
+        if "discovery_reference" in df.columns
+        else "discovery_reference_candidate"
+    )
 
     wanted = [
         "bond_code",
@@ -640,19 +660,25 @@ def get_market_map_view() -> dict:
         "residual_base",
         "residual_after_duration",
         "residual_final",
-        "discovery_reference_candidate",
+        reference_col,
     ]
     missing = [col for col in wanted if col not in df.columns]
     if missing:
         raise HTTPException(500, f"market map output missing columns: {missing}")
 
     view = df[wanted].copy()
-    numeric_cols = [col for col in wanted if col not in {"bond_code", "bond_name"}]
+    if reference_col != "discovery_reference":
+        view = view.rename(columns={reference_col: "discovery_reference"})
+
+    numeric_cols = [
+        col for col in view.columns
+        if col not in {"bond_code", "bond_name"}
+    ]
     for col in numeric_cols:
         view[col] = pd.to_numeric(view[col], errors="coerce")
 
-    view["diff_candidate"] = (
-        view["P"] - view["discovery_reference_candidate"]
+    view["diff_to_reference"] = (
+        view["P"] - view["discovery_reference"]
     )
 
     rows = json.loads(
@@ -663,16 +689,20 @@ def get_market_map_view() -> dict:
     )
 
     return {
-        "source_type": source_type,
+        "source_type": "FORMAL_REGISTRY",
+        "snapshot_class": snapshot.get("snapshot_class"),
         "market_cutoff": snapshot.get("market_cutoff"),
         "model_version": snapshot.get("model_version"),
         "snapshot_id": snapshot.get("snapshot_id"),
+        "registry_calculation_job_id": registry_entry.get("calculation_job_id"),
+        "registry_acquisition_job_id": registry_entry.get("acquisition_job_id"),
         "zones": snapshot.get("zones", {}),
         "components": snapshot.get("components", {}),
         "residual_core_after_scale": snapshot.get("residual_core_after_scale", {}),
         "diagnostics": snapshot.get("diagnostics", {}),
-        "discovery_reference_candidate": snapshot.get(
-            "discovery_reference_candidate", {}
+        "discovery_reference": snapshot.get("discovery_reference", {}),
+        "acquisition_warnings": snapshot.get("input", {}).get(
+            "acquisition_warnings", []
         ),
         "rows": rows,
     }
