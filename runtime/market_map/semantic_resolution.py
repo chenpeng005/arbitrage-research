@@ -76,6 +76,17 @@ def validate_resolution(
     request = load_json(request_path)
     resolution = load_json(resolution_file)
 
+    evidence_manifest_path = run_dir / "semantic_evidence_manifest.json"
+    evidence_manifest = {}
+    evidence_map: dict[str, dict[str, Any]] = {}
+    if evidence_manifest_path.exists():
+        evidence_manifest = load_json(evidence_manifest_path)
+        evidence_map = {
+            str(item.get("evidence_id")): item
+            for item in evidence_manifest.get("evidence", [])
+            if item.get("evidence_id")
+        }
+
     errors: list[str] = []
     warnings: list[str] = []
 
@@ -136,6 +147,38 @@ def validate_resolution(
         evidence = item.get("evidence")
         if not isinstance(evidence, list) or not evidence:
             errors.append(f"{conflict_id}: RESOLVED 但缺少 evidence。")
+        elif evidence_map:
+            for ev in evidence:
+                evidence_id = str(ev.get("evidence_id") or "")
+                if not evidence_id:
+                    errors.append(
+                        f"{conflict_id}: AI Runtime evidence 缺少 evidence_id。"
+                    )
+                    continue
+                manifest_item = evidence_map.get(evidence_id)
+                if manifest_item is None:
+                    errors.append(
+                        f"{conflict_id}: evidence_id={evidence_id} 不在 Program 抓取的证据 Manifest 中。"
+                    )
+                    continue
+
+                locator = str(ev.get("locator") or "")
+                valid_locators = {
+                    str(manifest_item.get("pdf_url") or ""),
+                    str(manifest_item.get("detail_url") or ""),
+                }
+                valid_locators.discard("")
+                if locator and locator not in valid_locators:
+                    errors.append(
+                        f"{conflict_id}: evidence_id={evidence_id} 的 locator 与 Program 证据不一致。"
+                    )
+
+                source_type = str(ev.get("source_type") or "")
+                manifest_source = str(manifest_item.get("source_type") or "")
+                if source_type and source_type != manifest_source:
+                    errors.append(
+                        f"{conflict_id}: evidence_id={evidence_id} 的 source_type 与 Program 证据不一致。"
+                    )
 
         field = req.get("field")
         value = item.get("resolved_value")
@@ -286,6 +329,9 @@ def validate_resolution(
     trusted["source_manifest_ref"] = "source_manifest.json"
     trusted["semantic_resolution_ref"] = "semantic_resolution.json"
     trusted["semantic_validation_ref"] = "semantic_resolution_validation.json"
+    trusted["semantic_evidence_manifest_ref"] = (
+        "semantic_evidence_manifest.json" if evidence_manifest_path.exists() else ""
+    )
 
     output_cols = [
         "bond_code",
@@ -308,6 +354,7 @@ def validate_resolution(
         "source_manifest_ref",
         "semantic_resolution_ref",
         "semantic_validation_ref",
+        "semantic_evidence_manifest_ref",
     ]
     missing_cols = [col for col in output_cols if col not in trusted.columns]
     if missing_cols:
@@ -334,6 +381,12 @@ def validate_resolution(
         "trusted_market_input_generated": True,
         "trusted_market_input_ref": "trusted_market_input.csv",
         "semantic_resolution_ref": "semantic_resolution.json",
+        "semantic_evidence_manifest_ref": (
+            "semantic_evidence_manifest.json"
+            if evidence_manifest_path.exists()
+            else None
+        ),
+        "evidence_count": len(evidence_map),
         "cv_field": "trusted_CV",
     }
     write_json(run_dir / "semantic_resolution_validation.json", validation)
