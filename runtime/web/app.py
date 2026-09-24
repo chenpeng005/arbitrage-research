@@ -5,6 +5,7 @@ import json
 import os
 import secrets
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -29,7 +30,7 @@ CHAT_TASK_ROOT = DATA_ROOT / "chat_tasks"
 
 ACQ_SCRIPT = ROOT / "runtime" / "market_map" / "acquisition.py"
 CALC_SCRIPT = ROOT / "runtime" / "market_map" / "calculation.py"
-RUNTIME_PYTHON = os.environ.get("ACQUISITION_PYTHON", "python3")
+RUNTIME_PYTHON = os.environ.get("ACQUISITION_PYTHON", sys.executable)
 
 STATIC_DIR = Path(__file__).parent / "static"
 
