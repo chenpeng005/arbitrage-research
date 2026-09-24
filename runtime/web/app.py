@@ -898,7 +898,6 @@ def create_run(request: RunRequest) -> dict:
             "unit": "Market Map Builder / Acquisition",
             "status": "PENDING",
             "snapshot_mode": request.snapshot_mode,
-            "ai_execution_mode": request.ai_execution_mode,
             "market_cutoff": cutoff,
             "created_at": utcnow(),
             "updated_at": utcnow(),
