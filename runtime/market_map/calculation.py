@@ -623,17 +623,43 @@ def run_calculation(
         encoding="utf-8",
     )
 
+    acquisition_mode = acquisition.get("snapshot_mode")
+    formal_snapshot = (
+        acquisition_mode == "CLOSE"
+        and input_contract == "TRUSTED_MARKET_INPUT"
+        and model_audit["status"] == "PASS"
+    )
+    snapshot_class = "FORMAL_CLOSE" if formal_snapshot else "TEST_ONLY"
+
+    acquisition_step_warnings: list[str] = []
+    for acq_step in acquisition.get("steps", []):
+        for warning in acq_step.get("warnings", []) or []:
+            acquisition_step_warnings.append(str(warning))
+
     snapshot = {
         "snapshot_id": f"market-map-{market_cutoff}-{run_id}",
         "market_cutoff": market_cutoff,
         "model_version": MODEL_VERSION,
         "created_at": now_utc(),
+        "snapshot_class": snapshot_class,
+        "freeze": {
+            "formal": formal_snapshot,
+            "status": "FROZEN" if formal_snapshot else "TEST_ONLY",
+            "rule": "CLOSE + TRUSTED_MARKET_INPUT + MODEL_AUDIT_PASS",
+        },
         "model_audit_ref": "model_audit.json",
         "input": {
             "input_dir": str(input_dir),
+            "input_contract": input_contract,
             "acquisition_run_id": acquisition.get("run_id"),
             "acquisition_status": acquisition.get("status"),
+            "acquisition_snapshot_mode": acquisition_mode,
+            "source_manifest_ref": str(input_dir / "source_manifest.json"),
+            "acquisition_audit_ref": str(input_dir / "acquisition_audit.json"),
+            "trusted_market_input_ref": str(input_dir / "trusted_market_input.csv"),
+            "acquisition_warnings": acquisition_step_warnings,
         },
+        "universe": acquisition.get("counts", {}),
         "zones": {
             "support": [SUPPORT_MIN, SUPPORT_MAX],
             "core": [CORE_MIN, CORE_MAX],
@@ -699,6 +725,8 @@ def run_calculation(
     model_df.to_csv(output_dir / "market_map_calculated.csv", index=False)
 
     c6.metrics = {
+        "snapshot_class": snapshot_class,
+        "formal_snapshot": formal_snapshot,
         "q25": residual_stats["q25"],
         "q50": residual_stats["q50"],
         "q75": residual_stats["q75"],
@@ -733,7 +761,12 @@ def run_calculation(
     }
     c6.status = "PASS"
     c6.conclusion = (
-        f"市场价值映射快照已生成；Core residual Q50={residual_stats['q50']:.2f} 元。"
+        (
+            "正式 CLOSE 市场价值映射快照已冻结；"
+            if formal_snapshot
+            else "测试用市场价值映射快照已生成（不会标记为正式 CLOSE）；"
+        )
+        + f"Core residual Q50={residual_stats['q50']:.2f} 元。"
     )
     emit(c6)
 
