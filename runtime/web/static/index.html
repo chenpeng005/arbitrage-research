@@ -11,11 +11,16 @@
     <header class="hero">
       <div>
         <p class="eyebrow">机会发现运行台</p>
-        <h1>市场价值映射构建器 · 单元测试</h1>
-        <p class="sub">网页触发 → 程序控制 → 数据获取与审计 → 逐步反馈 → 结果持久化</p>
+        <h1>市场价值映射构建器 · 单元测试工作台</h1>
+        <p class="sub">网页触发 → 程序控制 → 单元逐步反馈 → 审计 → 结果持久化</p>
       </div>
-      <div id="overall" class="overall idle">尚未运行</div>
+      <div class="overall pass">工作台就绪</div>
     </header>
+
+    <section class="unit-title">
+      <div><span class="unit-no">单元 01</span><h2>数据获取与审计</h2></div>
+      <div id="overall" class="overall idle">尚未运行</div>
+    </section>
 
     <section class="control card">
       <div>
@@ -43,18 +48,54 @@
     </section>
 
     <section id="summary" class="summary card hidden">
-      <div class="section-head">
-        <div><p class="eyebrow">本次运行结果</p><h2>数据准备汇总</h2></div>
-      </div>
+      <div class="section-head"><div><p class="eyebrow">本次运行结果</p><h2>数据准备汇总</h2></div></div>
       <div id="summaryMetrics" class="summary-grid"></div>
     </section>
 
     <section id="steps" class="steps"></section>
 
+    <div class="unit-separator"></div>
+
+    <section class="unit-title">
+      <div><span class="unit-no">单元 02</span><h2>市场价值映射计算</h2></div>
+      <div id="calcOverall" class="overall idle">尚未运行</div>
+    </section>
+
+    <section class="control card">
+      <div>
+        <label>输入来源</label>
+        <select id="calcInputMode">
+          <option value="REPLAY_TEST">固定历史审计结果</option>
+          <option value="LATEST_SUCCESS">最近一次成功的数据获取结果</option>
+        </select>
+      </div>
+      <div>
+        <label>市场截面日期</label>
+        <input id="calcCutoff" type="date">
+      </div>
+      <button id="calcRunBtn">运行市场价值映射计算</button>
+    </section>
+
+    <section id="calcRunMeta" class="meta card muted">
+      尚未运行。计算单元不会重新联网取数，只读取已经通过数据获取单元审计的输入。
+    </section>
+
+    <section class="progress card">
+      <div class="progress-head"><strong>计算进度</strong><span id="calcProgressText">0 / 7</span></div>
+      <div class="track"><i id="calcBar"></i></div>
+    </section>
+
+    <section id="calcSummary" class="summary card hidden">
+      <div class="section-head"><div><p class="eyebrow">本次计算结果</p><h2>模型增量效果</h2></div></div>
+      <div id="calcSummaryMetrics" class="summary-grid calc-grid"></div>
+    </section>
+
+    <section id="calcSteps" class="steps"></section>
+
     <section class="card tech">
       <details>
         <summary>技术说明</summary>
-        <p>主界面只展示业务上有意义的步骤；原始数据、异常对象和完整 JSON 同时保存在服务器运行记录中。</p>
+        <p>两个单元彼此独立：单元01负责得到可审计市场截面；单元02只读取已审计输入并拟合基础曲线、期限调整、规模候选调整和残差分布。</p>
       </details>
     </section>
   </main>
