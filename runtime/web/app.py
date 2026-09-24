@@ -60,6 +60,7 @@ _lock = threading.Lock()
 class RunRequest(BaseModel):
     snapshot_mode: str = "LIVE_TEST"
     market_cutoff: str | None = None
+    historical_snapshot_id: str | None = None
 
 
 class CalculationRunRequest(BaseModel):
@@ -72,6 +73,7 @@ class MarketMapPipelineRequest(BaseModel):
     snapshot_mode: str = "CLOSE"
     market_cutoff: str | None = None
     ai_execution_mode: str = "AUTO_API"
+    historical_snapshot_id: str | None = None
 
 
 TERMINAL_JOB_STATUSES = {"PASS", "WARNING", "FAIL", "NEEDS_REVIEW"}
@@ -186,6 +188,10 @@ def persist_run_metadata_payload(job: dict) -> None:
         "chat_task_path": job.get("chat_task_path"),
         "calculation_job_id": job.get("calculation_job_id"),
         "snapshot_mode": job.get("snapshot_mode"),
+        "historical_snapshot_id": job.get("historical_snapshot_id"),
+        "historical_source_acquisition_job_id": job.get(
+            "historical_source_acquisition_job_id"
+        ),
         "input_mode": job.get("input_mode"),
         "market_cutoff": job.get("market_cutoff"),
         "created_at": job.get("created_at"),
@@ -208,6 +214,111 @@ def persist_run_metadata_payload(job: dict) -> None:
         json.dumps(metadata, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+
+
+def list_formal_market_map_entries() -> list[dict]:
+    if not MARKET_MAP_REGISTRY_DIR.exists():
+        return []
+
+    entries: list[dict] = []
+    for path in MARKET_MAP_REGISTRY_DIR.glob("*.json"):
+        try:
+            entry = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+
+        if entry.get("snapshot_class") != "FORMAL_CLOSE":
+            continue
+
+        snapshot_path = Path(entry.get("snapshot_path") or "")
+        table_path = Path(entry.get("calculated_table_path") or "")
+        acquisition_job_id = entry.get("acquisition_job_id")
+        acquisition_dir = (
+            DATA_ROOT / "runs" / acquisition_job_id
+            if acquisition_job_id
+            else None
+        )
+
+        replay_ready = bool(
+            snapshot_path.exists()
+            and table_path.exists()
+            and acquisition_dir is not None
+            and acquisition_dir.exists()
+            and (acquisition_dir / "raw").exists()
+            and (acquisition_dir / "raw" / "maturity_ths.csv").exists()
+            and (acquisition_dir / "raw" / "size_jisilu.csv").exists()
+            and (
+                (acquisition_dir / "raw" / "market_primary_eastmoney_push2.csv").exists()
+                or (
+                    (acquisition_dir / "raw" / "market_fallback_jisilu.csv").exists()
+                    and (
+                        acquisition_dir
+                        / "raw"
+                        / "market_fallback_eastmoney_datacenter.csv"
+                    ).exists()
+                )
+            )
+        )
+
+        item = dict(entry)
+        item["replay_ready"] = replay_ready
+        entries.append(item)
+
+    entries.sort(
+        key=lambda x: (
+            str(x.get("market_cutoff") or ""),
+            str(x.get("created_at") or ""),
+        ),
+        reverse=True,
+    )
+    return entries
+
+
+def get_formal_market_map_entry(snapshot_id: str) -> dict:
+    path = MARKET_MAP_REGISTRY_DIR / f"{snapshot_id}.json"
+    if not path.exists():
+        raise HTTPException(404, "historical formal snapshot not found")
+    try:
+        entry = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise HTTPException(
+            500,
+            f"historical snapshot registry is invalid: {type(exc).__name__}",
+        )
+
+    if entry.get("snapshot_class") != "FORMAL_CLOSE":
+        raise HTTPException(400, "historical replay source must be FORMAL_CLOSE")
+    return entry
+
+
+def resolve_historical_source(snapshot_id: str) -> tuple[dict, Path]:
+    entry = get_formal_market_map_entry(snapshot_id)
+    acquisition_job_id = entry.get("acquisition_job_id")
+    if not acquisition_job_id:
+        raise HTTPException(400, "historical snapshot has no acquisition job")
+
+    source_dir = DATA_ROOT / "runs" / acquisition_job_id
+    raw_dir = source_dir / "raw"
+    required = [
+        raw_dir / "maturity_ths.csv",
+        raw_dir / "size_jisilu.csv",
+    ]
+    market_ready = (
+        (raw_dir / "market_primary_eastmoney_push2.csv").exists()
+        or (
+            (raw_dir / "market_fallback_jisilu.csv").exists()
+            and (raw_dir / "market_fallback_eastmoney_datacenter.csv").exists()
+        )
+    )
+    if not source_dir.exists() or not raw_dir.exists():
+        raise HTTPException(400, "historical acquisition raw is not available")
+    if any(not p.exists() for p in required) or not market_ready:
+        raise HTTPException(
+            400,
+            "historical snapshot was frozen before the replay-ready Raw contract; "
+            "this snapshot cannot be replayed deterministically",
+        )
+    return entry, source_dir
 
 
 def register_formal_market_map_snapshot(job_id: str) -> None:
@@ -401,6 +512,19 @@ def acquisition_worker(job_id: str, request: RunRequest) -> None:
 
     if request.snapshot_mode == "REPLAY_TEST":
         cmd.extend(["--fixture-dir", str(RAW_FIXTURE_DIR)])
+    elif request.snapshot_mode == "HISTORICAL_REPLAY":
+        if not request.historical_snapshot_id:
+            raise RuntimeError("HISTORICAL_REPLAY requires historical_snapshot_id")
+        entry, historical_source_dir = resolve_historical_source(
+            request.historical_snapshot_id
+        )
+        cmd.extend(["--fixture-dir", str(historical_source_dir)])
+        with _lock:
+            _jobs[job_id]["historical_snapshot_id"] = request.historical_snapshot_id
+            _jobs[job_id]["historical_source_acquisition_job_id"] = entry.get(
+                "acquisition_job_id"
+            )
+        persist_job(job_id)
 
     execute_job(
         job_id,
@@ -701,6 +825,7 @@ def market_map_pipeline_worker(
         acquisition_request = RunRequest(
             snapshot_mode=request.snapshot_mode,
             market_cutoff=cutoff,
+            historical_snapshot_id=request.historical_snapshot_id,
         )
         acquisition_job_id = create_run(acquisition_request)["job_id"]
         update_controller_job(
@@ -884,14 +1009,31 @@ def home() -> HTMLResponse:
 
 @app.post("/api/runs")
 def create_run(request: RunRequest) -> dict:
-    if request.snapshot_mode not in {"LIVE_TEST", "CLOSE", "REPLAY_TEST"}:
+    if request.snapshot_mode not in {
+        "LIVE_TEST",
+        "CLOSE",
+        "REPLAY_TEST",
+        "HISTORICAL_REPLAY",
+    }:
         raise HTTPException(400, "unsupported snapshot_mode")
 
     if request.snapshot_mode == "REPLAY_TEST" and not RAW_FIXTURE_DIR.exists():
         raise HTTPException(400, "replay fixture is not available")
 
+    historical_entry = None
+    if request.snapshot_mode == "HISTORICAL_REPLAY":
+        if not request.historical_snapshot_id:
+            raise HTTPException(400, "historical_snapshot_id is required")
+        historical_entry, _ = resolve_historical_source(
+            request.historical_snapshot_id
+        )
+
     job_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:6]
-    cutoff = request.market_cutoff or datetime.now().date().isoformat()
+    cutoff = (
+        historical_entry.get("market_cutoff")
+        if historical_entry is not None
+        else (request.market_cutoff or datetime.now().date().isoformat())
+    )
 
     with _lock:
         _jobs[job_id] = {
@@ -899,6 +1041,12 @@ def create_run(request: RunRequest) -> dict:
             "unit": "Market Map Builder / Acquisition",
             "status": "PENDING",
             "snapshot_mode": request.snapshot_mode,
+            "historical_snapshot_id": request.historical_snapshot_id,
+            "historical_source_acquisition_job_id": (
+                historical_entry.get("acquisition_job_id")
+                if historical_entry is not None
+                else None
+            ),
             "market_cutoff": cutoff,
             "created_at": utcnow(),
             "updated_at": utcnow(),
@@ -986,11 +1134,24 @@ def create_calculation_run(request: CalculationRunRequest) -> dict:
 def create_market_map_pipeline(
     request: MarketMapPipelineRequest,
 ) -> dict:
-    if request.snapshot_mode not in {"LIVE_TEST", "CLOSE", "REPLAY_TEST"}:
+    if request.snapshot_mode not in {
+        "LIVE_TEST",
+        "CLOSE",
+        "REPLAY_TEST",
+        "HISTORICAL_REPLAY",
+    }:
         raise HTTPException(400, "unsupported snapshot_mode")
 
     if request.snapshot_mode == "REPLAY_TEST" and not RAW_FIXTURE_DIR.exists():
         raise HTTPException(400, "replay fixture is not available")
+
+    historical_entry = None
+    if request.snapshot_mode == "HISTORICAL_REPLAY":
+        if not request.historical_snapshot_id:
+            raise HTTPException(400, "historical_snapshot_id is required")
+        historical_entry, _ = resolve_historical_source(
+            request.historical_snapshot_id
+        )
 
     if request.ai_execution_mode not in {"AUTO_API", "INTERACTIVE_CHAT"}:
         raise HTTPException(400, "unsupported ai_execution_mode")
@@ -1000,7 +1161,11 @@ def create_market_map_pipeline(
         + "_pipeline_"
         + uuid.uuid4().hex[:6]
     )
-    cutoff = request.market_cutoff or datetime.now().date().isoformat()
+    cutoff = (
+        historical_entry.get("market_cutoff")
+        if historical_entry is not None
+        else (request.market_cutoff or datetime.now().date().isoformat())
+    )
 
     with _lock:
         _jobs[job_id] = {
@@ -1010,6 +1175,12 @@ def create_market_map_pipeline(
             "phase": "PENDING",
             "snapshot_mode": request.snapshot_mode,
             "ai_execution_mode": request.ai_execution_mode,
+            "historical_snapshot_id": request.historical_snapshot_id,
+            "historical_source_acquisition_job_id": (
+                historical_entry.get("acquisition_job_id")
+                if historical_entry is not None
+                else None
+            ),
             "market_cutoff": cutoff,
             "created_at": utcnow(),
             "updated_at": utcnow(),
@@ -1029,6 +1200,26 @@ def create_market_map_pipeline(
     ).start()
 
     return {"job_id": job_id}
+
+
+@app.get("/api/market-map/history")
+def get_market_map_history() -> dict:
+    entries = list_formal_market_map_entries()
+    return {
+        "count": len(entries),
+        "items": [
+            {
+                "snapshot_id": x.get("snapshot_id"),
+                "market_cutoff": x.get("market_cutoff"),
+                "model_version": x.get("model_version"),
+                "created_at": x.get("created_at"),
+                "acquisition_job_id": x.get("acquisition_job_id"),
+                "calculation_job_id": x.get("calculation_job_id"),
+                "replay_ready": x.get("replay_ready", False),
+            }
+            for x in entries
+        ],
+    }
 
 
 @app.get("/api/chat-tasks/{task_id}")
@@ -1168,9 +1359,42 @@ def find_latest_market_map_output() -> tuple[dict, Path, Path] | None:
     return entry, snapshot_path, table_path
 
 
+def find_market_map_output_for_calculation_job(
+    calculation_job_id: str,
+) -> tuple[dict, Path, Path] | None:
+    run_dir = DATA_ROOT / "runs" / calculation_job_id
+    snapshot_path = run_dir / "market_map_snapshot.json"
+    table_path = run_dir / "market_map_calculated.csv"
+    if not snapshot_path.exists() or not table_path.exists():
+        return None
+    try:
+        snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+    if snapshot.get("snapshot_class") not in {
+        "FORMAL_CLOSE",
+        "HISTORICAL_REPLAY",
+    }:
+        return None
+
+    entry = {
+        "snapshot_id": snapshot.get("snapshot_id"),
+        "calculation_job_id": calculation_job_id,
+        "acquisition_job_id": snapshot.get("input", {}).get(
+            "acquisition_run_id"
+        ),
+    }
+    return entry, snapshot_path, table_path
+
+
 @app.get("/api/market-map/view")
-def get_market_map_view() -> dict:
-    found = find_latest_market_map_output()
+def get_market_map_view(calculation_job_id: str | None = None) -> dict:
+    found = (
+        find_market_map_output_for_calculation_job(calculation_job_id)
+        if calculation_job_id
+        else find_latest_market_map_output()
+    )
     if found is None:
         raise HTTPException(
             404,
@@ -1231,7 +1455,11 @@ def get_market_map_view() -> dict:
     )
 
     return {
-        "source_type": "FORMAL_REGISTRY",
+        "source_type": (
+            "HISTORICAL_REPLAY"
+            if snapshot.get("snapshot_class") == "HISTORICAL_REPLAY"
+            else "FORMAL_REGISTRY"
+        ),
         "snapshot_class": snapshot.get("snapshot_class"),
         "market_cutoff": snapshot.get("market_cutoff"),
         "model_version": snapshot.get("model_version"),
