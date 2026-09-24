@@ -20,6 +20,12 @@ DATA_ROOT = Path(os.environ.get("RUNTIME_DATA_ROOT", ROOT / "runtime_data"))
 ACQ_SCRIPT = ROOT / "runtime" / "market_map" / "acquisition.py"
 ACQ_PYTHON = os.environ.get("ACQUISITION_PYTHON", "python3")
 STATIC_DIR = Path(__file__).parent / "static"
+FIXTURE_DIR = Path(
+    os.environ.get(
+        "RUNTIME_FIXTURE_DIR",
+        DATA_ROOT / "fixtures" / "market_map_20260924_intraday",
+    )
+)
 
 app = FastAPI(title="Opportunity Discovery Runtime")
 
@@ -108,6 +114,8 @@ def worker(job_id: str, request: RunRequest) -> None:
         "--snapshot-mode", request.snapshot_mode,
         "--market-cutoff", cutoff,
     ]
+    if request.snapshot_mode == "REPLAY_TEST":
+        cmd.extend(["--fixture-dir", str(FIXTURE_DIR)])
 
     with _lock:
         _jobs[job_id]["status"] = "RUNNING"
@@ -179,8 +187,10 @@ def home() -> HTMLResponse:
 
 @app.post("/api/runs")
 def create_run(request: RunRequest) -> dict:
-    if request.snapshot_mode not in {"LIVE_TEST", "CLOSE"}:
-        raise HTTPException(400, "snapshot_mode must be LIVE_TEST or CLOSE")
+    if request.snapshot_mode not in {"LIVE_TEST", "CLOSE", "REPLAY_TEST"}:
+        raise HTTPException(400, "unsupported snapshot_mode")
+    if request.snapshot_mode == "REPLAY_TEST" and not FIXTURE_DIR.exists():
+        raise HTTPException(400, "replay fixture is not available")
     job_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:6]
     cutoff = request.market_cutoff or datetime.now().date().isoformat()
     with _lock:
@@ -218,4 +228,5 @@ def health() -> dict:
         "root": str(ROOT),
         "data_root": str(DATA_ROOT),
         "acquisition_script_exists": ACQ_SCRIPT.exists(),
+        "replay_fixture_exists": FIXTURE_DIR.exists(),
     }
