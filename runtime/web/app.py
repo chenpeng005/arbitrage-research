@@ -19,6 +19,9 @@ import pandas as pd
 
 ROOT = Path(os.environ.get("RUNTIME_ROOT", Path(__file__).resolve().parents[2]))
 DATA_ROOT = Path(os.environ.get("RUNTIME_DATA_ROOT", ROOT / "runtime_data"))
+DEPLOYMENT_MANIFEST_PATH = DATA_ROOT / "deployment_manifest.json"
+MARKET_MAP_REGISTRY_DIR = DATA_ROOT / "registry" / "market_map_snapshots"
+LATEST_FORMAL_MARKET_MAP_PATH = DATA_ROOT / "registry" / "latest_formal_market_map.json"
 
 ACQ_SCRIPT = ROOT / "runtime" / "market_map" / "acquisition.py"
 CALC_SCRIPT = ROOT / "runtime" / "market_map" / "calculation.py"
@@ -93,6 +96,152 @@ def utcnow() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def load_deployment_manifest() -> dict:
+    if not DEPLOYMENT_MANIFEST_PATH.exists():
+        return {
+            "application_commit_sha": None,
+            "knowledge_commit_sha": None,
+            "deployed_at": None,
+            "deployment_method": None,
+        }
+    try:
+        data = json.loads(DEPLOYMENT_MANIFEST_PATH.read_text(encoding="utf-8"))
+        return {
+            "application_commit_sha": data.get("application_commit_sha"),
+            "knowledge_commit_sha": data.get("knowledge_commit_sha"),
+            "deployed_at": data.get("deployed_at"),
+            "deployment_method": data.get("deployment_method"),
+        }
+    except Exception:
+        return {
+            "application_commit_sha": None,
+            "knowledge_commit_sha": None,
+            "deployed_at": None,
+            "deployment_method": "INVALID_MANIFEST",
+        }
+
+
+def persist_run_metadata_payload(job: dict) -> None:
+    job_id = job.get("job_id")
+    if not job_id:
+        return
+
+    run_dir = DATA_ROOT / "runs" / job_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    snapshot = {}
+    snapshot_path_raw = job.get("snapshot_path")
+    if snapshot_path_raw:
+        snapshot_path = Path(snapshot_path_raw)
+        if snapshot_path.exists():
+            try:
+                snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+            except Exception:
+                snapshot = {}
+
+    result = job.get("result") if isinstance(job.get("result"), dict) else {}
+    deployment = load_deployment_manifest()
+
+    artifacts = {
+        "result": job.get("result_path"),
+        "source_manifest": job.get("source_manifest_path"),
+        "acquisition_audit": job.get("acquisition_audit_path"),
+        "trusted_market_input": job.get("trusted_market_input_path"),
+        "market_input_audit": job.get("market_input_path"),
+        "snapshot": job.get("snapshot_path"),
+        "model_audit": job.get("model_audit_path"),
+        "calculated_table": job.get("calculated_table_path"),
+    }
+
+    runtime_run_id = job.get("runtime_run_id")
+    metadata = {
+        "job_id": job_id,
+        "unit": job.get("unit"),
+        "status": job.get("status"),
+        "source_job_id": job.get("source_job_id"),
+        "snapshot_mode": job.get("snapshot_mode"),
+        "input_mode": job.get("input_mode"),
+        "market_cutoff": job.get("market_cutoff"),
+        "created_at": job.get("created_at"),
+        "command_started_at": job.get("command_started_at"),
+        "completed_at": job.get("completed_at"),
+        "runtime_run_id": runtime_run_id,
+        "runtime_status": job.get("runtime_status"),
+        "data_snapshot_id": (
+            f"market-input-{job.get('market_cutoff')}-{runtime_run_id}"
+            if job.get("unit") == "Market Map Builder / Acquisition" and runtime_run_id
+            else None
+        ),
+        "snapshot_id": snapshot.get("snapshot_id"),
+        "snapshot_class": snapshot.get("snapshot_class"),
+        "model_version": snapshot.get("model_version") or result.get("model_version"),
+        "artifacts": artifacts,
+        "deployment": deployment,
+    }
+    (run_dir / "run_metadata.json").write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def register_formal_market_map_snapshot(job_id: str) -> None:
+    with _lock:
+        job = dict(_jobs.get(job_id, {}))
+    if not job:
+        return
+
+    snapshot_path_raw = job.get("snapshot_path")
+    table_path_raw = job.get("calculated_table_path")
+    if not snapshot_path_raw or not table_path_raw:
+        return
+
+    snapshot_path = Path(snapshot_path_raw)
+    table_path = Path(table_path_raw)
+    if not snapshot_path.exists() or not table_path.exists():
+        return
+
+    try:
+        snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    except Exception:
+        return
+
+    if snapshot.get("snapshot_class") != "FORMAL_CLOSE":
+        return
+
+    snapshot_id = snapshot.get("snapshot_id")
+    if not snapshot_id:
+        return
+
+    MARKET_MAP_REGISTRY_DIR.mkdir(parents=True, exist_ok=True)
+    LATEST_FORMAL_MARKET_MAP_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    entry = {
+        "snapshot_id": snapshot_id,
+        "snapshot_class": snapshot.get("snapshot_class"),
+        "market_cutoff": snapshot.get("market_cutoff"),
+        "model_version": snapshot.get("model_version"),
+        "created_at": snapshot.get("created_at"),
+        "calculation_job_id": job_id,
+        "acquisition_job_id": job.get("source_job_id"),
+        "snapshot_path": str(snapshot_path),
+        "calculated_table_path": str(table_path),
+        "model_audit_path": job.get("model_audit_path"),
+        "run_metadata_path": str(DATA_ROOT / "runs" / job_id / "run_metadata.json"),
+        "input": snapshot.get("input", {}),
+        "deployment": load_deployment_manifest(),
+    }
+
+    registry_path = MARKET_MAP_REGISTRY_DIR / f"{snapshot_id}.json"
+    registry_path.write_text(
+        json.dumps(entry, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    LATEST_FORMAL_MARKET_MAP_PATH.write_text(
+        json.dumps(entry, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
 def persist_job(job_id: str) -> None:
     with _lock:
         payload = dict(_jobs[job_id])
@@ -102,6 +251,7 @@ def persist_job(job_id: str) -> None:
         json.dumps(payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    persist_run_metadata_payload(payload)
 
 
 def update_step(job_id: str, event: dict) -> None:
@@ -196,6 +346,7 @@ def execute_job(
             job["raw_output_tail"] = raw_lines[-20:]
 
         persist_job(job_id)
+        register_formal_market_map_snapshot(job_id)
 
     except Exception as exc:
         with _lock:
@@ -230,6 +381,9 @@ def acquisition_worker(job_id: str, request: RunRequest) -> None:
         cmd,
         out / "acquisition_result.json",
         extra_result_paths={
+            "source_manifest_path": out / "source_manifest.json",
+            "acquisition_audit_path": out / "acquisition_audit.json",
+            "trusted_market_input_path": out / "trusted_market_input.csv",
             "market_input_path": out / "market_input_audit.csv",
             "excluded_path": out / "universe_excluded.csv",
         },
@@ -262,6 +416,7 @@ def calculation_worker(
         out / "calculation_result.json",
         extra_result_paths={
             "snapshot_path": out / "market_map_snapshot.json",
+            "model_audit_path": out / "model_audit.json",
             "calculated_table_path": out / "market_map_calculated.csv",
         },
     )
