@@ -236,14 +236,35 @@ def run_calculation(
     acquisition_path = input_dir / "acquisition_result.json"
 
     acquisition = {}
+    semantic_validation = {}
+    semantic_validation_path = input_dir / "semantic_resolution_validation.json"
+
     if acquisition_path.exists():
         acquisition = json.loads(acquisition_path.read_text(encoding="utf-8"))
-        if acquisition.get("status") not in {"PASS", "WARNING"}:
+
+    acquisition_status = acquisition.get("status")
+    if acquisition_status not in {"PASS", "WARNING"}:
+        if acquisition_status == "NEEDS_REVIEW" and semantic_validation_path.exists():
+            semantic_validation = json.loads(
+                semantic_validation_path.read_text(encoding="utf-8")
+            )
+            if semantic_validation.get("status") == "PASS":
+                c0.warnings.append(
+                    "上游原始 Acquisition 为 NEEDS_REVIEW，但 Semantic Resolution 已通过 Program Validation；本次使用修复后的 Trusted Input。"
+                )
+            else:
+                return fail(
+                    result,
+                    c0,
+                    output_dir,
+                    "上游 Acquisition 为 NEEDS_REVIEW，且 Semantic Resolution Validation 未通过。",
+                )
+        else:
             return fail(
                 result,
                 c0,
                 output_dir,
-                f"上游数据获取单元状态为 {acquisition.get('status')}，禁止进入计算。",
+                f"上游数据获取单元状态为 {acquisition_status}，禁止进入计算。",
             )
 
     if trusted_path.exists():
@@ -650,10 +671,18 @@ def run_calculation(
     )
 
     acquisition_mode = acquisition.get("snapshot_mode")
+    resolution_gate_ok = (
+        acquisition.get("status") in {"PASS", "WARNING"}
+        or (
+            acquisition.get("status") == "NEEDS_REVIEW"
+            and semantic_validation.get("status") == "PASS"
+        )
+    )
     formal_snapshot = (
         acquisition_mode == "CLOSE"
         and input_contract == "TRUSTED_MARKET_INPUT"
         and model_audit["status"] == "PASS"
+        and resolution_gate_ok
     )
     snapshot_class = "FORMAL_CLOSE" if formal_snapshot else "TEST_ONLY"
 
@@ -671,7 +700,7 @@ def run_calculation(
         "freeze": {
             "formal": formal_snapshot,
             "status": "FROZEN" if formal_snapshot else "TEST_ONLY",
-            "rule": "CLOSE + TRUSTED_MARKET_INPUT + MODEL_AUDIT_PASS",
+            "rule": "CLOSE + TRUSTED_MARKET_INPUT + MODEL_AUDIT_PASS + RESOLUTION_GATE_OK",
         },
         "model_audit_ref": "model_audit.json",
         "calculated_table_ref": "market_map_calculated.csv",
@@ -681,6 +710,17 @@ def run_calculation(
             "acquisition_run_id": acquisition.get("run_id"),
             "acquisition_status": acquisition.get("status"),
             "acquisition_snapshot_mode": acquisition_mode,
+            "semantic_resolution_status": semantic_validation.get("status"),
+            "semantic_resolution_ref": (
+                str(input_dir / "semantic_resolution.json")
+                if (input_dir / "semantic_resolution.json").exists()
+                else None
+            ),
+            "semantic_resolution_validation_ref": (
+                str(semantic_validation_path)
+                if semantic_validation_path.exists()
+                else None
+            ),
             "source_manifest_ref": (
                 str(input_dir / "source_manifest.json")
                 if (input_dir / "source_manifest.json").exists()
