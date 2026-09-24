@@ -124,9 +124,26 @@ class DeepSeekProvider:
         if not model:
             raise ValueError("DeepSeek model is required")
 
+        schema_contract = json.dumps(
+            output_schema,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        effective_system_prompt = (
+            system_prompt
+            + "\n\n## FINAL STRUCTURED OUTPUT CONTRACT\n"
+            + "When you are ready to return the final answer (not a tool call), "
+              "return exactly one JSON object conforming to this schema. "
+              "Do not omit required fields.\n"
+            + schema_contract
+        )
+
         payload: dict[str, Any] = {
             "model": model,
-            "messages": self._normalize_messages(system_prompt, messages),
+            "messages": self._normalize_messages(
+                effective_system_prompt,
+                messages,
+            ),
             "stream": False,
             "response_format": {"type": "json_object"},
         }
