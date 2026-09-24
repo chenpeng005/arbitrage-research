@@ -938,17 +938,38 @@ function renderMarketMap(){
   svg+='<text x="18" y="'+(m.t+ph/2)+'" class="axis-label" text-anchor="middle" transform="rotate(-90 18 '+(m.t+ph/2)+')">'
     +(marketMapMode==="raw"?"实际转债价格":"标准化价格")+'</text>';
 
-  const linePts=[];
-  const modelXMin=Math.max(xMin,Number(zone[0]||50));
-  const modelXMax=Math.min(xMax,Number(zone[1]||130));
-  if(modelXMax>modelXMin){
+  function baseLinePoints(startX,endX){
+    const pts=[];
+    if(!(endX>startX))return pts;
     for(let i=0;i<=100;i++){
-      const x=modelXMin+(modelXMax-modelXMin)*i/100;
+      const x=startX+(endX-startX)*i/100;
       const y=baseAnchorAt(x);
-      if(y>=yMin && y<=yMax)linePts.push(sx(x).toFixed(1)+','+sy(y).toFixed(1));
+      if(y>=yMin && y<=yMax){
+        pts.push(sx(x).toFixed(1)+','+sy(y).toFixed(1));
+      }
     }
+    return pts;
   }
-  if(linePts.length>1)svg+='<polyline points="'+linePts.join(" ")+'" class="base-line"/>';
+
+  const supportMin=Number(zone[0]||50);
+  const supportMax=Number(zone[1]||130);
+
+  const leftPts=baseLinePoints(xMin,Math.min(xMax,supportMin));
+  if(leftPts.length>1){
+    svg+='<polyline points="'+leftPts.join(" ")+'" class="base-line extrapolated"/>';
+  }
+
+  const modelXMin=Math.max(xMin,supportMin);
+  const modelXMax=Math.min(xMax,supportMax);
+  const linePts=baseLinePoints(modelXMin,modelXMax);
+  if(linePts.length>1){
+    svg+='<polyline points="'+linePts.join(" ")+'" class="base-line"/>';
+  }
+
+  const rightPts=baseLinePoints(Math.max(xMin,supportMax),xMax);
+  if(rightPts.length>1){
+    svg+='<polyline points="'+rightPts.join(" ")+'" class="base-line extrapolated"/>';
+  }
 
   visible.forEach(function(r){
     const x=Number(r.trusted_CV), y=mapY(r);
@@ -963,8 +984,9 @@ function renderMarketMap(){
   });
 
   svg+='</svg>';
-  svg+='<div class="chart-note">当前显示 '+visible.length+' 只；坐标轴按筛选结果自动缩放。BaseAnchor 仅在模型 Support '
-    +esc((zone||[]).join("–"))+' 内绘制。</div>';
+  svg+='<div class="chart-note">当前显示 '+visible.length+' 只；坐标轴按筛选结果自动缩放。红色实线 = 模型 Support '
+    +esc((zone||[]).join("–"))
+    +'；红色虚线 = 同一 Base 公式的数学外推，仅供观察，不属于正式有效区间。</div>';
   $("#mapChart").innerHTML=svg;
 
   $("#mapChart").querySelectorAll(".bond-point").forEach(function(g){
