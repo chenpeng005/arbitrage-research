@@ -180,6 +180,20 @@ def validate_resolution(
                         f"{conflict_id}: evidence_id={evidence_id} 的 source_type 与 Program 证据不一致。"
                     )
 
+                title = str(ev.get("title") or "")
+                manifest_title = str(manifest_item.get("title") or "")
+                if title and title != manifest_title:
+                    errors.append(
+                        f"{conflict_id}: evidence_id={evidence_id} 的 title 与 Program 证据不一致。"
+                    )
+
+                published_at = str(ev.get("published_at") or "")
+                manifest_published = str(manifest_item.get("published_at") or "")
+                if published_at and published_at != manifest_published:
+                    errors.append(
+                        f"{conflict_id}: evidence_id={evidence_id} 的 published_at 与 Program 证据不一致。"
+                    )
+
         field = req.get("field")
         value = item.get("resolved_value")
 
