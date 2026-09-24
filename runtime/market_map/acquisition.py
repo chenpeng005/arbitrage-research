@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
+from zoneinfo import ZoneInfo
 
 import akshare as ak
 import pandas as pd
@@ -217,8 +218,54 @@ def run_acquisition(
     )
 
     s0 = step(result, "S0", "冻结本次运行")
-    s0.status = "PASS"
-    s0.metrics = {"run_id": run_id, "snapshot_mode": snapshot_mode, "market_cutoff": market_cutoff}
+    s0.metrics = {
+        "run_id": run_id,
+        "snapshot_mode": snapshot_mode,
+        "market_cutoff": market_cutoff,
+    }
+
+    if snapshot_mode == "CLOSE":
+        china_now = datetime.now(ZoneInfo("Asia/Shanghai"))
+        s0.metrics["china_time"] = china_now.isoformat(timespec="minutes")
+
+        if market_cutoff != china_now.date().isoformat():
+            return fail(
+                result,
+                s0,
+                output_dir,
+                "正式收盘模式只允许生成中国市场当天收盘截面；"
+                "历史日期必须使用历史回放 / 历史数据模式，禁止用当前行情回填过去日期。",
+            )
+
+        if (china_now.hour, china_now.minute) < (15, 10):
+            return fail(
+                result,
+                s0,
+                output_dir,
+                "当前尚未超过 15:10（北京时间），正式收盘截面尚未冻结；请使用盘中测试模式。",
+            )
+
+        try:
+            trade_dates = ak.tool_trade_date_hist_sina().copy()
+            trade_dates["trade_date"] = pd.to_datetime(
+                trade_dates["trade_date"], errors="coerce"
+            ).dt.date
+            if china_now.date() not in set(trade_dates["trade_date"].dropna()):
+                return fail(
+                    result,
+                    s0,
+                    output_dir,
+                    "今天不是A股交易日，不能生成今天的正式收盘截面。",
+                )
+            s0.metrics["trade_day_check"] = "PASS"
+        except Exception as exc:
+            s0.status = "WARNING"
+            s0.warnings = [
+                f"交易日历校验暂时不可用：{type(exc).__name__}；继续运行但保留时间审计警告。"
+            ]
+
+    if s0.status != "WARNING":
+        s0.status = "PASS"
     s0.conclusion = "运行身份和市场时点已冻结，可以开始取数。"
     emit(s0)
 
