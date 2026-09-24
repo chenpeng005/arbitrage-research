@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import uuid
 from datetime import datetime, timezone
@@ -43,9 +44,9 @@ def build_provider(provider_name: str, provider_config: dict[str, Any]) -> AIPro
 
     if provider_name == "deepseek":
         return DeepSeekProvider(
-            api_key=str(provider_config.get("api_key") or ""),
-            base_url=str(provider_config.get("base_url") or ""),
-            timeout_seconds=int(provider_config.get("timeout_seconds") or 60),
+            api_key=str(provider_config.get("api_key") or os.environ.get("AI_API_KEY") or ""),
+            base_url=str(provider_config.get("base_url") or os.environ.get("AI_BASE_URL") or ""),
+            timeout_seconds=int(provider_config.get("timeout_seconds") or 90),
             max_retries=int(provider_config.get("max_retries") or 2),
         )
 
