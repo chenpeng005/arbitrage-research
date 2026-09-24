@@ -74,6 +74,7 @@
       <pre id="chatTaskPreview" class="hidden"></pre>
     </section>
 
+    <div id="legacyUnitTests" class="hidden">
     <div class="unit-separator"></div>
 
     <section class="unit-title">
@@ -150,6 +151,7 @@
     </section>
 
     <section id="calcSteps" class="steps"></section>
+    </div>
 
     <div class="unit-separator"></div>
 
@@ -170,7 +172,7 @@
     </section>
 
     <section id="mapMeta" class="meta card muted">
-      尚未加载。第一版默认展示 Support Zone（CV 50–130）内的市场散点和基础价值曲线。
+      尚未加载。展示视野默认扩展到较低转股价值区域；模型本身的 Support Zone / Core Zone 定义保持不变。
     </section>
 
     <section id="mapSummary" class="summary card hidden">
@@ -229,7 +231,7 @@
     <section class="card tech">
       <details>
         <summary>技术说明</summary>
-        <p>两个单元彼此独立：单元01负责形成可信市场截面；单元02只读取 Trusted Market Input，拟合 Base、Duration、ScaleNeutral 和 Q50 校准。展示层只读取 Formal Snapshot Registry 指向的正式收盘藏宝图，不重新联网取数，也不重新拟合模型。</p>
+        <p>数据获取与模型计算单元仍作为 Runtime 底层能力保留，但不再提供独立网页入口。正式使用统一由完整 Pipeline 编排并监控阶段。展示层只读取 Snapshot / Calculation Output，不重新联网取数，也不重新拟合模型。</p>
       </details>
     </section>
   </main>
