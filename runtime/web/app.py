@@ -180,6 +180,9 @@ def persist_run_metadata_payload(job: dict) -> None:
         "acquisition_job_id": job.get("acquisition_job_id"),
         "ai_job_id": job.get("ai_job_id"),
         "ai_status": job.get("ai_status"),
+        "ai_execution_mode": job.get("ai_execution_mode"),
+        "chat_task_id": job.get("chat_task_id"),
+        "chat_task_path": job.get("chat_task_path"),
         "calculation_job_id": job.get("calculation_job_id"),
         "snapshot_mode": job.get("snapshot_mode"),
         "input_mode": job.get("input_mode"),
@@ -989,6 +992,9 @@ def create_market_map_pipeline(
     if request.snapshot_mode == "REPLAY_TEST" and not RAW_FIXTURE_DIR.exists():
         raise HTTPException(400, "replay fixture is not available")
 
+    if request.ai_execution_mode not in {"AUTO_API", "INTERACTIVE_CHAT"}:
+        raise HTTPException(400, "unsupported ai_execution_mode")
+
     job_id = (
         datetime.now().strftime("%Y%m%d_%H%M%S")
         + "_pipeline_"
@@ -1003,6 +1009,7 @@ def create_market_map_pipeline(
             "status": "PENDING",
             "phase": "PENDING",
             "snapshot_mode": request.snapshot_mode,
+            "ai_execution_mode": request.ai_execution_mode,
             "market_cutoff": cutoff,
             "created_at": utcnow(),
             "updated_at": utcnow(),
