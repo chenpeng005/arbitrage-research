@@ -167,8 +167,42 @@
       </div>
       <label class="check-line"><input id="mapDuration" type="checkbox" checked> 扣除剩余期限影响</label>
       <label class="check-line"><input id="mapScale" type="checkbox" checked> 扣除剩余规模影响</label>
-      <label class="check-line"><input id="mapLabels" type="checkbox"> 显示债券名称</label>
       <button id="mapReloadBtn" type="button">重新加载藏宝图</button>
+    </section>
+
+    <section class="card map-filter">
+      <div>
+        <label>转债价格区间</label>
+        <div class="range-line">
+          <input id="mapPriceMin" type="number" step="1" value="70">
+          <span>到</span>
+          <input id="mapPriceMax" type="number" step="1" value="200">
+          <span>元</span>
+        </div>
+      </div>
+      <div>
+        <label>转股价值区间</label>
+        <div class="range-line">
+          <input id="mapCvMin" type="number" step="1" value="20">
+          <span>到</span>
+          <input id="mapCvMax" type="number" step="1" value="200">
+        </div>
+      </div>
+      <div>
+        <label>剩余规模 ≤</label>
+        <div class="range-line">
+          <input id="mapSizeMax" type="number" step="0.1" placeholder="不限">
+          <span>亿元</span>
+        </div>
+      </div>
+      <div>
+        <label>溢价率 ≤</label>
+        <div class="range-line">
+          <input id="mapPremiumMax" type="number" step="1" placeholder="不限">
+          <span>%</span>
+        </div>
+      </div>
+      <button id="mapFilterReset" type="button">重置</button>
     </section>
 
     <section id="mapMeta" class="meta card muted">
