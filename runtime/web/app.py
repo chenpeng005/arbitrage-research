@@ -119,6 +119,118 @@ def update_step(job_id: str, event: dict) -> None:
     persist_job(job_id)
 
 
+def update_calculation_step(job_id: str, event: dict) -> None:
+    sid = event.get("id")
+    with _lock:
+        job = _jobs[job_id]
+        steps = job.setdefault("calculation_steps", {})
+        if sid:
+            steps[sid] = event
+        job["updated_at"] = utcnow()
+        statuses = [x.get("status") for x in steps.values()]
+        if "FAIL" in statuses:
+            job["calculation_status"] = "FAIL"
+        elif "WARNING" in statuses:
+            job["calculation_status"] = "RUNNING_WARNING"
+        else:
+            job["calculation_status"] = "RUNNING"
+    persist_job(job_id)
+
+
+def calculation_worker(job_id: str) -> None:
+    with _lock:
+        job = _jobs[job_id]
+        cutoff = job["market_cutoff"]
+        acquisition_status = job.get("status")
+
+    if acquisition_status not in {"PASS", "WARNING"}:
+        with _lock:
+            job = _jobs[job_id]
+            job["calculation_status"] = "FAIL"
+            job["calculation_error"] = "上游数据获取尚未成功完成，不能开始计算。"
+            job["calculation_completed_at"] = utcnow()
+        persist_job(job_id)
+        return
+
+    input_dir = DATA_ROOT / "runs" / job_id
+    output_dir = input_dir / "calculation"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd = [
+        ACQ_PYTHON,
+        str(CALC_SCRIPT),
+        "--input-dir", str(input_dir),
+        "--output", str(output_dir),
+        "--market-cutoff", cutoff,
+    ]
+
+    with _lock:
+        job = _jobs[job_id]
+        job["calculation_status"] = "RUNNING"
+        job["calculation_started_at"] = utcnow()
+        job["calculation_steps"] = {}
+    persist_job(job_id)
+
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+        assert proc.stdout is not None
+        raw_lines = []
+        for line in proc.stdout:
+            line = line.strip()
+            if not line:
+                continue
+            raw_lines.append(line)
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if event.get("type") == "step":
+                update_calculation_step(job_id, event)
+            elif event.get("type") == "run_complete":
+                with _lock:
+                    _jobs[job_id]["calculation_runtime_status"] = event.get("status")
+                    _jobs[job_id]["calculation_run_id"] = event.get("run_id")
+                persist_job(job_id)
+
+        code = proc.wait()
+        result_path = output_dir / "calculation_result.json"
+        snapshot_path = output_dir / "market_map_snapshot.json"
+        final_result = None
+        if result_path.exists():
+            final_result = json.loads(result_path.read_text(encoding="utf-8"))
+
+        with _lock:
+            job = _jobs[job_id]
+            job["calculation_exit_code"] = code
+            job["calculation_completed_at"] = utcnow()
+            job["calculation_result_path"] = str(result_path)
+            job["snapshot_path"] = str(snapshot_path) if snapshot_path.exists() else None
+            job["calculation_result"] = final_result
+            job["calculation_status"] = (
+                final_result.get("status") if isinstance(final_result, dict)
+                else ("PASS" if code == 0 else "FAIL")
+            )
+            if code != 0 and not final_result:
+                job["calculation_error"] = "计算进程退出，但没有生成结构化结果。"
+            job["calculation_raw_output_tail"] = raw_lines[-20:]
+        persist_job(job_id)
+
+    except Exception as exc:
+        with _lock:
+            job = _jobs[job_id]
+            job["calculation_status"] = "FAIL"
+            job["calculation_completed_at"] = utcnow()
+            job["calculation_error"] = f"{type(exc).__name__}: {exc}"
+        persist_job(job_id)
+
+
 def execute_job(
     job_id: str,
     cmd: list[str],
@@ -359,6 +471,26 @@ def create_calculation_run(request: CalculationRunRequest) -> dict:
         daemon=True,
     ).start()
     return {"job_id": job_id}
+
+
+@app.post("/api/runs/{job_id}/calculate")
+def calculate_run(job_id: str) -> dict:
+    with _lock:
+        if job_id not in _jobs:
+            path = DATA_ROOT / "jobs" / job_id / "live_status.json"
+            if not path.exists():
+                raise HTTPException(404, "run not found")
+            _jobs[job_id] = json.loads(path.read_text(encoding="utf-8"))
+        job = _jobs[job_id]
+        if job.get("status") not in {"PASS", "WARNING"}:
+            raise HTTPException(400, "acquisition is not ready")
+        if job.get("calculation_status") in {"RUNNING", "RUNNING_WARNING"}:
+            raise HTTPException(409, "calculation already running")
+        job["calculation_status"] = "PENDING"
+        job["calculation_steps"] = {}
+    persist_job(job_id)
+    threading.Thread(target=calculation_worker, args=(job_id,), daemon=True).start()
+    return {"job_id": job_id, "calculation_status": "PENDING"}
 
 
 @app.get("/api/runs/{job_id}")
