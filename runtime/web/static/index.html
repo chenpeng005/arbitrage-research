@@ -105,7 +105,7 @@
         <button id="mapStdBtn" type="button">标准化藏宝图</button>
       </div>
       <label class="check-line"><input id="mapDuration" type="checkbox" checked> 扣除剩余期限影响</label>
-      <label class="check-line"><input id="mapScale" type="checkbox"> 扣除剩余规模影响（候选）</label>
+      <label class="check-line"><input id="mapScale" type="checkbox" checked> 扣除剩余规模影响</label>
       <label class="check-line"><input id="mapLabels" type="checkbox"> 显示债券名称</label>
       <button id="mapReloadBtn" type="button">重新加载藏宝图</button>
     </section>
@@ -170,7 +170,7 @@
     <section class="card tech">
       <details>
         <summary>技术说明</summary>
-        <p>两个单元彼此独立：单元01负责得到可审计市场截面；单元02只读取已审计输入并拟合基础曲线、期限调整、规模候选调整和残差分布。</p>
+        <p>两个单元彼此独立：单元01负责形成可信市场截面；单元02只读取 Trusted Market Input，拟合 Base、Duration、ScaleNeutral 和 Q50 校准。展示层只读取 Formal Snapshot Registry 指向的正式收盘藏宝图，不重新联网取数，也不重新拟合模型。</p>
       </details>
     </section>
   </main>
