@@ -684,7 +684,19 @@ def run_calculation(
         and model_audit["status"] == "PASS"
         and resolution_gate_ok
     )
-    snapshot_class = "FORMAL_CLOSE" if formal_snapshot else "TEST_ONLY"
+    historical_replay_snapshot = (
+        acquisition_mode == "HISTORICAL_REPLAY"
+        and input_contract == "TRUSTED_MARKET_INPUT"
+        and model_audit["status"] == "PASS"
+        and resolution_gate_ok
+    )
+
+    if formal_snapshot:
+        snapshot_class = "FORMAL_CLOSE"
+    elif historical_replay_snapshot:
+        snapshot_class = "HISTORICAL_REPLAY"
+    else:
+        snapshot_class = "TEST_ONLY"
 
     acquisition_step_warnings: list[str] = []
     for acq_step in acquisition.get("steps", []):
@@ -700,7 +712,15 @@ def run_calculation(
         "snapshot_class": snapshot_class,
         "freeze": {
             "formal": formal_snapshot,
-            "status": "FROZEN" if formal_snapshot else "TEST_ONLY",
+            "status": (
+                "FROZEN"
+                if formal_snapshot
+                else (
+                    "HISTORICAL_REPLAY"
+                    if historical_replay_snapshot
+                    else "TEST_ONLY"
+                )
+            ),
             "rule": "CLOSE + TRUSTED_MARKET_INPUT + MODEL_AUDIT_PASS + RESOLUTION_GATE_OK",
         },
         "model_audit_ref": "model_audit.json",
@@ -844,7 +864,11 @@ def run_calculation(
         (
             "正式 CLOSE 市场价值映射快照已冻结；"
             if formal_snapshot
-            else "测试用市场价值映射快照已生成（不会标记为正式 CLOSE）；"
+            else (
+                "历史正式截面已按当前模型完成回放（不会更新正式 CLOSE）；"
+                if historical_replay_snapshot
+                else "测试用市场价值映射快照已生成（不会标记为正式 CLOSE）；"
+            )
         )
         + f"Core residual Q50={residual_stats['q50']:.2f} 元。"
     )
