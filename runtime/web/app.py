@@ -17,13 +17,24 @@ from pydantic import BaseModel
 
 ROOT = Path(os.environ.get("RUNTIME_ROOT", Path(__file__).resolve().parents[2]))
 DATA_ROOT = Path(os.environ.get("RUNTIME_DATA_ROOT", ROOT / "runtime_data"))
+
 ACQ_SCRIPT = ROOT / "runtime" / "market_map" / "acquisition.py"
-ACQ_PYTHON = os.environ.get("ACQUISITION_PYTHON", "python3")
+CALC_SCRIPT = ROOT / "runtime" / "market_map" / "calculation.py"
+RUNTIME_PYTHON = os.environ.get("ACQUISITION_PYTHON", "python3")
+
 STATIC_DIR = Path(__file__).parent / "static"
-FIXTURE_DIR = Path(
+
+RAW_FIXTURE_DIR = Path(
     os.environ.get(
         "RUNTIME_FIXTURE_DIR",
         DATA_ROOT / "fixtures" / "market_map_20260924_intraday",
+    )
+)
+
+CALC_FIXTURE_DIR = Path(
+    os.environ.get(
+        "RUNTIME_CALC_FIXTURE_DIR",
+        DATA_ROOT / "fixtures" / "market_map_acquisition_20260924_replay",
     )
 )
 
@@ -70,6 +81,12 @@ class RunRequest(BaseModel):
     market_cutoff: str | None = None
 
 
+class CalculationRunRequest(BaseModel):
+    input_mode: str = "REPLAY_TEST"
+    market_cutoff: str | None = None
+    source_job_id: str | None = None
+
+
 def utcnow() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -102,21 +119,11 @@ def update_step(job_id: str, event: dict) -> None:
     persist_job(job_id)
 
 
-def worker(job_id: str, request: RunRequest) -> None:
-    cutoff = request.market_cutoff or datetime.now().date().isoformat()
-    out = DATA_ROOT / "runs" / job_id
-    out.mkdir(parents=True, exist_ok=True)
-
-    cmd = [
-        ACQ_PYTHON,
-        str(ACQ_SCRIPT),
-        "--output", str(out),
-        "--snapshot-mode", request.snapshot_mode,
-        "--market-cutoff", cutoff,
-    ]
-    if request.snapshot_mode == "REPLAY_TEST":
-        cmd.extend(["--fixture-dir", str(FIXTURE_DIR)])
-
+def execute_job(
+    job_id: str,
+    cmd: list[str],
+    result_path: Path,
+) -> None:
     with _lock:
         _jobs[job_id]["status"] = "RUNNING"
         _jobs[job_id]["command_started_at"] = utcnow()
@@ -132,7 +139,8 @@ def worker(job_id: str, request: RunRequest) -> None:
             bufsize=1,
         )
         assert proc.stdout is not None
-        raw_lines = []
+
+        raw_lines: list[str] = []
         for line in proc.stdout:
             line = line.strip()
             if not line:
@@ -142,6 +150,7 @@ def worker(job_id: str, request: RunRequest) -> None:
                 event = json.loads(line)
             except json.JSONDecodeError:
                 continue
+
             if event.get("type") == "step":
                 update_step(job_id, event)
             elif event.get("type") == "run_complete":
@@ -151,7 +160,6 @@ def worker(job_id: str, request: RunRequest) -> None:
                 persist_job(job_id)
 
         code = proc.wait()
-        result_path = out / "acquisition_result.json"
         final_result = None
         if result_path.exists():
             final_result = json.loads(result_path.read_text(encoding="utf-8"))
@@ -163,7 +171,8 @@ def worker(job_id: str, request: RunRequest) -> None:
             job["result_path"] = str(result_path)
             job["result"] = final_result
             job["status"] = (
-                final_result.get("status") if isinstance(final_result, dict)
+                final_result.get("status")
+                if isinstance(final_result, dict)
                 else ("PASS" if code == 0 else "FAIL")
             )
             if code != 0 and not final_result:
@@ -180,6 +189,94 @@ def worker(job_id: str, request: RunRequest) -> None:
         persist_job(job_id)
 
 
+def acquisition_worker(job_id: str, request: RunRequest) -> None:
+    cutoff = request.market_cutoff or datetime.now().date().isoformat()
+    out = DATA_ROOT / "runs" / job_id
+    out.mkdir(parents=True, exist_ok=True)
+
+    cmd = [
+        RUNTIME_PYTHON,
+        str(ACQ_SCRIPT),
+        "--output",
+        str(out),
+        "--snapshot-mode",
+        request.snapshot_mode,
+        "--market-cutoff",
+        cutoff,
+    ]
+    if request.snapshot_mode == "REPLAY_TEST":
+        cmd.extend(["--fixture-dir", str(RAW_FIXTURE_DIR)])
+
+    execute_job(job_id, cmd, out / "acquisition_result.json")
+
+
+def load_persisted_jobs() -> list[dict]:
+    jobs: list[dict] = []
+    jobs_dir = DATA_ROOT / "jobs"
+    if not jobs_dir.exists():
+        return jobs
+    for path in jobs_dir.glob("*/live_status.json"):
+        try:
+            jobs.append(json.loads(path.read_text(encoding="utf-8")))
+        except Exception:
+            continue
+    return jobs
+
+
+def find_latest_acquisition_input() -> tuple[str, Path] | None:
+    candidates: list[dict] = []
+
+    with _lock:
+        candidates.extend(_jobs.values())
+    candidates.extend(load_persisted_jobs())
+
+    valid: list[dict] = []
+    seen: set[str] = set()
+    for job in candidates:
+        job_id = job.get("job_id")
+        if not job_id or job_id in seen:
+            continue
+        seen.add(job_id)
+        if job.get("unit") != "Market Map Builder / Acquisition":
+            continue
+        if job.get("status") not in {"PASS", "WARNING"}:
+            continue
+        path = DATA_ROOT / "runs" / job_id
+        if not (path / "market_input_audit.csv").exists():
+            continue
+        valid.append(job)
+
+    if not valid:
+        return None
+
+    valid.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    latest = valid[0]
+    return latest["job_id"], DATA_ROOT / "runs" / latest["job_id"]
+
+
+def calculation_worker(
+    job_id: str,
+    request: CalculationRunRequest,
+    input_dir: Path,
+) -> None:
+    cutoff = request.market_cutoff or datetime.now().date().isoformat()
+    out = DATA_ROOT / "runs" / job_id
+    out.mkdir(parents=True, exist_ok=True)
+
+    cmd = [
+        RUNTIME_PYTHON,
+        str(CALC_SCRIPT),
+        "--input-dir",
+        str(input_dir),
+        "--output",
+        str(out),
+        "--market-cutoff",
+        cutoff,
+    ]
+
+    execute_job(job_id, cmd, out / "calculation_result.json")
+
+
 @app.get("/", response_class=HTMLResponse)
 def home() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "index.html").read_text(encoding="utf-8"))
@@ -189,10 +286,12 @@ def home() -> HTMLResponse:
 def create_run(request: RunRequest) -> dict:
     if request.snapshot_mode not in {"LIVE_TEST", "CLOSE", "REPLAY_TEST"}:
         raise HTTPException(400, "unsupported snapshot_mode")
-    if request.snapshot_mode == "REPLAY_TEST" and not FIXTURE_DIR.exists():
+    if request.snapshot_mode == "REPLAY_TEST" and not RAW_FIXTURE_DIR.exists():
         raise HTTPException(400, "replay fixture is not available")
+
     job_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:6]
     cutoff = request.market_cutoff or datetime.now().date().isoformat()
+
     with _lock:
         _jobs[job_id] = {
             "job_id": job_id,
@@ -204,8 +303,61 @@ def create_run(request: RunRequest) -> dict:
             "updated_at": utcnow(),
             "steps": {},
         }
+
     persist_job(job_id)
-    threading.Thread(target=worker, args=(job_id, request), daemon=True).start()
+    threading.Thread(
+        target=acquisition_worker,
+        args=(job_id, request),
+        daemon=True,
+    ).start()
+    return {"job_id": job_id}
+
+
+@app.post("/api/calculation-runs")
+def create_calculation_run(request: CalculationRunRequest) -> dict:
+    if request.input_mode not in {"REPLAY_TEST", "LATEST_SUCCESS"}:
+        raise HTTPException(400, "unsupported input_mode")
+
+    source_job_id = None
+    if request.input_mode == "REPLAY_TEST":
+        input_dir = CALC_FIXTURE_DIR
+        if not (input_dir / "market_input_audit.csv").exists():
+            raise HTTPException(400, "calculation replay fixture is not available")
+    else:
+        if request.source_job_id:
+            input_dir = DATA_ROOT / "runs" / request.source_job_id
+            source_job_id = request.source_job_id
+            if not (input_dir / "market_input_audit.csv").exists():
+                raise HTTPException(400, "source acquisition job is not usable")
+        else:
+            latest = find_latest_acquisition_input()
+            if latest is None:
+                raise HTTPException(400, "no successful acquisition run is available")
+            source_job_id, input_dir = latest
+
+    job_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:6]
+    cutoff = request.market_cutoff or datetime.now().date().isoformat()
+
+    with _lock:
+        _jobs[job_id] = {
+            "job_id": job_id,
+            "unit": "Market Map Builder / Calculation",
+            "status": "PENDING",
+            "input_mode": request.input_mode,
+            "source_job_id": source_job_id,
+            "input_dir": str(input_dir),
+            "market_cutoff": cutoff,
+            "created_at": utcnow(),
+            "updated_at": utcnow(),
+            "steps": {},
+        }
+
+    persist_job(job_id)
+    threading.Thread(
+        target=calculation_worker,
+        args=(job_id, request, input_dir),
+        daemon=True,
+    ).start()
     return {"job_id": job_id}
 
 
@@ -224,9 +376,14 @@ def get_run(job_id: str) -> dict:
 def health() -> dict:
     return {
         "status": "ok",
-        "unit": "Market Map Builder / Acquisition",
+        "units": [
+            "Market Map Builder / Acquisition",
+            "Market Map Builder / Calculation",
+        ],
         "root": str(ROOT),
         "data_root": str(DATA_ROOT),
         "acquisition_script_exists": ACQ_SCRIPT.exists(),
-        "replay_fixture_exists": FIXTURE_DIR.exists(),
+        "calculation_script_exists": CALC_SCRIPT.exists(),
+        "replay_fixture_exists": RAW_FIXTURE_DIR.exists(),
+        "calculation_fixture_exists": CALC_FIXTURE_DIR.exists(),
     }
