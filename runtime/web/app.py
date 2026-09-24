@@ -1387,12 +1387,20 @@ def find_market_map_output_for_calculation_job(
     }:
         return None
 
+    source_job_id = None
+    metadata_path = run_dir / "run_metadata.json"
+    if metadata_path.exists():
+        try:
+            source_job_id = json.loads(
+                metadata_path.read_text(encoding="utf-8")
+            ).get("source_job_id")
+        except Exception:
+            source_job_id = None
+
     entry = {
         "snapshot_id": snapshot.get("snapshot_id"),
         "calculation_job_id": calculation_job_id,
-        "acquisition_job_id": snapshot.get("input", {}).get(
-            "acquisition_run_id"
-        ),
+        "acquisition_job_id": source_job_id,
     }
     return entry, snapshot_path, table_path
 
