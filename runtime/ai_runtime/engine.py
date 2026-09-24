@@ -12,6 +12,7 @@ from runtime.market_map.semantic_resolution import validate_resolution
 from .mock_provider import MockProvider
 from .provider import AIProvider
 from .tasks import get_task_spec
+from .tools.evidence import ToolContext, execute_tool
 
 
 def now_utc() -> str:
@@ -93,35 +94,151 @@ def run_ai_job(
 
     try:
         provider = build_provider(provider_name, provider_config)
-        response = provider.complete(
-            system_prompt=prompt,
-            messages=[
-                {
-                    "role": "user",
-                    "content": json.dumps(input_payload, ensure_ascii=False),
-                }
-            ],
-            tools=spec.allowed_tools,
-            output_schema=spec.output_schema,
-            model_config=model_config,
+        messages: list[dict[str, Any]] = [
+            {
+                "role": "user",
+                "content": json.dumps(input_payload, ensure_ascii=False),
+            }
+        ]
+        tool_ctx = ToolContext(
+            business_run_dir=business_run_dir,
+            ai_job_dir=job_dir,
+            input_payload=input_payload,
         )
 
-        write_json(job_dir / "raw_provider_response.json", response.raw_response)
+        provider_round_dir = job_dir / "provider_rounds"
+        provider_round_dir.mkdir()
+        tool_call_index = 0
+        tool_rounds = 0
+        final_response = None
 
-        if response.structured_output is None:
-            metadata["status"] = "FAIL"
-            metadata["error"] = "Provider returned no structured_output"
+        for provider_round in range(1, spec.max_tool_rounds + 2):
+            response = provider.complete(
+                system_prompt=prompt,
+                messages=messages,
+                tools=spec.allowed_tools,
+                output_schema=spec.output_schema,
+                model_config=model_config,
+            )
+            final_response = response
+            write_json(
+                provider_round_dir / f"{provider_round:04d}.json",
+                response.raw_response,
+            )
+
+            if response.tool_calls:
+                if tool_rounds >= spec.max_tool_rounds:
+                    metadata["status"] = "NEEDS_REVIEW"
+                    metadata["error"] = "AI Runtime reached max_tool_rounds"
+                    metadata["tool_rounds"] = tool_rounds
+                    metadata["completed_at"] = now_utc()
+                    write_json(job_dir / "ai_job_metadata.json", metadata)
+                    return metadata
+
+                tool_rounds += 1
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "tool_calls": response.tool_calls,
+                    }
+                )
+
+                for call in response.tool_calls:
+                    tool_call_index += 1
+                    call_id = str(call.get("id") or f"tool-{tool_call_index}")
+                    name = str(call.get("name") or "")
+                    arguments = call.get("arguments") or {}
+                    if isinstance(arguments, str):
+                        arguments = json.loads(arguments)
+                    if not isinstance(arguments, dict):
+                        raise ValueError(f"Tool arguments must be an object: {name}")
+
+                    req_payload = {
+                        "tool_call_id": call_id,
+                        "name": name,
+                        "arguments": arguments,
+                        "requested_at": now_utc(),
+                    }
+                    write_json(
+                        job_dir / "tool_calls" / f"{tool_call_index:04d}_request.json",
+                        req_payload,
+                    )
+
+                    result_payload = execute_tool(
+                        name,
+                        tool_ctx,
+                        arguments,
+                    )
+                    write_json(
+                        job_dir / "tool_calls" / f"{tool_call_index:04d}_result.json",
+                        result_payload,
+                    )
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": call_id,
+                            "name": name,
+                            "content": json.dumps(
+                                result_payload,
+                                ensure_ascii=False,
+                            ),
+                        }
+                    )
+
+                metadata["tool_rounds"] = tool_rounds
+                write_json(job_dir / "ai_job_metadata.json", metadata)
+                continue
+
+            if response.structured_output is None:
+                metadata["status"] = "FAIL"
+                metadata["error"] = "Provider returned neither tool_calls nor structured_output"
+                metadata["completed_at"] = now_utc()
+                write_json(job_dir / "ai_job_metadata.json", metadata)
+                return metadata
+
+            structured_path = job_dir / "structured_output.json"
+            write_json(structured_path, response.structured_output)
+            break
+        else:
+            metadata["status"] = "NEEDS_REVIEW"
+            metadata["error"] = "AI Runtime provider loop exhausted"
             metadata["completed_at"] = now_utc()
             write_json(job_dir / "ai_job_metadata.json", metadata)
             return metadata
 
-        structured_path = job_dir / "structured_output.json"
-        write_json(structured_path, response.structured_output)
+        if final_response is None:
+            raise RuntimeError("Provider loop produced no response")
+
+        write_json(job_dir / "raw_provider_response.json", final_response.raw_response)
+
+        evidence_items: list[dict[str, Any]] = []
+        evidence_dir = job_dir / "evidence"
+        if evidence_dir.exists():
+            for meta_path in sorted(evidence_dir.glob("*.json")):
+                evidence_items.append(
+                    json.loads(meta_path.read_text(encoding="utf-8"))
+                )
+
+        evidence_manifest = {
+            "ai_job_id": ai_job_id,
+            "task_type": task_type,
+            "generated_at": now_utc(),
+            "ai_job_dir": str(job_dir),
+            "evidence_count": len(evidence_items),
+            "evidence": evidence_items,
+        }
+        write_json(job_dir / "evidence_manifest.json", evidence_manifest)
+        write_json(
+            business_run_dir / "semantic_evidence_manifest.json",
+            evidence_manifest,
+        )
 
         metadata["status"] = "VALIDATING"
-        metadata["provider_request_id"] = response.request_id
-        metadata["finish_reason"] = response.finish_reason
-        metadata["usage"] = response.usage
+        metadata["provider_request_id"] = final_response.request_id
+        metadata["finish_reason"] = final_response.finish_reason
+        metadata["usage"] = final_response.usage
+        metadata["tool_rounds"] = tool_rounds
+        metadata["evidence_count"] = len(evidence_items)
         write_json(job_dir / "ai_job_metadata.json", metadata)
 
         validation = validate_resolution(
