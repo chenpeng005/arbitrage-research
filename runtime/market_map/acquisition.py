@@ -1159,8 +1159,11 @@ def run_acquisition(
                 "P",
                 "S",
                 "K",
+                "trusted_S",
+                "trusted_K",
                 "source_CV",
                 "calc_CV",
+                "trusted_CV",
                 "maturity_date",
                 "remaining_size",
                 "issue_size",
@@ -1170,6 +1173,12 @@ def run_acquisition(
                 "size_source_name",
             ]
         ].copy()
+
+        trusted["trusted_S"] = pd.to_numeric(trusted["S"], errors="coerce")
+        trusted["trusted_K"] = pd.to_numeric(trusted["K"], errors="coerce")
+        trusted["trusted_CV"] = (
+            100.0 * trusted["trusted_S"] / trusted["trusted_K"]
+        )
 
         trusted["remaining_months"] = (
             pd.to_datetime(trusted["maturity_date"], errors="coerce")
@@ -1234,8 +1243,12 @@ def run_acquisition(
     emit(s5)
 
     s6 = step(result, "S6", "数据准备完成")
-    support = enriched["source_CV"].between(50, 130, inclusive="both").sum()
-    core = enriched["source_CV"].between(70, 100, inclusive="both").sum()
+    if not unresolved and trusted_path.exists():
+        support = trusted["trusted_CV"].between(50, 130, inclusive="both").sum()
+        core = trusted["trusted_CV"].between(70, 100, inclusive="both").sum()
+    else:
+        support = enriched["calc_CV"].between(50, 130, inclusive="both").sum()
+        core = enriched["calc_CV"].between(70, 100, inclusive="both").sum()
     result.counts = {
         "source_candidate": len(main),
         "base_sample": len(base),
