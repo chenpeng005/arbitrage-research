@@ -107,6 +107,7 @@ body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSy
 .map-legend span{display:flex;align-items:center;gap:6px}
 .map-legend .dot{width:9px;height:9px;border-radius:50%;background:#2457ff;display:inline-block}
 .map-legend .line{width:22px;height:2px;background:#e33b2e;display:inline-block}
+.map-legend .line.extrapolated{height:0;background:none;border-top:2px dashed #e33b2e;opacity:.72}
 .treasure-chart{position:relative;min-height:520px;width:100%;overflow:hidden}
 .treasure-chart svg{display:block;width:100%;height:auto;min-height:500px}
 .plot-bg{fill:#fff}
@@ -115,6 +116,7 @@ body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSy
 .axis-text{fill:#697580;font-size:12px}
 .axis-label{fill:#34404c;font-size:13px;font-weight:700}
 .base-line{fill:none;stroke:#e33b2e;stroke-width:2.4}
+.base-line.extrapolated{stroke-dasharray:7 6;stroke-width:2;opacity:.72}
 .point{fill:#2457ff;fill-opacity:.82;stroke:#fff;stroke-width:1.2;cursor:pointer}
 .point:hover{fill-opacity:1;stroke:#18212b;stroke-width:1.5}
 .point.selected{fill:#111827;stroke:#f59e0b;stroke-width:2.5}
