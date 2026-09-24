@@ -11,11 +11,37 @@
     <header class="hero">
       <div>
         <p class="eyebrow">机会发现运行台</p>
-        <h1>市场价值映射构建器 · 单元测试工作台</h1>
-        <p class="sub">网页触发 → 程序控制 → 单元逐步反馈 → 审计 → 结果持久化</p>
+        <h1>市场价值映射构建器 · Runtime</h1>
+        <p class="sub">网页触发 → Controller 编排 → 程序审计 → 必要时调用 AI → 计算 → 冻结 → 展示</p>
       </div>
       <div class="overall pass">工作台就绪</div>
     </header>
+
+    <section class="unit-title">
+      <div><span class="unit-no">正式运行</span><h2>完整藏宝图 Runtime</h2></div>
+      <div id="pipelineOverall" class="overall idle">尚未运行</div>
+    </section>
+
+    <section class="control card">
+      <div>
+        <label>运行模式</label>
+        <select id="pipelineMode">
+          <option value="CLOSE">正式收盘截面</option>
+          <option value="LIVE_TEST">盘中测试</option>
+        </select>
+      </div>
+      <div>
+        <label>市场截面日期</label>
+        <input id="pipelineCutoff" type="date">
+      </div>
+      <button id="pipelineRunBtn">一键运行完整藏宝图</button>
+    </section>
+
+    <section id="pipelineMeta" class="meta card muted">
+      Controller 将自动运行数据获取；只有程序识别出实质语义冲突时才调用 AI。AI 通过 Program Validator 后，才会继续计算。
+    </section>
+
+    <div class="unit-separator"></div>
 
     <section class="unit-title">
       <div><span class="unit-no">单元 01</span><h2>数据获取与审计</h2></div>
