@@ -216,16 +216,39 @@ def run_calculation(
     )
 
     c0 = step(result, "C0", "读取已审计输入")
-    input_path = input_dir / "market_input_audit.csv"
+    trusted_path = input_dir / "trusted_market_input.csv"
+    legacy_path = input_dir / "market_input_audit.csv"
     acquisition_path = input_dir / "acquisition_result.json"
-    if not input_path.exists():
-        return fail(result, c0, output_dir, f"找不到已审计市场截面：{input_path}")
-    df = pd.read_csv(input_path, dtype={"bond_code": str, "stock_code": str})
+
     acquisition = {}
     if acquisition_path.exists():
         acquisition = json.loads(acquisition_path.read_text(encoding="utf-8"))
-        if acquisition.get("status") == "FAIL":
-            return fail(result, c0, output_dir, "上游数据获取单元状态为失败，禁止进入计算。")
+        if acquisition.get("status") not in {"PASS", "WARNING"}:
+            return fail(
+                result,
+                c0,
+                output_dir,
+                f"上游数据获取单元状态为 {acquisition.get('status')}，禁止进入计算。",
+            )
+
+    if trusted_path.exists():
+        input_path = trusted_path
+        input_contract = "TRUSTED_MARKET_INPUT"
+    elif legacy_path.exists():
+        input_path = legacy_path
+        input_contract = "LEGACY_AUDIT_INPUT"
+        c0.warnings.append(
+            "未找到 trusted_market_input.csv；当前使用兼容模式读取旧 market_input_audit.csv。"
+        )
+    else:
+        return fail(
+            result,
+            c0,
+            output_dir,
+            f"找不到 Trusted Market Input 或兼容审计输入：{input_dir}",
+        )
+
+    df = pd.read_csv(input_path, dtype={"bond_code": str, "stock_code": str})
     required = ["bond_code", "bond_name", "P", "source_CV", "maturity_date", "remaining_size"]
     missing_cols = [c for c in required if c not in df.columns]
     if missing_cols:
@@ -248,14 +271,19 @@ def run_calculation(
     model_df = df[valid].copy()
     invalid_df = df[~valid].copy()
     c0.metrics = {
+        "input_contract": input_contract,
         "input_rows": len(df),
         "model_ready_rows": len(model_df),
         "invalid_rows": len(invalid_df),
     }
     c0.details = {
         "notes": [
-            "计算单元只读取数据获取单元已经保存的审计结果，不重新联网取数。",
-            "剩余期限由程序根据 market_cutoff 与 maturity_date 重新计算。",
+            (
+                "计算单元读取 trusted_market_input.csv，不重新读取 Raw，也不重新执行 R2 审计。"
+                if input_contract == "TRUSTED_MARKET_INPUT"
+                else "当前为历史兼容模式：读取旧 market_input_audit.csv。"
+            ),
+            "剩余期限由程序根据 market_cutoff 与 maturity_date 再次复算，作为模型输入侧校验。",
         ],
         "tables": [
             table(
