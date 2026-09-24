@@ -43,7 +43,8 @@ const metricLabels={
   maturity_mismatch:"到期日口径差异",
   source_candidate:"主源候选",
   support_zone:"支持区间样本",
-  core_zone:"核心区间样本"
+  core_zone:"核心区间样本",
+  data_mode:"数据方式"
 };
 
 const summaryLabels={
@@ -79,8 +80,11 @@ function metricText(key,value){
     return (Number(value)*100).toFixed(4)+"%";
   }
   if(key==="snapshot_mode"){
-    return value==="LIVE_TEST"?"盘中测试":"正式收盘截面";
+    if(value==="LIVE_TEST")return "盘中测试";
+    if(value==="REPLAY_TEST")return "历史回放测试";
+    return "正式收盘截面";
   }
+  if(key==="data_mode" && value==="fixture_replay")return "固定历史样本";
   return value;
 }
 
@@ -199,7 +203,9 @@ async function poll(){
   const r=await fetch("api/runs/"+currentJob);
   const data=await r.json();
   setOverall(data.status);
-  const mode=data.snapshot_mode==="LIVE_TEST"?"盘中测试":"正式收盘截面";
+  const mode=data.snapshot_mode==="LIVE_TEST"
+    ?"盘中测试"
+    :(data.snapshot_mode==="REPLAY_TEST"?"历史回放测试":"正式收盘截面");
   $("#runMeta").innerHTML='<div class="meta-grid">'
     +'<span><b>运行任务</b> '+esc(data.job_id)+'</span>'
     +'<span><b>模式</b> '+esc(mode)+'</span>'
