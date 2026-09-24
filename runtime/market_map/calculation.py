@@ -13,7 +13,7 @@ import pandas as pd
 import statsmodels.api as sm
 
 
-MODEL_VERSION = "market-map-calculation-v0.1"
+MODEL_VERSION = "market-map-calculation-v0.2"
 HUBER_T = 1.345
 SUPPORT_MIN = 50.0
 SUPPORT_MAX = 130.0
@@ -305,8 +305,12 @@ def run_calculation(
     }
     if not len(model_df):
         return fail(result, c0, output_dir, "没有可用于模型计算的有效样本。")
-    c0.status = "PASS"
-    c0.conclusion = f"已读取 {len(df)} 只审计样本，其中 {len(model_df)} 只可进入完整模型计算。"
+    c0.status = "WARNING" if input_contract == "LEGACY_AUDIT_INPUT" else "PASS"
+    c0.conclusion = (
+        f"已读取 {len(df)} 只可信输入，其中 {len(model_df)} 只可进入完整模型计算。"
+        if input_contract == "TRUSTED_MARKET_INPUT"
+        else f"已读取 {len(df)} 只历史兼容输入，其中 {len(model_df)} 只可进入完整模型计算。"
+    )
     emit(c0)
 
     c1 = step(result, "C1", "划分支持区间与核心区间")
@@ -457,7 +461,7 @@ def run_calculation(
     )
     emit(c4)
 
-    c5 = step(result, "C5", "拟合剩余规模候选调整")
+    c5 = step(result, "C5", "拟合剩余规模调整")
     core = model_df[
         model_df["source_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")
         & (model_df["remaining_size"] > 0)
@@ -485,7 +489,7 @@ def run_calculation(
     conservative_k = fit_scale_conservative(core)
 
     c5.metrics = {
-        "component_status": "CANDIDATE",
+        "component_status": "REQUIRED",
         "intercept": scale_param_dict["intercept"],
         "ln_size_slope": scale_param_dict["ln_size_slope"],
         "base_duration_core_mae": duration_core_mae,
@@ -496,9 +500,9 @@ def run_calculation(
     size_grid = np.array([2, 5, 10, 20, 50, 100], dtype=float)
     c5.details = {
         "notes": [
-            "Scale 当前仍保持 CANDIDATE，不在程序中偷偷升级为正式必需组件。",
+            "ScaleNeutral 已按当前 04 规则正式进入中性参考主模型，定位为二阶修正项。",
             "Neutral 使用完整 After-duration Residual ~ ln(Size) 稳健拟合。",
-            "Conservative 只记录 20 亿以上单边负向压力候选，不奖励小规模。",
+            "Scale 不作为独立筛选门槛；Conservative 仅保留为诊断 / Resolver 研究视角。",
         ],
         "tables": [
             table(
@@ -511,10 +515,9 @@ def run_calculation(
             )
         ],
     }
-    c5.status = "WARNING"
-    c5.warnings = ["规模调整仍是 V1 Candidate；本次只计算和评估，不自动提升为最终正式规则。"]
+    c5.status = "PASS"
     c5.conclusion = (
-        f"规模候选调整拟合完成；核心区间 MAE 从 {duration_core_mae:.2f} 降至 "
+        f"规模调整拟合完成；核心区间 MAE 从 {duration_core_mae:.2f} 降至 "
         f"{scale_core_mae:.2f} 元，增量改善 {scale_improve:.2f} 元。"
     )
     emit(c5)
@@ -522,6 +525,8 @@ def run_calculation(
     c6 = step(result, "C6", "计算残差分布并冻结快照")
     residual_stats = percentile_dict(core["residual_final"])
     discovery_reference = model_df["anchor_neutral"] + residual_stats["q50"]
+    model_df["discovery_reference"] = discovery_reference
+    # Compatibility alias for older visualization / fixture readers.
     model_df["discovery_reference_candidate"] = discovery_reference
 
     top_abs = core.assign(abs_residual=core["residual_final"].abs()).sort_values(
@@ -560,7 +565,8 @@ def run_calculation(
                 "core_mae_after": duration_core_mae,
             },
             "scale_neutral": {
-                "status": "CANDIDATE",
+                "status": "REQUIRED",
+                "role": "SECONDARY_CORRECTION",
                 "formula": "a + b*ln(Size)",
                 "huber_t": HUBER_T,
                 "params": scale_param_dict,
@@ -573,8 +579,14 @@ def run_calculation(
             },
         },
         "residual_core_after_scale": residual_stats,
+        "discovery_reference": {
+            "status": "ACTIVE",
+            "formula": "Base + Duration + ScaleNeutral + CoreResidualQ50",
+            "q50_role": "CALIBRATION",
+            "q50_calibration": residual_stats["q50"],
+        },
         "discovery_reference_candidate": {
-            "status": "CANDIDATE",
+            "status": "DEPRECATED_ALIAS",
             "formula": "Base + Duration + ScaleNeutral + CoreResidualQ50",
             "q50_calibration": residual_stats["q50"],
         },
@@ -606,7 +618,7 @@ def run_calculation(
         "notes": [
             "Q50 只用于把稳健回归中心校准到当前 Core Zone 的实际市场中位位置。",
             "Q25 / Q75 作为诊断保留，不用于当前 Discovery 门控。",
-            "Snapshot 中 Scale 与 DiscoveryReference 仍显式标记 Candidate。",
+            "ScaleNeutral 为正式二阶修正；DiscoveryReference 为 Base + Duration + ScaleNeutral + Q50 校准。",
         ],
         "tables": [
             table(
@@ -633,8 +645,7 @@ def run_calculation(
     )
     emit(c6)
 
-    result.status = "WARNING"
-    result.warnings.append("Scale 与 DiscoveryReference 仍为 Candidate，等待运行验证后再决定是否升级。")
+    result.status = "WARNING" if any(s.status == "WARNING" for s in result.steps) else "PASS"
     result.snapshot_path = str(snapshot_path)
     result.completed_at = now_utc()
     persist(result, output_dir)
