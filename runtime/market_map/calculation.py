@@ -13,7 +13,7 @@ import pandas as pd
 import statsmodels.api as sm
 
 
-MODEL_VERSION = "market-map-calculation-v0.2"
+MODEL_VERSION = "market-map-calculation-v0.3"
 HUBER_T = 1.345
 RLM_MAXITER = 200
 SUPPORT_MIN = 50.0
@@ -132,7 +132,7 @@ def percentile_dict(series: pd.Series) -> dict[str, float]:
 
 
 def fit_base(support: pd.DataFrame):
-    z = (support["source_CV"] - 90.0) / 20.0
+    z = (support["trusted_CV"] - 90.0) / 20.0
     x = pd.DataFrame(
         {
             "const": 1.0,
@@ -264,12 +264,36 @@ def run_calculation(
         )
 
     df = pd.read_csv(input_path, dtype={"bond_code": str, "stock_code": str})
-    required = ["bond_code", "bond_name", "P", "source_CV", "maturity_date", "remaining_size"]
+    required = ["bond_code", "bond_name", "P", "maturity_date", "remaining_size"]
     missing_cols = [c for c in required if c not in df.columns]
     if missing_cols:
         return fail(result, c0, output_dir, f"输入缺少必要字段：{missing_cols}")
 
-    for col in ["P", "source_CV", "remaining_size"]:
+    if input_contract == "TRUSTED_MARKET_INPUT":
+        if "trusted_CV" not in df.columns:
+            return fail(
+                result,
+                c0,
+                output_dir,
+                "正式 Trusted Market Input 缺少 trusted_CV，禁止退回 source_CV。",
+            )
+    elif "trusted_CV" not in df.columns:
+        if {"S", "K"}.issubset(df.columns):
+            legacy_s = pd.to_numeric(df["S"], errors="coerce")
+            legacy_k = pd.to_numeric(df["K"], errors="coerce")
+            df["trusted_CV"] = 100.0 * legacy_s / legacy_k
+            c0.warnings.append(
+                "历史兼容输入缺少 trusted_CV；本次仅为 Replay 从 S/K 确定性复算。"
+            )
+        else:
+            return fail(
+                result,
+                c0,
+                output_dir,
+                "历史兼容输入既无 trusted_CV，也无法从 S/K 复算。",
+            )
+
+    for col in ["P", "trusted_CV", "remaining_size"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
     df["maturity_date"] = pd.to_datetime(df["maturity_date"], errors="coerce")
     cutoff = pd.Timestamp(market_cutoff)
@@ -277,7 +301,7 @@ def run_calculation(
 
     valid = (
         df["P"].notna()
-        & df["source_CV"].notna()
+        & df["trusted_CV"].notna()
         & df["maturity_date"].notna()
         & df["remaining_size"].notna()
         & (df["remaining_months"] > 0)
@@ -307,13 +331,13 @@ def run_calculation(
                     ("bond_code", "代码"),
                     ("bond_name", "名称"),
                     ("P", "转债价格"),
-                    ("source_CV", "转股价值"),
+                    ("trusted_CV", "转股价值"),
                     ("remaining_months", "剩余月数"),
                     ("remaining_size", "剩余规模"),
                 ],
                 records(
                     invalid_df,
-                    ["bond_code", "bond_name", "P", "source_CV", "remaining_months", "remaining_size"],
+                    ["bond_code", "bond_name", "P", "trusted_CV", "remaining_months", "remaining_size"],
                 ),
             )
         ] if len(invalid_df) else [],
@@ -329,8 +353,8 @@ def run_calculation(
     emit(c0)
 
     c1 = step(result, "C1", "划分支持区间与核心区间")
-    support = model_df[model_df["source_CV"].between(SUPPORT_MIN, SUPPORT_MAX, inclusive="both")].copy()
-    core = model_df[model_df["source_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")].copy()
+    support = model_df[model_df["trusted_CV"].between(SUPPORT_MIN, SUPPORT_MAX, inclusive="both")].copy()
+    core = model_df[model_df["trusted_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")].copy()
     c1.metrics = {
         "support_sample": len(support),
         "core_sample": len(core),
@@ -365,9 +389,9 @@ def run_calculation(
     }
     if not finite_dict(base_param_dict):
         return fail(result, c2, output_dir, "基础曲线参数出现 NaN / Inf。")
-    model_df["base_anchor"] = base_predict(model_df["source_CV"], base_params)
+    model_df["base_anchor"] = base_predict(model_df["trusted_CV"], base_params)
     model_df["residual_base"] = model_df["P"] - model_df["base_anchor"]
-    core = model_df[model_df["source_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")].copy()
+    core = model_df[model_df["trusted_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")].copy()
     base_core_mae = mae(core["P"], core["base_anchor"])
     c2.metrics = {
         "beta0": base_param_dict["beta0"],
@@ -431,7 +455,7 @@ def run_calculation(
     emit(c3)
 
     c4 = step(result, "C4", "拟合剩余期限调整")
-    core = model_df[model_df["source_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")].copy()
+    core = model_df[model_df["trusted_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")].copy()
     try:
         dur_fit = fit_duration(core)
         dur_params = np.asarray(dur_fit.params, dtype=float)
@@ -454,7 +478,7 @@ def run_calculation(
     model_df["duration_adjustment"] = duration_predict(model_df["remaining_months"], dur_params)
     model_df["anchor_base_duration"] = model_df["base_anchor"] + model_df["duration_adjustment"]
     model_df["residual_after_duration"] = model_df["P"] - model_df["anchor_base_duration"]
-    core = model_df[model_df["source_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")].copy()
+    core = model_df[model_df["trusted_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")].copy()
     duration_core_mae = mae(core["P"], core["anchor_base_duration"])
     duration_improve = base_core_mae - duration_core_mae
     c4.metrics = {
@@ -492,7 +516,7 @@ def run_calculation(
 
     c5 = step(result, "C5", "拟合剩余规模调整")
     core = model_df[
-        model_df["source_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")
+        model_df["trusted_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")
         & (model_df["remaining_size"] > 0)
     ].copy()
     try:
@@ -520,7 +544,7 @@ def run_calculation(
         model_df["base_anchor"] + model_df["duration_adjustment"] + model_df["scale_neutral"]
     )
     model_df["residual_final"] = model_df["P"] - model_df["anchor_neutral"]
-    core = model_df[model_df["source_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")].copy()
+    core = model_df[model_df["trusted_CV"].between(CORE_MIN, CORE_MAX, inclusive="both")].copy()
     scale_core_mae = mae(core["P"], core["anchor_neutral"])
     scale_improve = duration_core_mae - scale_core_mae
     conservative_k = fit_scale_conservative(core)
@@ -578,9 +602,11 @@ def run_calculation(
         "run_id": run_id,
         "market_cutoff": market_cutoff,
         "model_version": MODEL_VERSION,
+        "cv_field": "trusted_CV",
         "status": "PASS",
         "hard_gates": {
             "input_contract": input_contract,
+            "cv_field": "trusted_CV",
             "base_params_finite": finite_dict(base_param_dict),
             "base_fit_converged": base_converged,
             "base_fit_iterations": fit_iter,
@@ -760,13 +786,13 @@ def run_calculation(
                     ("bond_code", "代码"),
                     ("bond_name", "名称"),
                     ("P", "实际价格"),
-                    ("source_CV", "转股价值"),
+                    ("trusted_CV", "转股价值"),
                     ("anchor_neutral", "中性锚"),
                     ("residual_final", "最终残差"),
                 ],
                 records(
                     top_abs,
-                    ["bond_code", "bond_name", "P", "source_CV", "anchor_neutral", "residual_final"],
+                    ["bond_code", "bond_name", "P", "trusted_CV", "anchor_neutral", "residual_final"],
                     15,
                 ),
             )
