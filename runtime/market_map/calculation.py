@@ -15,6 +15,7 @@ import statsmodels.api as sm
 
 MODEL_VERSION = "market-map-calculation-v0.2"
 HUBER_T = 1.345
+RLM_MAXITER = 200
 SUPPORT_MIN = 50.0
 SUPPORT_MAX = 130.0
 CORE_MIN = 70.0
@@ -101,7 +102,21 @@ def huber_fit(y: pd.Series, x: pd.DataFrame):
         x.astype(float).to_numpy(),
         M=sm.robust.norms.HuberT(t=HUBER_T),
     )
-    return model.fit(maxiter=200, tol=1e-10)
+    return model.fit(maxiter=RLM_MAXITER, tol=1e-10)
+
+
+def fit_iteration_count(fit: Any) -> int | None:
+    try:
+        return int(fit.fit_history.get("iteration"))
+    except Exception:
+        return None
+
+
+def fit_converged(fit: Any) -> tuple[bool, int | None]:
+    iteration = fit_iteration_count(fit)
+    if iteration is None:
+        return False, None
+    return iteration < RLM_MAXITER, iteration
 
 
 def coef_table(names: list[str], params: np.ndarray) -> list[dict[str, Any]]:
@@ -382,13 +397,10 @@ def run_calculation(
     shape_ok, min_step = shape_gate(base_params)
     cv_grid = np.array([70, 80, 90, 100], dtype=float)
     anchor_grid = base_predict(cv_grid, base_params)
-    fit_iter = None
-    try:
-        fit_iter = int(base_fit.fit_history.get("iteration"))
-    except Exception:
-        pass
+    base_converged, fit_iter = fit_converged(base_fit)
     c3.metrics = {
         "fit_parameters_finite": True,
+        "fit_converged": base_converged,
         "shape_monotonic": shape_ok,
         "min_grid_increment": min_step,
         "fit_iterations": fit_iter,
@@ -405,6 +417,13 @@ def run_calculation(
             )
         ]
     }
+    if not base_converged:
+        return fail(
+            result,
+            c3,
+            output_dir,
+            f"Fit Gate 失败：基础 Huber 拟合未在 {RLM_MAXITER} 次迭代内确认收敛。",
+        )
     if not shape_ok:
         return fail(result, c3, output_dir, "Shape Gate 失败：CV 70–100 内基础价格锚不是单调不下降。")
     c3.status = "PASS"
@@ -424,6 +443,14 @@ def run_calculation(
     }
     if not finite_dict(dur_param_dict):
         return fail(result, c4, output_dir, "期限函数参数出现 NaN / Inf。")
+    duration_converged, duration_iter = fit_converged(dur_fit)
+    if not duration_converged:
+        return fail(
+            result,
+            c4,
+            output_dir,
+            f"期限 Fit Gate 失败：Huber 拟合未在 {RLM_MAXITER} 次迭代内确认收敛。",
+        )
     model_df["duration_adjustment"] = duration_predict(model_df["remaining_months"], dur_params)
     model_df["anchor_base_duration"] = model_df["base_anchor"] + model_df["duration_adjustment"]
     model_df["residual_after_duration"] = model_df["P"] - model_df["anchor_base_duration"]
@@ -431,6 +458,8 @@ def run_calculation(
     duration_core_mae = mae(core["P"], core["anchor_base_duration"])
     duration_improve = base_core_mae - duration_core_mae
     c4.metrics = {
+        "fit_converged": duration_converged,
+        "fit_iterations": duration_iter,
         "intercept": dur_param_dict["intercept"],
         "slope": dur_param_dict["slope"],
         "base_core_mae": base_core_mae,
@@ -477,6 +506,14 @@ def run_calculation(
     }
     if not finite_dict(scale_param_dict):
         return fail(result, c5, output_dir, "规模函数参数出现 NaN / Inf。")
+    scale_converged, scale_iter = fit_converged(scale_fit)
+    if not scale_converged:
+        return fail(
+            result,
+            c5,
+            output_dir,
+            f"规模 Fit Gate 失败：Huber 拟合未在 {RLM_MAXITER} 次迭代内确认收敛。",
+        )
 
     model_df["scale_neutral"] = scale_neutral_predict(model_df["remaining_size"], scale_params)
     model_df["anchor_neutral"] = (
@@ -490,6 +527,8 @@ def run_calculation(
 
     c5.metrics = {
         "component_status": "REQUIRED",
+        "fit_converged": scale_converged,
+        "fit_iterations": scale_iter,
         "intercept": scale_param_dict["intercept"],
         "ln_size_slope": scale_param_dict["ln_size_slope"],
         "base_duration_core_mae": duration_core_mae,
@@ -524,6 +563,9 @@ def run_calculation(
 
     c6 = step(result, "C6", "计算残差分布并冻结快照")
     residual_stats = percentile_dict(core["residual_final"])
+    if not finite_dict(residual_stats):
+        return fail(result, c6, output_dir, "残差分位数出现 NaN / Inf，禁止冻结 Snapshot.")
+
     discovery_reference = model_df["anchor_neutral"] + residual_stats["q50"]
     model_df["discovery_reference"] = discovery_reference
     # Compatibility alias for older visualization / fixture readers.
@@ -532,11 +574,61 @@ def run_calculation(
     top_abs = core.assign(abs_residual=core["residual_final"].abs()).sort_values(
         "abs_residual", ascending=False
     ).head(15)
+    model_audit = {
+        "run_id": run_id,
+        "market_cutoff": market_cutoff,
+        "model_version": MODEL_VERSION,
+        "status": "PASS",
+        "hard_gates": {
+            "input_contract": input_contract,
+            "base_params_finite": finite_dict(base_param_dict),
+            "base_fit_converged": base_converged,
+            "base_fit_iterations": fit_iter,
+            "shape_gate": shape_ok,
+            "duration_params_finite": finite_dict(dur_param_dict),
+            "duration_fit_converged": duration_converged,
+            "duration_fit_iterations": duration_iter,
+            "scale_params_finite": finite_dict(scale_param_dict),
+            "scale_fit_converged": scale_converged,
+            "scale_fit_iterations": scale_iter,
+            "residual_stats_finite": finite_dict(residual_stats),
+        },
+        "sample_support": {
+            "support_sample": int(len(support)),
+            "core_sample": int(len(core)),
+            "core_remaining_months_min": float(core["remaining_months"].min()),
+            "core_remaining_months_max": float(core["remaining_months"].max()),
+            "core_remaining_size_min": float(core["remaining_size"].min()),
+            "core_remaining_size_max": float(core["remaining_size"].max()),
+        },
+        "diagnostics": {
+            "base_core_mae": base_core_mae,
+            "base_duration_core_mae": duration_core_mae,
+            "base_duration_scale_core_mae": scale_core_mae,
+            "duration_mae_improvement": duration_improve,
+            "scale_mae_improvement": scale_improve,
+            "q25": residual_stats["q25"],
+            "q50": residual_stats["q50"],
+            "q75": residual_stats["q75"],
+        },
+        "drift_audit": {
+            "status": "NOT_IMPLEMENTED",
+            "note": "跨截面 Drift 只做未来 WARNING 诊断，不属于当前 Hard Gate。",
+        },
+        "warnings": [],
+    }
+    model_audit_path = output_dir / "model_audit.json"
+    model_audit_path.write_text(
+        json.dumps(model_audit, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
     snapshot = {
         "snapshot_id": f"market-map-{market_cutoff}-{run_id}",
         "market_cutoff": market_cutoff,
         "model_version": MODEL_VERSION,
         "created_at": now_utc(),
+        "model_audit_ref": "model_audit.json",
         "input": {
             "input_dir": str(input_dir),
             "acquisition_run_id": acquisition.get("run_id"),
