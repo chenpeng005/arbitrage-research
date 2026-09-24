@@ -325,9 +325,11 @@ def run_acquisition(
     fixture_dir: Path | None = None,
 ) -> AcquisitionResult:
     output_dir.mkdir(parents=True, exist_ok=True)
-    if snapshot_mode == "REPLAY_TEST":
+    if snapshot_mode in {"REPLAY_TEST", "HISTORICAL_REPLAY"}:
         if fixture_dir is None:
-            raise ValueError("REPLAY_TEST requires --fixture-dir")
+            raise ValueError(
+                f"{snapshot_mode} requires --fixture-dir"
+            )
         fixture_dir = fixture_dir.resolve()
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     result = AcquisitionResult(
@@ -418,7 +420,10 @@ def run_acquisition(
     primary_error: Exception | None = None
 
     if snapshot_mode == "REPLAY_TEST":
-        comp = pd.read_csv(fixture_dir / "comparison_raw.csv", dtype={"转债代码": str})
+        comp = pd.read_csv(
+            fixture_dir / "comparison_raw.csv",
+            dtype={"转债代码": str},
+        )
         freeze_existing_frame(
             comp,
             raw_dir=raw_dir,
@@ -430,6 +435,69 @@ def run_acquisition(
             filename="market_replay_fixture.csv",
         )
         s1.metrics["data_mode"] = "fixture_replay"
+    elif snapshot_mode == "HISTORICAL_REPLAY":
+        historical_raw = fixture_dir / "raw"
+        primary_path = historical_raw / "market_primary_eastmoney_push2.csv"
+        fallback_jsl_path = historical_raw / "market_fallback_jisilu.csv"
+        fallback_em_path = historical_raw / "market_fallback_eastmoney_datacenter.csv"
+
+        if primary_path.exists():
+            comp = pd.read_csv(
+                primary_path,
+                dtype={"转债代码": str},
+            )
+            market_source = "HISTORICAL_PRIMARY_RAW"
+            freeze_existing_frame(
+                comp,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="历史正式快照 Raw",
+                adapter="historical:market_primary_eastmoney_push2.csv",
+                role="market_historical_replay",
+                filename="market_historical_primary.csv",
+            )
+        elif fallback_jsl_path.exists() and fallback_em_path.exists():
+            jsl_market = pd.read_csv(
+                fallback_jsl_path,
+                dtype={"代码": str},
+            )
+            em_market = pd.read_csv(
+                fallback_em_path,
+                dtype={"债券代码": str},
+            )
+            freeze_existing_frame(
+                jsl_market,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="历史正式快照 Raw",
+                adapter="historical:market_fallback_jisilu.csv",
+                role="market_historical_fallback_universe",
+                filename="market_historical_jisilu.csv",
+            )
+            freeze_existing_frame(
+                em_market,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="历史正式快照 Raw",
+                adapter="historical:market_fallback_eastmoney_datacenter.csv",
+                role="market_historical_fallback_quote",
+                filename="market_historical_eastmoney_datacenter.csv",
+            )
+            comp = build_fallback_market_snapshot(
+                jsl_market,
+                em_market,
+            )
+            market_source = "HISTORICAL_FALLBACK_RAW"
+        else:
+            raise FileNotFoundError(
+                "历史 Acquisition Run 缺少可重建主行情的冻结 Raw。"
+            )
+
+        s1.metrics["data_mode"] = "historical_formal_replay"
+        s1.metrics["historical_source_dir"] = str(fixture_dir)
     else:
         market_source = "EASTMONEY_PUSH2"
         try:
@@ -507,8 +575,12 @@ def run_acquisition(
         }
     )
     source_note = (
-        f"本次使用固定历史样本回放：{fixture_dir}"
-        if snapshot_mode == "REPLAY_TEST"
+        (
+            f"本次使用固定测试样本回放：{fixture_dir}"
+            if snapshot_mode == "REPLAY_TEST"
+            else f"本次使用历史正式快照 Raw 回放：{fixture_dir}"
+        )
+        if snapshot_mode in {"REPLAY_TEST", "HISTORICAL_REPLAY"}
         else (
             "主源：东方财富 push2 可转债比价接口。"
             if market_source == "EASTMONEY_PUSH2"
@@ -522,7 +594,7 @@ def run_acquisition(
         ]
     }
 
-    if primary_error is not None and snapshot_mode != "REPLAY_TEST":
+    if primary_error is not None and snapshot_mode not in {"REPLAY_TEST", "HISTORICAL_REPLAY"}:
         s1.status = "WARNING"
         s1.warnings = [
             "主行情 push2 接口不可用，本次已自动切换备用链路；结果可继续运行，但保留数据源降级警告。"
@@ -645,7 +717,10 @@ def run_acquisition(
     s3 = step(result, "S3", "补充到期日")
     try:
         if snapshot_mode == "REPLAY_TEST":
-            info = pd.read_csv(fixture_dir / "info_raw.csv", dtype={"债券代码": str})
+            info = pd.read_csv(
+                fixture_dir / "info_raw.csv",
+                dtype={"债券代码": str},
+            )
             freeze_existing_frame(
                 info,
                 raw_dir=raw_dir,
@@ -655,6 +730,26 @@ def run_acquisition(
                 adapter="fixture:info_raw.csv",
                 role="maturity_replay",
                 filename="maturity_replay_fixture.csv",
+            )
+        elif snapshot_mode == "HISTORICAL_REPLAY":
+            info_path = fixture_dir / "raw" / "maturity_ths.csv"
+            if not info_path.exists():
+                raise FileNotFoundError(
+                    "历史 Acquisition Run 缺少 raw/maturity_ths.csv"
+                )
+            info = pd.read_csv(
+                info_path,
+                dtype={"债券代码": str},
+            )
+            freeze_existing_frame(
+                info,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="历史正式快照 Raw",
+                adapter="historical:maturity_ths.csv",
+                role="maturity_historical_replay",
+                filename="maturity_historical_ths.csv",
             )
         else:
             info = fetch_and_freeze(
@@ -687,7 +782,51 @@ def run_acquisition(
 
     fallback_rows: list[pd.DataFrame] = []
     fallback_errors: list[str] = []
-    if snapshot_mode != "REPLAY_TEST" and len(maturity_missing):
+
+    if snapshot_mode == "HISTORICAL_REPLAY" and len(maturity_missing):
+        historical_fb_path = (
+            fixture_dir / "raw" / "maturity_eastmoney_fallback.csv"
+        )
+        if historical_fb_path.exists():
+            maturity_fb_raw = pd.read_csv(
+                historical_fb_path,
+                dtype={"SECURITY_CODE": str},
+            )
+            freeze_existing_frame(
+                maturity_fb_raw,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="历史正式快照 Raw",
+                adapter="historical:maturity_eastmoney_fallback.csv",
+                role="maturity_historical_missing_only_fallback",
+                filename="maturity_historical_eastmoney_fallback.csv",
+                degraded=True,
+            )
+            maturity_fb = maturity_fb_raw.rename(
+                columns={
+                    "SECURITY_CODE": "bond_code",
+                    "EXPIRE_DATE": "maturity_date",
+                }
+            )[["bond_code", "maturity_date"]].copy()
+            maturity_fb["bond_code"] = (
+                maturity_fb["bond_code"].astype(str).str.zfill(6)
+            )
+            maturity_fb["maturity_date"] = pd.to_datetime(
+                maturity_fb["maturity_date"],
+                errors="coerce",
+            )
+            resolved_map = (
+                maturity_fb.dropna(subset=["maturity_date"])
+                .drop_duplicates("bond_code")
+                .set_index("bond_code")["maturity_date"]
+            )
+            miss_mask = enriched["maturity_date"].isna()
+            enriched.loc[miss_mask, "maturity_date"] = enriched.loc[
+                miss_mask, "bond_code"
+            ].map(resolved_map)
+
+    if snapshot_mode not in {"REPLAY_TEST", "HISTORICAL_REPLAY"} and len(maturity_missing):
         for code in maturity_missing["bond_code"].astype(str):
             try:
                 one = ak.bond_zh_cov_info(symbol=code, indicator="基本信息").copy()
@@ -762,7 +901,10 @@ def run_acquisition(
     s4 = step(result, "S4", "补充剩余规模")
     try:
         if snapshot_mode == "REPLAY_TEST":
-            size_raw = pd.read_csv(fixture_dir / "redeem_raw.csv", dtype={"代码": str})
+            size_raw = pd.read_csv(
+                fixture_dir / "redeem_raw.csv",
+                dtype={"代码": str},
+            )
             freeze_existing_frame(
                 size_raw,
                 raw_dir=raw_dir,
@@ -772,6 +914,26 @@ def run_acquisition(
                 adapter="fixture:redeem_raw.csv",
                 role="size_replay",
                 filename="size_replay_fixture.csv",
+            )
+        elif snapshot_mode == "HISTORICAL_REPLAY":
+            size_path = fixture_dir / "raw" / "size_jisilu.csv"
+            if not size_path.exists():
+                raise FileNotFoundError(
+                    "历史 Acquisition Run 缺少 raw/size_jisilu.csv"
+                )
+            size_raw = pd.read_csv(
+                size_path,
+                dtype={"代码": str},
+            )
+            freeze_existing_frame(
+                size_raw,
+                raw_dir=raw_dir,
+                manifest=source_manifest,
+                output_dir=output_dir,
+                source="历史正式快照 Raw",
+                adapter="historical:size_jisilu.csv",
+                role="size_historical_replay",
+                filename="size_historical_jisilu.csv",
             )
         else:
             size_raw = fetch_and_freeze(
@@ -1234,11 +1396,21 @@ def run_acquisition(
         )
         s5.conclusion = "确定性审计发现实质冲突，本次数据停在 R2，等待语义审计。"
     else:
-        s5.status = "WARNING" if snapshot_mode in {"LIVE_TEST", "REPLAY_TEST"} else "PASS"
+        s5.status = (
+            "WARNING"
+            if snapshot_mode in {"LIVE_TEST", "REPLAY_TEST", "HISTORICAL_REPLAY"}
+            else "PASS"
+        )
         if snapshot_mode == "LIVE_TEST":
             s5.warnings.append("当前为盘中测试，字段存在异步刷新可能，本次结果不可冻结为正式市场快照。")
         elif snapshot_mode == "REPLAY_TEST":
-            s5.warnings.append("当前为固定历史样本回放，仅用于单元测试，不生成正式市场快照。")
+            s5.warnings.append(
+                "当前为固定历史测试样本回放，仅用于单元测试，不生成正式市场快照。"
+            )
+        elif snapshot_mode == "HISTORICAL_REPLAY":
+            s5.warnings.append(
+                "当前为历史正式快照回放：只读取当时冻结的 Raw，不联网，不更新正式市场快照。"
+            )
         s5.conclusion = "多来源交叉审计完成；未发现需要阻断 Runtime 的实质冲突。"
     emit(s5)
 
@@ -1298,7 +1470,7 @@ def main() -> None:
     parser.add_argument("--output", default="./runtime_data/latest")
     parser.add_argument(
         "--snapshot-mode",
-        choices=["CLOSE", "LIVE_TEST", "REPLAY_TEST"],
+        choices=["CLOSE", "LIVE_TEST", "REPLAY_TEST", "HISTORICAL_REPLAY"],
         default="LIVE_TEST",
     )
     parser.add_argument("--market-cutoff", default=datetime.now().date().isoformat())
