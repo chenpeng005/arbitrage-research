@@ -96,7 +96,8 @@ def run_ai_job(
         "prompt_ref": "prompt_snapshot.md",
         "prompt_version": spec.prompt_path.stem,
         "provider": provider_name,
-        "model": model_config.get("model"),
+        "requested_model": model_config.get("model"),
+        "provider_model": None,
         "validator": spec.validator,
         "tool_rounds": 0,
         "error": None,
@@ -246,6 +247,7 @@ def run_ai_job(
 
         metadata["status"] = "VALIDATING"
         metadata["provider_request_id"] = final_response.request_id
+        metadata["provider_model"] = final_response.model
         metadata["finish_reason"] = final_response.finish_reason
         metadata["usage"] = final_response.usage
         metadata["tool_rounds"] = tool_rounds
