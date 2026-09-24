@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import base64
 import json
 import os
+import secrets
 import subprocess
 import threading
 import uuid
@@ -9,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -20,6 +22,37 @@ ACQ_PYTHON = os.environ.get("ACQUISITION_PYTHON", "python3")
 STATIC_DIR = Path(__file__).parent / "static"
 
 app = FastAPI(title="Opportunity Discovery Runtime")
+
+RUNTIME_USER = os.environ.get("RUNTIME_USER")
+RUNTIME_PASSWORD = os.environ.get("RUNTIME_PASSWORD")
+
+
+@app.middleware("http")
+async def runtime_basic_auth(request, call_next):
+    if not RUNTIME_USER or not RUNTIME_PASSWORD:
+        return Response("Runtime authentication is not configured.", status_code=503)
+
+    header = request.headers.get("Authorization", "")
+    valid = False
+    if header.startswith("Basic "):
+        try:
+            raw = base64.b64decode(header[6:]).decode("utf-8")
+            username, password = raw.split(":", 1)
+            valid = secrets.compare_digest(username, RUNTIME_USER) and secrets.compare_digest(
+                password, RUNTIME_PASSWORD
+            )
+        except Exception:
+            valid = False
+
+    if not valid:
+        return Response(
+            "Authentication required.",
+            status_code=401,
+            headers={"WWW-Authenticate": 'Basic realm="Opportunity Discovery Runtime"'},
+        )
+    return await call_next(request)
+
+
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 _jobs: dict[str, dict] = {}
