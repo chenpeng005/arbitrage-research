@@ -133,8 +133,17 @@ def classify_exclusion(row: pd.Series) -> str:
     return "其他数据完整性异常"
 
 
-def run_acquisition(output_dir: Path, snapshot_mode: str, market_cutoff: str) -> AcquisitionResult:
+def run_acquisition(
+    output_dir: Path,
+    snapshot_mode: str,
+    market_cutoff: str,
+    fixture_dir: Path | None = None,
+) -> AcquisitionResult:
     output_dir.mkdir(parents=True, exist_ok=True)
+    if snapshot_mode == "REPLAY_TEST":
+        if fixture_dir is None:
+            raise ValueError("REPLAY_TEST requires --fixture-dir")
+        fixture_dir = fixture_dir.resolve()
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     result = AcquisitionResult(
         run_id=run_id,
@@ -152,7 +161,11 @@ def run_acquisition(output_dir: Path, snapshot_mode: str, market_cutoff: str) ->
 
     s1 = step(result, "S1", "获取主行情")
     try:
-        comp = call_with_retry(lambda: ak.bond_cov_comparison().copy(), s1)
+        if snapshot_mode == "REPLAY_TEST":
+            comp = pd.read_csv(fixture_dir / "comparison_raw.csv", dtype={"转债代码": str})
+            s1.metrics["data_mode"] = "fixture_replay"
+        else:
+            comp = call_with_retry(lambda: ak.bond_cov_comparison().copy(), s1)
     except Exception as exc:
         return fail(
             result,
@@ -171,7 +184,11 @@ def run_acquisition(output_dir: Path, snapshot_mode: str, market_cutoff: str) ->
     )
     s1.details = {
         "notes": [
-            "主数据源：东方财富可转债比价数据（通过 AKShare 获取）。",
+            (
+                f"本次使用固定历史样本回放：{fixture_dir}"
+                if snapshot_mode == "REPLAY_TEST"
+                else "主数据源：东方财富可转债比价数据（通过 AKShare 获取）。"
+            ),
             "P / S / K / 源CV 保持在同一主行情快照中，不由其他来源逐字段覆盖。",
         ]
     }
@@ -245,7 +262,10 @@ def run_acquisition(output_dir: Path, snapshot_mode: str, market_cutoff: str) ->
 
     s3 = step(result, "S3", "补充到期日")
     try:
-        info = call_with_retry(lambda: ak.bond_zh_cov_info_ths().copy(), s3)
+        if snapshot_mode == "REPLAY_TEST":
+            info = pd.read_csv(fixture_dir / "info_raw.csv", dtype={"债券代码": str})
+        else:
+            info = call_with_retry(lambda: ak.bond_zh_cov_info_ths().copy(), s3)
     except Exception as exc:
         return fail(
             result,
@@ -287,7 +307,10 @@ def run_acquisition(output_dir: Path, snapshot_mode: str, market_cutoff: str) ->
 
     s4 = step(result, "S4", "补充剩余规模")
     try:
-        size_raw = call_with_retry(lambda: ak.bond_cb_redeem_jsl().copy(), s4)
+        if snapshot_mode == "REPLAY_TEST":
+            size_raw = pd.read_csv(fixture_dir / "redeem_raw.csv", dtype={"代码": str})
+        else:
+            size_raw = call_with_retry(lambda: ak.bond_cb_redeem_jsl().copy(), s4)
     except Exception as exc:
         return fail(
             result,
@@ -454,9 +477,11 @@ def run_acquisition(output_dir: Path, snapshot_mode: str, market_cutoff: str) ->
             ),
         ],
     }
-    s5.status = "WARNING" if snapshot_mode == "LIVE_TEST" else "PASS"
+    s5.status = "WARNING" if snapshot_mode in {"LIVE_TEST", "REPLAY_TEST"} else "PASS"
     if snapshot_mode == "LIVE_TEST":
         s5.warnings.append("当前为盘中测试，字段存在异步刷新可能，本次结果不可冻结为正式市场快照。")
+    elif snapshot_mode == "REPLAY_TEST":
+        s5.warnings.append("当前为固定历史样本回放，仅用于单元测试，不生成正式市场快照。")
     s5.conclusion = "多来源交叉审计完成；未发现程序必须立即停止的结构性冲突。"
     emit(s5)
 
@@ -491,10 +516,20 @@ def run_acquisition(output_dir: Path, snapshot_mode: str, market_cutoff: str) ->
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", default="./runtime_data/latest")
-    parser.add_argument("--snapshot-mode", choices=["CLOSE", "LIVE_TEST"], default="LIVE_TEST")
+    parser.add_argument(
+        "--snapshot-mode",
+        choices=["CLOSE", "LIVE_TEST", "REPLAY_TEST"],
+        default="LIVE_TEST",
+    )
     parser.add_argument("--market-cutoff", default=datetime.now().date().isoformat())
+    parser.add_argument("--fixture-dir", default=None)
     args = parser.parse_args()
-    result = run_acquisition(Path(args.output), args.snapshot_mode, args.market_cutoff)
+    result = run_acquisition(
+        Path(args.output),
+        args.snapshot_mode,
+        args.market_cutoff,
+        Path(args.fixture_dir) if args.fixture_dir else None,
+    )
     print(
         json.dumps(
             {"type": "run_complete", "status": result.status, "run_id": result.run_id},
