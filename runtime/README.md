@@ -47,3 +47,12 @@ Web Feedback
 ```
 
 AI 不直接启动或推进 Runtime；AI 只在程序显式请求的语义异常节点被调用。
+
+## 当前测试部署入口
+
+- Web URL：`https://47.109.176.100:8443/`
+- Caddy：外部 8443 → `127.0.0.1:7080`
+- Runtime 项目目录：`/home/admin/projects/arbitrage-runtime`
+- Runtime Store：`/home/admin/projects/arbitrage-runtime/runtime_data`
+- 入口带服务器现有 Basic Auth；不在仓库保存密码。
+- 当前证书为 Caddy internal TLS，浏览器可能显示自签名/不受信任提示。
