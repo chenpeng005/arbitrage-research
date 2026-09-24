@@ -165,6 +165,43 @@ function prettyNumber(value,digits){
   return n.toFixed(digits);
 }
 
+function displayBondName(name){
+  return String(name==null?"":name).replace(/转债$/,"");
+}
+
+function numericFilterValue(selector){
+  const raw=$(selector).value.trim();
+  if(raw==="")return null;
+  const n=Number(raw);
+  return Number.isFinite(n)?n:null;
+}
+
+function filteredMarketRows(){
+  const priceMin=numericFilterValue("#mapPriceMin");
+  const priceMax=numericFilterValue("#mapPriceMax");
+  const cvMin=numericFilterValue("#mapCvMin");
+  const cvMax=numericFilterValue("#mapCvMax");
+  const sizeMax=numericFilterValue("#mapSizeMax");
+  const premiumMax=numericFilterValue("#mapPremiumMax");
+
+  return (marketMapData&&marketMapData.rows?marketMapData.rows:[]).filter(function(r){
+    const p=Number(r.P);
+    const cv=Number(r.trusted_CV);
+    const size=Number(r.remaining_size);
+    const premium=(Number.isFinite(p)&&Number.isFinite(cv)&&cv!==0)
+      ?(p/cv-1)*100
+      :NaN;
+
+    if(priceMin!==null && (!Number.isFinite(p)||p<priceMin))return false;
+    if(priceMax!==null && (!Number.isFinite(p)||p>priceMax))return false;
+    if(cvMin!==null && (!Number.isFinite(cv)||cv<cvMin))return false;
+    if(cvMax!==null && (!Number.isFinite(cv)||cv>cvMax))return false;
+    if(sizeMax!==null && (!Number.isFinite(size)||size>sizeMax))return false;
+    if(premiumMax!==null && (!Number.isFinite(premium)||premium>premiumMax))return false;
+    return true;
+  });
+}
+
 function metricText(key,value){
   if(["cv_diff_ratio_median","cv_diff_ratio_max"].includes(key)){
     return (Number(value)*100).toFixed(4)+"%";
@@ -771,7 +808,6 @@ function renderMapMeta(){
     +'<span><b>市场截面</b> '+esc(marketMapData.market_cutoff)+'</span>'
     +'<span><b>Snapshot</b> '+esc(marketMapData.snapshot_id||"-")+'</span>'
     +'<span><b>模型版本</b> '+esc(marketMapData.model_version||"-")+'</span>'
-    +'<span><b>展示横轴</b> 20–'+esc(((z.support||[])[1]||130))+'</span>'
     +'<span><b>模型 Support</b> '+esc((z.support||[]).join("–"))+'</span>'
     +'<span><b>Core</b> '+esc((z.core||[]).join("–"))+'</span>'
     +'<span><b>规模调整</b> '+esc(scaleStatus)+'</span>'
@@ -788,7 +824,7 @@ function renderMapSelected(row){
   }
   const diff=Number(row.diff_to_reference);
   el.className="map-selected";
-  el.innerHTML='<div class="selected-title"><strong>'+esc(row.bond_name)+'</strong><span>'+esc(row.bond_code)+'</span></div>'
+  el.innerHTML='<div class="selected-title"><strong>'+esc(displayBondName(row.bond_name))+'</strong><span>'+esc(row.bond_code)+'</span></div>'
     +'<div class="selected-grid">'
     +'<span>实际价格 <b>'+prettyNumber(row.P,2)+'</b></span>'
     +'<span>转股价值 <b>'+prettyNumber(row.trusted_CV,2)+'</b></span>'
@@ -804,14 +840,14 @@ function renderMapSelected(row){
 
 function renderMapTable(){
   if(!marketMapData)return;
-  const rows=(marketMapData.rows||[]).slice().sort(function(a,b){
+  const rows=filteredMarketRows().slice().sort(function(a,b){
     return Number(a.diff_to_reference)-Number(b.diff_to_reference);
   });
   $("#mapTableBody").innerHTML=rows.map(function(r){
     const diff=Number(r.diff_to_reference);
     return '<tr data-bond="'+esc(r.bond_code)+'">'
       +'<td>'+esc(r.bond_code)+'</td>'
-      +'<td>'+esc(r.bond_name)+'</td>'
+      +'<td>'+esc(displayBondName(r.bond_name))+'</td>'
       +'<td>'+prettyNumber(r.P,2)+'</td>'
       +'<td>'+prettyNumber(r.trusted_CV,2)+'</td>'
       +'<td>'+prettyNumber(r.remaining_months,1)+'</td>'
@@ -843,33 +879,31 @@ function renderMarketMap(){
   $("#mapSubtitle").textContent=mode.subtitle;
 
   const zone=(marketMapData.zones||{}).support||[50,130];
-  const rows=(marketMapData.rows||[]).filter(function(r){
+  const visible=filteredMarketRows().filter(function(r){
     return Number.isFinite(Number(r.trusted_CV)) && Number.isFinite(mapY(r));
-  });
-  const dataMinCv=rows.length
-    ?Math.min.apply(null,rows.map(function(r){return Number(r.trusted_CV);}))
-    :20;
-  const xMin=Math.min(20,Math.floor(dataMinCv/10)*10);
-  const xMax=Number(zone[1]||130);
-  const visible=rows.filter(function(r){
-    const x=Number(r.trusted_CV);
-    return x>=xMin && x<=xMax;
   });
 
   if(!visible.length){
-    $("#mapChart").innerHTML='<div class="chart-empty">当前范围没有可绘制样本。</div>';
+    $("#mapChart").innerHTML='<div class="chart-empty">当前筛选条件下没有可绘制样本。</div>';
     return;
   }
 
+  const xs=visible.map(function(r){return Number(r.trusted_CV);});
   const ys=visible.map(mapY);
-  let yMin=qtile(ys,0.02), yMax=qtile(ys,0.98);
-  const spread=Math.max(10,yMax-yMin);
-  yMin-=spread*0.10;
-  yMax+=spread*0.10;
 
-  const actualMin=Math.min.apply(null,ys);
-  const roundedActualMin=Math.floor(actualMin/5)*5;
-  yMin=Math.min(yMin,roundedActualMin);
+  const rawXMin=Math.min.apply(null,xs);
+  const rawXMax=Math.max.apply(null,xs);
+  const xSpread=Math.max(10,rawXMax-rawXMin);
+  let xMin=Math.floor((rawXMin-xSpread*0.04)/10)*10;
+  let xMax=Math.ceil((rawXMax+xSpread*0.04)/10)*10;
+  if(xMax<=xMin)xMax=xMin+10;
+
+  const rawYMin=Math.min.apply(null,ys);
+  const rawYMax=Math.max.apply(null,ys);
+  const ySpread=Math.max(10,rawYMax-rawYMin);
+  let yMin=Math.floor((rawYMin-ySpread*0.06)/5)*5;
+  let yMax=Math.ceil((rawYMax+ySpread*0.06)/5)*5;
+  if(yMax<=yMin)yMax=yMin+10;
 
   const W=1000,H=560;
   const m={l:72,r:28,t:26,b:58};
@@ -905,34 +939,32 @@ function renderMarketMap(){
     +(marketMapMode==="raw"?"实际转债价格":"标准化价格")+'</text>';
 
   const linePts=[];
-  for(let i=0;i<=100;i++){
-    const x=xMin+(xMax-xMin)*i/100;
-    const y=baseAnchorAt(x);
-    if(y>=yMin && y<=yMax)linePts.push(sx(x).toFixed(1)+','+sy(y).toFixed(1));
+  const modelXMin=Math.max(xMin,Number(zone[0]||50));
+  const modelXMax=Math.min(xMax,Number(zone[1]||130));
+  if(modelXMax>modelXMin){
+    for(let i=0;i<=100;i++){
+      const x=modelXMin+(modelXMax-modelXMin)*i/100;
+      const y=baseAnchorAt(x);
+      if(y>=yMin && y<=yMax)linePts.push(sx(x).toFixed(1)+','+sy(y).toFixed(1));
+    }
   }
   if(linePts.length>1)svg+='<polyline points="'+linePts.join(" ")+'" class="base-line"/>';
 
-  const showLabels=$("#mapLabels").checked;
   visible.forEach(function(r){
     const x=Number(r.trusted_CV), y=mapY(r);
     if(y<yMin || y>yMax)return;
     const selected=r.bond_code===marketMapSelectedCode;
-    const title=esc(r.bond_name+'｜价格 '+prettyNumber(r.P,2)+'｜CV '+prettyNumber(r.trusted_CV,2)+'｜实际-参考 '+prettyNumber(r.diff_to_reference,2));
+    const shortName=displayBondName(r.bond_name);
+    const title=esc(shortName+'｜价格 '+prettyNumber(r.P,2)+'｜CV '+prettyNumber(r.trusted_CV,2)+'｜实际-参考 '+prettyNumber(r.diff_to_reference,2));
     svg+='<g class="bond-point" data-code="'+esc(r.bond_code)+'">';
     svg+='<circle cx="'+sx(x).toFixed(1)+'" cy="'+sy(y).toFixed(1)+'" r="'+(selected?6:4)+'" class="'+(selected?"point selected":"point")+'"><title>'+title+'</title></circle>';
-    if(showLabels){
-      svg+='<text x="'+(sx(x)+6).toFixed(1)+'" y="'+(sy(y)-6).toFixed(1)+'" class="point-label">'+esc(r.bond_name)+'</text>';
-    }
+    svg+='<text x="'+(sx(x)+6).toFixed(1)+'" y="'+(sy(y)-6).toFixed(1)+'" class="point-label">'+esc(shortName)+'</text>';
     svg+='</g>';
   });
 
-  const clipped=visible.filter(function(r){
-    const y=mapY(r); return y<yMin || y>yMax;
-  }).length;
   svg+='</svg>';
-  if(clipped){
-    svg+='<div class="chart-note">纵轴下沿已扩展到当前最低样本；上沿仍聚焦主体区间。'+clipped+' 个高价极端点未画出，但仍保留在下方明细表。</div>';
-  }
+  svg+='<div class="chart-note">当前显示 '+visible.length+' 只；坐标轴按筛选结果自动缩放。BaseAnchor 仅在模型 Support '
+    +esc((zone||[]).join("–"))+' 内绘制。</div>';
   $("#mapChart").innerHTML=svg;
 
   $("#mapChart").querySelectorAll(".bond-point").forEach(function(g){
@@ -983,9 +1015,24 @@ $("#mapStdBtn").addEventListener("click",function(){
   marketMapMode="standard";
   renderMarketMap();
 });
-$("#mapDuration").addEventListener("change",renderMarketMap);
-$("#mapScale").addEventListener("change",renderMarketMap);
-$("#mapLabels").addEventListener("change",renderMarketMap);
+$("#mapDuration").addEventListener("change",function(){renderMarketMap();renderMapTable();});
+$("#mapScale").addEventListener("change",function(){renderMarketMap();renderMapTable();});
+["#mapPriceMin","#mapPriceMax","#mapCvMin","#mapCvMax","#mapSizeMax","#mapPremiumMax"].forEach(function(sel){
+  $(sel).addEventListener("input",function(){
+    renderMarketMap();
+    renderMapTable();
+  });
+});
+$("#mapFilterReset").addEventListener("click",function(){
+  $("#mapPriceMin").value="70";
+  $("#mapPriceMax").value="200";
+  $("#mapCvMin").value="20";
+  $("#mapCvMax").value="200";
+  $("#mapSizeMax").value="";
+  $("#mapPremiumMax").value="";
+  renderMarketMap();
+  renderMapTable();
+});
 $("#mapReloadBtn").addEventListener("click",function(){
   loadMarketMap(marketMapCalculationJobId);
 });
