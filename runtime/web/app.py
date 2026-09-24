@@ -15,6 +15,8 @@ from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+import pandas as pd
+
 ROOT = Path(os.environ.get("RUNTIME_ROOT", Path(__file__).resolve().parents[2]))
 DATA_ROOT = Path(os.environ.get("RUNTIME_DATA_ROOT", ROOT / "runtime_data"))
 
@@ -415,6 +417,98 @@ def get_run(job_id: str) -> dict:
             _jobs[job_id] = json.loads(path.read_text(encoding="utf-8"))
 
         return _jobs[job_id]
+
+
+
+def find_latest_market_map_output() -> tuple[Path, str] | None:
+    """
+    Visualization prefers a formally generated CLOSE snapshot.
+    If none exists yet, fall back to the latest calculated Runtime output.
+    """
+    close_candidates = list(DATA_ROOT.glob("close_*/calculation/market_map_snapshot.json"))
+    close_candidates = [
+        p for p in close_candidates
+        if (p.parent / "market_map_calculated.csv").exists()
+    ]
+    if close_candidates:
+        latest = max(close_candidates, key=lambda p: p.stat().st_mtime)
+        return latest.parent, "CLOSE"
+
+    candidates = list(DATA_ROOT.glob("runs/*/market_map_snapshot.json"))
+    candidates = [
+        p for p in candidates
+        if (p.parent / "market_map_calculated.csv").exists()
+    ]
+    if candidates:
+        latest = max(candidates, key=lambda p: p.stat().st_mtime)
+        return latest.parent, "RUNTIME"
+
+    return None
+
+
+@app.get("/api/market-map/view")
+def get_market_map_view() -> dict:
+    found = find_latest_market_map_output()
+    if found is None:
+        raise HTTPException(404, "no market map output is available")
+
+    out_dir, source_type = found
+    snapshot_path = out_dir / "market_map_snapshot.json"
+    table_path = out_dir / "market_map_calculated.csv"
+
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    df = pd.read_csv(table_path, dtype={"bond_code": str})
+
+    wanted = [
+        "bond_code",
+        "bond_name",
+        "P",
+        "source_CV",
+        "remaining_months",
+        "remaining_size",
+        "base_anchor",
+        "duration_adjustment",
+        "scale_neutral",
+        "anchor_neutral",
+        "residual_base",
+        "residual_after_duration",
+        "residual_final",
+        "discovery_reference_candidate",
+    ]
+    missing = [col for col in wanted if col not in df.columns]
+    if missing:
+        raise HTTPException(500, f"market map output missing columns: {missing}")
+
+    view = df[wanted].copy()
+    numeric_cols = [col for col in wanted if col not in {"bond_code", "bond_name"}]
+    for col in numeric_cols:
+        view[col] = pd.to_numeric(view[col], errors="coerce")
+
+    view["diff_candidate"] = (
+        view["P"] - view["discovery_reference_candidate"]
+    )
+
+    rows = json.loads(
+        view.to_json(
+            orient="records",
+            force_ascii=False,
+        )
+    )
+
+    return {
+        "source_type": source_type,
+        "market_cutoff": snapshot.get("market_cutoff"),
+        "model_version": snapshot.get("model_version"),
+        "snapshot_id": snapshot.get("snapshot_id"),
+        "zones": snapshot.get("zones", {}),
+        "components": snapshot.get("components", {}),
+        "residual_core_after_scale": snapshot.get("residual_core_after_scale", {}),
+        "diagnostics": snapshot.get("diagnostics", {}),
+        "discovery_reference_candidate": snapshot.get(
+            "discovery_reference_candidate", {}
+        ),
+        "rows": rows,
+    }
 
 
 @app.get("/api/health")
