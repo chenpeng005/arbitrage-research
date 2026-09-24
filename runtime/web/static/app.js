@@ -28,7 +28,8 @@ const statusLabels={
   FAIL:"失败",
   BLOCKED:"已阻塞",
   NEEDS_REVIEW:"需要人工处理",
-  WAITING_FOR_CHAT:"等待 ChatGPT"
+  WAITING_FOR_CHAT:"等待 ChatGPT",
+  CLAIMED_BY_CHAT:"ChatGPT 已领取"
 };
 
 const metricLabels={
@@ -118,6 +119,8 @@ let calcTimer=null;
 let pipelineJob=null;
 let pipelineTimer=null;
 let currentChatTask=null;
+let marketMapCalculationJobId=null;
+let historicalSnapshots=[];
 
 function localDateString(){
   const d=new Date();
@@ -156,6 +159,7 @@ function metricText(key,value){
   if(key==="snapshot_mode"){
     if(value==="LIVE_TEST")return "盘中测试";
     if(value==="REPLAY_TEST")return "历史回放测试";
+    if(value==="HISTORICAL_REPLAY")return "历史正式截面回放";
     return "正式收盘截面";
   }
   if(key==="data_mode" && value==="fixture_replay")return "固定历史样本";
@@ -299,6 +303,7 @@ async function pollAcquisition(){
   let mode="正式收盘截面";
   if(data.snapshot_mode==="LIVE_TEST")mode="盘中测试";
   if(data.snapshot_mode==="REPLAY_TEST")mode="历史回放测试";
+  if(data.snapshot_mode==="HISTORICAL_REPLAY")mode="历史正式截面回放";
 
   $("#runMeta").innerHTML='<div class="meta-grid">'
     +'<span><b>运行任务</b> '+esc(data.job_id)+'</span>'
@@ -361,8 +366,9 @@ async function renderChatHandoff(data){
 
   box.classList.remove("hidden");
   currentChatTask=await loadChatTask(data.chat_task_id);
-  $("#chatTaskBadge").textContent="WAITING_FOR_CHAT";
-  $("#chatTaskBadge").className="overall needs_review";
+  const chatState=(currentChatTask||{}).status||"WAITING_FOR_CHAT";
+  $("#chatTaskBadge").textContent=statusText(chatState);
+  $("#chatTaskBadge").className="overall "+statusClass(chatState);
 
   const reqs=((currentChatTask||{}).semantic_review_request||{}).requests||[];
   const names=reqs.map(function(x){
@@ -372,9 +378,55 @@ async function renderChatHandoff(data){
   $("#chatTaskSummary").innerHTML=
     '<b>Task ID：</b>'+esc(currentChatTask.task_id)
     +'　<b>冲突：</b>'+esc(names.join("；")||"-")
-    +'<br><span class="muted">推荐：点击“复制一句话给 ChatGPT”，回到本项目聊天直接粘贴。若当前 Chat 无服务器连接，再复制完整任务 JSON。</span>';
+    +(chatState==="CLAIMED_BY_CHAT"
+      ?'<br><span class="muted">该任务已被一个 Chat 领取；其他 Chat 不会再领取同一任务。领取超时后会自动释放。</span>'
+      :'<br><span class="muted">推荐：点击“复制一句话给 ChatGPT”，回到任意一个可访问本项目服务器的 Chat 直接粘贴。第一个 Chat 会先领取任务。</span>');
 
   $("#chatTaskPreview").textContent=JSON.stringify(currentChatTask,null,2);
+}
+
+async function loadHistoricalSnapshots(){
+  const r=await fetch("api/market-map/history");
+  if(!r.ok)throw new Error(await r.text());
+  const data=await r.json();
+  historicalSnapshots=(data.items||[]).filter(function(x){
+    return x.replay_ready;
+  });
+
+  const select=$("#pipelineHistorySnapshot");
+  if(!historicalSnapshots.length){
+    select.innerHTML='<option value="">暂无可回放的正式历史截面</option>';
+    return;
+  }
+
+  select.innerHTML=historicalSnapshots.map(function(x){
+    const label=(x.market_cutoff||"-")
+      +" · "+(x.model_version||"-")
+      +" · "+String(x.snapshot_id||"").slice(-15);
+    return '<option value="'+esc(x.snapshot_id)+'">'+esc(label)+'</option>';
+  }).join("");
+
+  syncHistoricalSelection();
+}
+
+function syncHistoricalSelection(){
+  if($("#pipelineMode").value!=="HISTORICAL_REPLAY")return;
+  const id=$("#pipelineHistorySnapshot").value;
+  const item=historicalSnapshots.find(function(x){return x.snapshot_id===id;});
+  if(item){
+    $("#pipelineCutoff").value=item.market_cutoff||"";
+  }
+}
+
+function updatePipelineModeUi(){
+  const historical=$("#pipelineMode").value==="HISTORICAL_REPLAY";
+  $("#pipelineHistoryWrap").classList.toggle("hidden",!historical);
+  $("#pipelineCutoffWrap").classList.toggle("hidden",historical);
+  if(historical){
+    loadHistoricalSnapshots().catch(function(err){
+      $("#pipelineMeta").textContent="历史快照列表读取失败："+err.message;
+    });
+  }
 }
 
 async function pollPipeline(){
@@ -387,8 +439,13 @@ async function pollPipeline(){
   $("#pipelineMeta").innerHTML='<div class="meta-grid">'
     +'<span><b>Pipeline</b> '+esc(data.job_id)+'</span>'
     +'<span><b>阶段</b> '+esc(phase)+'</span>'
+    +'<span><b>模式</b> '+esc(
+      data.snapshot_mode==="HISTORICAL_REPLAY"?"历史回放":
+      (data.snapshot_mode==="LIVE_TEST"?"盘中测试":"今日正式运行")
+    )+'</span>'
     +'<span><b>市场截面</b> '+esc(data.market_cutoff||"-")+'</span>'
-    +'<span><b>AI方式</b> '+esc(data.ai_execution_mode==="INTERACTIVE_CHAT"?"ChatGPT交互":"自动API（DeepSeek）")+'</span>'
+    +(data.historical_snapshot_id?'<span><b>历史来源</b> '+esc(data.historical_snapshot_id)+'</span>':"")
+    +'<span><b>AI方式</b> +esc(data.ai_execution_mode==="INTERACTIVE_CHAT"?"ChatGPT交互":"自动API（DeepSeek）")+'</span>'
     +(data.acquisition_job_id?'<span><b>Acquisition</b> '+esc(data.acquisition_job_id)+'</span>':"")
     +(data.ai_job_id?'<span><b>AI Job</b> '+esc(data.ai_job_id)+'</span>':"")
     +(data.ai_status?'<span><b>AI 状态</b> '+esc(statusText(data.ai_status))+'</span>':"")
@@ -407,8 +464,12 @@ async function pollPipeline(){
     clearInterval(pipelineTimer);
     pipelineTimer=null;
     $("#pipelineRunBtn").disabled=false;
-    if(["PASS","WARNING"].includes(data.status) && data.snapshot_mode==="CLOSE"){
-      try{await loadMarketMap();}catch(_err){}
+    if(["PASS","WARNING"].includes(data.status)){
+      if(data.snapshot_mode==="CLOSE"){
+        try{await loadMarketMap();}catch(_err){}
+      }else if(data.snapshot_mode==="HISTORICAL_REPLAY" && data.calculation_job_id){
+        try{await loadMarketMap(data.calculation_job_id);}catch(_err){}
+      }
     }
   }
 }
@@ -442,11 +503,21 @@ $("#pipelineRunBtn").addEventListener("click",async function(){
   setOverall("#pipelineOverall","PENDING");
   $("#pipelineRunBtn").disabled=true;
 
+  const mode=$("#pipelineMode").value;
   const payload={
-    snapshot_mode:$("#pipelineMode").value,
+    snapshot_mode:mode,
     market_cutoff:$("#pipelineCutoff").value,
     ai_execution_mode:$("#pipelineAiMode").value
   };
+  if(mode==="HISTORICAL_REPLAY"){
+    payload.historical_snapshot_id=$("#pipelineHistorySnapshot").value;
+    if(!payload.historical_snapshot_id){
+      setOverall("#pipelineOverall","FAIL");
+      $("#pipelineMeta").textContent="请先选择一个可回放的历史正式截面。";
+      $("#pipelineRunBtn").disabled=false;
+      return;
+    }
+  }
 
   currentChatTask=null;
   $("#chatHandoff").classList.add("hidden");
@@ -638,7 +709,9 @@ function renderMapSummary(){
 function renderMapMeta(){
   if(!marketMapData)return;
   const z=marketMapData.zones||{};
-  const source=marketMapData.source_type==="FORMAL_REGISTRY"?"正式收盘 Registry":"未知来源";
+  const source=marketMapData.source_type==="FORMAL_REGISTRY"
+    ?"正式收盘 Registry"
+    :(marketMapData.source_type==="HISTORICAL_REPLAY"?"历史回放结果":"未知来源");
   const scaleStatus=((((marketMapData||{}).components||{}).scale_neutral||{}).status||"") === "REQUIRED" ? "正式" : "非正式";
   const warningCount=(marketMapData.acquisition_warnings||[]).length;
   $("#mapMeta").innerHTML='<div class="meta-grid">'
@@ -814,11 +887,15 @@ function renderMarketMap(){
   });
 }
 
-async function loadMarketMap(){
+async function loadMarketMap(calculationJobId=null){
+  marketMapCalculationJobId=calculationJobId||null;
   $("#mapOverall").textContent="加载中";
   $("#mapOverall").className="overall running";
   try{
-    const r=await fetch("api/market-map/view");
+    const url=calculationJobId
+      ?"api/market-map/view?calculation_job_id="+encodeURIComponent(calculationJobId)
+      :"api/market-map/view";
+    const r=await fetch(url);
     if(!r.ok)throw new Error(await r.text());
     marketMapData=await r.json();
     $("#mapOverall").textContent="已加载";
@@ -845,6 +922,12 @@ $("#mapStdBtn").addEventListener("click",function(){
 $("#mapDuration").addEventListener("change",renderMarketMap);
 $("#mapScale").addEventListener("change",renderMarketMap);
 $("#mapLabels").addEventListener("change",renderMarketMap);
-$("#mapReloadBtn").addEventListener("click",loadMarketMap);
+$("#mapReloadBtn").addEventListener("click",function(){
+  loadMarketMap(marketMapCalculationJobId);
+});
+
+$("#pipelineMode").addEventListener("change",updatePipelineModeUi);
+$("#pipelineHistorySnapshot").addEventListener("change",syncHistoricalSelection);
+updatePipelineModeUi();
 
 loadMarketMap();
