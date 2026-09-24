@@ -146,6 +146,7 @@ def persist_run_metadata_payload(job: dict) -> None:
         "result": job.get("result_path"),
         "source_manifest": job.get("source_manifest_path"),
         "acquisition_audit": job.get("acquisition_audit_path"),
+        "semantic_review_request": job.get("semantic_review_request_path"),
         "trusted_market_input": job.get("trusted_market_input_path"),
         "market_input_audit": job.get("market_input_path"),
         "snapshot": job.get("snapshot_path"),
@@ -383,6 +384,7 @@ def acquisition_worker(job_id: str, request: RunRequest) -> None:
         extra_result_paths={
             "source_manifest_path": out / "source_manifest.json",
             "acquisition_audit_path": out / "acquisition_audit.json",
+            "semantic_review_request_path": out / "semantic_review_request.json",
             "trusted_market_input_path": out / "trusted_market_input.csv",
             "market_input_path": out / "market_input_audit.csv",
             "excluded_path": out / "universe_excluded.csv",
