@@ -119,7 +119,7 @@ def market_map_semantic_audit_spec(root: Path) -> AITaskSpec:
             },
         ],
         validator="runtime.market_map.semantic_resolution.validate_resolution",
-        max_tool_rounds=4,
+        max_tool_rounds=5,
         timeout_seconds=120,
     )
 
