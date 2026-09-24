@@ -12,6 +12,9 @@ import akshare as ak
 import pandas as pd
 
 
+STANDARD_CB_PREFIXES = {"110", "111", "113", "118", "123", "127", "128"}
+
+
 @dataclass
 class Step:
     id: str
@@ -118,19 +121,79 @@ def invalid_number(value: Any) -> bool:
 
 
 def classify_exclusion(row: pd.Series) -> str:
-    name = str(row.get("bond_name", ""))
-    if "定转" in name:
+    if not bool(row.get("_standard_prefix", True)):
+        return "非标准可转债品种（如可交换债）"
+    if not bool(row.get("_public_name", True)):
         return "定向可转债 / 非公开品种"
+    if not bool(row.get("_listed_by_cutoff", True)):
+        return "尚未上市 / 未形成有效公开交易"
     if invalid_number(row.get("P")):
-        listing = str(row.get("上市日期", "")).strip()
-        if listing in {"", "-", "nan", "NaT", "None"}:
-            return "尚未形成有效上市交易价格"
         return "已上市但当前无有效交易价格"
     if invalid_number(row.get("S")):
         return "正股价格缺失或异常"
     if invalid_number(row.get("K")):
         return "转股价缺失或异常"
     return "其他数据完整性异常"
+
+
+def fetch_fallback_market_snapshot() -> pd.DataFrame:
+    """
+    Fallback when Eastmoney push2 comparison endpoint is unavailable.
+
+    - Jisilu redeem list supplies the current active candidate set and an audit quote.
+    - Eastmoney datacenter bond_zh_cov supplies P/S/K/CV and listing metadata.
+    - P/S/K/CV remain from one economic quote source (Eastmoney datacenter).
+    """
+    jsl = ak.bond_cb_redeem_jsl().copy()
+    jsl["代码"] = jsl["代码"].astype(str).str.zfill(6)
+
+    em = ak.bond_zh_cov().copy()
+    em["债券代码"] = em["债券代码"].astype(str).str.zfill(6)
+
+    meta = em[
+        [
+            "债券代码",
+            "债券简称",
+            "上市时间",
+            "申购日期",
+            "正股代码",
+            "正股简称",
+            "正股价",
+            "转股价",
+            "转股价值",
+            "债现价",
+        ]
+    ].drop_duplicates("债券代码")
+
+    merged = jsl.merge(
+        meta,
+        left_on="代码",
+        right_on="债券代码",
+        how="left",
+        suffixes=("_jsl", "_em"),
+    )
+
+    out = pd.DataFrame(
+        {
+            "转债代码": merged["代码"],
+            "转债名称": merged["名称"],
+            "转债最新价": pd.to_numeric(merged["债现价"], errors="coerce").fillna(
+                pd.to_numeric(merged["现价"], errors="coerce")
+            ),
+            "正股代码": merged["正股代码_em"].fillna(merged["正股代码_jsl"]),
+            "正股名称": merged["正股简称"].fillna(merged["正股名称"]),
+            "正股最新价": pd.to_numeric(merged["正股价_em"], errors="coerce"),
+            "转股价": pd.to_numeric(merged["转股价_em"], errors="coerce"),
+            "转股价值": pd.to_numeric(merged["转股价值"], errors="coerce"),
+            "上市日期": merged["上市时间"],
+            "申购日期": merged["申购日期"],
+        }
+    )
+
+    out["备用审计_集思录转债价"] = pd.to_numeric(merged["现价"], errors="coerce")
+    out["备用审计_集思录正股价"] = pd.to_numeric(merged["正股价_jsl"], errors="coerce")
+    out["备用审计_集思录转股价"] = pd.to_numeric(merged["转股价_jsl"], errors="coerce")
+    return out
 
 
 def run_acquisition(
@@ -160,41 +223,84 @@ def run_acquisition(
     emit(s0)
 
     s1 = step(result, "S1", "获取主行情")
-    try:
-        if snapshot_mode == "REPLAY_TEST":
-            comp = pd.read_csv(fixture_dir / "comparison_raw.csv", dtype={"转债代码": str})
-            s1.metrics["data_mode"] = "fixture_replay"
-        else:
-            comp = call_with_retry(lambda: ak.bond_cov_comparison().copy(), s1)
-    except Exception as exc:
-        return fail(
-            result,
-            s1,
-            output_dir,
-            f"主行情获取失败，自动重试后仍无法取得数据；本次运行停在 S1。错误：{type(exc).__name__}",
-        )
+    market_source = "REPLAY_FIXTURE"
+    primary_error: Exception | None = None
+
+    if snapshot_mode == "REPLAY_TEST":
+        comp = pd.read_csv(fixture_dir / "comparison_raw.csv", dtype={"转债代码": str})
+        s1.metrics["data_mode"] = "fixture_replay"
+    else:
+        market_source = "EASTMONEY_PUSH2"
+        try:
+            comp = call_with_retry(
+                lambda: ak.bond_cov_comparison().copy(),
+                s1,
+                attempts=2,
+                delay_seconds=1.5,
+            )
+        except Exception as exc:
+            primary_error = exc
+            market_source = "FALLBACK_EM_DATACENTER_PLUS_JSL"
+            s1.status = "RUNNING"
+            s1.conclusion = "主行情接口连续失败，正在自动切换备用行情链路。"
+            s1.warnings = [
+                f"东方财富 push2 主源不可用：{type(exc).__name__}；开始切换备用源。"
+            ]
+            emit(s1)
+
+            try:
+                comp = call_with_retry(
+                    fetch_fallback_market_snapshot,
+                    s1,
+                    attempts=2,
+                    delay_seconds=1.5,
+                )
+            except Exception as fallback_exc:
+                return fail(
+                    result,
+                    s1,
+                    output_dir,
+                    "主行情源与备用行情链路均不可用；"
+                    f"主源错误：{type(primary_error).__name__}；"
+                    f"备用源错误：{type(fallback_exc).__name__}。",
+                )
+
     comp["转债代码"] = comp["转债代码"].astype(str).str.zfill(6)
     save_frame(comp, output_dir, "main_market_raw.csv")
     s1.metrics.update(
         {
+            "market_source": market_source,
             "candidate_count": len(comp),
             "unique_codes": comp["转债代码"].nunique(),
             "price_covered": int(pd.to_numeric(comp["转债最新价"], errors="coerce").notna().sum()),
         }
     )
+    source_note = (
+        f"本次使用固定历史样本回放：{fixture_dir}"
+        if snapshot_mode == "REPLAY_TEST"
+        else (
+            "主源：东方财富 push2 可转债比价接口。"
+            if market_source == "EASTMONEY_PUSH2"
+            else "备用链路：集思录活跃候选集合 + 东方财富数据中心 P/S/K/CV 与上市元数据。"
+        )
+    )
     s1.details = {
         "notes": [
-            (
-                f"本次使用固定历史样本回放：{fixture_dir}"
-                if snapshot_mode == "REPLAY_TEST"
-                else "主数据源：东方财富可转债比价数据（通过 AKShare 获取）。"
-            ),
-            "P / S / K / 源CV 保持在同一主行情快照中，不由其他来源逐字段覆盖。",
+            source_note,
+            "P / S / K / 源CV 保持在同一经济行情源内；备用链路仍会在后续步骤做跨源审计。",
         ]
     }
-    s1.status = "PASS"
-    s1.warnings = []
-    s1.conclusion = f"主行情取得成功，共 {len(comp)} 个候选对象；进入可转债范围筛选。"
+
+    if primary_error is not None and snapshot_mode != "REPLAY_TEST":
+        s1.status = "WARNING"
+        s1.warnings = [
+            "主行情 push2 接口不可用，本次已自动切换备用链路；结果可继续运行，但保留数据源降级警告。"
+        ]
+        s1.conclusion = f"备用行情链路取得成功，共 {len(comp)} 个候选对象；进入可转债范围筛选。"
+    else:
+        s1.status = "PASS"
+        s1.warnings = []
+        s1.conclusion = f"主行情取得成功，共 {len(comp)} 个候选对象；进入可转债范围筛选。"
     emit(s1)
 
     s2 = step(result, "S2", "可转债范围筛选")
@@ -212,8 +318,20 @@ def run_acquisition(
     for c in ["P", "S", "K", "source_CV"]:
         main[c] = pd.to_numeric(main[c], errors="coerce")
 
+    cutoff_ts = pd.Timestamp(market_cutoff)
+    main["_standard_prefix"] = main["bond_code"].astype(str).str[:3].isin(STANDARD_CB_PREFIXES)
+    main["_public_name"] = ~main["bond_name"].astype(str).str.contains("定转", na=False)
+    main["_listing_date"] = pd.to_datetime(main.get("上市日期"), errors="coerce")
+    main["_listed_by_cutoff"] = (
+        main["_listing_date"].notna()
+        & (main["_listing_date"] <= cutoff_ts)
+    )
+
     base_mask = (
-        main["P"].notna()
+        main["_standard_prefix"]
+        & main["_public_name"]
+        & main["_listed_by_cutoff"]
+        & main["P"].notna()
         & (main["P"] > 0)
         & main["S"].notna()
         & (main["S"] > 0)
