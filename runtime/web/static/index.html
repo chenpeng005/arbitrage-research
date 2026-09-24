@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>机会发现 Runtime · Market Map Builder</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Opportunity Discovery Runtime</p>
+        <h1>Market Map Builder · 单元测试</h1>
+        <p class="sub">网页触发 → 程序外循环 → 数据获取与审计 → 逐步反馈 → 结果持久化</p>
+      </div>
+      <div id="overall" class="overall idle">IDLE</div>
+    </header>
+
+    <section class="control card">
+      <div>
+        <label>运行模式</label>
+        <select id="mode">
+          <option value="LIVE_TEST">LIVE_TEST · 盘中测试</option>
+          <option value="CLOSE">CLOSE · 正式收盘截面</option>
+        </select>
+      </div>
+      <div>
+        <label>Market Cutoff</label>
+        <input id="cutoff" type="date">
+      </div>
+      <button id="runBtn">运行 Market Map Builder 数据获取</button>
+    </section>
+
+    <section id="runMeta" class="meta card muted">
+      尚未运行。点击按钮后，程序会自动推进；只有出现 BLOCKED / NEEDS_REVIEW 才需要人工介入。
+    </section>
+
+    <section class="progress card">
+      <div class="progress-head"><strong>运行进度</strong><span id="progressText">0 / 7</span></div>
+      <div class="track"><i id="bar"></i></div>
+    </section>
+
+    <section id="steps" class="steps"></section>
+
+    <section class="card tech">
+      <details>
+        <summary>技术说明</summary>
+        <p>页面只展示业务有意义的小步骤；原始数据、异常对象和最终 JSON 均保存在服务器 Runtime Store。</p>
+      </details>
+    </section>
+  </main>
+<script src="/static/app.js"></script>
+</body>
+</html>
