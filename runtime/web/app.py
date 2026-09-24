@@ -304,7 +304,7 @@ def find_latest_acquisition_input() -> tuple[str, Path] | None:
             continue
 
         path = DATA_ROOT / "runs" / job_id
-        if not (path / "market_input_audit.csv").exists():
+        if not (path / "trusted_market_input.csv").exists():
             continue
 
         valid.append(job)
@@ -373,8 +373,8 @@ def create_calculation_run(request: CalculationRunRequest) -> dict:
             input_dir = DATA_ROOT / "runs" / request.source_job_id
             source_job_id = request.source_job_id
 
-            if not (input_dir / "market_input_audit.csv").exists():
-                raise HTTPException(400, "source acquisition job is not usable")
+            if not (input_dir / "trusted_market_input.csv").exists():
+                raise HTTPException(400, "source acquisition job has no trusted market input")
 
             result_path = input_dir / "acquisition_result.json"
             if not result_path.exists():
