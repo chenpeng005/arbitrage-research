@@ -27,7 +27,8 @@ const statusLabels={
   WARNING:"有警告",
   FAIL:"失败",
   BLOCKED:"已阻塞",
-  NEEDS_REVIEW:"需要人工处理"
+  NEEDS_REVIEW:"需要人工处理",
+  WAITING_FOR_CHAT:"等待 ChatGPT"
 };
 
 const metricLabels={
@@ -116,6 +117,7 @@ let calcJob=null;
 let calcTimer=null;
 let pipelineJob=null;
 let pipelineTimer=null;
+let currentChatTask=null;
 
 function localDateString(){
   const d=new Date();
@@ -319,6 +321,8 @@ const pipelinePhaseLabels={
   PENDING:"等待启动",
   ACQUISITION:"数据获取与确定性审计",
   AI_SEMANTIC_AUDIT:"AI 语义审计",
+  WAITING_FOR_CHAT:"等待 ChatGPT 交互处理",
+  RESUMING_AFTER_CHAT:"ChatGPT 已通过，恢复 Runtime",
   CALCULATION:"市场价值映射计算",
   COMPLETE:"完成",
   STOPPED_AT_AI:"停止在 AI 审计",
@@ -327,6 +331,51 @@ const pipelinePhaseLabels={
   STOPPED_AT_CALCULATION:"停止在计算",
   CONTROLLER_ERROR:"Controller 错误"
 };
+
+async function copyText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const ta=document.createElement("textarea");
+  ta.value=text;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  ta.remove();
+}
+
+async function loadChatTask(taskId){
+  if(!taskId)return null;
+  const r=await fetch("api/chat-tasks/"+encodeURIComponent(taskId));
+  if(!r.ok)throw new Error(await r.text());
+  return await r.json();
+}
+
+async function renderChatHandoff(data){
+  const box=$("#chatHandoff");
+  if(data.status!=="WAITING_FOR_CHAT" || !data.chat_task_id){
+    if(data.status!=="RUNNING")box.classList.add("hidden");
+    return;
+  }
+
+  box.classList.remove("hidden");
+  currentChatTask=await loadChatTask(data.chat_task_id);
+  $("#chatTaskBadge").textContent="WAITING_FOR_CHAT";
+  $("#chatTaskBadge").className="overall needs_review";
+
+  const reqs=((currentChatTask||{}).semantic_review_request||{}).requests||[];
+  const names=reqs.map(function(x){
+    return (x.bond_name||x.bond_code||"")+" · "+(x.field||"");
+  });
+
+  $("#chatTaskSummary").innerHTML=
+    '<b>Task ID：</b>'+esc(currentChatTask.task_id)
+    +'　<b>冲突：</b>'+esc(names.join("；")||"-")
+    +'<br><span class="muted">推荐：点击“复制一句话给 ChatGPT”，回到本项目聊天直接粘贴。若当前 Chat 无服务器连接，再复制完整任务 JSON。</span>';
+
+  $("#chatTaskPreview").textContent=JSON.stringify(currentChatTask,null,2);
+}
 
 async function pollPipeline(){
   if(!pipelineJob)return;
@@ -339,12 +388,20 @@ async function pollPipeline(){
     +'<span><b>Pipeline</b> '+esc(data.job_id)+'</span>'
     +'<span><b>阶段</b> '+esc(phase)+'</span>'
     +'<span><b>市场截面</b> '+esc(data.market_cutoff||"-")+'</span>'
+    +'<span><b>AI方式</b> '+esc(data.ai_execution_mode==="INTERACTIVE_CHAT"?"ChatGPT交互":"自动API（DeepSeek）")+'</span>'
     +(data.acquisition_job_id?'<span><b>Acquisition</b> '+esc(data.acquisition_job_id)+'</span>':"")
     +(data.ai_job_id?'<span><b>AI Job</b> '+esc(data.ai_job_id)+'</span>':"")
     +(data.ai_status?'<span><b>AI 状态</b> '+esc(statusText(data.ai_status))+'</span>':"")
+    +(data.chat_task_id?'<span><b>Chat Task</b> '+esc(data.chat_task_id)+'</span>':"")
     +(data.calculation_job_id?'<span><b>Calculation</b> '+esc(data.calculation_job_id)+'</span>':"")
     +(data.error?'<span><b>错误</b> '+esc(data.error)+'</span>':"")
     +'</div>';
+
+  try{
+    await renderChatHandoff(data);
+  }catch(err){
+    $("#chatTaskSummary").textContent="Chat Task 读取失败："+err.message;
+  }
 
   if(["PASS","WARNING","FAIL","NEEDS_REVIEW"].includes(data.status)){
     clearInterval(pipelineTimer);
@@ -387,9 +444,12 @@ $("#pipelineRunBtn").addEventListener("click",async function(){
 
   const payload={
     snapshot_mode:$("#pipelineMode").value,
-    market_cutoff:$("#pipelineCutoff").value
+    market_cutoff:$("#pipelineCutoff").value,
+    ai_execution_mode:$("#pipelineAiMode").value
   };
 
+  currentChatTask=null;
+  $("#chatHandoff").classList.add("hidden");
   $("#pipelineMeta").textContent="Controller 正在启动完整藏宝图 Runtime。";
 
   try{
@@ -407,6 +467,44 @@ $("#pipelineRunBtn").addEventListener("click",async function(){
     setOverall("#pipelineOverall","FAIL");
     $("#pipelineMeta").textContent="无法启动完整 Runtime："+err.message;
     $("#pipelineRunBtn").disabled=false;
+  }
+});
+
+$("#chatCopyBtn").addEventListener("click",async function(){
+  if(!currentChatTask)return;
+  try{
+    await copyText(currentChatTask.chat_instruction);
+    $("#chatTaskSummary").innerHTML+='<br><b>已复制。</b> 回到本项目 ChatGPT 对话直接粘贴即可。';
+  }catch(err){
+    $("#chatTaskSummary").innerHTML+='<br><b>复制失败：</b>'+esc(err.message);
+  }
+});
+
+$("#chatCopyFullBtn").addEventListener("click",async function(){
+  if(!currentChatTask)return;
+  try{
+    await copyText(JSON.stringify(currentChatTask,null,2));
+    $("#chatTaskSummary").innerHTML+='<br><b>完整任务 JSON 已复制。</b>';
+  }catch(err){
+    $("#chatTaskSummary").innerHTML+='<br><b>复制失败：</b>'+esc(err.message);
+  }
+});
+
+$("#chatResumeBtn").addEventListener("click",async function(){
+  if(!pipelineJob)return;
+  $("#chatResumeBtn").disabled=true;
+  try{
+    const r=await fetch(
+      "api/market-map-runs/"+encodeURIComponent(pipelineJob)+"/resume-after-chat",
+      {method:"POST"}
+    );
+    if(!r.ok)throw new Error(await r.text());
+    $("#chatTaskSummary").innerHTML+='<br><b>Program Validator 已通过，Runtime 正在恢复。</b>';
+    await pollPipeline();
+  }catch(err){
+    $("#chatTaskSummary").innerHTML+='<br><b>尚不能继续：</b>'+esc(err.message);
+  }finally{
+    $("#chatResumeBtn").disabled=false;
   }
 });
 
