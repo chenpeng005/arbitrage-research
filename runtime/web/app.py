@@ -116,6 +116,8 @@ def update_step(job_id: str, event: dict) -> None:
         statuses = [x.get("status") for x in steps.values()]
         if "FAIL" in statuses:
             job["status"] = "FAIL"
+        elif "NEEDS_REVIEW" in statuses:
+            job["status"] = "NEEDS_REVIEW"
         elif "WARNING" in statuses:
             job["status"] = "RUNNING_WARNING"
         else:
@@ -373,6 +375,16 @@ def create_calculation_run(request: CalculationRunRequest) -> dict:
 
             if not (input_dir / "market_input_audit.csv").exists():
                 raise HTTPException(400, "source acquisition job is not usable")
+
+            result_path = input_dir / "acquisition_result.json"
+            if not result_path.exists():
+                raise HTTPException(400, "source acquisition result is missing")
+            source_result = json.loads(result_path.read_text(encoding="utf-8"))
+            if source_result.get("status") not in {"PASS", "WARNING"}:
+                raise HTTPException(
+                    400,
+                    "source acquisition job is not trusted for calculation",
+                )
         else:
             latest = find_latest_acquisition_input()
             if latest is None:
