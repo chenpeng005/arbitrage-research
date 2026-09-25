@@ -120,11 +120,43 @@ Path Availability 是条件性数据需求，而不是全市场无条件深查�
 
 该结果验证了 Decision-Invariance：P>=100 时不读取回售条款。
 
+### Downward Revision Economic Judgment V1
+
+正式实现：
+
+- `runtime/opportunity/revision_contract_facts.py`：结构化下修状态、合同到期日、批量经审计 NAV、条件性 NAV 条款证据；
+- `runtime/opportunity/downward_revision.py`：CV=100 乐观上界、permanent blocker、NAV Decision-Invariance 与 Resolver 经济判断；
+- `runtime/opportunity/revision_discovery.py`：正式 Runtime Unit、持久化与 Registry。
+
+2026-09-24 正式市场截面服务器实跑：
+
+- universe = 311；
+- revision watch matched = 311；
+- audited NAV available = 311；
+- permanent blockers = 10；
+- NAV clause exact evidence required = 6；
+- KEEP = 152；
+- DROP = 159；
+- INSUFFICIENT_DATA = 0；
+- Runtime status = PASS。
+
+### Unified Opportunity Discovery Controller
+
+`runtime/opportunity/discovery_controller.py`
+
+当前三条 Active Path 已全部 CONNECTED：
+
+- MATURITY_CASH；
+- PUT；
+- DOWNWARD_REVISION。
+
+Controller 固定消费同一个 Discovery Market Ingress，并以“债券为容器、Path 状态独立”的结构写入 Economic Path Registry。
+
 ## 下一工程节点
 
-到期现金与回售两条 Path 已成为正式可重复运行单元。
+三条 Opportunity Path 的经济判断 Runtime 已全部打通。
 
-当前进入统一 Opportunity Discovery Controller：固定消费同一个 Discovery Market Ingress，调用各 Path Runtime，按“债券为容器、Path 状态独立”聚合 Economic Path Registry；随后接入下修 Path。
+当前进入 **Economic Path Registry → Engineering Research Trigger**：在不改变各 Path `economic_status` 的前提下，为 KEEP Path 维护可观察事件状态并决定何时启动 Path Research。
 
 ## 运行外循环
 
