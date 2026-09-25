@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import os
 import subprocess
 import sys
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -116,9 +118,28 @@ def _run_one_with_wall_timeout(
     result["worker_exit_code"] = proc.returncode
     result["worker_stdout_tail"] = proc.stdout[-1000:]
     result["worker_stderr_tail"] = proc.stderr[-1000:]
+    if result.get("status") != "PASS":
+        set_trigger_research_status(data_root, task_id, "PENDING")
     return result
 
-def run_path_research_batch(
+@contextmanager
+def _exclusive_batch_lock(data_root: Path):
+    lock_path = data_root / "registry" / "path_research_batch.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    handle = lock_path.open("a+", encoding="utf-8")
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError as exc:
+        handle.close()
+        raise RuntimeError("Another PATH_RESEARCH batch is already running") from exc
+    try:
+        yield
+    finally:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        handle.close()
+
+
+def _run_path_research_batch_unlocked(
     *,
     root: Path,
     data_root: Path,
@@ -223,3 +244,27 @@ def run_path_research_batch(
         },
     )
     return summary
+
+
+def run_path_research_batch(
+    *,
+    root: Path,
+    data_root: Path,
+    provider_name: str,
+    model: str,
+    limit: int = 5,
+    path_id: str | None = None,
+    retry_once: bool = False,
+    wall_timeout_seconds: int = 180,
+) -> dict[str, Any]:
+    with _exclusive_batch_lock(data_root):
+        return _run_path_research_batch_unlocked(
+            root=root,
+            data_root=data_root,
+            provider_name=provider_name,
+            model=model,
+            limit=limit,
+            path_id=path_id,
+            retry_once=retry_once,
+            wall_timeout_seconds=wall_timeout_seconds,
+        )
