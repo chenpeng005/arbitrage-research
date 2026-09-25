@@ -152,10 +152,24 @@ def load_overrides(path: Path | None) -> dict[tuple[str, str], dict[str, Any]]:
     for item in payload.get("overrides", []):
         code = str(item["bond_code"]).zfill(6)
         field = str(item["field"])
-        for required in ("value", "source", "reason"):
-            if required not in item:
-                raise ValueError(f"override {code}/{field} missing {required}")
-        result[(code, field)] = item
+        mode = str(item.get("mode") or "exact")
+        if "reason" not in item:
+            raise ValueError(f"override {code}/{field} missing reason")
+        if mode == "exact":
+            for required in ("value", "source"):
+                if required not in item:
+                    raise ValueError(f"override {code}/{field} missing {required}")
+        elif mode == "range":
+            for required in ("min_value", "max_value", "sources"):
+                if required not in item:
+                    raise ValueError(f"override {code}/{field} missing {required}")
+            if float(item["min_value"]) > float(item["max_value"]):
+                raise ValueError(f"override {code}/{field} has invalid range")
+        else:
+            raise ValueError(f"override {code}/{field} has unsupported mode {mode}")
+        normalized = dict(item)
+        normalized["mode"] = mode
+        result[(code, field)] = normalized
     return result
 
 
@@ -222,16 +236,34 @@ def build_maturity_contract_facts(
         pay_day = _text(source.get("PAY_INTEREST_DAY"))
         redemption, redemption_source = parse_maturity_redemption(source.get("REDEEM_CLAUSE"))
         includes_final = redemption_includes_final_interest(source.get("REDEEM_CLAUSE"))
+        redemption_min = redemption
+        redemption_max = redemption
         override = overrides.get((code, "maturity_redemption_cash"))
         audit_notes: list[str] = []
         status = "READY"
 
         if override:
-            redemption = float(override["value"])
-            redemption_source = "AUTHORITATIVE_OVERRIDE"
+            mode = override.get("mode", "exact")
             includes_final = bool(override.get("includes_final_interest", True))
-            status = "READY_WITH_OVERRIDE"
-            audit_notes.append(f"maturity_redemption_cash override: {override['source']}")
+            if mode == "exact":
+                redemption = float(override["value"])
+                redemption_min = redemption
+                redemption_max = redemption
+                redemption_source = "AUTHORITATIVE_OVERRIDE"
+                status = "READY_WITH_OVERRIDE"
+                audit_notes.append(
+                    f"maturity_redemption_cash exact override: {override['source']}"
+                )
+            elif mode == "range":
+                redemption = None
+                redemption_min = float(override["min_value"])
+                redemption_max = float(override["max_value"])
+                redemption_source = "AUTHORITATIVE_RANGE"
+                status = "READY_RANGE"
+                audit_notes.append(
+                    "maturity_redemption_cash bounded conflict: "
+                    + "; ".join(str(x) for x in override.get("sources", []))
+                )
 
         required_ok = (
             rates
@@ -239,7 +271,8 @@ def build_maturity_contract_facts(
             and pd.notna(value_date)
             and pd.notna(maturity_date)
             and bool(pay_day)
-            and redemption is not None
+            and redemption_min is not None
+            and redemption_max is not None
         )
         if not required_ok:
             rows.append({
@@ -253,7 +286,7 @@ def build_maturity_contract_facts(
                         ("value_date", pd.notna(value_date)),
                         ("contract_maturity_date", pd.notna(maturity_date)),
                         ("pay_interest_day", bool(pay_day)),
-                        ("maturity_redemption_cash", redemption is not None),
+                        ("maturity_redemption_cash", redemption_min is not None and redemption_max is not None),
                     ) if not ok
                 ],
                 "audit_notes": audit_notes,
@@ -268,7 +301,10 @@ def build_maturity_contract_facts(
             cutoff=cutoff,
             final_interest_in_redemption=includes_final,
         )
-        c_value = float(redemption) + sum(float(item["cash"]) for item in coupons)
+        intermediate_cash = sum(float(item["cash"]) for item in coupons)
+        c_min = float(redemption_min) + intermediate_cash
+        c_max = float(redemption_max) + intermediate_cash
+        exact_c = c_min if abs(c_max - c_min) < 1e-12 else None
         rows.append({
             "bond_code": code,
             "bond_name": market_row["bond_name"],
@@ -280,10 +316,16 @@ def build_maturity_contract_facts(
             "par_value": float(par),
             "coupon_rates": rates,
             "remaining_intermediate_coupons": coupons,
-            "maturity_redemption_cash": float(redemption),
+            "maturity_redemption_cash": (
+                float(redemption_min) if abs(float(redemption_max) - float(redemption_min)) < 1e-12 else None
+            ),
+            "maturity_redemption_cash_min": float(redemption_min),
+            "maturity_redemption_cash_max": float(redemption_max),
             "maturity_redemption_source": redemption_source,
             "redemption_includes_final_interest": includes_final,
-            "remaining_contract_cash_C": c_value,
+            "remaining_contract_cash_C": exact_c,
+            "remaining_contract_cash_C_min": c_min,
+            "remaining_contract_cash_C_max": c_max,
             "audit_notes": audit_notes,
         })
 
@@ -296,8 +338,9 @@ def build_maturity_contract_facts(
         "rows": rows,
         "audit": {
             "universe": len(market_input["rows"]),
-            "ready": sum(row["status"] in {"READY", "READY_WITH_OVERRIDE"} for row in rows),
+            "ready": sum(row["status"] in {"READY", "READY_WITH_OVERRIDE", "READY_RANGE"} for row in rows),
             "ready_with_override": sum(row["status"] == "READY_WITH_OVERRIDE" for row in rows),
+            "ready_range": sum(row["status"] == "READY_RANGE" for row in rows),
             "insufficient_data": sum(row["status"] == "INSUFFICIENT_DATA" for row in rows),
         },
     }
