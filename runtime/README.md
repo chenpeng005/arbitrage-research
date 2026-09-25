@@ -175,11 +175,50 @@ Controller 固定消费同一个 Discovery Market Ingress，并以“债券为�
 
 下修仅对现实事件状态 `临近触发 / 满足条件 / 待股东会` 唤醒研究；未进入和普通计数中继续只保留 Registry。
 
+### Path Research Runtime V1
+
+当前实现：
+
+- `runtime/opportunity/research_task_builder.py`：从 persistent pending queue 构建确定性 Research Task Package；
+- `runtime/opportunity/research_ledger.py`：校验 Path Result、持久化结果、回写 Trigger State 与 pending queue；
+- 任务包预装 Market State、Economic Judgment、Trigger Context 和已有 Path Facts，AI 不重跑 Discovery；
+- `task_id` 由 `trigger_key` 确定性生成，同一任务不会因重复构建产生新身份。
+
+2026-09-24 Registry 对应的首轮构建：
+
+- pending = 38；
+- task packages built = 38；
+- unique task_id = 38；
+- unique trigger_key = 38。
+
+三 Path 端到端 smoke test：
+
+- 南航转债 / MATURITY_CASH：COMPLETED，review_ready = true；
+- 三房转债 / PUT：COMPLETED，review_ready = true；
+- 晶澳转债 / DOWNWARD_REVISION：COMPLETED，review_ready = true；
+- Research Ledger = 3；
+- pending queue：38 → 35；
+- 三个 Trigger State 均由 PENDING 更新为 COMPLETED，并写入 last_path_result_id。
+
+该验证证明：
+
+```text
+Trigger
+→ persistent pending queue
+→ Task Package
+→ AI Path Research
+→ Path Result
+→ Research Ledger
+→ Trigger State / Queue 回写
+```
+
+可以闭环运行。
+
 ## 下一工程节点
 
-当前正式进入 **Path Research Runtime**。
+当前仍处于 **Path Research Runtime**，但接口与三 Path smoke test 已通过。
 
-先检查三条 Path 的 Path Research Canonical 是否完整迁移；成熟旧知识优先迁移，不重新发明业务研究逻辑。
+下一步对剩余 persistent pending queue 做批量 Path Research；在全部或足够一批 Path Result 形成之前，不提前进入 Candidate Pool。
 
 ## 运行外循环
 
