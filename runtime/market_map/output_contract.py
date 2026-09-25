@@ -281,7 +281,18 @@ def build_bonds(
     return out
 
 
-def build_model(snapshot: dict[str, Any]) -> dict[str, Any]:
+def build_model(
+    snapshot: dict[str, Any],
+    output_dir: Path,
+) -> dict[str, Any]:
+    audit_path = output_dir / "model_audit.json"
+    model_audit: dict[str, Any] = {}
+    if audit_path.exists():
+        try:
+            model_audit = json.loads(audit_path.read_text(encoding="utf-8"))
+        except Exception:
+            model_audit = {"status": "UNREADABLE"}
+
     return {
         "contract_version": CONTRACT_VERSION,
         "snapshot_id": snapshot["snapshot_id"],
@@ -312,13 +323,15 @@ def build_model(snapshot: dict[str, Any]) -> dict[str, Any]:
             "formula": snapshot["discovery_reference"]["formula"],
         },
         "diagnostics": snapshot.get("diagnostics", {}),
-        "model_audit_ref": snapshot.get("model_audit_ref"),
+        "audit": model_audit,
+        "model_audit_ref": "../model_audit.json",
     }
 
 
 def build_manifest(
     snapshot: dict[str, Any],
     bonds: pd.DataFrame,
+    output_dir: Path,
 ) -> dict[str, Any]:
     return {
         "contract_version": CONTRACT_VERSION,
@@ -335,6 +348,7 @@ def build_manifest(
         },
         "upstream": {
             "acquisition_run_id": snapshot["input"].get("acquisition_run_id"),
+            "calculation_run_id": output_dir.name,
             "calculation_snapshot_ref": "../market_map_snapshot.json",
             "trusted_market_input_ref": snapshot["input"].get("trusted_market_input_ref"),
             "model_audit_ref": "../model_audit.json",
@@ -537,10 +551,10 @@ def build_and_validate_output_contract(
 
     bonds = build_bonds(snapshot, model_df)
     write_json(contract_dir / "schema.json", schema_payload())
-    write_json(contract_dir / "model.json", build_model(snapshot))
+    write_json(contract_dir / "model.json", build_model(snapshot, output_dir))
     bonds.to_csv(contract_dir / "bonds.csv", index=False)
 
-    manifest = build_manifest(snapshot, bonds)
+    manifest = build_manifest(snapshot, bonds, output_dir)
     write_json(contract_dir / "manifest.json", manifest)
 
     validation = validate_contract(output_dir)
