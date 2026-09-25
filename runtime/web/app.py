@@ -33,6 +33,8 @@ DEPLOYMENT_MANIFEST_PATH = DATA_ROOT / "deployment_manifest.json"
 MARKET_MAP_REGISTRY_DIR = DATA_ROOT / "registry" / "market_map_snapshots"
 LATEST_FORMAL_MARKET_MAP_PATH = DATA_ROOT / "registry" / "latest_formal_market_map.json"
 LATEST_DISCOVERY_INGRESS_PATH = DATA_ROOT / "registry" / "latest_discovery_market_ingress.json"
+LATEST_CANDIDATE_POOL_PATH = DATA_ROOT / "registry" / "latest_candidate_pool.json"
+LATEST_OPPORTUNITY_RECORDS_PATH = DATA_ROOT / "registry" / "latest_opportunity_records.json"
 CHAT_TASK_ROOT = DATA_ROOT / "chat_tasks"
 
 ACQ_SCRIPT = ROOT / "runtime" / "market_map" / "acquisition.py"
@@ -1666,6 +1668,65 @@ def latest_discovery_market_ingress() -> dict:
         return result
     except (KeyError, ValueError, OSError, json.JSONDecodeError) as exc:
         raise HTTPException(409, f"discovery market ingress result is invalid: {exc}")
+
+
+def _load_latest_runtime_artifact(pointer_path: Path, label: str) -> dict:
+    if not pointer_path.exists():
+        raise HTTPException(404, f"no {label} run has completed")
+    try:
+        pointer = json.loads(pointer_path.read_text(encoding="utf-8"))
+        run_id = str(pointer["run_id"])
+        result_path = Path(str(pointer["result_path"]))
+        if not result_path.is_absolute():
+            result_path = ROOT / result_path
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        if result.get("run_id") != run_id:
+            raise ValueError(f"{label} pointer and result disagree")
+        if result.get("status") != "PASS":
+            raise ValueError(f"{label} latest result is not PASS")
+        return result
+    except HTTPException:
+        raise
+    except (KeyError, ValueError, OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(409, f"{label} result is invalid: {exc}")
+
+
+@app.get("/api/opportunity/candidate-pool/latest")
+def latest_candidate_pool() -> dict:
+    return _load_latest_runtime_artifact(
+        LATEST_CANDIDATE_POOL_PATH,
+        "candidate pool",
+    )
+
+
+@app.get("/api/opportunity/records/latest")
+def latest_opportunity_records() -> dict:
+    return _load_latest_runtime_artifact(
+        LATEST_OPPORTUNITY_RECORDS_PATH,
+        "opportunity records",
+    )
+
+
+@app.get("/api/opportunity/records/{bond_code}")
+def latest_opportunity_record_for_bond(bond_code: str) -> dict:
+    code = str(bond_code).strip().zfill(6)
+    if len(code) != 6 or not code.isdigit():
+        raise HTTPException(400, "bond_code must be a 6-digit code")
+
+    records = _load_latest_runtime_artifact(
+        LATEST_OPPORTUNITY_RECORDS_PATH,
+        "opportunity records",
+    )
+    matches = [
+        item for item in records.get("records", [])
+        if str(item.get("bond_code") or "").zfill(6) == code
+    ]
+    if len(matches) != 1:
+        raise HTTPException(
+            404 if not matches else 409,
+            "bond is not uniquely present in latest opportunity records",
+        )
+    return matches[0]
 
 
 @app.get("/api/market-status")
