@@ -240,8 +240,9 @@ def path_research_spec(root: Path) -> AITaskSpec:
             {
                 "name": "path_evidence_search",
                 "description": (
-                    "只围绕当前 Path Research task 的正股，在巨潮正式公告中"
-                    "搜索补充证据。Program 固定 stock_code，AI 不能扩展对象。"
+                    "只围绕当前 Path Research task 检索正式公告证据。"
+                    "优先使用 Evidence Pack 已冻结的公告候选；无匹配时才做窄范围回退搜索。"
+                    "Program 固定 stock_code，AI 不能扩展对象。"
                 ),
                 "input_schema": {
                     "type": "object",
@@ -261,8 +262,9 @@ def path_research_spec(root: Path) -> AITaskSpec:
             {
                 "name": "path_evidence_fetch",
                 "description": (
-                    "读取本 AI Job 之前 path_evidence_search 返回过的"
-                    "巨潮正式公告 PDF，并由 Program 保存 PDF、文本和 hash。"
+                    "读取本 AI Job 之前 path_evidence_search 返回过的正式公告。"
+                    "对冻结候选优先抓正文并在可用时读取 PDF 全文，"
+                    "Program 保存 PDF、文本和 hash。"
                 ),
                 "input_schema": {
                     "type": "object",
