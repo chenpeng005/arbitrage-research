@@ -106,8 +106,12 @@ engineering_prefetched_evidence
 
 - 未来股价；
 - 董事会未来行为；
+- 未来是否提出下修；
+- 未来最终新转股价 / 现实K；
 - 未来行权率；
 - 未来融资能否最终成功。
+
+特别是：**某个未来公告、未来董事会提议、未来最终K尚未发生，不得因为“现在查不到”而写成 UNKNOWN-B。**
 
 UNKNOWN-A 可以保留，不自动阻塞 review_ready。
 
@@ -118,6 +122,17 @@ UNKNOWN-A 可以保留，不自动阻塞 review_ready。
 - 已公告但未读取的董事会结果；
 - 评级报告中的重大信用结论未核；
 - 当前母公司现金/融资事实在结论上是决定性的但仍未核验。
+
+若 Evidence Pack 已明确：
+
+```text
+revision_notice_source_audit.source_retrieved = true
+revision_notice_source_audit.no_relevant_revision_notice_confirmed_as_of_cutoff = true
+```
+
+则应把“截至 cutoff 没有相关下修公告”视为已经核实的当前事实。没有冲突证据时，不得再把“也许公告索引漏了”列为 UNKNOWN-B。
+
+若 `official_contract_document_index` 已提供募集说明书/上市公告书候选，且 `nav_floor_applicable` 仍为空，应优先读取该合同文档闭合下修底价条款。
 
 重大 UNKNOWN-B 存在时：
 
@@ -150,6 +165,8 @@ research_status = NEEDS_EVIDENCE 或 UNRESOLVED
 - 不把聚合来源的状态直接包装成公司意愿；
 - 信用 / 支付稳定性判断必须说明闭合链与失效条件；
 - 下修行为判断必须显式写出支持证据与反证；
+- 若当前已正式“不下修”，可以把“本轮结果=不下修”作为已闭合事实；剩余生命周期未来是否再次推进属于 UNKNOWN-A；
+- 没有历史成功下修、没有当前董事会提议时，允许输出“现实下修深度暂不可预测”，但这本身不构成 UNKNOWN-B；
 - 回售必须区分“经济 KEEP”与“权利是否已经形成”。
 
 ## 7. Evidence ID
