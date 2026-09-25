@@ -12,6 +12,11 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 
+try:
+    from runtime.market_map.output_contract import build_and_validate_output_contract
+except ModuleNotFoundError:
+    from output_contract import build_and_validate_output_contract
+
 
 MODEL_VERSION = "market-map-calculation-v0.3"
 HUBER_T = 1.345
@@ -45,6 +50,8 @@ class CalculationResult:
     completed_at: str | None = None
     steps: list[Step] = field(default_factory=list)
     snapshot_path: str | None = None
+    output_contract_path: str | None = None
+    output_contract_validation_path: str | None = None
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
@@ -824,7 +831,25 @@ def run_calculation(
     )
     model_df.to_csv(output_dir / "market_map_calculated.csv", index=False)
 
+    try:
+        contract_result = build_and_validate_output_contract(
+            output_dir=output_dir,
+            snapshot=snapshot,
+            model_df=model_df,
+        )
+    except Exception as exc:
+        return fail(
+            result,
+            c6,
+            output_dir,
+            "Market Map Output Contract V1 生成或校验失败："
+            f"{type(exc).__name__}: {exc}",
+        )
+
     c6.metrics = {
+        "output_contract_version": contract_result["contract_version"],
+        "output_contract_status": contract_result["status"],
+        "output_contract_bond_count": contract_result["bond_count"],
         "snapshot_class": snapshot_class,
         "formal_snapshot": formal_snapshot,
         "q25": residual_stats["q25"],
@@ -876,6 +901,8 @@ def run_calculation(
 
     result.status = "WARNING" if any(s.status == "WARNING" for s in result.steps) else "PASS"
     result.snapshot_path = str(snapshot_path)
+    result.output_contract_path = contract_result["manifest_path"]
+    result.output_contract_validation_path = contract_result["validation_path"]
     result.completed_at = now_utc()
     persist(result, output_dir)
     return result
