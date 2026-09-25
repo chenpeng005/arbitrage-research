@@ -70,7 +70,11 @@ def build_market_ingress(manifest_path: Path, data_root: Path, deployment: dict,
                 "path_inputs": {
                     "MATURITY_CASH": {"status": "WAITING_CONTRACT_DATA", "missing": ["remaining_contract_cash_C", "normal_maturity_path_available"]},
                     "PUT": {"status": "WAITING_CONTRACT_DATA", "missing": ["put_clause_exists", "put_mechanism_still_available"]},
-                    "DOWNWARD_REVISION": {"status": "WAITING_CONTRACT_DATA", "missing": ["revision_clause_available", "permanent_revision_blocker", "conditional_hard_floor"]},
+                    "DOWNWARD_REVISION": {
+                        "status": "WAITING_CONTRACT_DATA",
+                        "missing": ["revision_clause_available", "permanent_revision_blocker"],
+                        "conditional": ["current_hard_floor_if_decision_sensitive"],
+                    },
                 },
             })
 
