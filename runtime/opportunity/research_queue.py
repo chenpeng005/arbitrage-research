@@ -17,10 +17,37 @@ def task_id_from_trigger(trigger_key: str) -> str:
 
 
 def evidence_pack_sha256(data_root: Path, task_id: str) -> str | None:
+    """Stable semantic fingerprint for evidence-dependent rerun gating.
+
+    Runtime timestamps and App deployment metadata are intentionally excluded so
+    rebuilding an identical Evidence Pack does not wake a held research task.
+    Knowledge commit remains included because a canonical rule change can
+    legitimately require re-research even when raw facts are unchanged.
+    """
     path = data_root / "research_evidence" / f"{task_id}.json"
     if not path.exists():
         return None
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    semantic = {
+        "evidence_pack_version": payload.get("evidence_pack_version"),
+        "task_id": payload.get("task_id"),
+        "trigger_key": payload.get("trigger_key"),
+        "bond_code": payload.get("bond_code"),
+        "path_id": payload.get("path_id"),
+        "market_cutoff": payload.get("market_cutoff"),
+        "knowledge_commit_sha": payload.get("knowledge_commit_sha"),
+        "sources": payload.get("sources"),
+        "facts": payload.get("facts"),
+        "coverage": payload.get("coverage"),
+        "missing_or_deferred": payload.get("missing_or_deferred"),
+    }
+    canonical = json.dumps(
+        semantic,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
 
 
 def pending_item_is_runnable(
