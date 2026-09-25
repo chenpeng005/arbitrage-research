@@ -20,7 +20,7 @@ INGRESS_VERSION = "discovery-market-ingress-v1"
 MARKET_FIELDS = (
     "bond_code", "bond_name", "stock_code",
     "current_bond_price", "current_stock_price", "current_conversion_price",
-    "current_conversion_value", "remaining_months", "remaining_size",
+    "current_conversion_value", "maturity_date", "remaining_months", "remaining_size",
     "model_zone", "data_status", "warning_flags",
 )
 
@@ -69,6 +69,7 @@ def build_market_ingress(manifest_path: Path, data_root: Path, deployment: dict,
             rows.append({
                 "bond_code": code, "bond_name": str(item["bond_name"]),
                 "stock_code": str(item["stock_code"]).zfill(6),
+                "maturity_date": str(item["maturity_date"]),
                 **values, "model_zone": str(item["model_zone"]),
                 "data_status": str(item["data_status"]),
                 "warning_flags": "" if pd.isna(item["warning_flags"]) else str(item["warning_flags"]),
