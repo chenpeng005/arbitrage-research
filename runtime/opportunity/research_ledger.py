@@ -7,6 +7,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from runtime.opportunity.research_queue import (
+    evidence_pack_sha256,
+    make_hold_queue_item,
+    merge_hold_item,
+)
+
 LEDGER_VERSION = "path-research-ledger-v1"
 REQUIRED_RESULT_FIELDS = (
     "path_result_id",
@@ -119,10 +125,22 @@ def record_path_research_result(
 
     pending_path = data_root / "registry" / "pending_research_tasks.json"
     pending = _read_json(pending_path)
-    pending["pending_tasks"] = [
-        item for item in pending.get("pending_tasks", [])
-        if item.get("trigger_key") != result["trigger_key"]
-    ]
+    if result["research_status"] == "COMPLETED":
+        pending["pending_tasks"] = [
+            item for item in pending.get("pending_tasks", [])
+            if item.get("trigger_key") != result["trigger_key"]
+        ]
+    else:
+        hold_item = make_hold_queue_item(
+            task=task,
+            result=result,
+            evidence_sha256=evidence_pack_sha256(
+                data_root,
+                result["task_id"],
+            ),
+            updated_at=_now(),
+        )
+        merge_hold_item(pending, hold_item)
     pending["updated_at"] = _now()
     _write_json(pending_path, pending)
 
