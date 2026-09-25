@@ -91,6 +91,15 @@ CONFIDENCE_LABELS = {
     "high": "高", "medium": "中", "low": "低",
 }
 
+LOGIC_STATE_LABELS = {
+    "KNOWN": "事实已确认",
+    "DERIVED": "由事实推导",
+    "MIXED": "证据有正有反",
+    "NOT_MATERIAL": "对当前结论无需继续深挖",
+    "UNKNOWN_A": "未来天然不确定",
+    "UNKNOWN_B": "当前仍待查证",
+}
+
 
 def humanize_key(key: str) -> str:
     if key in FIELD_OVERRIDES:
@@ -178,6 +187,40 @@ def _evidence_view(items: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
             "定位": item.get("locator") or item.get("source_url"),
         })
     return output
+def _summary_view(summary: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(summary, dict):
+        return None
+    return {
+        "核心结论": summary.get("core_conclusion"),
+        "为什么": summary.get("why") or [],
+        "经济结果": summary.get("economic_result"),
+        "主要风险": summary.get("main_risks") or [],
+        "下一步关注": summary.get("next_focus"),
+    }
+
+
+def _logic_chain_view(items: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    output = []
+    for idx, item in enumerate(items or [], start=1):
+        if not isinstance(item, dict):
+            continue
+        output.append({
+            "序号": idx,
+            "节点编号": item.get("step_id"),
+            "标题": item.get("title"),
+            "问题": item.get("question"),
+            "状态": LOGIC_STATE_LABELS.get(
+                str(item.get("state") or ""), item.get("state")
+            ),
+            "先给答案": item.get("answer"),
+            "关键事实": item.get("facts") or [],
+            "为什么": item.get("reasoning"),
+            "本步结论": item.get("conclusion"),
+            "证据编号": item.get("evidence_ids") or [],
+        })
+    return output
+
+
 def build_path_view(path: dict[str, Any]) -> dict[str, Any]:
     path_id = str(path.get("path_id") or "")
     state = str(path.get("research_state") or "")
@@ -196,6 +239,8 @@ def build_path_view(path: dict[str, Any]) -> dict[str, Any]:
         ),
         "metrics": _metrics(path_id, path.get("economic_judgment") or {}),
         "research": {
+            "总判断": _summary_view(result.get("summary")),
+            "研究逻辑链": _logic_chain_view(result.get("logic_chain")),
             "研究判断": translate_object(judgments),
             "关键事实链": translate_object(result.get("fact_spine") or {}),
             "未来天然不确定事项": result.get("unknown_a") or [],
@@ -241,6 +286,10 @@ def build_opportunity_view(record: dict[str, Any]) -> dict[str, Any]:
 
 def _quick_judgment(path: dict[str, Any]) -> str | None:
     result = path.get("path_result") or {}
+    summary = result.get("summary") or {}
+    core = summary.get("core_conclusion") if isinstance(summary, dict) else None
+    if isinstance(core, str) and core.strip():
+        return core.strip()
     judgments = result.get("judgments") or {}
     for key in (
         "core_judgment",

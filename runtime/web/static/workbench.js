@@ -4,6 +4,46 @@ const state={
   polling:null
 };
 
+function pageMode(){
+  const p=window.location.pathname.replace(/\/+$/,"")||"/";
+  if(p==="/workbench")return "landing";
+  if(p==="/run-center")return "run";
+  if(p==="/opportunities")return "opportunities";
+  if(/^\/opportunities\/\d{6}$/.test(p))return "detail";
+  if(/^\/opportunities-v2-preview\/\d{6}$/.test(p))return "detail";
+  if(p==="/audit")return "audit";
+  return "landing";
+}
+
+function detailCodeFromPath(){
+  const m=window.location.pathname.match(
+    /^\/(?:opportunities|opportunities-v2-preview)\/(\d{6})\/?$/
+  );
+  return m?m[1]:null;
+}
+
+function isV2PreviewPage(){
+  return /^\/opportunities-v2-preview\/\d{6}\/?$/.test(
+    window.location.pathname
+  );
+}
+
+function configurePage(){
+  const mode=pageMode();
+  const ids={landing:"#landing",run:"#runCenter",opportunities:"#opportunities",audit:"#audit"};
+  Object.entries(ids).forEach(([key,sel])=>{
+    const el=$(sel);
+    if(el)el.classList.toggle("hidden",key!==mode);
+  });
+  const map=$("#marketMap");
+  if(map)map.classList.add("hidden");
+  if(mode==="detail"){
+    document.body.classList.add("detail-page");
+    $("#detailOverlay").classList.remove("hidden");
+  }
+  return mode;
+}
+
 const STAGES=[
   ["MARKET_MAP","生成藏宝图"],
   ["MARKET_INGRESS","冻结市场输入"],
@@ -223,22 +263,38 @@ function renderPathRow(p){
     +'</div>';
 }
 
+function bondInActiveResearch(b){
+  return (b.paths||[]).some(p=>p.research_state!=="NOT_TRIGGERED");
+}
+
+function bondCardHtml(b){
+  return '<article class="opp-card" data-code="'+esc(b.bond_code)+'">'
+    +'<div class="opp-head"><div><span class="bond-code">'+esc(b.bond_code)+'</span>'
+    +'<span class="bond-name">'+esc(String(b.bond_name||"").replace(/转债$/,""))+'</span></div>'
+    +'<div class="opp-count">发现 '+esc(b.opportunity_path_count)+' 条机会路径</div></div>'
+    +'<div class="path-strip">'+(b.paths||[]).map(renderPathRow).join("")+'</div>'
+  +'</article>';
+}
+
 function renderOpportunityList(){
   const data=state.opportunities;
   if(!data)return;
   const rows=(data.opportunities||[]).filter(bondMatches);
-  $("#visibleCount").textContent="当前显示 "+rows.length+" / "+(data.bond_count||0)+" 只机会转债";
-  $("#opportunityList").innerHTML=rows.length?rows.map(b=>
-    '<article class="opp-card" data-code="'+esc(b.bond_code)+'">'
-      +'<div class="opp-head"><div><span class="bond-code">'+esc(b.bond_code)+'</span>'
-      +'<span class="bond-name">'+esc(String(b.bond_name||"").replace(/转债$/,""))+'</span></div>'
-      +'<div class="opp-count">发现 '+esc(b.opportunity_path_count)+' 条机会路径</div></div>'
-      +'<div class="path-strip">'+(b.paths||[]).map(renderPathRow).join("")+'</div>'
-    +'</article>'
-  ).join(""):'<div class="empty">当前筛选条件下没有机会。</div>';
+  const active=rows.filter(bondInActiveResearch);
+  const watch=rows.filter(b=>!bondInActiveResearch(b));
+  $("#activeVisibleCount").textContent=active.length+" 只";
+  $("#watchVisibleCount").textContent=watch.length+" 只";
+  $("#activeOpportunityList").innerHTML=active.length
+    ?active.map(bondCardHtml).join("")
+    :'<div class="empty">当前筛选条件下，没有已经进入研究层的机会。</div>';
+  $("#watchOpportunityList").innerHTML=watch.length
+    ?watch.map(bondCardHtml).join("")
+    :'<div class="empty">当前筛选条件下，没有等待事件节点的长期监控对象。</div>';
 
   document.querySelectorAll(".opp-card").forEach(el=>{
-    el.addEventListener("click",()=>openDetail(el.dataset.code));
+    el.addEventListener("click",()=>{
+      window.location.href="/opportunities/"+encodeURIComponent(el.dataset.code);
+    });
   });
 }
 async function loadOpportunities(){
@@ -254,7 +310,9 @@ async function loadOpportunities(){
   }catch(e){
     $("#opportunityBadge").textContent="读取失败";
     $("#opportunityBadge").className="badge fail";
-    $("#opportunityList").innerHTML='<div class="empty">机会结果读取失败：'+esc(e.message)+'</div>';
+    const msg='<div class="empty">机会结果读取失败：'+esc(e.message)+'</div>';
+    $("#activeOpportunityList").innerHTML=msg;
+    $("#watchOpportunityList").innerHTML="";
   }
 }
 
@@ -263,6 +321,40 @@ function renderMetrics(metrics){
     '<div class="metric-small"><span>'+esc(m.label)+'</span><strong>'
     +esc(fmtMetric(m))+'</strong></div>'
   ).join("")+'</div>';
+}
+
+function renderResearchSummary(obj){
+  if(!obj||typeof obj!=="object")return "";
+  const why=Array.isArray(obj["为什么"])?obj["为什么"]:[];
+  const risks=Array.isArray(obj["主要风险"])?obj["主要风险"]:[];
+  return '<section class="research-summary">'
+    +'<div class="research-summary-label">先看结论</div>'
+    +'<h4>'+esc(obj["核心结论"]||"当前判断")+'</h4>'
+    +(obj["经济结果"]?'<div class="summary-economic"><b>经济结果：</b>'+esc(obj["经济结果"])+'</div>':"")
+    +(why.length?'<div class="summary-why"><b>为什么：</b><ul>'+why.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>':"")
+    +(risks.length?'<div class="summary-risk"><b>主要风险：</b><ul>'+risks.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>':"")
+    +(obj["下一步关注"]?'<div class="summary-next"><b>下一步关注：</b>'+esc(obj["下一步关注"])+'</div>':"")
+    +'</section>';
+}
+
+function renderLogicChain(items){
+  if(!Array.isArray(items)||!items.length)return "";
+  return '<section class="research-section logic-section"><div class="logic-heading">'
+    +'<div><p class="eyebrow">为什么得出这个结论</p><h4>研究逻辑链</h4></div>'
+    +'<span class="muted">'+items.length+' 个节点</span></div>'
+    +'<div class="logic-chain">'+items.map((x,i)=>{
+      const facts=Array.isArray(x["关键事实"])?x["关键事实"]:[];
+      return '<article class="logic-step">'
+        +'<div class="logic-step-head"><span class="logic-no">'+esc(x["序号"]||i+1)+'</span>'
+        +'<div><h4>'+esc(x["标题"]||x["节点编号"]||("步骤 "+(i+1)))+'</h4>'
+        +'<div class="logic-question">'+esc(x["问题"]||"")+'</div></div>'
+        +'<span class="logic-state">'+esc(x["状态"]||"")+'</span></div>'
+        +(x["先给答案"]?'<div class="logic-answer"><b>答案：</b>'+esc(x["先给答案"])+'</div>':"")
+        +(facts.length?'<div class="logic-facts"><b>关键事实</b><ul>'+facts.map(f=>'<li>'+esc(f)+'</li>').join("")+'</ul></div>':"")
+        +(x["为什么"]?'<div class="logic-reason"><b>为什么：</b>'+esc(x["为什么"])+'</div>':"")
+        +(x["本步结论"]?'<div class="logic-conclusion"><b>本步结论：</b>'+esc(x["本步结论"])+'</div>':"")
+        +'</article>';
+    }).join("")+'</div></section>';
 }
 
 function renderJudgments(obj){
@@ -329,20 +421,32 @@ function renderResearch(path){
   if(!r){
     return '<div class="empty">当前还没有完整深研结果。'+esc(path.status_explanation||"")+'</div>';
   }
-  return renderJudgments(r["研究判断"])
+  const hasV2=!!(r["总判断"] && Array.isArray(r["研究逻辑链"]) && r["研究逻辑链"].length);
+  const main=hasV2
+    ?renderResearchSummary(r["总判断"])+renderLogicChain(r["研究逻辑链"])
+    :renderJudgments(r["研究判断"]);
+  const secondary=hasV2
+    ?'<details class="research-section"><summary>展开补充研究判断</summary>'+renderJudgments(r["研究判断"])+'</details>'
+    :"";
+  return main
     +renderListSection("关键风险",r["关键风险"])
     +renderListSection("失效条件",r["失效条件"])
     +renderListSection("未来天然不确定事项",r["未来天然不确定事项"])
     +renderListSection("当前仍待查证事项",r["当前仍待查证事项"])
     +renderUpdates(r["下一更新节点"])
     +renderEvidence(r["关键证据"])
-    +'<details class="research-section"><summary>展开关键事实链</summary>'
+    +secondary
+    +'<details class="research-section"><summary>展开关键事实链（原始结构）</summary>'
       +renderObject(r["关键事实链"])+'</details>';
 }
 function renderDetail(data){
   $("#detailTitle").textContent=(data.bond_code||"")+" "+String(data.bond_name||"").replace(/转债$/,"");
   $("#detailMeta").textContent="市场截面 "+(data.market_cutoff||"—")+" · 发现 "+data.opportunity_path_count+" 条机会路径";
-  $("#detailBody").innerHTML=(data.paths||[]).map(path=>
+  const preview=data.preview
+    ?'<div class="preview-banner"><b>Path Result V2 Golden Sample 预览</b><div>'
+      +esc(data.preview.message||"")+'</div></div>'
+    :"";
+  $("#detailBody").innerHTML=preview+(data.paths||[]).map(path=>
     '<article class="detail-path">'
       +'<div class="detail-path-head"><div><h3>'+esc(path.path_name)+'</h3>'
       +'<div class="muted">'+esc(path.opportunity_status)+' · '+esc(path.research_state_text)+'</div></div>'
@@ -360,17 +464,26 @@ async function openDetail(code){
   $("#detailOverlay").classList.remove("hidden");
   $("#detailTitle").textContent="正在读取 "+code;
   $("#detailBody").innerHTML='<div class="empty">正在读取完整个券研究……</div>';
-  document.body.style.overflow="hidden";
+  if(pageMode()!=="detail")document.body.style.overflow="hidden";
   try{
-    const r=await fetch("/api/opportunity/view/"+encodeURIComponent(code));
+    const endpoint=isV2PreviewPage()
+      ?"/api/opportunity/preview-v2/"+encodeURIComponent(code)
+      :"/api/opportunity/view/"+encodeURIComponent(code);
+    const r=await fetch(endpoint);
     if(!r.ok)throw new Error(await r.text());
-    renderDetail(await r.json());
+    const data=await r.json();
+    renderDetail(data);
+    if(pageMode()==="detail")document.title=(data.bond_name||code)+"｜个券完整研究";
   }catch(e){
     $("#detailBody").innerHTML='<div class="empty">读取失败：'+esc(e.message)+'</div>';
   }
 }
 
 function closeDetail(){
+  if(pageMode()==="detail"){
+    window.location.href="/opportunities";
+    return;
+  }
   $("#detailOverlay").classList.add("hidden");
   document.body.style.overflow="";
 }
@@ -391,8 +504,45 @@ function bind(){
   document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDetail();});
 }
 
+async function loadLandingSummary(){
+  const el=$("#landingSummary");
+  if(!el)return;
+  try{
+    const [rr,or]=await Promise.all([
+      fetch("/api/opportunity/full-runs/latest"),
+      fetch("/api/opportunity/view/latest")
+    ]);
+    const run=rr.ok?await rr.json():{};
+    const opp=or.ok?await or.json():{};
+    const active=(opp.opportunities||[]).filter(bondInActiveResearch).length;
+    const watch=(opp.opportunities||[]).length-active;
+    el.innerHTML="<b>最近正式结果：</b> 市场截面 "+esc(run.market_cutoff||opp.market_cutoff||"—")
+      +"　·　机会转债 "+esc(opp.bond_count||0)+" 只"
+      +"　·　已进入研究层 "+esc(active)+" 只"
+      +"　·　等待事件节点 "+esc(watch)+" 只"
+      +"　·　整机状态 "+esc(statusText(run.status));
+  }catch(e){
+    el.textContent="暂时无法读取最新运行摘要。";
+  }
+}
+
 async function init(){
   bind();
-  await Promise.all([loadLatestRun(),loadMarketMapMeta(),loadOpportunities()]);
+  const mode=configurePage();
+  if(mode==="landing"){
+    document.title="机会发现工作台";
+    await loadLandingSummary();
+  }else if(mode==="run"){
+    document.title="运行中心｜机会发现";
+    await loadLatestRun();
+  }else if(mode==="opportunities"){
+    document.title="机会结果｜机会发现";
+    await loadOpportunities();
+  }else if(mode==="audit"){
+    document.title="工程审计｜机会发现";
+  }else if(mode==="detail"){
+    const code=detailCodeFromPath();
+    if(code)await openDetail(code);
+  }
 }
 init();

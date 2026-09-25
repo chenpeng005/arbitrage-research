@@ -15,12 +15,30 @@
         <p class="subtitle">启动整机 → 查看运行进度 → 看藏宝图 → 只看真正的机会 → 进入完整个券研究</p>
       </div>
       <nav class="nav">
-        <a href="#runCenter">运行中心</a>
-        <a href="#marketMap">藏宝图</a>
-        <a href="#opportunities">机会结果</a>
-        <a href="#audit">工程审计</a>
+        <a href="/workbench">总览</a>
+        <a href="/run-center">运行中心</a>
+        <a href="/market-map">藏宝图</a>
+        <a href="/opportunities">机会结果</a>
+        <a href="/audit">工程审计</a>
       </nav>
     </header>
+
+    <section id="landing" class="section landing-section">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">系统入口</p>
+          <h2>四个部分分开使用</h2>
+          <p class="section-note">运行、藏宝图、机会结果、工程审计分别进入独立页面。正常阅读机会时不再混入运行进度和工程字段。</p>
+        </div>
+      </div>
+      <div class="portal-grid">
+        <a class="portal-card" href="/run-center"><span>01</span><h3>运行中心</h3><p>启动一次完整机会发现，查看真实运行阶段和失败点。</p></a>
+        <a class="portal-card" href="/market-map"><span>02</span><h3>藏宝图</h3><p>单独查看当前正式可转债藏宝图、筛选和单券位置。</p></a>
+        <a class="portal-card" href="/opportunities"><span>03</span><h3>机会结果</h3><p>只看正向经济机会，并区分已进入研究层与等待事件节点。</p></a>
+        <a class="portal-card" href="/audit"><span>04</span><h3>工程审计</h3><p>查看旧 Review、原始 Runtime 字段与审计信息。</p></a>
+      </div>
+      <div id="landingSummary" class="meta card">正在读取最新运行和机会结果。</div>
+    </section>
 
     <section id="runCenter" class="section">
       <div class="section-head">
@@ -86,8 +104,17 @@
         </select>
         <button id="resetFilters">重置</button>
       </div>
-      <div id="visibleCount" class="visible-count"></div>
-      <div id="opportunityList" class="opportunity-list"></div>
+      <div class="opportunity-group-head">
+        <div><h3>已进入研究层</h3><p>至少一条路径已经触发研究、完成深研或正在等待补充证据。这里优先阅读。</p></div>
+        <span id="activeVisibleCount" class="badge idle">—</span>
+      </div>
+      <div id="activeOpportunityList" class="opportunity-list"></div>
+
+      <div class="opportunity-group-head watch-head">
+        <div><h3>等待事件节点</h3><p>经济可能性继续保留，但当前所有路径都还没有进入需要完整深研的现实节点。它们属于监控池，不从系统删除。</p></div>
+        <span id="watchVisibleCount" class="badge idle">—</span>
+      </div>
+      <div id="watchOpportunityList" class="opportunity-list"></div>
     </section>
 
     <section id="audit" class="section">
@@ -112,7 +139,10 @@
           <h2 id="detailTitle">—</h2>
           <p id="detailMeta" class="muted"></p>
         </div>
-        <button id="detailClose" class="close-btn">关闭</button>
+        <div class="detail-actions">
+          <a id="detailBack" class="button-link" href="/opportunities">返回机会列表</a>
+          <button id="detailClose" class="close-btn">关闭</button>
+        </div>
       </div>
       <div id="detailBody"></div>
     </div>

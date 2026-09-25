@@ -8,6 +8,40 @@ from pathlib import Path
 from typing import Any
 
 ALLOWED_STATUS = {"COMPLETED", "NEEDS_EVIDENCE", "UNRESOLVED"}
+ALLOWED_LOGIC_STATES = {
+    "KNOWN", "DERIVED", "MIXED", "NOT_MATERIAL", "UNKNOWN_A", "UNKNOWN_B"
+}
+PATH_LOGIC_STEPS = {
+    "MATURITY_CASH": [
+        "M1_CONTRACT_CASH",
+        "M2_PATH_EXISTS",
+        "M3_LIQUIDITY",
+        "M4_COMPETING_CASH",
+        "M5_INTERNAL_CASH",
+        "M6_EXTERNAL_CLOSURE",
+        "M7_HARD_CREDIT",
+        "M8_PAYMENT_STABILITY",
+    ],
+    "PUT": [
+        "P1_LEGAL_TIME",
+        "P2_TRIGGER_STATE",
+        "P3_REVISION_INTERACTION",
+        "P4_CONTRACT_CASH",
+        "P5_EXERCISE_PRESSURE",
+        "P6_PAYMENT_STABILITY",
+        "P7_PATH_JUDGMENT",
+    ],
+    "DOWNWARD_REVISION": [
+        "R1_CURRENT_START",
+        "R2_EXECUTABLE_SPACE",
+        "R3_BEHAVIOR_HISTORY",
+        "R4_ISSUER_OBJECTIVE",
+        "R5_RULE_BOUNDARY",
+        "R6_REALISTIC_RESULT",
+        "R7_PRICE_TRANSLATION",
+        "R8_PATH_JUDGMENT",
+    ],
+}
 REQUIRED_FIELDS = (
     "path_result_id",
     "task_id",
@@ -20,6 +54,8 @@ REQUIRED_FIELDS = (
     "knowledge_commit_sha",
     "review_ready",
     "research_status",
+    "summary",
+    "logic_chain",
     "fact_spine",
     "judgments",
     "key_evidence",
@@ -127,6 +163,115 @@ def validate_path_research_result(
         if not isinstance(result.get(key), dict):
             errors.append(f"{key} must be an object")
 
+    summary = result.get("summary")
+    if not isinstance(summary, dict):
+        errors.append("summary must be an object")
+    else:
+        for key in ("core_conclusion", "economic_result", "next_focus"):
+            if not isinstance(summary.get(key), str) or not summary.get(key, "").strip():
+                errors.append(f"summary.{key} must be a non-empty string")
+        for key in ("why", "main_risks"):
+            if not isinstance(summary.get(key), list):
+                errors.append(f"summary.{key} must be a list")
+            elif review_ready and not summary.get(key):
+                errors.append(f"review_ready summary.{key} cannot be empty")
+
+    logic_chain = result.get("logic_chain")
+    logic_step_ids: list[str] = []
+    if not isinstance(logic_chain, list):
+        errors.append("logic_chain must be a list")
+        logic_chain = []
+    else:
+        for idx, step in enumerate(logic_chain):
+            if not isinstance(step, dict):
+                errors.append(f"logic_chain[{idx}] must be an object")
+                continue
+            step_id = str(step.get("step_id") or "")
+            logic_step_ids.append(step_id)
+            for key in ("step_id", "title", "question", "answer", "reasoning", "conclusion"):
+                if not isinstance(step.get(key), str) or not str(step.get(key) or "").strip():
+                    errors.append(f"logic_chain[{idx}].{key} must be a non-empty string")
+            if step.get("state") not in ALLOWED_LOGIC_STATES:
+                errors.append(
+                    f"logic_chain[{idx}].state invalid: {step.get('state')!r}"
+                )
+            for key in ("facts", "evidence_ids"):
+                if not isinstance(step.get(key), list):
+                    errors.append(f"logic_chain[{idx}].{key} must be a list")
+            if (
+                review_ready
+                and step.get("state") != "NOT_MATERIAL"
+                and isinstance(step.get("facts"), list)
+                and not step.get("facts")
+            ):
+                errors.append(
+                    f"review_ready logic_chain[{idx}] must contain concrete facts "
+                    "unless state=NOT_MATERIAL"
+                )
+            if review_ready and step.get("state") == "UNKNOWN_B":
+                errors.append(
+                    f"review_ready logic_chain[{idx}] cannot remain UNKNOWN_B"
+                )
+
+    if len(logic_step_ids) != len(set(logic_step_ids)):
+        errors.append("logic_chain step_id must be unique")
+
+    expected_steps = PATH_LOGIC_STEPS.get(str(task.get("path_id") or ""), [])
+    if review_ready:
+        if logic_step_ids != expected_steps:
+            errors.append(
+                "review_ready logic_chain must exactly follow required path order: "
+                + " -> ".join(expected_steps)
+            )
+    elif logic_step_ids:
+        unknown_steps = [x for x in logic_step_ids if x not in expected_steps]
+        if unknown_steps:
+            errors.append(
+                "logic_chain contains unsupported step_id(s): "
+                + ", ".join(unknown_steps)
+            )
+
+    logic_by_id = {
+        str(step.get("step_id")): step
+        for step in logic_chain
+        if isinstance(step, dict) and step.get("step_id")
+    }
+    path_id = str(task.get("path_id") or "")
+    if review_ready and path_id == "PUT":
+        p5 = logic_by_id.get("P5_EXERCISE_PRESSURE") or {}
+        p5_ids = [str(x) for x in (p5.get("evidence_ids") or [])]
+        if "PRELOADED:PUT_PRESSURE_SCENARIOS" not in p5_ids:
+            errors.append(
+                "PUT P5_EXERCISE_PRESSURE must cite "
+                "PRELOADED:PUT_PRESSURE_SCENARIOS"
+            )
+        pressure_text = " ".join(str(x) for x in (p5.get("facts") or []))
+        scenario_aliases = {
+            "30%": ("30%", "0.3"),
+            "50%": ("50%", "0.5"),
+            "80%": ("80%", "0.8"),
+            "100%": ("100%", "1.0"),
+        }
+        for label, aliases in scenario_aliases.items():
+            if not any(token in pressure_text for token in aliases):
+                errors.append(
+                    f"PUT P5_EXERCISE_PRESSURE missing {label} pressure scenario"
+                )
+
+    if review_ready and path_id == "DOWNWARD_REVISION":
+        r7 = logic_by_id.get("R7_PRICE_TRANSLATION") or {}
+        r7_ids = [str(x) for x in (r7.get("evidence_ids") or [])]
+        if "PRELOADED:VALUATION_SCENARIO_GRID" not in r7_ids:
+            errors.append(
+                "DOWNWARD_REVISION R7_PRICE_TRANSLATION must cite "
+                "PRELOADED:VALUATION_SCENARIO_GRID"
+            )
+        if len(r7.get("facts") or []) < 2:
+            errors.append(
+                "DOWNWARD_REVISION R7_PRICE_TRANSLATION must include "
+                "concrete resolver scenario facts"
+            )
+
     actual_reference = result.get("economic_judgment_reference")
     expected_judgment = task.get("economic_judgment") or {}
     reference_ok = False
@@ -227,6 +372,31 @@ def validate_path_research_result(
                 f"evidence_id={evidence_id} is not a fetched evidence id or PRELOADED id"
             )
 
+    for idx, step in enumerate(logic_chain):
+        if not isinstance(step, dict):
+            continue
+        step_evidence = step.get("evidence_ids")
+        if not isinstance(step_evidence, list):
+            continue
+        if (
+            review_ready
+            and step.get("state") != "NOT_MATERIAL"
+            and not step_evidence
+        ):
+            errors.append(
+                f"review_ready logic_chain[{idx}] must cite evidence_ids "
+                "unless state=NOT_MATERIAL"
+            )
+        for evidence_id in step_evidence:
+            eid = str(evidence_id or "")
+            if not eid:
+                errors.append(f"logic_chain[{idx}] contains empty evidence_id")
+            elif eid not in seen_ids and not eid.startswith("PRELOADED:"):
+                errors.append(
+                    f"logic_chain[{idx}] evidence_id={eid} is not present "
+                    "in key_evidence and is not PRELOADED"
+                )
+
     if errors:
         return _fail(run_dir, errors, warnings)
 
@@ -249,6 +419,8 @@ def validate_path_research_result(
         "evidence_count": len(evidence),
         "unknown_a_count": len(unknown_a or []),
         "unknown_b_count": len(unknown_b or []),
+        "logic_step_count": len(logic_chain),
+        "logic_step_ids": logic_step_ids,
         "warnings": warnings,
         "result_ref": "path_research_result.json",
     }

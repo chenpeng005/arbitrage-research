@@ -10,6 +10,7 @@ from typing import Any
 
 import pandas as pd
 
+from runtime.market_map.resolver import resolve_bond_scenarios
 from runtime.opportunity.contract_facts import fetch_eastmoney_contract_table
 from runtime.opportunity.put_contract_facts import (
     infer_put_mechanism_availability,
@@ -157,6 +158,7 @@ def build_research_evidence(
 
     maturity_run = registry["path_summary"]["MATURITY_CASH"]["child_run_id"]
     put_run = registry["path_summary"]["PUT"]["child_run_id"]
+    revision_run = registry["path_summary"]["DOWNWARD_REVISION"]["child_run_id"]
     maturity_contract_rows = _index(
         _read_json(
             data_root / "runs" / maturity_run / "maturity_contract_facts.json"
@@ -167,13 +169,29 @@ def build_research_evidence(
             data_root / "runs" / put_run / "put_contract_facts.json"
         )["rows"]
     )
+    revision_contract_rows = _index(
+        _read_json(
+            data_root / "runs" / revision_run / "revision_contract_facts.json"
+        )["rows"]
+    )
 
     task_packages = [
         _read_json(Path(item["task_path"]))
         for item in batch["tasks"]
     ]
     maturity_tasks = [x for x in task_packages if x["path_id"] == "MATURITY_CASH"]
+    put_tasks = [x for x in task_packages if x["path_id"] == "PUT"]
     revision_tasks = [x for x in task_packages if x["path_id"] == "DOWNWARD_REVISION"]
+
+    valuation_manifest_path: Path | None = None
+    if revision_tasks:
+        formal_pointer_path = data_root / "registry" / "latest_formal_market_map.json"
+        formal_entry = _read_json(formal_pointer_path)
+        if formal_entry.get("snapshot_id") != batch["market_snapshot_id"]:
+            raise RuntimeError(
+                "revision evidence valuation resolver snapshot mismatch"
+            )
+        valuation_manifest_path = Path(str(formal_entry["output_contract_path"]))
 
     revision_put_source_rows: dict[str, dict[str, Any]] = {}
     if revision_tasks:
@@ -201,7 +219,7 @@ def build_research_evidence(
     balance_index: dict[str, dict[str, Any]] = {}
     cashflow_index: dict[str, dict[str, Any]] = {}
 
-    if maturity_tasks or revision_tasks:
+    if maturity_tasks or put_tasks or revision_tasks:
         balance, cashflow = fetch_bulk_financial(statement_date)
         balance.to_csv(raw_dir / "bulk_balance_sheet.csv", index=False)
         cashflow.to_csv(raw_dir / "bulk_cash_flow.csv", index=False)
@@ -215,6 +233,8 @@ def build_research_evidence(
     rating_rows = []
     maturity_notice_source_retrieved = 0
     maturity_notice_candidates_nonempty = 0
+    put_notice_source_retrieved = 0
+    put_revision_notice_source_retrieved = 0
     revision_notice_source_retrieved = 0
     revision_behavior_history_nonempty = 0
     packs = []
@@ -314,6 +334,169 @@ def build_research_evidence(
                 "rigid_cash_competition_semantic_review",
             ]
 
+        elif path_id == "PUT":
+            financial = compact_financial_fact(
+                stock_code,
+                statement_date,
+                balance_index,
+                cashflow_index,
+            )
+            rating = fetch_structured_rating(code)
+            rating_rows.append({
+                "bond_code": code,
+                "bond_name": task["bond_name"],
+                "stock_code": stock_code,
+                **rating,
+            })
+
+            payment_frame, payment_candidates = fetch_maturity_notice_index(
+                stock_code,
+                _begin_date(batch["market_cutoff"]),
+                batch["market_cutoff"].replace("-", ""),
+            )
+            payment_frame.to_csv(
+                raw_dir / f"put_payment_notices_{code}.csv",
+                index=False,
+            )
+            put_notice_source_retrieved += 1
+
+            revision_frame, revision_notices = fetch_revision_notice_index(
+                stock_code,
+                _begin_date(batch["market_cutoff"]),
+                batch["market_cutoff"].replace("-", ""),
+            )
+            revision_frame.to_csv(
+                raw_dir / f"put_revision_notices_{code}.csv",
+                index=False,
+            )
+            put_revision_notice_source_retrieved += 1
+
+            put_contract = (
+                task["existing_path_facts"].get("contract_fact")
+                or put_contract_rows.get(code)
+                or {}
+            )
+            remaining_size_yi = float(task["market_state"]["remaining_size"])
+            put_reference = float(
+                (task.get("economic_judgment") or {}).get("put_reference")
+                or 100.0
+            )
+            put_pressure_scenarios = {
+                "basis": (
+                    "remaining_size_yi × exercise_ratio × "
+                    "put_reference_cash_per_100 / 100"
+                ),
+                "remaining_size_yi": remaining_size_yi,
+                "put_reference_cash_per_100": put_reference,
+                "note": (
+                    "Uses Economic Discovery put_reference as conservative "
+                    "contract-cash reference; accrued interest can make actual "
+                    "cash slightly higher."
+                ),
+                "scenarios": [
+                    {
+                        "exercise_ratio": ratio,
+                        "cash_pressure_yi": (
+                            remaining_size_yi * ratio * put_reference / 100.0
+                        ),
+                    }
+                    for ratio in (0.30, 0.50, 0.80, 1.00)
+                ],
+            }
+            cross_maturity_judgment = (
+                registry_bonds[code]["paths"].get("MATURITY_CASH") or {}
+            )
+            cross_maturity_contract = maturity_contract_rows.get(code)
+            cross_revision_judgment = (
+                registry_bonds[code]["paths"].get("DOWNWARD_REVISION") or {}
+            )
+            cross_revision_contract = revision_contract_rows.get(code)
+
+            facts = {
+                "existing_put_contract_fact": put_contract,
+                "current_economic_judgment": task.get("economic_judgment") or {},
+                "put_exercise_pressure_scenarios": put_pressure_scenarios,
+                "cross_path_revision": {
+                    "economic_judgment": cross_revision_judgment,
+                    "contract_fact": cross_revision_contract,
+                    "official_notice_behavior_index": revision_notices,
+                },
+                "cross_path_maturity": {
+                    "economic_judgment": cross_maturity_judgment,
+                    "contract_fact": cross_maturity_contract,
+                },
+                "financial_first_layer": financial,
+                "structured_rating": rating,
+                "official_payment_notice_candidate_index": payment_candidates,
+            }
+            sources = [
+                {
+                    "source_id": "PUT_RUNTIME_FACTS",
+                    "source": "PUT child runtime contract facts + current task",
+                    "scope": "SAME_BOND",
+                },
+                {
+                    "source_id": "PUT_PRESSURE_SCENARIOS",
+                    "source": "Engineering deterministic exercise-pressure scenarios",
+                    "scope": "SAME_BOND",
+                },
+                {
+                    "source_id": "CROSS_PATH_RUNTIME_FACTS",
+                    "source": "Economic Path Registry + maturity/revision child facts",
+                    "scope": "SAME_BOND",
+                },
+                {
+                    "source_id": "BULK_FINANCIALS",
+                    "source": financial["source"],
+                    "statement_date": statement_date,
+                    "scope": "CONSOLIDATED",
+                },
+                {
+                    "source_id": "STRUCTURED_RATING",
+                    "source": rating["source"],
+                    "scope": "BOND",
+                },
+                {
+                    "source_id": "PUT_PAYMENT_NOTICE_INDEX",
+                    "source": "AKShare/Eastmoney official-announcement index",
+                    "begin_date": _begin_date(batch["market_cutoff"]),
+                    "end_date": batch["market_cutoff"],
+                    "stock_code": stock_code,
+                    "scope": "PAYMENT_AND_CREDIT_CANDIDATES",
+                },
+                {
+                    "source_id": "PUT_REVISION_NOTICE_INDEX",
+                    "source": "AKShare/Eastmoney official-announcement index",
+                    "begin_date": _begin_date(batch["market_cutoff"]),
+                    "end_date": batch["market_cutoff"],
+                    "stock_code": stock_code,
+                    "scope": "REVISION_BEHAVIOR_CANDIDATES",
+                },
+            ]
+            coverage = {
+                "put_contract_fact_matched": bool(put_contract),
+                "cross_path_revision_fact_matched": cross_revision_contract is not None,
+                "cross_path_maturity_fact_matched": cross_maturity_contract is not None,
+                "financial_matched": (
+                    financial["balance_sheet_matched"]
+                    and financial["cash_flow_matched"]
+                ),
+                "rating_matched": bool(rating["matched"]),
+                "payment_notice_source_retrieved": True,
+                "payment_notice_candidate_count": len(payment_candidates),
+                "revision_notice_source_retrieved": True,
+                "revision_notice_count": len(revision_notices),
+            }
+            missing_or_deferred = [
+                "current_put_trigger_count_if_not_structurally_available",
+                "revision_interaction_semantic_judgment",
+                "exercise_pressure_scenario_judgment",
+                "parent_entity_cash_and_cashflow_semantic_read_if_material",
+                "latest_rating_report_semantic_review",
+                "hard_credit_event_semantic_review",
+                "payment_stability_judgment",
+            ]
+
         elif path_id == "DOWNWARD_REVISION":
             financial = compact_financial_fact(
                 stock_code,
@@ -378,10 +561,26 @@ def build_research_evidence(
                 else []
             )
 
+            if valuation_manifest_path is None:
+                raise RuntimeError("revision valuation manifest is unavailable")
+            valuation_grid = resolve_bond_scenarios(
+                valuation_manifest_path,
+                bond_code=code,
+                scenarios=[
+                    {
+                        "scenario_id": f"CV_{cv}",
+                        "target_CV": float(cv),
+                    }
+                    for cv in range(50, 111, 5)
+                ],
+                require_formal=True,
+            )
+
             facts = {
                 "existing_contract_fact": existing_revision_fact,
                 "official_notice_behavior_index": notices,
                 "official_contract_document_index": contract_documents,
+                "valuation_scenario_grid": valuation_grid,
                 "revision_notice_source_audit": {
                     "source_retrieved": True,
                     "total_notice_count": int(len(frame)),
@@ -417,6 +616,11 @@ def build_research_evidence(
                     "scope": "SAME_BOND",
                 },
                 {
+                    "source_id": "VALUATION_SCENARIO_GRID",
+                    "source": "Formal Market Map Bond Valuation Resolver V1",
+                    "scope": "SAME_BOND_FIXED_SNAPSHOT",
+                },
+                {
                     "source_id": "BULK_FINANCIALS",
                     "source": financial["source"],
                     "statement_date": statement_date,
@@ -440,6 +644,9 @@ def build_research_evidence(
                 "cross_path_put_fact_matched": cross_put_contract is not None,
                 "cross_path_maturity_fact_matched": (
                     cross_maturity_contract is not None
+                ),
+                "valuation_scenario_grid_count": len(
+                    valuation_grid.get("scenarios", [])
                 ),
                 "financial_matched": (
                     financial["balance_sheet_matched"]
@@ -529,6 +736,9 @@ def build_research_evidence(
         "maturity_rating_matched": maturity_rating_matched,
         "maturity_notice_source_retrieved": maturity_notice_source_retrieved,
         "maturity_notice_candidates_nonempty": maturity_notice_candidates_nonempty,
+        "put_tasks": len(put_tasks),
+        "put_notice_source_retrieved": put_notice_source_retrieved,
+        "put_revision_notice_source_retrieved": put_revision_notice_source_retrieved,
         "revision_tasks": len(revision_tasks),
         "revision_notice_source_retrieved": revision_notice_source_retrieved,
         "revision_behavior_history_nonempty": revision_behavior_history_nonempty,
@@ -565,3 +775,5 @@ def build_research_evidence(
         "evidence_store": str(evidence_store),
     })
     return result
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

@@ -152,3 +152,16 @@ body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSy
   .treasure-chart{min-height:360px}
   .treasure-chart svg{min-height:340px}
 }
+
+.map-back-link{
+  display:inline-block;
+  padding:9px 13px;
+  border:1px solid #d9e0ea;
+  border-radius:10px;
+  background:#fff;
+  color:#3157d5;
+  text-decoration:none;
+  font-weight:600;
+}
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

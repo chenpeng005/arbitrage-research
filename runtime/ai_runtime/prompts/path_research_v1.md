@@ -106,12 +106,8 @@ engineering_prefetched_evidence
 
 - 未来股价；
 - 董事会未来行为；
-- 未来是否提出下修；
-- 未来最终新转股价 / 现实K；
 - 未来行权率；
 - 未来融资能否最终成功。
-
-特别是：**某个未来公告、未来董事会提议、未来最终K尚未发生，不得因为“现在查不到”而写成 UNKNOWN-B。**
 
 UNKNOWN-A 可以保留，不自动阻塞 review_ready。
 
@@ -122,17 +118,6 @@ UNKNOWN-A 可以保留，不自动阻塞 review_ready。
 - 已公告但未读取的董事会结果；
 - 评级报告中的重大信用结论未核；
 - 当前母公司现金/融资事实在结论上是决定性的但仍未核验。
-
-若 Evidence Pack 已明确：
-
-```text
-revision_notice_source_audit.source_retrieved = true
-revision_notice_source_audit.no_relevant_revision_notice_confirmed_as_of_cutoff = true
-```
-
-则应把“截至 cutoff 没有相关下修公告”视为已经核实的当前事实。没有冲突证据时，不得再把“也许公告索引漏了”列为 UNKNOWN-B。
-
-若 `official_contract_document_index` 已提供募集说明书/上市公告书候选，且 `nav_floor_applicable` 仍为空，应优先读取该合同文档闭合下修底价条款。
 
 重大 UNKNOWN-B 存在时：
 
@@ -165,11 +150,127 @@ research_status = NEEDS_EVIDENCE 或 UNRESOLVED
 - 不把聚合来源的状态直接包装成公司意愿；
 - 信用 / 支付稳定性判断必须说明闭合链与失效条件；
 - 下修行为判断必须显式写出支持证据与反证；
-- 若当前已正式“不下修”，可以把“本轮结果=不下修”作为已闭合事实；剩余生命周期未来是否再次推进属于 UNKNOWN-A；
-- 没有历史成功下修、没有当前董事会提议时，允许输出“现实下修深度暂不可预测”，但这本身不构成 UNKNOWN-B；
 - 回售必须区分“经济 KEEP”与“权利是否已经形成”。
 
-## 7. Evidence ID
+## 7. 强制研究逻辑链（Path Result V2）
+
+本轮不能只返回一组 `fact_spine` 与 `judgments`。必须把 Canonical 的研究顺序显式落成：
+
+```text
+总判断
+↓
+为什么
+↓
+逐步研究逻辑链
+↓
+每一步：问题 → 关键事实 → 推理 → 本步结论 → 证据
+↓
+最终经济结果 / 风险 / 下一更新
+```
+
+### 7.1 summary
+
+先返回一个可直接给用户阅读的总判断：
+
+- `core_conclusion`：这条 Path 当前到底是什么；
+- `why`：3—6条真正改变结论的核心原因；
+- `economic_result`：相对当前价格，这条 Path 的经济结果如何理解；
+- `main_risks`：最重要的风险；
+- `next_focus`：下一现实更新节点。
+
+summary 是完整研究的入口，不得代替后面的逻辑链。
+
+**跨层数字一致性是硬纪律：**
+
+- summary 只能复用 logic_chain / fact_spine 中已经出现并有证据来源的数字；
+- 同一口径数字在 summary、logic_chain、judgments 中必须一致；
+- 不得为了“概括”自行重算出一个新的近似数字；
+- 若存在“货币资金 / 现金及现金等价物 / 扣除受限后的可用现金”等不同口径，必须写清口径，不能混写成同一个“可自由动用现金”；
+- 派生计算应在对应 logic step 中给出公式或计算关系，再由 summary 引用结论。
+
+### 7.2 logic_chain 通用结构
+
+每个步骤必须有：
+
+- `step_id`：固定节点编号；
+- `title`：自然中文标题；
+- `question`：这一层到底在问什么；
+- `state`：KNOWN / DERIVED / MIXED / NOT_MATERIAL / UNKNOWN_A / UNKNOWN_B；
+- `answer`：先给一句直接回答；
+- `facts`：具体事实、数字、日期、事件；禁止只写“评级报告已考虑”；
+- `reasoning`：为什么这些事实能支持本步判断；
+- `conclusion`：本步结论；
+- `evidence_ids`：本步实际使用的证据 ID。
+
+如果某一步按照 Canonical 的 STOP / Decision-Invariance 纪律对当前结论确实不再重要，可以使用：
+
+```text
+state = NOT_MATERIAL
+```
+
+但仍必须保留该 step，并解释**为什么继续深挖不会改变当前分类**。不得直接省略。
+
+### 7.3 MATURITY_CASH 固定节点
+
+必须按顺序覆盖：
+
+1. `M1_CONTRACT_CASH`：合同现金责任——要付多少钱、什么时候付；
+2. `M2_PATH_EXISTS`：原到期现金 Path 是否仍真实存在；
+3. `M3_LIQUIDITY`：现有可支配高流动资源能覆盖多少；
+4. `M4_COMPETING_CASH`：到期前还有哪些刚性现金需求竞争同一现金；
+5. `M5_INTERNAL_CASH`：经营本身是在积累现金还是消耗现金；
+6. `M6_EXTERNAL_CLOSURE`：剩余缺口靠什么闭合，各来源走到什么落实阶段；
+7. `M7_HARD_CREDIT`：有没有硬信用事件破坏前面的闭合链；
+8. `M8_PAYMENT_STABILITY`：把以上链条合起来形成支付稳定性 Judgment。
+
+这条链的核心对象始终是：
+
+> **未来现金缺口能否可靠闭合。**
+
+### 7.4 PUT 固定节点
+
+必须按顺序覆盖：
+
+1. `P1_LEGAL_TIME`：法律 / 时间资格；
+2. `P2_TRIGGER_STATE`：触发条件与当前计数 / 状态；
+3. `P3_REVISION_INTERACTION`：下修、新 K 等如何改写回售条件；
+4. `P4_CONTRACT_CASH`：如果权利形成，合同现金是多少、相对当前价空间多大；
+5. `P5_EXERCISE_PRESSURE`：现实行权与集中现金压力；必须优先使用 Evidence Pack 的 `put_exercise_pressure_scenarios`，至少解释 30% / 50% / 80% / 100% 四档确定性现金压力，并引用 `PRELOADED:PUT_PRESSURE_SCENARIOS`；不能只写“需要压力测试”；
+6. `P6_PAYMENT_STABILITY`：形成权利以后，这笔集中现金责任能否兑现；
+7. `P7_PATH_JUDGMENT`：把权利形成 × 合同价差 × 支付风险 × 状态改写合起来。
+
+必须分开：
+
+> **权利形成程度 ≠ 现金支付稳定性。**
+
+### 7.5 DOWNWARD_REVISION 固定节点
+
+必须同时闭合行为链与经济链：
+
+1. `R1_CURRENT_START`：当前债价、S、K、CV、期限 / 余额与事件状态；
+2. `R2_EXECUTABLE_SPACE`：合同上是否仍有现实可执行下修空间、有效硬底价是什么；
+3. `R3_BEHAVIOR_HISTORY`：发行人过去真实下修 / 不修行为说明了什么；
+4. `R4_ISSUER_OBJECTIVE`：本轮/未来真正可能解决什么问题，当前治理瓶颈在哪里；
+5. `R5_RULE_BOUNDARY`：规则允许修到底时的边界，只作为上界；
+6. `R6_REALISTIC_RESULT`：结合行为证据，现实更可能的新 K / CV 或宽区间是什么；不能把规则上界冒充现实结果；
+7. `R7_PRICE_TRANSLATION`：把现实结果翻译成保守—中性债价并与当前价格比较；必须使用 Evidence Pack 的 `valuation_scenario_grid`（正式 Market Map Bond Valuation Resolver 输出），按现实 CV 区间选择/插值相邻场景并引用 `PRELOADED:VALUATION_SCENARIO_GRID`；不得凭经验自行估一个债价区间；
+8. `R8_PATH_JUDGMENT`：回答“为什么可能修、现实可能修到哪里、修成后为什么可能赚钱”，并保留关键反证。
+
+如果未来精确 K 本质不可知，可以 UNKNOWN-A；但已存在的历史 K、公告、规则底价、当前市场状态不能因为难写而省略。
+
+### 7.6 Review-ready 硬纪律
+
+当 `review_ready=true` 时：
+
+- 当前 Path 的固定 step_id 必须全部存在且不重复；
+- 每一步至少有 question / answer / conclusion；
+- 关键事实不得被“已参考财报 / 已参考评级”之类元描述替代；
+- `evidence_ids` 必须能在 `key_evidence` 或合法 PRELOADED 证据中找到；
+- 最终 `summary` 必须与逻辑链结论一致。
+
+研究逻辑链是 Path Result 的正式研究资产，不是 View 临时生成物。
+
+## 8. Evidence ID
 
 对 Evidence Pack 里已预装的结构化证据，使用：
 
