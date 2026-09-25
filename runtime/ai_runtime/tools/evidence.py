@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -413,8 +414,11 @@ def path_evidence_fetch(
         raise RuntimeError("Eastmoney announcement content API returned no data")
 
     page_size = int(data.get("page_size") or 1)
-    text_parts = [str(data.get("notice_content") or "")]
-    for page_index in range(2, page_size + 1):
+    page_texts: dict[int, str] = {
+        1: str(data.get("notice_content") or "")
+    }
+
+    def _fetch_content_page(page_index: int) -> tuple[int, str]:
         response = requests.get(
             api_url,
             params={
@@ -429,17 +433,40 @@ def path_evidence_fetch(
             timeout=30,
         )
         response.raise_for_status()
-        page_data = (response.json().get("data") or {})
-        text_parts.append(str(page_data.get("notice_content") or ""))
+        page_data = response.json().get("data") or {}
+        return page_index, str(page_data.get("notice_content") or "")
 
-    api_text = "\n".join(part for part in text_parts if part)
+    if page_size > 1:
+        with ThreadPoolExecutor(max_workers=min(8, page_size - 1)) as pool:
+            futures = [
+                pool.submit(_fetch_content_page, page_index)
+                for page_index in range(2, page_size + 1)
+            ]
+            for future in as_completed(futures):
+                page_index, page_text = future.result()
+                page_texts[page_index] = page_text
+
+    api_text = "\n".join(
+        page_texts.get(page_index, "")
+        for page_index in range(1, page_size + 1)
+        if page_texts.get(page_index)
+    )
 
     pdf_url = str(data.get("attach_url_web") or data.get("attach_url") or "")
     pdf_sha256 = None
     page_count = None
     pdf_artifact = None
     pdf_text = ""
-    if pdf_url:
+
+    event_kind = str(item.get("event_kind") or "")
+    should_parse_pdf = bool(
+        pdf_url
+        and (
+            event_kind == "RATING_REPORT"
+            or len(api_text.strip()) < 5000
+        )
+    )
+    if should_parse_pdf:
         try:
             response = requests.get(
                 pdf_url,
@@ -672,8 +699,17 @@ def prefetch_path_research_evidence(
         try:
             fetched = path_evidence_fetch(ctx, {"evidence_id": evidence_id})
             kind = str(candidate.get("event_kind") or "")
+            full_text = str(fetched.get("text") or "")
+            text_artifact = fetched.get("text_artifact")
+            if text_artifact:
+                artifact_path = ctx.ai_job_dir / str(text_artifact)
+                if artifact_path.exists():
+                    full_text = artifact_path.read_text(
+                        encoding="utf-8",
+                        errors="ignore",
+                    )
             snippets = _extract_relevant_snippets(
-                str(fetched.get("text") or ""),
+                full_text,
                 _snippet_keywords(path_id, kind),
             )
             results.append({
