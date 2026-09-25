@@ -100,20 +100,29 @@ Path Availability 是条件性数据需求，而不是全市场无条件深查�
 
 具体运行输入、异常 fallback、C 明细和阶段性结果保存在 Server Runtime Store；这些数字是运行证据，不是长期 Canonical。
 
+### Put Economic Judgment V1
+
+正式实现：
+
+- `runtime/opportunity/put.py`：价格门控与 KEEP / DROP；
+- `runtime/opportunity/put_contract_facts.py`：仅对 P<100 对象获取和审计普通回售机制；
+- `runtime/opportunity/put_discovery.py`：正式 Runtime Unit，负责取数、判断、持久化与 Registry。
+
+2026-09-24 正式市场截面服务器实跑：
+
+- universe = 311；
+- mechanism_audit_required = 1；
+- mechanism_audit_skipped = 310；
+- KEEP = 1；
+- DROP = 310；
+- INSUFFICIENT_DATA = 0；
+- Runtime status = PASS。
+
+该结果验证了 Decision-Invariance：P>=100 时不读取回售条款。
+
 ## 下一工程节点
 
-回售 Path：
-
-```text
-正式 311 只市场母集
-→ 批量 RESALE_CLAUSE 解析
-→ ordinary put mechanism 识别
-→ 剩余生命周期可用性
-→ P < 100
-→ KEEP / DROP / INSUFFICIENT_DATA
-```
-
-当前不在 Discovery 研究回售触发概率、公司意愿、信用质量或支付能力。
+先补齐到期现金正式 Runtime 的 authoritative override / Path Availability 持久化，使到期现金与回售两条 Path 都成为正式可重复运行单元；随后建立统一 Opportunity Discovery Controller，再接下修 Path。
 
 ## 运行外循环
 
