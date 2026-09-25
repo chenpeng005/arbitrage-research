@@ -8,13 +8,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from runtime.market_map.semantic_resolution import validate_resolution
-
 from .deepseek_provider import DeepSeekProvider
 from .mock_provider import MockProvider
 from .provider import AIProvider
 from .tasks import get_task_spec
 from .tools.evidence import ToolContext, execute_tool
+from .validation import run_validator
 
 
 def now_utc() -> str:
@@ -254,7 +253,8 @@ def run_ai_job(
         metadata["evidence_count"] = len(evidence_items)
         write_json(job_dir / "ai_job_metadata.json", metadata)
 
-        validation = validate_resolution(
+        validation = run_validator(
+            spec.validator,
             business_run_dir,
             structured_path,
         )
