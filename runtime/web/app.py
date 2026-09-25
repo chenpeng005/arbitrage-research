@@ -187,6 +187,8 @@ def persist_run_metadata_payload(job: dict) -> None:
         "snapshot": job.get("snapshot_path"),
         "model_audit": job.get("model_audit_path"),
         "calculated_table": job.get("calculated_table_path"),
+        "output_contract_manifest": job.get("output_contract_path"),
+        "output_contract_validation": job.get("output_contract_validation_path"),
     }
 
     runtime_run_id = job.get("runtime_run_id")
@@ -345,12 +347,35 @@ def register_formal_market_map_snapshot(job_id: str) -> None:
 
     snapshot_path_raw = job.get("snapshot_path")
     table_path_raw = job.get("calculated_table_path")
-    if not snapshot_path_raw or not table_path_raw:
+    contract_path_raw = job.get("output_contract_path")
+    contract_validation_path_raw = job.get("output_contract_validation_path")
+    if (
+        not snapshot_path_raw
+        or not table_path_raw
+        or not contract_path_raw
+        or not contract_validation_path_raw
+    ):
         return
 
     snapshot_path = Path(snapshot_path_raw)
     table_path = Path(table_path_raw)
-    if not snapshot_path.exists() or not table_path.exists():
+    contract_path = Path(contract_path_raw)
+    contract_validation_path = Path(contract_validation_path_raw)
+    if (
+        not snapshot_path.exists()
+        or not table_path.exists()
+        or not contract_path.exists()
+        or not contract_validation_path.exists()
+    ):
+        return
+
+    try:
+        contract_validation = json.loads(
+            contract_validation_path.read_text(encoding="utf-8")
+        )
+    except Exception:
+        return
+    if contract_validation.get("status") != "PASS":
         return
 
     try:
@@ -379,6 +404,10 @@ def register_formal_market_map_snapshot(job_id: str) -> None:
         "snapshot_path": str(snapshot_path),
         "calculated_table_path": str(table_path),
         "model_audit_path": job.get("model_audit_path"),
+        "output_contract_version": contract_validation.get("contract_version"),
+        "output_contract_status": contract_validation.get("status"),
+        "output_contract_path": str(contract_path),
+        "output_contract_validation_path": str(contract_validation_path),
         "run_metadata_path": str(DATA_ROOT / "runs" / job_id / "run_metadata.json"),
         "input": snapshot.get("input", {}),
         "deployment": load_deployment_manifest(),
@@ -585,6 +614,8 @@ def calculation_worker(
             "snapshot_path": out / "market_map_snapshot.json",
             "model_audit_path": out / "model_audit.json",
             "calculated_table_path": out / "market_map_calculated.csv",
+            "output_contract_path": out / "market_map_output_v1" / "manifest.json",
+            "output_contract_validation_path": out / "output_contract_validation.json",
         },
     )
 
@@ -741,6 +772,12 @@ def continue_pipeline_calculation(
             snapshot_path=calculation_job.get("snapshot_path"),
             calculated_table_path=calculation_job.get(
                 "calculated_table_path"
+            ),
+            output_contract_path=calculation_job.get(
+                "output_contract_path"
+            ),
+            output_contract_validation_path=calculation_job.get(
+                "output_contract_validation_path"
             ),
         )
         return
