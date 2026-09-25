@@ -26,7 +26,7 @@ from runtime.opportunity.evidence_sources import (
     statement_date_for_cutoff,
 )
 
-EVIDENCE_PACK_VERSION = "path-research-evidence-pack-v1"
+EVIDENCE_PACK_VERSION = "path-research-evidence-pack-v2"
 
 
 def _now() -> str:

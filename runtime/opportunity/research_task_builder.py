@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-TASK_CONTRACT_VERSION = "path-research-task-contract-v1"
+TASK_CONTRACT_VERSION = "path-research-task-contract-v2"
 
 CANONICAL_BY_PATH = {
     "MATURITY_CASH": (
