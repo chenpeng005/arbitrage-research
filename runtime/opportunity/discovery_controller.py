@@ -1,8 +1,8 @@
 """Unified Opportunity Discovery Controller / Economic Path Registry V1.
 
-The controller fixes one Discovery Market Ingress and invokes each connected
-Path Runtime independently. Unconnected Paths are represented as runtime
-coverage gaps, never as economic DROP.
+The controller fixes one Discovery Market Ingress and invokes each active Path
+Runtime independently. Economic statuses remain Path-local and are aggregated
+under the bond only for registry / delivery convenience.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from typing import Any
 
 from runtime.opportunity.maturity_discovery import run_maturity_discovery
 from runtime.opportunity.put_discovery import run_put_discovery
+from runtime.opportunity.revision_discovery import run_downward_revision_discovery
 
 CONTROLLER_VERSION = "opportunity-discovery-controller-v1"
 ACTIVE_PATHS = ("MATURITY_CASH", "PUT", "DOWNWARD_REVISION")
@@ -50,62 +51,62 @@ def run_opportunity_discovery(
 
     maturity = run_maturity_discovery(market_input_path, data_root, deployment)
     put = run_put_discovery(market_input_path, data_root, deployment)
+    revision = run_downward_revision_discovery(
+        market_input_path,
+        data_root,
+        deployment,
+    )
 
-    maturity_rows = _index(maturity["judgment"]["rows"])
-    put_rows = _index(put["judgment"]["rows"])
+    child_runs = {
+        "MATURITY_CASH": maturity,
+        "PUT": put,
+        "DOWNWARD_REVISION": revision,
+    }
+    child_rows = {
+        path_id: _index(child["judgment"]["rows"])
+        for path_id, child in child_runs.items()
+    }
 
     bonds = []
     for market_row in market_input["rows"]:
         code = str(market_row["bond_code"]).zfill(6)
-        maturity_row = maturity_rows[code]
-        put_row = put_rows[code]
+        paths = {}
+        for path_id in ACTIVE_PATHS:
+            paths[path_id] = {
+                "runtime_status": "CONNECTED",
+                **child_rows[path_id][code],
+            }
 
         bonds.append({
             "bond_code": code,
             "bond_name": market_row["bond_name"],
             "market_snapshot_id": market_input["market_snapshot_id"],
             "market_cutoff": market_input["market_cutoff"],
-            "paths": {
-                "MATURITY_CASH": {
-                    "runtime_status": "CONNECTED",
-                    **maturity_row,
-                },
-                "PUT": {
-                    "runtime_status": "CONNECTED",
-                    **put_row,
-                },
-                "DOWNWARD_REVISION": {
-                    "runtime_status": "NOT_CONNECTED",
-                    "economic_status": None,
-                    "reason": "DOWNWARD_REVISION_RUNTIME_NOT_CONNECTED",
-                },
-            },
+            "paths": paths,
         })
 
-    path_summary = {
-        "MATURITY_CASH": {
+    path_summary = {}
+    for path_id, child in child_runs.items():
+        path_summary[path_id] = {
             "runtime_status": "CONNECTED",
-            "child_run_id": maturity["run_id"],
-            **maturity["judgment"]["summary"],
-        },
-        "PUT": {
-            "runtime_status": "CONNECTED",
-            "child_run_id": put["run_id"],
-            **put["judgment"]["summary"],
-        },
-        "DOWNWARD_REVISION": {
-            "runtime_status": "NOT_CONNECTED",
-            "KEEP": None,
-            "DROP": None,
-            "INSUFFICIENT_DATA": None,
-        },
-    }
+            "child_run_id": child["run_id"],
+            "child_status": child["status"],
+            **child["judgment"]["summary"],
+        }
+
+    all_pass = all(child["status"] == "PASS" for child in child_runs.values())
+    status = "PASS" if all_pass else "INSUFFICIENT_DATA"
+
+    any_keep = sum(
+        any(path.get("economic_status") == "KEEP" for path in bond["paths"].values())
+        for bond in bonds
+    )
 
     result = {
         "run_id": run_id,
         "unit": "OPPORTUNITY_DISCOVERY_CONTROLLER",
         "controller_version": CONTROLLER_VERSION,
-        "status": "PARTIAL_RUNTIME",
+        "status": status,
         "started_at": started_at,
         "completed_at": _now(),
         "market_run_id": market_input["run_id"],
@@ -114,9 +115,10 @@ def run_opportunity_discovery(
         "application_commit_sha": deployment.get("application_commit_sha"),
         "knowledge_commit_sha": deployment.get("knowledge_commit_sha"),
         "active_paths": list(ACTIVE_PATHS),
-        "connected_paths": ["MATURITY_CASH", "PUT"],
-        "not_connected_paths": ["DOWNWARD_REVISION"],
+        "connected_paths": list(ACTIVE_PATHS),
+        "not_connected_paths": [],
         "path_summary": path_summary,
+        "bonds_with_any_keep": any_keep,
         "bonds": bonds,
     }
 
@@ -127,7 +129,7 @@ def run_opportunity_discovery(
             "run_id": run_id,
             "unit": "OPPORTUNITY_DISCOVERY_CONTROLLER",
             "controller_version": CONTROLLER_VERSION,
-            "status": result["status"],
+            "status": status,
             "started_at": started_at,
             "completed_at": result["completed_at"],
             "market_run_id": result["market_run_id"],
@@ -136,11 +138,13 @@ def run_opportunity_discovery(
             "application_commit_sha": result["application_commit_sha"],
             "knowledge_commit_sha": result["knowledge_commit_sha"],
             "child_runs": {
-                "MATURITY_CASH": maturity["run_id"],
-                "PUT": put["run_id"],
+                path_id: child["run_id"]
+                for path_id, child in child_runs.items()
             },
             "artifacts": {
-                "economic_path_registry": str(run_dir / "economic_path_registry.json"),
+                "economic_path_registry": str(
+                    run_dir / "economic_path_registry.json"
+                ),
             },
         },
     )
@@ -153,9 +157,10 @@ def run_opportunity_discovery(
             "market_run_id": result["market_run_id"],
             "market_snapshot_id": result["market_snapshot_id"],
             "market_cutoff": result["market_cutoff"],
-            "status": result["status"],
+            "status": status,
             "connected_paths": result["connected_paths"],
             "not_connected_paths": result["not_connected_paths"],
+            "bonds_with_any_keep": any_keep,
             "result_path": str(run_dir / "economic_path_registry.json"),
         },
     )
