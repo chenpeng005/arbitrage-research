@@ -10,6 +10,11 @@ from typing import Any
 
 import pandas as pd
 
+from runtime.opportunity.contract_facts import fetch_eastmoney_contract_table
+from runtime.opportunity.put_contract_facts import (
+    infer_put_mechanism_availability,
+    ordinary_put_clause_exists,
+)
 from runtime.opportunity.evidence_sources import (
     compact_financial_fact,
     fetch_bulk_financial,
@@ -47,7 +52,13 @@ def _ordinary_put_window_state(
     fact: dict[str, Any] | None,
     cutoff: str,
 ) -> dict[str, Any]:
-    if not fact or not fact.get("ordinary_put_clause_exists"):
+    if fact is None:
+        return {
+            "ordinary_put_clause_exists": None,
+            "state": "NOT_ACQUIRED",
+            "window_start": None,
+        }
+    if not fact.get("ordinary_put_clause_exists"):
         return {
             "ordinary_put_clause_exists": False,
             "state": "NO_ORDINARY_PUT",
@@ -76,6 +87,36 @@ def _ordinary_put_window_state(
         "window_start": str(window_start.date()),
         "contract_maturity_date": str(maturity_date.date()),
         "resale_clause": fact.get("resale_clause"),
+    }
+
+
+def _put_fact_from_contract_source(
+    source: dict[str, Any] | None,
+    market_cutoff: str,
+    bond_code: str,
+    bond_name: str,
+) -> dict[str, Any] | None:
+    if source is None:
+        return None
+    clause = source.get("RESALE_CLAUSE")
+    exists = ordinary_put_clause_exists(clause)
+    available, reason = infer_put_mechanism_availability(
+        clause=clause,
+        value_date=source.get("VALUE_DATE"),
+        contract_maturity_date=source.get("EXPIRE_DATE"),
+        market_cutoff=market_cutoff,
+    )
+    return {
+        "bond_code": bond_code,
+        "bond_name": bond_name,
+        "status": "READY" if available is not None else "INSUFFICIENT_DATA",
+        "ordinary_put_clause_exists": exists,
+        "put_mechanism_still_available": available,
+        "reason": reason,
+        "value_date": str(source.get("VALUE_DATE") or ""),
+        "contract_maturity_date": str(source.get("EXPIRE_DATE") or ""),
+        "resale_clause": str(clause or ""),
+        "evidence_origin": "LOW_FREQUENCY_CONTRACT_SOURCE_FOR_REVISION_RESEARCH",
     }
 
 
@@ -131,6 +172,26 @@ def build_research_evidence(
     ]
     maturity_tasks = [x for x in task_packages if x["path_id"] == "MATURITY_CASH"]
     revision_tasks = [x for x in task_packages if x["path_id"] == "DOWNWARD_REVISION"]
+
+    revision_put_source_rows: dict[str, dict[str, Any]] = {}
+    if revision_tasks:
+        contract_source = fetch_eastmoney_contract_table().copy()
+        contract_source["SECURITY_CODE"] = (
+            contract_source["SECURITY_CODE"].astype(str).str.zfill(6)
+        )
+        revision_codes = {
+            str(x["bond_code"]).zfill(6) for x in revision_tasks
+        }
+        contract_source = contract_source[
+            contract_source["SECURITY_CODE"].isin(revision_codes)
+        ].drop_duplicates("SECURITY_CODE")
+        revision_put_source_rows = contract_source.set_index(
+            "SECURITY_CODE"
+        ).to_dict("index")
+        contract_source.to_csv(
+            raw_dir / "revision_cross_path_contract_source.csv",
+            index=False,
+        )
 
     statement_date = statement_date_for_cutoff(batch["market_cutoff"])
     balance = pd.DataFrame()
@@ -241,6 +302,19 @@ def build_research_evidence(
             )
             cross_maturity_contract = maturity_contract_rows.get(code)
             cross_put_contract = put_contract_rows.get(code)
+            cross_put_origin = "PUT_RUNTIME"
+            if cross_put_contract is None:
+                cross_put_contract = _put_fact_from_contract_source(
+                    revision_put_source_rows.get(code),
+                    batch["market_cutoff"],
+                    code,
+                    task["bond_name"],
+                )
+                cross_put_origin = (
+                    "LOW_FREQUENCY_CONTRACT_SOURCE"
+                    if cross_put_contract is not None
+                    else "NOT_ACQUIRED"
+                )
             cross_put_state = _ordinary_put_window_state(
                 cross_put_contract,
                 batch["market_cutoff"],
@@ -268,6 +342,7 @@ def build_research_evidence(
                 "cross_path_put": {
                     "contract_fact": cross_put_contract,
                     "window_state": cross_put_state,
+                    "fact_origin": cross_put_origin,
                 },
                 "cross_path_maturity": {
                     "economic_judgment": cross_maturity_judgment,
