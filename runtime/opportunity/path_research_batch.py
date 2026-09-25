@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import signal
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,37 @@ def _task_id_from_trigger(trigger_key: str) -> str:
     return f"research_{digest}"
 
 
+def _run_one_with_wall_timeout(
+    *,
+    root: Path,
+    data_root: Path,
+    task_id: str,
+    provider_name: str,
+    model: str,
+    wall_timeout_seconds: int,
+) -> dict[str, Any]:
+    previous_handler = signal.getsignal(signal.SIGALRM)
+
+    def _timeout_handler(signum: int, frame: Any) -> None:
+        raise TimeoutError(
+            f"PATH_RESEARCH wall timeout after {wall_timeout_seconds}s"
+        )
+
+    signal.signal(signal.SIGALRM, _timeout_handler)
+    signal.alarm(max(1, int(wall_timeout_seconds)))
+    try:
+        return run_one_path_research(
+            root=root,
+            data_root=data_root,
+            task_id=task_id,
+            provider_name=provider_name,
+            model=model,
+        )
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, previous_handler)
+
+
 def run_path_research_batch(
     *,
     root: Path,
@@ -38,6 +70,7 @@ def run_path_research_batch(
     limit: int = 5,
     path_id: str | None = None,
     retry_once: bool = True,
+    wall_timeout_seconds: int = 180,
 ) -> dict[str, Any]:
     pending = _read_json(data_root / "registry" / "pending_research_tasks.json")
     items = list(pending.get("pending_tasks", []))
@@ -57,26 +90,30 @@ def run_path_research_batch(
         task_id = _task_id_from_trigger(str(item["trigger_key"]))
         attempts: list[dict[str, Any]] = []
 
-        first = run_one_path_research(
+        first = _run_one_with_wall_timeout(
             root=root,
             data_root=data_root,
             task_id=task_id,
             provider_name=provider_name,
             model=model,
+            wall_timeout_seconds=wall_timeout_seconds,
         )
         attempts.append(first)
 
+        timed_out = "wall timeout" in str(first.get("error") or "")
         should_retry = (
             retry_once
+            and not timed_out
             and first.get("status") in {"FAIL", "NEEDS_REVIEW"}
         )
         if should_retry:
-            second = run_one_path_research(
+            second = _run_one_with_wall_timeout(
                 root=root,
                 data_root=data_root,
                 task_id=task_id,
                 provider_name=provider_name,
                 model=model,
+                wall_timeout_seconds=wall_timeout_seconds,
             )
             attempts.append(second)
 
@@ -111,6 +148,7 @@ def run_path_research_batch(
         "provider": provider_name,
         "model": model,
         "retry_once": retry_once,
+        "wall_timeout_seconds": wall_timeout_seconds,
         "status_counts": status_counts,
         "remaining_pending": len(remaining.get("pending_tasks", [])),
         "completed_at": _now(),
