@@ -167,7 +167,12 @@ def run_research_trigger(
                     "current_conversion_price": float(market_row["current_conversion_price"]),
                     "last_trigger_key": prev.get("last_trigger_key") if prev else None,
                     "last_triggered_at": prev.get("last_triggered_at") if prev else None,
-                    "research_status": prev.get("research_status") if prev else None,
+                    "research_status": (
+                        "CANCELLED_ECONOMIC_DROP"
+                        if prev and prev.get("research_status") == "PENDING"
+                        else (prev.get("research_status") if prev else None)
+                    ),
+                    "last_trigger_reason": prev.get("last_trigger_reason") if prev else None,
                     "last_path_result_id": prev.get("last_path_result_id") if prev else None,
                     "updated_at": _now(),
                 }
@@ -264,10 +269,12 @@ def run_research_trigger(
 
             if research_trigger:
                 last_trigger_key = trigger_key
+                last_trigger_reason = trigger_reason
                 last_triggered_at = _now()
                 research_status = "PENDING"
                 trigger_status = "EMITTED_NEW"
             else:
+                last_trigger_reason = prev.get("last_trigger_reason") if prev else None
                 last_triggered_at = prev.get("last_triggered_at") if prev else None
                 research_status = prev.get("research_status") if prev else None
                 trigger_status = (
@@ -287,6 +294,7 @@ def run_research_trigger(
                 "current_market_snapshot_id": registry["market_snapshot_id"],
                 "current_conversion_price": float(market_row["current_conversion_price"]),
                 "last_trigger_key": last_trigger_key,
+                "last_trigger_reason": last_trigger_reason,
                 "last_triggered_at": last_triggered_at,
                 "research_status": research_status,
                 "last_path_result_id": prev.get("last_path_result_id") if prev else None,
@@ -321,6 +329,35 @@ def run_research_trigger(
     }
     _write_json(state_path, state)
 
+    pending_tasks = []
+    for state_row in next_paths.values():
+        if (
+            state_row.get("economic_status") == "KEEP"
+            and state_row.get("research_status") == "PENDING"
+            and state_row.get("last_trigger_key")
+        ):
+            pending_tasks.append({
+                "bond_code": state_row["bond_code"],
+                "bond_name": state_row["bond_name"],
+                "path_id": state_row["path_id"],
+                "economic_status": "KEEP",
+                "keep_episode_id": state_row.get("keep_episode_id"),
+                "current_event_state": state_row.get("current_event_state"),
+                "trigger_key": state_row.get("last_trigger_key"),
+                "trigger_reason": state_row.get("last_trigger_reason"),
+                "last_triggered_at": state_row.get("last_triggered_at"),
+                "research_status": "PENDING",
+            })
+
+    pending_queue_path = data_root / "registry" / "pending_research_tasks.json"
+    _write_json(pending_queue_path, {
+        "trigger_version": TRIGGER_VERSION,
+        "economic_registry_run_id": registry["run_id"],
+        "market_snapshot_id": registry["market_snapshot_id"],
+        "updated_at": _now(),
+        "pending_tasks": pending_tasks,
+    })
+
     reason_counts: dict[str, int] = {}
     for task in tasks:
         reason = str(task["trigger_reason"])
@@ -341,15 +378,18 @@ def run_research_trigger(
         "knowledge_commit_sha": deployment.get("knowledge_commit_sha"),
         "economic_keep_paths": len(outputs),
         "triggered_tasks": len(tasks),
+        "pending_tasks_total": len(pending_tasks),
         "trigger_reason_counts": reason_counts,
         "tasks": tasks,
+        "pending_tasks": pending_tasks,
         "paths": outputs,
     }
 
     _write_json(run_dir / "research_trigger_result.json", result)
     _write_json(run_dir / "research_trigger_tasks.json", {
         "run_id": run_id,
-        "tasks": tasks,
+        "newly_emitted_tasks": tasks,
+        "pending_tasks_total": len(pending_tasks),
     })
     _write_json(run_dir / "run_metadata.json", {
         "run_id": run_id,
@@ -366,6 +406,7 @@ def run_research_trigger(
             "trigger_result": str(run_dir / "research_trigger_result.json"),
             "trigger_tasks": str(run_dir / "research_trigger_tasks.json"),
             "trigger_state": str(state_path),
+            "pending_research_tasks": str(pending_queue_path),
         },
     })
 
@@ -377,7 +418,9 @@ def run_research_trigger(
         "status": "PASS",
         "economic_keep_paths": len(outputs),
         "triggered_tasks": len(tasks),
+        "pending_tasks_total": len(pending_tasks),
         "result_path": str(run_dir / "research_trigger_result.json"),
         "tasks_path": str(run_dir / "research_trigger_tasks.json"),
+        "pending_tasks_path": str(pending_queue_path),
     })
     return result
