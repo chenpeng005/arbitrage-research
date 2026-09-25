@@ -59,7 +59,25 @@ Evidence Pack 是默认研究起点。先尝试仅用预装事实完成 Path Res
 
 若 Path Canonical 要求的重大 Fact Spine 仍存在可从公开信息取得的 UNKNOWN-B，可用允许的正式公告工具继续取证。
 
-如果准备返回 `NEEDS_EVIDENCE` / `UNRESOLVED`，且仍存在“评级报告、定期报告、到期/回售/下修公告”等当前工具可检索的重大 UNKNOWN-B，则至少应先尝试一次针对性的 `path_evidence_search`；只有搜索确实无结果、抓取失败或证据仍不能闭合时，才保留 UNKNOWN-B。
+如果 Evidence Pack 已经给出 `official_notice_candidate_index` 或 `official_notice_behavior_index`，且其中某个候选的标题 / event_kind 与重大 UNKNOWN-B 直接相关，则该候选不是“可选参考”，而是**必须优先读取的正式证据入口**。
+
+在这种情况下，准备返回 `NEEDS_EVIDENCE` / `UNRESOLVED` 前必须完成：
+
+1. 调用 `path_evidence_search` 用对应关键词命中冻结候选；
+2. 对最相关候选调用 `path_evidence_fetch` 读取正文；
+3. 用正文重新判断该 UNKNOWN-B 是否仍存在。
+
+典型对应：
+
+- 评级报告语义未核验 → 搜索“跟踪评级”或“评级报告”并 fetch；
+- 母公司现金、受限资金、刚性债务竞争 → 搜索最新“半年度报告”或“年度报告”并 fetch；
+- 授信/借款/融资滚续 → 搜索“授信”“借款”“融资”并 fetch；
+- 逾期、冻结、重整等硬信用事件 → 读取对应 HARD_CREDIT_EVENT 候选；
+- 下修行为与治理 → 读取最近的不下修、触发、股东会、转股价修正公告。
+
+**若相关冻结候选已经存在，禁止 tool_rounds=0 就直接把对应事项列为 UNKNOWN-B。**
+
+单轮最多优先读取 3 份最相关正式公告。只有搜索确实无结果、抓取失败、或已读取正文仍不能闭合时，才保留 UNKNOWN-B。
 
 工具轮数是硬预算，不应把“用满工具轮数”当成更高质量。不要为了形式完整无限扩展搜索，只围绕当前 bond / stock / Path 的重大 UNKNOWN-B 下钻。
 
@@ -67,8 +85,8 @@ Evidence Pack 是默认研究起点。先尝试仅用预装事实完成 Path Res
 
 允许的工具只用于当前任务：
 
-- `path_evidence_search`：在巨潮正式公告中搜索当前正股的证据；
-- `path_evidence_fetch`：读取本次搜索返回的正式公告 PDF 文本。
+- `path_evidence_search`：优先在当前 Evidence Pack 冻结的正式公告候选中检索；没有匹配候选时才回退到窄范围公告搜索；
+- `path_evidence_fetch`：读取本次搜索返回的正式公告正文，并在可用时优先使用 PDF 全文。
 
 不得搜索其他公司，不得改变 stock_code，不得把 cutoff 之后的信息用于本次研究。
 
