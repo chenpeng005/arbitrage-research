@@ -126,7 +126,7 @@ def run_path_research_batch(
     model: str,
     limit: int = 5,
     path_id: str | None = None,
-    retry_once: bool = True,
+    retry_once: bool = False,
     wall_timeout_seconds: int = 180,
 ) -> dict[str, Any]:
     pending = _read_json(data_root / "registry" / "pending_research_tasks.json")
