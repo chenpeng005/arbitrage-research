@@ -188,3 +188,47 @@ def fetch_maturity_notice_index(
         })
     selected.sort(key=lambda x: x["notice_date"], reverse=True)
     return frame, selected[:max_items]
+
+
+
+def extract_revision_contract_documents(
+    frame: pd.DataFrame,
+    max_items: int = 4,
+) -> list[dict[str, Any]]:
+    """Select authoritative convertible-bond contract documents from notice index."""
+    candidates: list[dict[str, Any]] = []
+    for _, row in frame.iterrows():
+        title = str(row.get("公告标题", ""))
+        if not re.search(r"可转换公司债券.*(募集说明书|上市公告书)|募集说明书|上市公告书", title):
+            continue
+        if "募集资金" in title and "募集说明书" not in title:
+            continue
+
+        if "募集说明书" in title and "摘要" not in title and "申报" not in title:
+            priority = 0
+        elif "上市公告书" in title:
+            priority = 1
+        elif "募集说明书" in title and "修订" in title:
+            priority = 2
+        elif "募集说明书" in title and "申报" in title:
+            priority = 3
+        else:
+            priority = 4
+
+        candidates.append({
+            "notice_date": str(row.get("公告日期")),
+            "title": title,
+            "notice_type": str(row.get("公告类型", "")),
+            "url": str(row.get("网址", "")),
+            "event_kind": "CONTRACT_DOCUMENT",
+            "document_priority": priority,
+            "source": "AKShare/Eastmoney official-announcement index",
+        })
+
+    candidates.sort(
+        key=lambda x: (
+            int(x["document_priority"]),
+            -pd.Timestamp(x.get("notice_date") or "1900-01-01").value,
+        )
+    )
+    return candidates[:max_items]
