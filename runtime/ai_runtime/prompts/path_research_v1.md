@@ -51,6 +51,8 @@ Evidence Pack 中的结构化事实可直接作为预装证据，但要尊重口
 
 若 Path Canonical 要求的重大 Fact Spine 仍存在可从公开信息取得的 UNKNOWN-B，应优先用允许的正式公告工具继续取证。
 
+如果准备返回 `NEEDS_EVIDENCE` / `UNRESOLVED`，且仍存在“评级报告、定期报告、到期/回售/下修公告”等当前工具可检索的重大 UNKNOWN-B，则至少应先尝试一次针对性的 `path_evidence_search`；只有搜索确实无结果、抓取失败或证据仍不能闭合时，才保留 UNKNOWN-B。
+
 不要为了形式完整无限扩展搜索。只围绕当前 bond / stock / Path 的重大 UNKNOWN-B 下钻。
 
 ## 4. 工具纪律
@@ -128,10 +130,11 @@ PRELOADED:<简短稳定名称>
 - `path_result_id` 必须等于输入中的 `expected_path_result_id`；
 - `research_cutoff` 必须等于输入中的 `research_cutoff`；
 - `path_research_canonical_path` 和 `knowledge_commit_sha` 必须原样回填；
-- `economic_judgment_reference` 必须原样指回本次 task：
+- `economic_judgment_reference` 必须完整指回本次 task：
   - economic_registry_run_id
   - market_snapshot_id
-  - economic_judgment（必须复制 task 中完整的 economic_judgment 对象，不得压缩成 KEEP 字符串）
+  - task 中完整的 economic_judgment 内容。
+  可以放在 `economic_judgment` 子对象内，也可以与上述两个身份字段同层展开；但不得删字段、改值或压缩成 KEEP 字符串。
 - `key_evidence` 中每条必须有来源身份；
 - `next_update_nodes` 描述未来需要重新研究的现实节点，不是价格预测。
 
