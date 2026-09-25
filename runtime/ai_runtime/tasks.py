@@ -124,7 +124,167 @@ def market_map_semantic_audit_spec(root: Path) -> AITaskSpec:
     )
 
 
+def path_research_spec(root: Path) -> AITaskSpec:
+    return AITaskSpec(
+        task_type="PATH_RESEARCH",
+        prompt_path=(
+            root / "runtime" / "ai_runtime" / "prompts" / "path_research_v1.md"
+        ),
+        output_schema={
+            "type": "object",
+            "required": [
+                "path_result_id",
+                "task_id",
+                "trigger_key",
+                "bond_code",
+                "bond_name",
+                "path_id",
+                "research_cutoff",
+                "path_research_canonical_path",
+                "knowledge_commit_sha",
+                "review_ready",
+                "research_status",
+                "fact_spine",
+                "judgments",
+                "key_evidence",
+                "unknown_a",
+                "unknown_b",
+                "key_risks",
+                "failure_conditions",
+                "next_update_nodes",
+                "economic_status_at_research",
+                "economic_judgment_reference",
+            ],
+            "properties": {
+                "path_result_id": {"type": "string"},
+                "task_id": {"type": "string"},
+                "trigger_key": {"type": "string"},
+                "bond_code": {"type": "string"},
+                "bond_name": {"type": "string"},
+                "path_id": {
+                    "type": "string",
+                    "enum": ["MATURITY_CASH", "PUT", "DOWNWARD_REVISION"],
+                },
+                "research_cutoff": {"type": "string"},
+                "path_research_canonical_path": {"type": "string"},
+                "knowledge_commit_sha": {"type": "string"},
+                "review_ready": {"type": "boolean"},
+                "research_status": {
+                    "type": "string",
+                    "enum": ["COMPLETED", "NEEDS_EVIDENCE", "UNRESOLVED"],
+                },
+                "fact_spine": {"type": "object"},
+                "judgments": {"type": "object"},
+                "key_evidence": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "evidence_id",
+                            "source_type",
+                            "title",
+                            "source_date",
+                            "locator",
+                            "supports",
+                            "confidence",
+                        ],
+                        "properties": {
+                            "evidence_id": {"type": "string"},
+                            "source_type": {"type": "string"},
+                            "title": {"type": "string"},
+                            "source_date": {"type": ["string", "null"]},
+                            "locator": {"type": ["string", "null"]},
+                            "supports": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "confidence": {"type": "string"},
+                        },
+                    },
+                },
+                "unknown_a": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "unknown_b": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "key_risks": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "failure_conditions": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "next_update_nodes": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["date", "event"],
+                        "properties": {
+                            "date": {"type": ["string", "null"]},
+                            "event": {"type": "string"},
+                        },
+                    },
+                },
+                "economic_status_at_research": {
+                    "type": "string",
+                    "enum": ["KEEP"],
+                },
+                "economic_judgment_reference": {"type": "object"},
+            },
+        },
+        allowed_tools=[
+            {
+                "name": "path_evidence_search",
+                "description": (
+                    "只围绕当前 Path Research task 的正股，在巨潮正式公告中"
+                    "搜索补充证据。Program 固定 stock_code，AI 不能扩展对象。"
+                ),
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "keyword": {"type": "string"},
+                        "start_date": {
+                            "type": "string",
+                            "description": "YYYY-MM-DD，可省略",
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "description": "YYYY-MM-DD，可省略",
+                        },
+                    },
+                },
+            },
+            {
+                "name": "path_evidence_fetch",
+                "description": (
+                    "读取本 AI Job 之前 path_evidence_search 返回过的"
+                    "巨潮正式公告 PDF，并由 Program 保存 PDF、文本和 hash。"
+                ),
+                "input_schema": {
+                    "type": "object",
+                    "required": ["evidence_id"],
+                    "properties": {
+                        "evidence_id": {"type": "string"},
+                    },
+                },
+            },
+        ],
+        validator=(
+            "runtime.opportunity.path_research_validation."
+            "validate_path_research_result"
+        ),
+        max_tool_rounds=6,
+        timeout_seconds=180,
+    )
+
+
 def get_task_spec(task_type: str, root: Path) -> AITaskSpec:
     if task_type == "MARKET_MAP_SEMANTIC_AUDIT":
         return market_map_semantic_audit_spec(root)
+    if task_type == "PATH_RESEARCH":
+        return path_research_spec(root)
     raise ValueError(f"Unsupported AI task_type: {task_type}")
