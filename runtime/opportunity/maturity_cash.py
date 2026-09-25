@@ -13,33 +13,69 @@ def judge_one(
     contract_fact: dict[str, Any],
     normal_maturity_path_available: bool | None = None,
 ) -> dict[str, Any]:
-    if contract_fact.get("status") not in {"READY", "READY_WITH_OVERRIDE"}:
+    if contract_fact.get("status") not in {"READY", "READY_WITH_OVERRIDE", "READY_RANGE"}:
         return {
             "economic_status": "INSUFFICIENT_DATA",
             "reason": "CONTRACT_FACTS_INSUFFICIENT",
         }
 
-    c_value = float(contract_fact["remaining_contract_cash_C"])
     p_value = float(current_price)
-    spread = c_value - p_value
+    c_exact = contract_fact.get("remaining_contract_cash_C")
+    c_min_raw = contract_fact.get("remaining_contract_cash_C_min", c_exact)
+    c_max_raw = contract_fact.get("remaining_contract_cash_C_max", c_exact)
+    if c_min_raw is None or c_max_raw is None:
+        return {
+            "economic_status": "INSUFFICIENT_DATA",
+            "reason": "CONTRACT_CASH_RANGE_MISSING",
+        }
 
-    if spread <= 0:
+    c_min = float(c_min_raw)
+    c_max = float(c_max_raw)
+
+    if c_max <= p_value:
         return {
             "economic_status": "DROP",
-            "reason": "NO_POSITIVE_CASH_SPREAD",
+            "reason": (
+                "NO_POSITIVE_CASH_SPREAD"
+                if abs(c_max - c_min) < 1e-12
+                else "NO_POSITIVE_CASH_SPREAD_UNDER_ALL_BRANCHES"
+            ),
             "current_price_P": p_value,
-            "remaining_contract_cash_C": c_value,
-            "spread_C_minus_P": spread,
+            "remaining_contract_cash_C": float(c_exact) if c_exact is not None else None,
+            "remaining_contract_cash_C_min": c_min,
+            "remaining_contract_cash_C_max": c_max,
+            "spread_C_minus_P": (float(c_exact) - p_value) if c_exact is not None else None,
+            "spread_min": c_min - p_value,
+            "spread_max": c_max - p_value,
             "path_availability_required": False,
         }
+
+    if c_min <= p_value:
+        return {
+            "economic_status": "INSUFFICIENT_DATA",
+            "reason": "CASH_RANGE_CROSSES_PRICE",
+            "current_price_P": p_value,
+            "remaining_contract_cash_C": None,
+            "remaining_contract_cash_C_min": c_min,
+            "remaining_contract_cash_C_max": c_max,
+            "spread_min": c_min - p_value,
+            "spread_max": c_max - p_value,
+            "path_availability_required": False,
+        }
+
+    spread = (float(c_exact) - p_value) if c_exact is not None else None
 
     if normal_maturity_path_available is None:
         return {
             "economic_status": "INSUFFICIENT_DATA",
             "reason": "NORMAL_MATURITY_PATH_AVAILABILITY_REQUIRED",
             "current_price_P": p_value,
-            "remaining_contract_cash_C": c_value,
+            "remaining_contract_cash_C": float(c_exact) if c_exact is not None else None,
+            "remaining_contract_cash_C_min": c_min,
+            "remaining_contract_cash_C_max": c_max,
             "spread_C_minus_P": spread,
+            "spread_min": c_min - p_value,
+            "spread_max": c_max - p_value,
             "path_availability_required": True,
         }
 
@@ -48,8 +84,12 @@ def judge_one(
             "economic_status": "DROP",
             "reason": "NORMAL_MATURITY_PATH_UNAVAILABLE",
             "current_price_P": p_value,
-            "remaining_contract_cash_C": c_value,
+            "remaining_contract_cash_C": float(c_exact) if c_exact is not None else None,
+            "remaining_contract_cash_C_min": c_min,
+            "remaining_contract_cash_C_max": c_max,
             "spread_C_minus_P": spread,
+            "spread_min": c_min - p_value,
+            "spread_max": c_max - p_value,
             "path_availability_required": True,
         }
 
@@ -57,8 +97,12 @@ def judge_one(
         "economic_status": "KEEP",
         "reason": "POSITIVE_MATURITY_CASH_SPREAD",
         "current_price_P": p_value,
-        "remaining_contract_cash_C": c_value,
+        "remaining_contract_cash_C": float(c_exact) if c_exact is not None else None,
+        "remaining_contract_cash_C_min": c_min,
+        "remaining_contract_cash_C_max": c_max,
         "spread_C_minus_P": spread,
+        "spread_min": c_min - p_value,
+        "spread_max": c_max - p_value,
         "path_availability_required": True,
     }
 
