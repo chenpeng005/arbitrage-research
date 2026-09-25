@@ -21,6 +21,10 @@ from pydantic import BaseModel
 import pandas as pd
 
 from runtime.ai_runtime.engine import run_ai_job
+from runtime.market_map.resolver import (
+    ResolverError,
+    resolve_bond_scenarios,
+)
 
 ROOT = Path(os.environ.get("RUNTIME_ROOT", Path(__file__).resolve().parents[2]))
 DATA_ROOT = Path(os.environ.get("RUNTIME_DATA_ROOT", ROOT / "runtime_data"))
@@ -75,6 +79,19 @@ class MarketMapPipelineRequest(BaseModel):
     market_cutoff: str | None = None
     ai_execution_mode: str = "AUTO_API"
     historical_snapshot_id: str | None = None
+
+
+class BondValuationScenario(BaseModel):
+    scenario_id: str | None = None
+    target_CV: float
+    target_remaining_months: float | None = None
+    target_remaining_size: float | None = None
+
+
+class BondValuationResolverRequest(BaseModel):
+    bond_code: str
+    scenarios: list[BondValuationScenario]
+    snapshot_id: str | None = None
 
 
 TERMINAL_JOB_STATUSES = {"PASS", "WARNING", "FAIL", "NEEDS_REVIEW"}
@@ -1557,6 +1574,45 @@ def get_market_map_view(calculation_job_id: str | None = None) -> dict:
         ),
         "rows": rows,
     }
+
+
+@app.post("/api/market-map/resolve")
+def resolve_market_map_bond(
+    request: BondValuationResolverRequest,
+) -> dict:
+    if request.snapshot_id:
+        entry = get_formal_market_map_entry(request.snapshot_id)
+    else:
+        if not LATEST_FORMAL_MARKET_MAP_PATH.exists():
+            raise HTTPException(404, "no formal market map snapshot is registered")
+        try:
+            entry = json.loads(
+                LATEST_FORMAL_MARKET_MAP_PATH.read_text(encoding="utf-8")
+            )
+        except Exception as exc:
+            raise HTTPException(
+                500,
+                f"latest formal market map registry is invalid: {type(exc).__name__}",
+            )
+
+    contract_path_raw = entry.get("output_contract_path")
+    contract_status = entry.get("output_contract_status")
+    if not contract_path_raw or contract_status != "PASS":
+        raise HTTPException(
+            409,
+            "selected formal snapshot does not expose a validated "
+            "Market Map Output Contract V1",
+        )
+
+    try:
+        return resolve_bond_scenarios(
+            Path(contract_path_raw),
+            bond_code=request.bond_code,
+            scenarios=[x.model_dump() for x in request.scenarios],
+            require_formal=True,
+        )
+    except ResolverError as exc:
+        raise HTTPException(400, str(exc))
 
 
 @app.get("/api/market-status")
