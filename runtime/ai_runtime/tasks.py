@@ -277,7 +277,7 @@ def path_research_spec(root: Path) -> AITaskSpec:
             "runtime.opportunity.path_research_validation."
             "validate_path_research_result"
         ),
-        max_tool_rounds=6,
+        max_tool_rounds=8,
         timeout_seconds=180,
     )
 
