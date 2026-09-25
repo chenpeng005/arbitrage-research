@@ -100,6 +100,20 @@ review_ready = false
 research_status = NEEDS_EVIDENCE 或 UNRESOLVED
 ```
 
+### 输出前强制自检
+
+在提交最终 JSON 前，必须逐项自检：
+
+1. 若 `unknown_b` 非空：
+   - `review_ready` 必须为 `false`；
+   - `research_status` 必须为 `NEEDS_EVIDENCE` 或 `UNRESOLVED`；
+   - 绝不能输出 `COMPLETED`。
+2. 只有 `unknown_b = []` 且重大 Fact Spine 已闭合时，才允许：
+   - `review_ready = true`
+   - `research_status = COMPLETED`
+
+这是一条硬约束，不是建议。
+
 ## 6. Judgment 原则
 
 - 区分事实、解释、判断和未来不确定性；
