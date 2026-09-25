@@ -202,6 +202,29 @@ def evidence_fetch(ctx: ToolContext, args: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _path_preloaded_notice_candidates(
+    ctx: ToolContext,
+) -> list[dict[str, Any]]:
+    pack = ctx.input_payload.get("evidence_pack") or {}
+    facts = pack.get("facts") or {}
+    candidates: list[dict[str, Any]] = []
+    for key in (
+        "official_notice_candidate_index",
+        "official_notice_behavior_index",
+    ):
+        value = facts.get(key)
+        if isinstance(value, list):
+            candidates.extend(
+                item for item in value if isinstance(item, dict)
+            )
+    return candidates
+
+
+def _eastmoney_announcement_id(url: str) -> str | None:
+    match = re.search(r"(AN\d+)", str(url or ""))
+    return match.group(1) if match else None
+
+
 def path_evidence_search(
     ctx: ToolContext,
     args: dict[str, Any],
@@ -221,37 +244,88 @@ def path_evidence_search(
     if not cutoff:
         raise RuntimeError("PATH_RESEARCH input has no market_cutoff")
 
-    keyword = str(args.get("keyword") or "转债").strip() or "转债"
+    keyword = str(args.get("keyword") or "").strip()
     start_date, end_date = _bounded_dates(
         cutoff,
         args.get("start_date"),
         args.get("end_date"),
     )
-
-    df = ak.stock_zh_a_disclosure_report_cninfo(
-        symbol=stock_code,
-        market="沪深京",
-        keyword=keyword,
-        category="",
-        start_date=start_date,
-        end_date=end_date,
-    )
+    start_ts = pd.Timestamp(start_date)
+    end_ts = pd.Timestamp(end_date)
 
     results: list[dict[str, Any]] = []
-    for _, item in df.head(MAX_SEARCH_RESULTS).iterrows():
-        detail_url = str(item.get("公告链接") or "")
-        parsed = parse_qs(urlparse(detail_url).query)
-        announcement_id = (parsed.get("announcementId") or [None])[0]
-        published_value = item.get("公告时间")
-        if not announcement_id or pd.isna(published_value):
+    for candidate in _path_preloaded_notice_candidates(ctx):
+        title = str(candidate.get("title") or "")
+        published_value = candidate.get("notice_date")
+        published_ts = pd.to_datetime(published_value, errors="coerce")
+        if pd.isna(published_ts):
             continue
-        published = pd.Timestamp(published_value).date().isoformat()
-        pdf_url = (
-            f"http://static.cninfo.com.cn/finalpage/"
-            f"{published}/{announcement_id}.PDF"
+        published_ts = published_ts.normalize()
+        if published_ts < start_ts or published_ts > end_ts:
+            continue
+
+        searchable = " ".join([
+            title,
+            str(candidate.get("event_kind") or ""),
+            str(candidate.get("notice_type") or ""),
+        ])
+        if keyword and keyword not in searchable:
+            continue
+
+        detail_url = str(candidate.get("url") or "")
+        announcement_id = _eastmoney_announcement_id(detail_url)
+        if not announcement_id:
+            continue
+
+        results.append({
+            "evidence_id": announcement_id,
+            "source_type": "eastmoney_announcement",
+            "stock_code": stock_code,
+            "bond_code": bond_code,
+            "bond_name": bond_name,
+            "title": title,
+            "published_at": published_ts.date().isoformat(),
+            "detail_url": detail_url,
+            "content_api_url": (
+                "https://np-cnotice-stock.eastmoney.com/"
+                "api/content/ann"
+            ),
+            "event_kind": candidate.get("event_kind"),
+            "keyword": keyword,
+            "preloaded_candidate": True,
+        })
+        if len(results) >= MAX_SEARCH_RESULTS:
+            break
+
+    search_source = "PRELOADED_NOTICE_INDEX"
+
+    # Fall back to CNINFO only when the frozen Evidence Pack has no matching
+    # notice candidate. This keeps Path Research bounded to the current task
+    # while still allowing a narrow primary-source search for missing evidence.
+    if not results:
+        cninfo_keyword = keyword or "转债"
+        df = ak.stock_zh_a_disclosure_report_cninfo(
+            symbol=stock_code,
+            market="沪深京",
+            keyword=cninfo_keyword,
+            category="",
+            start_date=start_date,
+            end_date=end_date,
         )
-        results.append(
-            {
+
+        for _, item in df.head(MAX_SEARCH_RESULTS).iterrows():
+            detail_url = str(item.get("公告链接") or "")
+            parsed = parse_qs(urlparse(detail_url).query)
+            announcement_id = (parsed.get("announcementId") or [None])[0]
+            published_value = item.get("公告时间")
+            if not announcement_id or pd.isna(published_value):
+                continue
+            published = pd.Timestamp(published_value).date().isoformat()
+            pdf_url = (
+                f"http://static.cninfo.com.cn/finalpage/"
+                f"{published}/{announcement_id}.PDF"
+            )
+            results.append({
                 "evidence_id": str(announcement_id),
                 "source_type": "cninfo_announcement",
                 "stock_code": stock_code,
@@ -261,9 +335,10 @@ def path_evidence_search(
                 "published_at": published,
                 "detail_url": detail_url,
                 "pdf_url": pdf_url,
-                "keyword": keyword,
-            }
-        )
+                "keyword": cninfo_keyword,
+                "preloaded_candidate": False,
+            })
+        search_source = "CNINFO_FALLBACK"
 
     catalog_path = ctx.ai_job_dir / "evidence_catalog.json"
     catalog = {}
@@ -284,6 +359,7 @@ def path_evidence_search(
             "start_date": start_date,
             "end_date": end_date,
         },
+        "search_source": search_source,
         "count": len(results),
         "results": results,
     }
@@ -293,7 +369,121 @@ def path_evidence_fetch(
     ctx: ToolContext,
     args: dict[str, Any],
 ) -> dict[str, Any]:
-    return evidence_fetch(ctx, args)
+    evidence_id = str(args.get("evidence_id") or "")
+    catalog_path = ctx.ai_job_dir / "evidence_catalog.json"
+    if not catalog_path.exists():
+        raise ValueError(
+            "path_evidence_fetch requires prior path_evidence_search"
+        )
+    catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    item = catalog.get(evidence_id)
+    if item is None:
+        raise ValueError(
+            "evidence_id was not returned by path_evidence_search "
+            "in this AI job"
+        )
+
+    if item.get("source_type") != "eastmoney_announcement":
+        return evidence_fetch(ctx, args)
+
+    evidence_dir = ctx.ai_job_dir / "evidence"
+    evidence_dir.mkdir(exist_ok=True)
+    txt_path = evidence_dir / f"{evidence_id}.txt"
+    meta_path = evidence_dir / f"{evidence_id}.json"
+    pdf_path = evidence_dir / f"{evidence_id}.pdf"
+
+    api_url = str(item["content_api_url"])
+    first = requests.get(
+        api_url,
+        params={
+            "art_code": evidence_id,
+            "client_source": "web",
+            "page_index": 1,
+        },
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Referer": "https://data.eastmoney.com/",
+        },
+        timeout=30,
+    )
+    first.raise_for_status()
+    payload = first.json()
+    data = payload.get("data") or {}
+    if not data:
+        raise RuntimeError("Eastmoney announcement content API returned no data")
+
+    page_size = int(data.get("page_size") or 1)
+    text_parts = [str(data.get("notice_content") or "")]
+    for page_index in range(2, page_size + 1):
+        response = requests.get(
+            api_url,
+            params={
+                "art_code": evidence_id,
+                "client_source": "web",
+                "page_index": page_index,
+            },
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Referer": "https://data.eastmoney.com/",
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        page_data = (response.json().get("data") or {})
+        text_parts.append(str(page_data.get("notice_content") or ""))
+
+    text = "\n".join(part for part in text_parts if part)
+    txt_path.write_text(text, encoding="utf-8")
+    text_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+    pdf_url = str(data.get("attach_url_web") or data.get("attach_url") or "")
+    pdf_sha256 = None
+    page_count = None
+    pdf_artifact = None
+    if pdf_url:
+        try:
+            response = requests.get(
+                pdf_url,
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=30,
+            )
+            response.raise_for_status()
+            if "pdf" in (response.headers.get("content-type") or "").lower():
+                pdf_path.write_bytes(response.content)
+                pdf_sha256 = hashlib.sha256(response.content).hexdigest()
+                pdf_artifact = str(pdf_path.relative_to(ctx.ai_job_dir))
+                try:
+                    page_count = len(PdfReader(str(pdf_path)).pages)
+                except Exception:
+                    page_count = None
+        except Exception:
+            # The official announcement text from the content API remains
+            # usable even when the mirrored PDF endpoint is temporarily down.
+            pass
+
+    meta = {
+        **item,
+        "title": str(data.get("notice_title") or item.get("title") or ""),
+        "published_at": str(data.get("notice_date") or item.get("published_at") or ""),
+        "pdf_url": pdf_url or None,
+        "pdf_artifact": pdf_artifact,
+        "text_artifact": str(txt_path.relative_to(ctx.ai_job_dir)),
+        "pdf_sha256": pdf_sha256,
+        "text_sha256": text_sha256,
+        "page_count": page_count,
+        "content_page_count": page_size,
+        "text_chars": len(text),
+    }
+    meta_path.write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    return {
+        **meta,
+        "text": text[:MAX_MODEL_TEXT_CHARS],
+        "text_truncated": len(text) > MAX_MODEL_TEXT_CHARS,
+    }
 
 
 TOOL_HANDLERS = {
