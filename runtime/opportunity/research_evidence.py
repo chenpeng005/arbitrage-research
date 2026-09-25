@@ -18,6 +18,7 @@ from runtime.opportunity.put_contract_facts import (
 from runtime.opportunity.evidence_sources import (
     compact_financial_fact,
     fetch_bulk_financial,
+    fetch_maturity_notice_index,
     fetch_revision_notice_index,
     fetch_structured_rating,
     statement_date_for_cutoff,
@@ -211,6 +212,8 @@ def build_research_evidence(
         ).to_dict("index")
 
     rating_rows = []
+    maturity_notice_source_retrieved = 0
+    maturity_notice_candidates_nonempty = 0
     revision_notice_source_retrieved = 0
     revision_behavior_history_nonempty = 0
     packs = []
@@ -240,6 +243,19 @@ def build_research_evidence(
                 **rating,
             })
 
+            notice_frame, notice_candidates = fetch_maturity_notice_index(
+                stock_code,
+                _begin_date(batch["market_cutoff"]),
+                batch["market_cutoff"].replace("-", ""),
+            )
+            notice_frame.to_csv(
+                raw_dir / f"maturity_notices_{code}.csv",
+                index=False,
+            )
+            maturity_notice_source_retrieved += 1
+            if notice_candidates:
+                maturity_notice_candidates_nonempty += 1
+
             remaining_size = float(task["market_state"]["remaining_size"])
             judgment = task["economic_judgment"]
             unit_cash = float(
@@ -254,6 +270,7 @@ def build_research_evidence(
                 "unit_remaining_contract_cash": unit_cash,
                 "financial_first_layer": financial,
                 "structured_rating": rating,
+                "official_notice_candidate_index": notice_candidates,
             }
             sources = [
                 {
@@ -267,6 +284,14 @@ def build_research_evidence(
                     "source": rating["source"],
                     "scope": "BOND",
                 },
+                {
+                    "source_id": "MATURITY_NOTICE_INDEX",
+                    "source": "AKShare/Eastmoney official-announcement index",
+                    "begin_date": _begin_date(batch["market_cutoff"]),
+                    "end_date": batch["market_cutoff"],
+                    "stock_code": stock_code,
+                    "scope": "NOTICE_CANDIDATES_ONLY",
+                },
             ]
             coverage = {
                 "financial_matched": (
@@ -274,12 +299,18 @@ def build_research_evidence(
                     and financial["cash_flow_matched"]
                 ),
                 "rating_matched": bool(rating["matched"]),
+                "maturity_notice_source_retrieved": True,
+                "maturity_notice_candidate_count": len(notice_candidates),
+                "maturity_notice_kinds": sorted({
+                    item["event_kind"] for item in notice_candidates
+                }),
             }
             missing_or_deferred = [
-                "parent_entity_cash_and_cashflow",
+                "parent_entity_cash_and_cashflow_semantic_read",
                 "latest_rating_report_semantic_review",
-                "hard_credit_event_scan",
+                "hard_credit_event_semantic_review",
                 "financing_support_semantic_review",
+                "rigid_cash_competition_semantic_review",
             ]
 
         elif path_id == "DOWNWARD_REVISION":
@@ -472,6 +503,8 @@ def build_research_evidence(
         "maturity_tasks": len(maturity_tasks),
         "maturity_financial_matched": maturity_financial_matched,
         "maturity_rating_matched": maturity_rating_matched,
+        "maturity_notice_source_retrieved": maturity_notice_source_retrieved,
+        "maturity_notice_candidates_nonempty": maturity_notice_candidates_nonempty,
         "revision_tasks": len(revision_tasks),
         "revision_notice_source_retrieved": revision_notice_source_retrieved,
         "revision_behavior_history_nonempty": revision_behavior_history_nonempty,
