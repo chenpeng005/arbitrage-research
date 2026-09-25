@@ -77,6 +77,21 @@ def prepare_path_research_ai_input(
 
     if task.get("task_id") != task_id or evidence.get("task_id") != task_id:
         raise RuntimeError("task/evidence identity mismatch")
+
+    deployment_path = data_root / "deployment_manifest.json"
+    if not deployment_path.exists():
+        raise FileNotFoundError("deployment_manifest.json is required")
+    deployment = _read_json(deployment_path)
+    current_app_sha = deployment.get("application_commit_sha")
+    current_knowledge_sha = deployment.get("knowledge_commit_sha")
+    if task.get("application_commit_sha") != current_app_sha:
+        raise RuntimeError("research task application_commit_sha is stale")
+    if evidence.get("application_commit_sha") != current_app_sha:
+        raise RuntimeError("evidence pack application_commit_sha is stale")
+    if task.get("knowledge_commit_sha") != current_knowledge_sha:
+        raise RuntimeError("research task knowledge_commit_sha is stale")
+    if evidence.get("knowledge_commit_sha") != current_knowledge_sha:
+        raise RuntimeError("evidence pack knowledge_commit_sha is stale")
     if task.get("trigger_key") != evidence.get("trigger_key"):
         raise RuntimeError("task/evidence trigger_key mismatch")
     if task.get("path_id") != evidence.get("path_id"):
