@@ -133,7 +133,16 @@ body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSy
 .map-table tbody tr{cursor:pointer}
 .map-table tbody tr:hover{background:#f7f9fa}
 .map-table td:nth-child(2){font-weight:700}
+.ingress-control{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.ingress-control p{margin:6px 0 0}
+.ingress-control button{white-space:nowrap;padding:11px 17px;border:0;border-radius:9px;background:#18212b;color:#fff;cursor:pointer}
+.ingress-control button:disabled{opacity:.55;cursor:wait}
+#ingressSearch{min-width:210px;padding:9px;border:1px solid #ccd4da;border-radius:8px}
+.ingress-caption{margin:16px 0 12px}
+.ingress-wait{color:#8c6225;border-bottom:1px dotted #b88847;cursor:help}
 @media(max-width:720px){
+  .ingress-control{align-items:stretch;flex-direction:column}
+  #ingressSearch{min-width:0;width:100%}
   .map-control{align-items:flex-start}
   .map-filter{align-items:flex-start}
   .map-filter>div{min-width:100%}

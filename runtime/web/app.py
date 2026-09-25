@@ -25,12 +25,14 @@ from runtime.market_map.resolver import (
     ResolverError,
     resolve_bond_scenarios,
 )
+from runtime.opportunity.ingress import build_market_ingress
 
 ROOT = Path(os.environ.get("RUNTIME_ROOT", Path(__file__).resolve().parents[2]))
 DATA_ROOT = Path(os.environ.get("RUNTIME_DATA_ROOT", ROOT / "runtime_data"))
 DEPLOYMENT_MANIFEST_PATH = DATA_ROOT / "deployment_manifest.json"
 MARKET_MAP_REGISTRY_DIR = DATA_ROOT / "registry" / "market_map_snapshots"
 LATEST_FORMAL_MARKET_MAP_PATH = DATA_ROOT / "registry" / "latest_formal_market_map.json"
+LATEST_DISCOVERY_INGRESS_PATH = DATA_ROOT / "registry" / "latest_discovery_market_ingress.json"
 CHAT_TASK_ROOT = DATA_ROOT / "chat_tasks"
 
 ACQ_SCRIPT = ROOT / "runtime" / "market_map" / "acquisition.py"
@@ -1613,6 +1615,48 @@ def resolve_market_map_bond(
         )
     except ResolverError as exc:
         raise HTTPException(400, str(exc))
+
+
+@app.post("/api/opportunity/market-ingress")
+def create_discovery_market_ingress() -> dict:
+    """Use the latest validated formal Market Map as the Discovery market input."""
+    if not LATEST_FORMAL_MARKET_MAP_PATH.exists():
+        raise HTTPException(404, "no formal market map snapshot is registered")
+    try:
+        entry = json.loads(LATEST_FORMAL_MARKET_MAP_PATH.read_text(encoding="utf-8"))
+        if entry.get("snapshot_class") != "FORMAL_CLOSE" or entry.get("output_contract_status") != "PASS":
+            raise ResolverError("latest formal snapshot has no validated output contract")
+        if not entry.get("snapshot_id"):
+            raise ResolverError("latest formal snapshot has no snapshot_id")
+        manifest_path = Path(entry["output_contract_path"])
+        result = build_market_ingress(manifest_path, DATA_ROOT, load_deployment_manifest(),
+                                      expected_snapshot_id=entry.get("snapshot_id"))
+        LATEST_DISCOVERY_INGRESS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        LATEST_DISCOVERY_INGRESS_PATH.write_text(
+            json.dumps({"run_id": result["run_id"], "market_snapshot_id": result["market_snapshot_id"]}, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        return result
+    except (KeyError, ValueError, OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(409, f"discovery market ingress failed: {exc}")
+
+
+@app.get("/api/opportunity/market-ingress/latest")
+def latest_discovery_market_ingress() -> dict:
+    if not LATEST_DISCOVERY_INGRESS_PATH.exists():
+        raise HTTPException(404, "no discovery market ingress run has completed")
+    try:
+        pointer = json.loads(LATEST_DISCOVERY_INGRESS_PATH.read_text(encoding="utf-8"))
+        run_id = str(pointer["run_id"])
+        if not run_id.replace("_", "").isalnum():
+            raise ValueError("invalid discovery run_id")
+        result_path = DATA_ROOT / "runs" / run_id / "discovery_market_input.json"
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        if result.get("run_id") != run_id or result.get("market_snapshot_id") != pointer.get("market_snapshot_id"):
+            raise ValueError("discovery ingress pointer and result disagree")
+        return result
+    except (KeyError, ValueError, OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(409, f"discovery market ingress result is invalid: {exc}")
 
 
 @app.get("/api/market-status")

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>机会发现运行台 · 市场价值映射构建器</title>
+  <title>机会发现运行台</title>
   <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
@@ -11,14 +11,43 @@
     <header class="hero">
       <div>
         <p class="eyebrow">机会发现运行台</p>
-        <h1>市场价值映射构建器 · Runtime</h1>
-        <p class="sub">网页触发 → Controller 编排 → 程序审计 → 必要时调用 AI → 计算 → 冻结 → 展示</p>
+        <h1>机会发现运行台</h1>
+        <p class="sub">市场数据 → 审计 → 合同事实 → 逐路径经济判断</p>
       </div>
       <div class="overall pass">工作台就绪</div>
     </header>
 
+    <section class="unit-title" id="opportunityIngress">
+      <div><span class="unit-no">主流程 · 第一步</span><h2>市场数据进入机会发现</h2></div>
+      <div id="ingressOverall" class="overall idle">尚未运行</div>
+    </section>
+    <section class="card ingress-control">
+      <div>
+        <strong>读取最新正式藏宝图结果，审计并冻结主流程的市场输入</strong>
+        <p class="muted">结果保留价格、转股价值、期限、规模及来源版本；合同条款补齐后，才逐路径判断经济性。</p>
+      </div>
+      <button id="ingressRunBtn" type="button">运行市场数据接入</button>
+    </section>
+    <section id="ingressMeta" class="meta card muted">正在检查是否有已完成的市场数据接入记录。</section>
+    <section id="ingressResult" class="card hidden">
+      <div class="section-head">
+        <div><p class="eyebrow">经过审计的市场输入</p><h2>三条路径的数据就绪情况</h2></div>
+        <input id="ingressSearch" type="search" placeholder="搜索代码或转债名称" aria-label="搜索代码或转债名称">
+      </div>
+      <div id="ingressCounts" class="summary-grid"></div>
+      <p class="muted ingress-caption">路径状态表示还缺哪些合同事实；此时不产生 KEEP / DROP 经济结论。</p>
+      <div class="table-scroll">
+        <table class="audit-table">
+          <thead><tr><th>代码</th><th>转债</th><th>现价</th><th>转股价值</th><th>剩余月数</th><th>剩余规模</th><th>到期现金</th><th>回售</th><th>下修</th></tr></thead>
+          <tbody id="ingressTable"><tr><td colspan="9">等待运行。</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="unit-separator"></div>
+
     <section class="unit-title">
-      <div><span class="unit-no">正式运行</span><h2>完整藏宝图 Runtime</h2></div>
+      <div><span class="unit-no">前置公共能力</span><h2>完整藏宝图 Runtime</h2></div>
       <div id="pipelineOverall" class="overall idle">尚未运行</div>
     </section>
 
@@ -271,5 +300,6 @@
     </section>
   </main>
 <script src="static/app.js"></script>
+<script src="static/opportunity.js"></script>
 </body>
 </html>

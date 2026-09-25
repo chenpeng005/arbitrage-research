@@ -10,21 +10,23 @@
 
 旧的根目录 `index.html / app.js / styles.css / objects` 作为历史前端原型暂时保留，不在本阶段覆盖。
 
-## 当前第一个工程单元
+## 已有公共能力
 
-`Market Map Builder`
+`Market Map Builder` 已形成冻结的 Output Contract V1；`Bond Valuation Resolver V1` 从指定快照读取模型并为个券的目标状态计算参考价。完整藏宝图 Pipeline 在网页运行。
 
-当前只实现第一段：
+## 机会发现主流程接入
 
 ```text
-Web Trigger
-→ Market Data Acquisition
-→ Universe / Gate A-B-C
-→ Acquisition Audit
-→ acquisition_result.json
+正式 Market Map Registry
+→ 经过验证的 Market Map Output Contract V1
+→ Discovery Market Ingress（市场字段审计、冻结）
+→ 合同条款和机制数据获取、审计（后续）
+→ 三条 Path 的经济性判断（后续）
 ```
 
-模型拟合暂不混入这一模块。
+网页“市场数据进入机会发现”按钮调用 `POST /api/opportunity/market-ingress`，从最新正式市场快照生成 `runtime_data/runs/<run_id>/discovery_market_input.json` 和运行元数据。`GET /api/opportunity/market-ingress/latest` 读取最后一次成功结果。结果明确标记合同数据缺口，不把当前市场估值差或缺失合同数据当成经济性 KEEP / DROP。
+
+三条 Path 的合同事实、条款生效状态及条件性硬底价得到审计后，再进入经济判断。每一次下游运行固定消费的快照 ID、合同版本和知识 / 工程版本。
 
 ## 运行外循环
 
