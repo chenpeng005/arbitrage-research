@@ -25,7 +25,7 @@ def _write_json(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def _set_trigger_research_status(
+def set_trigger_research_status(
     data_root: Path,
     task_id: str,
     status: str,
@@ -59,7 +59,7 @@ def run_one_path_research(
     work_dir = Path(descriptor["work_dir"])
     input_path = Path(descriptor["input_path"])
 
-    _set_trigger_research_status(data_root, task_id, "IN_PROGRESS")
+    set_trigger_research_status(data_root, task_id, "IN_PROGRESS")
 
     try:
         ai_result = run_ai_job(
@@ -91,7 +91,7 @@ def run_one_path_research(
             output["ledger"] = ledger
             output["status"] = "PASS"
         else:
-            _set_trigger_research_status(data_root, task_id, "PENDING")
+            set_trigger_research_status(data_root, task_id, "PENDING")
             output["status"] = ai_result.get("status") or "FAIL"
 
         output["completed_at"] = _now()
@@ -99,7 +99,7 @@ def run_one_path_research(
         return output
 
     except Exception as exc:
-        _set_trigger_research_status(data_root, task_id, "PENDING")
+        set_trigger_research_status(data_root, task_id, "PENDING")
         output = {
             "task_id": task_id,
             "status": "FAIL",
