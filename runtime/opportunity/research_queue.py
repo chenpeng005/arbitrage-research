@@ -21,8 +21,9 @@ def evidence_pack_sha256(data_root: Path, task_id: str) -> str | None:
 
     Runtime timestamps and App deployment metadata are intentionally excluded so
     rebuilding an identical Evidence Pack does not wake a held research task.
-    Knowledge commit remains included because a canonical rule change can
-    legitimately require re-research even when raw facts are unchanged.
+    Knowledge/App deployment metadata are intentionally excluded. Canonical
+    changes are governed separately; this fingerprint answers only whether the
+    Evidence Pack itself contains materially different research evidence.
     """
     path = data_root / "research_evidence" / f"{task_id}.json"
     if not path.exists():
@@ -35,7 +36,6 @@ def evidence_pack_sha256(data_root: Path, task_id: str) -> str | None:
         "bond_code": payload.get("bond_code"),
         "path_id": payload.get("path_id"),
         "market_cutoff": payload.get("market_cutoff"),
-        "knowledge_commit_sha": payload.get("knowledge_commit_sha"),
         "sources": payload.get("sources"),
         "facts": payload.get("facts"),
         "coverage": payload.get("coverage"),
