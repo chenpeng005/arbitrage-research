@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,6 +22,11 @@ def _read_json(path: Path) -> dict[str, Any]:
 def _write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _task_id_from_trigger(trigger_key: str) -> str:
+    digest = hashlib.sha256(trigger_key.encode("utf-8")).hexdigest()[:16]
+    return f"research_{digest}"
 
 
 def run_path_research_batch(
@@ -48,7 +54,7 @@ def run_path_research_batch(
 
     results: list[dict[str, Any]] = []
     for item in items:
-        task_id = str(item["task_id"])
+        task_id = _task_id_from_trigger(str(item["trigger_key"]))
         attempts: list[dict[str, Any]] = []
 
         first = run_one_path_research(
