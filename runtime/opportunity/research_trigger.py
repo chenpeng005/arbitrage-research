@@ -101,8 +101,8 @@ def _load_child_facts(
     )
 
 
-def _new_keep_episode(path_id: str, market_snapshot_id: str) -> str:
-    return f"{path_id}:{market_snapshot_id}"
+def _new_keep_episode(code: str, path_id: str, market_snapshot_id: str) -> str:
+    return f"{str(code).zfill(6)}:{path_id}:{market_snapshot_id}"
 
 
 def run_research_trigger(
@@ -175,7 +175,7 @@ def run_research_trigger(
 
             new_episode = prev is None or prev.get("economic_status") != "KEEP"
             keep_episode_id = (
-                _new_keep_episode(path_id, registry["market_snapshot_id"])
+                _new_keep_episode(code, path_id, registry["market_snapshot_id"])
                 if new_episode
                 else prev["keep_episode_id"]
             )
