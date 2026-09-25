@@ -21,14 +21,15 @@ function renderIngressRows() {
   }).join("") : `<tr><td colspan="9" class="muted">没有匹配的转债。</td></tr>`;
 }
 
-function renderIngress(result) {
+function renderIngress(result, focusResult = false) {
   ingressData = result;
   const overall = document.querySelector("#ingressOverall");
   overall.className = "overall warning";
-  overall.textContent = "市场输入已审计 · 合同待补";
+  overall.textContent = "第一步完成 · 等待合同数据";
   document.querySelector("#ingressMeta").textContent =
-    `运行 ${result.run_id}｜市场截面 ${result.market_cutoff}｜快照 ${result.market_snapshot_id}｜` +
-    `数据审计 ${result.audit.status}｜经济判断 ${result.discovery_status}`;
+    `本次已完成：${result.audit.market_rows} 只转债的市场数据获取与审计（市场截面 ${result.market_cutoff}）。` +
+    "当前停在：到期现金、回售和下修合同事实尚未获取，因此还没有开始逐路径经济机会判断。" +
+    "下一步：建设合同数据获取与审计。";
   document.querySelector("#ingressResult").classList.remove("hidden");
   document.querySelector("#ingressCounts").innerHTML = [
     ["市场数据已审计", result.audit.market_rows + " 只"],
@@ -37,11 +38,17 @@ function renderIngress(result) {
     ["下修条款与硬底价", "待获取与审计"]
   ].map(([label,value]) => `<article><small>${label}</small><strong>${value}</strong></article>`).join("");
   renderIngressRows();
+  const button = document.querySelector("#ingressRunBtn");
+  button.textContent = "第一步已完成 · 可重新运行";
+  if (focusResult) {
+    document.querySelector("#ingressResult").scrollIntoView({behavior: "smooth", block: "start"});
+  }
 }
 
 async function loadIngress(method, url) {
   const button = document.querySelector("#ingressRunBtn");
   button.disabled = true;
+  button.textContent = "正在获取并审计市场数据…";
   try {
     const response = await fetch(url, {method});
     if (!response.ok) {
@@ -51,7 +58,7 @@ async function loadIngress(method, url) {
       }
       throw new Error(await response.text());
     }
-    renderIngress(await response.json());
+    renderIngress(await response.json(), method === "POST");
   } catch (error) {
     const overall = document.querySelector("#ingressOverall");
     overall.className = "overall fail";
@@ -59,6 +66,7 @@ async function loadIngress(method, url) {
     document.querySelector("#ingressMeta").textContent = "市场数据接入失败：" + error.message;
   } finally {
     button.disabled = false;
+    if (!ingressData) button.textContent = "运行市场数据接入";
   }
 }
 
