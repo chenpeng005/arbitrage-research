@@ -212,6 +212,7 @@ def _path_preloaded_notice_candidates(
     for key in (
         "official_notice_candidate_index",
         "official_notice_behavior_index",
+        "official_contract_document_index",
     ):
         value = facts.get(key)
         if isinstance(value, list):
@@ -545,9 +546,10 @@ def _prefetch_priority(path_id: str, item: dict[str, Any]) -> tuple[int, str]:
         rank = {
             "NO_REVISION": 0,
             "REVISION_ACTION": 1,
-            "CONVERSION_PRICE_EVENT": 2,
-            "TRIGGER": 3,
-            "EXPECTED_TRIGGER": 4,
+            "CONTRACT_DOCUMENT": 2,
+            "CONVERSION_PRICE_EVENT": 3,
+            "TRIGGER": 4,
+            "EXPECTED_TRIGGER": 5,
         }.get(kind, 20)
     else:
         rank = 20
@@ -574,6 +576,12 @@ def _snippet_keywords(path_id: str, event_kind: str) -> list[str]:
             return ["授信", "借款", "融资", "额度", "担保"]
         return ["现金", "债务", "偿债", "融资"]
     if path_id == "DOWNWARD_REVISION":
+        if event_kind == "CONTRACT_DOCUMENT":
+            return [
+                "向下修正条款", "转股价格向下修正", "修正后的转股价格",
+                "最近一期经审计每股净资产", "股票面值", "二十个交易日",
+                "前一交易日", "股东大会",
+            ]
         return [
             "不向下修正", "向下修正", "转股价格", "董事会",
             "股东大会", "触发", "修正条款",
