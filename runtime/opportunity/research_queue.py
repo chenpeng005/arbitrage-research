@@ -108,3 +108,69 @@ def merge_hold_item(
             items[idx] = hold_item
             return
     items.append(hold_item)
+
+
+
+def restore_unresolved_ledger_to_pending(data_root: Path) -> dict[str, Any]:
+    """Rehydrate historical unresolved ledger entries into evidence HOLD queue."""
+    ledger_path = data_root / "registry" / "research_ledger.json"
+    pending_path = data_root / "registry" / "pending_research_tasks.json"
+    if not ledger_path.exists():
+        return {"restored": 0, "skipped": 0, "reason": "NO_LEDGER"}
+
+    ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+    pending = (
+        json.loads(pending_path.read_text(encoding="utf-8"))
+        if pending_path.exists()
+        else {"pending_tasks": []}
+    )
+
+    restored = 0
+    skipped = 0
+    for entry in ledger.get("results", {}).values():
+        status = str(entry.get("research_status") or "")
+        if status not in HOLD_STATUSES:
+            continue
+
+        task_id = str(entry.get("task_id") or "")
+        result_path = Path(str(entry.get("result_path") or ""))
+        task_path = data_root / "research_tasks" / f"{task_id}.json"
+        if not task_id or not task_path.exists() or not result_path.exists():
+            skipped += 1
+            continue
+
+        task = json.loads(task_path.read_text(encoding="utf-8"))
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        hold_item = make_hold_queue_item(
+            task=task,
+            result=result,
+            evidence_sha256=evidence_pack_sha256(data_root, task_id),
+            updated_at=entry.get("completed_at") or "",
+        )
+        before = len(pending.get("pending_tasks", []))
+        merge_hold_item(pending, hold_item)
+        after = len(pending.get("pending_tasks", []))
+        if after > before:
+            restored += 1
+        else:
+            restored += 1
+
+    pending["updated_at"] = (
+        max(
+            [
+                str(x.get("updated_at") or "")
+                for x in pending.get("pending_tasks", [])
+            ]
+            or [""]
+        )
+    )
+    pending_path.parent.mkdir(parents=True, exist_ok=True)
+    pending_path.write_text(
+        json.dumps(pending, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return {
+        "restored": restored,
+        "skipped": skipped,
+        "pending_total": len(pending.get("pending_tasks", [])),
+    }
