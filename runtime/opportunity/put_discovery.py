@@ -81,6 +81,19 @@ def run_put_discovery(
     _write_json(run_dir / "put_contract_facts.json", contract_facts)
     _write_json(run_dir / "put_economic_judgment.json", judgment)
     _write_json(run_dir / "put_discovery_result.json", result)
+    registry_pointer = data_root / "registry" / "latest_put_discovery.json"
+    _write_json(
+        registry_pointer,
+        {
+            "run_id": run_id,
+            "market_run_id": result["market_run_id"],
+            "market_snapshot_id": result["market_snapshot_id"],
+            "market_cutoff": result["market_cutoff"],
+            "status": result["status"],
+            "result_path": str(run_dir / "put_discovery_result.json"),
+        },
+    )
+
     _write_json(
         run_dir / "run_metadata.json",
         {
