@@ -49,11 +49,19 @@ Evidence Pack 中的结构化事实可直接作为预装证据，但要尊重口
 - announcement index 只是行为事件索引，不等于对发行人动机的判断；
 - Engineering 的摘要不是最终 AI Judgment。
 
-若 Path Canonical 要求的重大 Fact Spine 仍存在可从公开信息取得的 UNKNOWN-B，应优先用允许的正式公告工具继续取证。
+Evidence Pack 是默认研究起点。先尝试仅用预装事实完成 Path Research。
+
+只有当以下条件同时满足时，才允许调用正式公告工具：
+
+1. 当前确实存在会改变核心判断或 review_ready 的重大 UNKNOWN-B；
+2. Evidence Pack 没有闭合该 UNKNOWN-B；
+3. 预计通过一份或少量正式公告即可闭合。
+
+若 Path Canonical 要求的重大 Fact Spine 仍存在可从公开信息取得的 UNKNOWN-B，可用允许的正式公告工具继续取证。
 
 如果准备返回 `NEEDS_EVIDENCE` / `UNRESOLVED`，且仍存在“评级报告、定期报告、到期/回售/下修公告”等当前工具可检索的重大 UNKNOWN-B，则至少应先尝试一次针对性的 `path_evidence_search`；只有搜索确实无结果、抓取失败或证据仍不能闭合时，才保留 UNKNOWN-B。
 
-不要为了形式完整无限扩展搜索。只围绕当前 bond / stock / Path 的重大 UNKNOWN-B 下钻。
+工具轮数是硬预算，不应把“用满工具轮数”当成更高质量。不要为了形式完整无限扩展搜索，只围绕当前 bond / stock / Path 的重大 UNKNOWN-B 下钻。
 
 ## 4. 工具纪律
 
