@@ -152,11 +152,34 @@ Path Availability 是条件性数据需求，而不是全市场无条件深查�
 
 Controller 固定消费同一个 Discovery Market Ingress，并以“债券为容器、Path 状态独立”的结构写入 Economic Path Registry。
 
+### Engineering Research Trigger V1
+
+正式实现：
+
+- `runtime/opportunity/research_trigger.py`；
+- Edge-trigger：相同状态不重复发出研究任务；
+- 全局唯一 `keep_episode_id / trigger_key`；
+- 持久化 `research_trigger_state.json`；
+- 持久化 `pending_research_tasks.json`，区分“本轮新增任务”与“尚未完成任务”。
+
+2026-09-24 Economic Path Registry 正式验证：
+
+- Economic KEEP Path 总数 = 179；
+- 第一次 Trigger：new = 38 / pending = 38；
+- 同一 Registry 第二次：new = 0 / pending = 38；
+- pending 分布：
+  - MATURITY_CASH = 26；
+  - PUT = 1；
+  - DOWNWARD_REVISION = 11；
+- Runtime status = PASS。
+
+下修仅对现实事件状态 `临近触发 / 满足条件 / 待股东会` 唤醒研究；未进入和普通计数中继续只保留 Registry。
+
 ## 下一工程节点
 
-三条 Opportunity Path 的经济判断 Runtime 已全部打通。
+当前正式进入 **Path Research Runtime**。
 
-当前进入 **Economic Path Registry → Engineering Research Trigger**：在不改变各 Path `economic_status` 的前提下，为 KEEP Path 维护可观察事件状态并决定何时启动 Path Research。
+先检查三条 Path 的 Path Research Canonical 是否完整迁移；成熟旧知识优先迁移，不重新发明业务研究逻辑。
 
 ## 运行外循环
 
