@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import fcntl
-import hashlib
 import json
 import os
 import subprocess
@@ -14,6 +13,10 @@ from pathlib import Path
 from typing import Any
 
 from runtime.opportunity.path_research_runner import set_trigger_research_status
+from runtime.opportunity.research_queue import (
+    pending_item_is_runnable,
+    task_id_from_trigger,
+)
 
 
 def _now() -> str:
@@ -27,11 +30,6 @@ def _read_json(path: Path) -> dict[str, Any]:
 def _write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def _task_id_from_trigger(trigger_key: str) -> str:
-    digest = hashlib.sha256(trigger_key.encode("utf-8")).hexdigest()[:16]
-    return f"research_{digest}"
 
 
 def _run_one_with_wall_timeout(
@@ -151,10 +149,21 @@ def _run_path_research_batch_unlocked(
     wall_timeout_seconds: int = 180,
 ) -> dict[str, Any]:
     pending = _read_json(data_root / "registry" / "pending_research_tasks.json")
-    items = list(pending.get("pending_tasks", []))
+    all_items = list(pending.get("pending_tasks", []))
     if path_id:
-        items = [x for x in items if x.get("path_id") == path_id]
-    items = items[: max(0, int(limit))]
+        all_items = [x for x in all_items if x.get("path_id") == path_id]
+
+    runnable_items = []
+    held_items = []
+    for item in all_items:
+        runnable, queue_reason = pending_item_is_runnable(item, data_root)
+        enriched = {**item, "queue_reason": queue_reason}
+        if runnable:
+            runnable_items.append(enriched)
+        else:
+            held_items.append(enriched)
+
+    items = runnable_items[: max(0, int(limit))]
 
     batch_id = (
         datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -165,7 +174,7 @@ def _run_path_research_batch_unlocked(
 
     results: list[dict[str, Any]] = []
     for item in items:
-        task_id = _task_id_from_trigger(str(item["trigger_key"]))
+        task_id = task_id_from_trigger(str(item["trigger_key"]))
         attempts: list[dict[str, Any]] = []
 
         first = _run_one_with_wall_timeout(
@@ -221,6 +230,8 @@ def _run_path_research_batch_unlocked(
         "batch_id": batch_id,
         "unit": "PATH_RESEARCH_BATCH",
         "started_from_pending": len(pending.get("pending_tasks", [])),
+        "runnable_before_limit": len(runnable_items),
+        "held_waiting_evidence": len(held_items),
         "selected": len(items),
         "path_filter": path_id,
         "provider": provider_name,
@@ -239,6 +250,8 @@ def _run_path_research_batch_unlocked(
             "batch_id": batch_id,
             "status_counts": status_counts,
             "selected": len(items),
+            "runnable_before_limit": len(runnable_items),
+            "held_waiting_evidence": len(held_items),
             "remaining_pending": summary["remaining_pending"],
             "result_path": str(batch_dir / "batch_result.json"),
         },
