@@ -1,0 +1,467 @@
+{
+  "path_result_id": "pr_research_1d651a1710a9a46c",
+  "task_id": "research_1d651a1710a9a46c",
+  "trigger_key": "MATURITY_KEEP_ENTRY:110092:MATURITY_CASH:market-map-2026-09-24-20260924_234053:V2_GOLDEN_FINAL_20260926",
+  "bond_code": "110092",
+  "bond_name": "三房转债",
+  "path_id": "MATURITY_CASH",
+  "research_cutoff": "2026-09-24",
+  "path_research_canonical_path": "05 套利研究/AI-Engineering-Runtime/05_Path Knowledge/01_到期现金兑付/02_Path-Research.md",
+  "knowledge_commit_sha": "490a65611339ec153319f3a2b686d16e437b80a6",
+  "review_ready": true,
+  "research_status": "COMPLETED",
+  "summary": {
+    "core_conclusion": "三房转债（110092）原正常到期现金 Path 截至 2026-09-24 仍现实存在（无强赎、无回售触发、无重整受理），合同最大到期现金责任约 24.00 亿元（剩余规模 21.185 亿元 × 113.3 元/张），距合同到期日 2029-01-06 约 27.4 个月。但发行人支付稳定性判断为『风险较高』：合并口径货币资金仅 4.47 亿元且其中 2.85 亿元受限（受限占比约 63.8%），母公司口径货币资金仅 831.55 万元，2026H1 合并经营现金流 -3.17 亿元、现金及现金等价物净减少 1.09 亿元，同时已发生下属公司债务逾期、担保逾期累计 3.36 亿元、控股股东股份被轮候冻结、2025 年报被出具无法表示意见、股票被 *ST，外部再融资渠道受阻。这是一条『基本经济价差存在（C-P≈39.44 元/张）但兑现把握弱』的到期现金 Path，不能作为高稳定性现金锚。",
+    "why": [
+      "合同现金责任明确且刚性：剩余规模 21.185 亿元，到期兑付价 110 元/张（含最后一年利息），加上 2027-01-06、2028-01-06 两笔中间票息 1.5 元、1.8 元，单位剩余合同现金 113.3 元/张，最大到期现金责任约 24.00 亿元。",
+      "原到期 Path 仍存在：redeem_counter 0/15、无强赎信号，无回售触发，无重整/破产受理公告，合同到期日 2029-01-06 未被改写。",
+      "现有可支配流动性严重不足：2026H1 合并货币资金 4.47 亿元，其中受限 2.85 亿元（冻结存款、承兑/信用证/期货/外汇保证金），可自由动用部分约 1.62 亿元；母公司口径货币资金仅 831.55 万元，远不能覆盖 24.00 亿元责任。",
+      "内生现金在消耗而非积累：2026H1 合并经营现金流 -3.17 亿元，筹资现金流 +2.04 亿元，净现金流 -1.09 亿元，期末现金及现金等价物 1.62 亿元（较期初 2.71 亿元下降）。",
+      "硬信用事件已实质发生并持续：下属公司部分债务逾期、公司为下属公司担保逾期累计 3.36 亿元（占最近一期经审计净资产 6.96%）、控股股东及一致行动人股份被多轮轮候冻结、2025 年报无法表示意见、内控否定意见、股票 *ST，联合资信将主体及债项评级由 A+/稳定 下调至 A-/负面。",
+      "外部补洞能力受限：评级报告明确指出『外部再融资渠道受阻，流动性持续收紧』，且公司自身已出现债务违约，静态授信与股东支持均无已落实证据。"
+    ],
+    "economic_result": "相对 2026-09-24 债价 73.856 元，合同剩余现金 113.3 元/张对应静态价差约 39.44 元/张（约 53.4% 名义空间），经济 KEEP 成立。但该价差是对『2029-01-06 能否足额兑付』的补偿，而非无风险收益：在支付稳定性『风险较高』的前提下，价差应理解为高信用风险溢价，兑现依赖未来 27 个月内经营修复、外部融资恢复或股东/集团实质注资，当前均无已落实证据。",
+    "main_risks": [
+      "到期现金责任 24.00 亿元与可自由动用现金约 1.62 亿元之间存在数量级缺口，且缺口需在 27 个月内靠外部来源闭合。",
+      "经营现金流持续为负（2026H1 -3.17 亿元），若延续则现金储备进一步消耗。",
+      "债务逾期与担保逾期仍在滚动新增（2026-08-01 累计 3.07 亿元 → 2026-08-28 累计 3.36 亿元），存在向发行人主体债务蔓延、触发交叉违约或加速到期的风险。",
+      "控股股东股份被轮候冻结、*ST 与无法表示意见审计报告，使股权融资、银行新增授信、债券再融资渠道基本受阻。",
+      "关联方大额应收账款（2026H1 应收账款 36.81 亿元）回收风险高、坏账计提不足，可能进一步侵蚀流动性。"
+    ],
+    "next_focus": "下一现实更新节点：2026 年三季报（约 2026-10 月底）披露的货币资金、受限资金、经营现金流与逾期进展；以及 2027-01-06 首笔中间票息 1.5 元/张的兑付执行情况——这是对发行人现金支付纪律的第一次真实检验。"
+  },
+  "logic_chain": [
+    {
+      "step_id": "M1_CONTRACT_CASH",
+      "title": "合同现金责任：要付多少钱、什么时候付",
+      "question": "三房转债在正常到期路径下，发行人未来必须支付的合同现金总额与时间轴是什么？",
+      "state": "KNOWN",
+      "answer": "剩余规模 21.185 亿元，单位剩余合同现金 113.3 元/张（2027-01-06 票息 1.5 元 + 2028-01-06 票息 1.8 元 + 2029-01-06 到期赎回 110 元含最后一年利息），最大到期现金责任约 24.00 亿元。",
+      "facts": [
+        "合同到期日 2029-01-06，起息日 2023-01-06，票面 100 元，票息序列 0.3/0.5/1.0/1.5/1.8/2.0。",
+        "剩余中间票息：2027-01-06 付 1.5 元/张；2028-01-06 付 1.8 元/张。",
+        "到期赎回价 110 元/张（含最后一年利息），maturity_redemption_source=STRUCTURED_CLAUSE。",
+        "单位剩余合同现金 C=113.3 元/张；剩余规模 21.185 亿元；最大合同现金责任 24.002605 亿元。",
+        "转股期 2023-07-12 至 2029-01-05。"
+      ],
+      "reasoning": "合同条款与结构化 Contract Fact 已明确金额与日期，无需推测。以当前剩余规模全额持有至到期作为压力测试上限，不提前把尚未发生的未来转股当作确定资金来源，符合 Canonical 7.1『固定最大现金责任』纪律。",
+      "conclusion": "最大到期现金责任约 24.00 亿元，时间轴为 2027-01-06、2028-01-06 两笔小额票息与 2029-01-06 的 110 元/张集中兑付。",
+      "evidence_ids": [
+        "PRELOADED:REVISION_CONTRACT_FACT",
+        "PRELOADED:FINANCIAL_FIRST_LAYER"
+      ]
+    },
+    {
+      "step_id": "M2_PATH_EXISTS",
+      "title": "原到期现金 Path 是否仍真实存在",
+      "question": "截至 2026-09-24，是否存在强赎、回售触发、重整受理等改写或消灭原正常到期路径的事件？",
+      "state": "KNOWN",
+      "answer": "原正常到期 Path 仍存在：无强赎信号（redeem_counter 0/15），无回售触发，无重整/破产受理公告，合同到期日 2029-01-06 未被改写。",
+      "facts": [
+        "path_availability.status=READY，normal_maturity_path_available=true，reason=NO_ACTIVE_EARLY_REDEMPTION_SIGNAL。",
+        "redeem_status 为空，redeem_counter=0/15 | 30，last_trade_date=NaT。",
+        "Engineering Anchor：截至 2026-09-24 到期现金事件状态=T_GT_12M，合同到期日=2029-01-06，剩余期限 27.43 个月。",
+        "公告索引中无重整、破产受理、债券违约（针对三房转债本身）的公告。"
+      ],
+      "reasoning": "强赎会提前消灭到期现金责任，回售会改变现金时点，重整会改写债权。当前均无这些事件的正式公告，故原到期路径未被改写。注意：下属公司债务逾期与担保逾期属于信用恶化事实，但不等于三房转债本身违约或路径消失。",
+      "conclusion": "原正常到期现金 Path 截至 cutoff 仍真实存在，压力测试对象为 2029-01-06 的 24.00 亿元责任。",
+      "evidence_ids": [
+        "PRELOADED:PATH_AVAILABILITY",
+        "PRELOADED:ENGINEERING_ANCHOR"
+      ]
+    },
+    {
+      "step_id": "M3_LIQUIDITY",
+      "title": "现有可支配高流动资源能覆盖多少",
+      "question": "发行人当前真正可自由动用的高流动性资源有多少，相对 24.00 亿元责任覆盖程度如何？",
+      "state": "KNOWN",
+      "answer": "合并口径货币资金 4.47 亿元，其中受限 2.85 亿元，可自由动用约 1.62 亿元；母公司口径货币资金仅 831.55 万元。相对 24.00 亿元责任，覆盖度不足 7%，严重不足。",
+      "facts": [
+        "2026-06-30 合并货币资金 446,667,000.17 元（4.47 亿元），较期初 11.73 亿元下降 61.93%，主因信用证开证减少。",
+        "货币资金结构：库存现金 16.69 万元、银行存款 1.09 亿元、其他货币资金 3.16 亿元。",
+        "所有权受限资产中货币资金受限 284,941,705.63 元（2.85 亿元）：冻结存款 350.50 万元、银行承兑汇票保证金 2,431.96 万元、信用证保证金 24,240.66 万元、期货保证金 890.24 万元、外汇掉期保证金 488.76 万元、期权保证金等。",
+        "现金及现金等价物期末余额 161,725,294.54 元（1.62 亿元），期初 271,021,804.29 元。",
+        "母公司资产负债表货币资金仅 8,315,533.20 元（831.55 万元）。",
+        "scope=CONSOLIDATED，母公司口径现金未预装，本次已从半年报母公司报表核验。"
+      ],
+      "reasoning": "Canonical 明确禁止用账面货币资金替代自由可用现金，保证金、冻结资金不得机械计入。扣除受限后合并可自由动用约 1.62 亿元，且合并流动性不等于发行人可支配流动性——母公司口径仅 831.55 万元，说明大量现金沉淀在子公司且部分受限。",
+      "conclusion": "现有可支配高流动资源约 1.62 亿元（合并口径），相对 24.00 亿元责任覆盖度极低，第一层流动性无法覆盖。",
+      "evidence_ids": [
+        "PRELOADED:FINANCIAL_FIRST_LAYER",
+        "AN202608271828555738"
+      ]
+    },
+    {
+      "step_id": "M4_COMPETING_CASH",
+      "title": "到期前还有哪些刚性现金需求竞争同一现金",
+      "question": "在 2029-01-06 之前，有多少其他不可轻易延后的现金义务会与转债兑付争夺资金？",
+      "state": "MIXED",
+      "answer": "存在多重刚性现金竞争：已发生的下属公司债务逾期与担保逾期累计 3.36 亿元仍在滚动新增，短期债务规模庞大（现金短期债务比仅 0.17—0.34 倍），叠加 2027/2028 两笔中间票息，转债兑付并非唯一现金出口。",
+      "facts": [
+        "2026-08-28 公告：公司为下属公司及下属公司之间担保逾期累计 33,580.68 万元（3.36 亿元），占最近一期经审计净资产 6.96%；2026-08-01 时为 30,699.80 万元（3.07 亿元），一个月内新增 2,880.88 万元。",
+        "逾期明细：海伦石化欠重庆鈊渝金融租赁到期租金 853.18 万元、欠太平石化金融租赁到期租金 2,027.70 万元。",
+        "评级报告：现金短期债务比 2024 年 0.25、2025 年 0.34、2026Q1 0.17；流动比率 2024 年 104.91%、2025 年 88.80%、2026Q1 90.33%。",
+        "评级报告：公司已出现债务违约，或有负债风险大；三房巷集团、公司及下属子公司已经出现债务逾期。",
+        "2026H1 筹资活动现金流净额 +2.04 亿元，说明仍在依赖外部融资滚动。"
+      ],
+      "reasoning": "流动负债总额不能机械等同于到期前现金需求，但已公告的逾期与担保代偿是真实、已发生的刚性现金流出，且呈月度递增趋势。短期债务/现金比极低意味着任何一笔到期债务都可能挤占转债兑付资金。",
+      "conclusion": "到期前刚性现金竞争显著，转债兑付需与存量债务滚续、逾期处置、担保代偿共同争夺极其有限的现金。",
+      "evidence_ids": [
+        "AN202608271828555741",
+        "AN202606261824714680"
+      ]
+    },
+    {
+      "step_id": "M5_INTERNAL_CASH",
+      "title": "经营本身是在积累现金还是消耗现金",
+      "question": "发行人经营活动当前是净积累现金还是净消耗现金？",
+      "state": "KNOWN",
+      "answer": "经营在净消耗现金：2026H1 合并经营活动现金流净额 -3.17 亿元，现金及现金等价物净减少 1.09 亿元。",
+      "facts": [
+        "2026H1 合并经营活动现金流净额 -317,248,849.87 元（-3.17 亿元）。",
+        "2026H1 合并筹资活动现金流净额 +203,818,152.80 元（+2.04 亿元）。",
+        "2026H1 合并现金及现金等价物净增加额 -109,296,509.75 元（-1.09 亿元）。",
+        "期末现金及现金等价物 1.62 亿元，期初 2.71 亿元。",
+        "评级报告：2025 年营业利润率 -2.19%，净资产收益率 -18.34%，EBITDA -1.22 亿元，全部债务/EBITDA 为负；2026Q1 营业利润率 2.87% 但净资产收益率仍为负。",
+        "评级报告：2025 年行业供需失衡，瓶级聚酯切片和 PTA 销售价格同比下降，经营业绩显著下滑。"
+      ],
+      "reasoning": "Canonical 要求判断内部现金方向（明显积累/小幅积累/大致平衡/持续烧钱）。经营现金流为负、净现金流为负、现金余额下降，且亏损状态下 EBITDA 无法覆盖债务，方向明确为『持续烧钱』。筹资现金流为正说明现金维持依赖外部输血而非内生积累。",
+      "conclusion": "经营本身持续消耗现金，无法为 2029 年到期兑付积累资金，反而在侵蚀现有现金储备。",
+      "evidence_ids": [
+        "PRELOADED:FINANCIAL_FIRST_LAYER",
+        "AN202608271828555738",
+        "AN202606261824714680"
+      ]
+    },
+    {
+      "step_id": "M6_EXTERNAL_CLOSURE",
+      "title": "剩余缺口靠什么闭合，各来源走到什么落实阶段",
+      "question": "约 22 亿元以上的资金缺口，有哪些外部闭合来源，各自落实到什么阶段？",
+      "state": "MIXED",
+      "answer": "外部闭合来源均处于低确定性阶段：评级报告明确指出外部再融资渠道受阻；无已签署融资、无已落地资产出售、无已公告股东注资/专项借款；控股股东自身股份被冻结且已债务违约，支持能力存疑。",
+      "facts": [
+        "评级报告：『叠加或有负债风险大及一系列负面事件进一步导致外部再融资渠道受阻，流动性持续收紧，整体财务风险处于高位』。",
+        "评级报告：『公司已出现债务违约，再融资能力大幅下降』。",
+        "控股股东三房巷集团及一致行动人所持公司股份已被司法冻结，并多次被轮候冻结（2026-05-22、2026-07-03、2026-07-17、2026-07-30 公告）。",
+        "公告索引中 SUPPORT_OR_ASSET 类仅为『年度对外担保进展』，无增资、专项借款、资产出售回款类公告。",
+        "2026H1 筹资现金流 +2.04 亿元，说明仍有部分融资滚动，但规模远不足以覆盖 24 亿元责任。",
+        "半年报：『公司偿付可转债的资金主要来源于经营活动产生的现金流』——而经营现金流当前为负。"
+      ],
+      "reasoning": "Canonical 要求所有外部来源看落实阶段（想法→方案→审批→签约→条件满足→提款到账），且多种潜在来源不能机械相加。当前没有任何来源进入『签约/提款』阶段；控股股东自身信用受损，国有/集团支持线索不成立（三房巷集团为民营控股且已违约）。",
+      "conclusion": "外部缺口闭合来源未落实，主要依赖未来经营修复与融资环境改善，属高不确定性来源。",
+      "evidence_ids": [
+        "AN202606261824714680",
+        "AN202608271828555738",
+        "PRELOADED:NOTICE_INDEX"
+      ]
+    },
+    {
+      "step_id": "M7_HARD_CREDIT",
+      "title": "有没有硬信用事件破坏前面的闭合链",
+      "question": "是否存在债务逾期、冻结、重整、审计异常等硬信用事件，破坏现金闭合链？",
+      "state": "KNOWN",
+      "answer": "存在多项已发生的硬信用事件：下属公司债务逾期、担保逾期累计 3.36 亿元、控股股东股份被轮候冻结、2025 年报无法表示意见、内控否定意见、股票 *ST、评级下调至 A-/负面。",
+      "facts": [
+        "2026-08-28 担保逾期进展公告：累计担保逾期 33,580.68 万元，占最近一期经审计净资产 6.96%，一个月内新增 2,880.88 万元。",
+        "2026-08-28 下属公司部分债务逾期进展公告（HARD_CREDIT_EVENT）。",
+        "2026-07-30、2026-07-17、2026-07-03、2026-05-22 控股股东及一致行动人、回购专用账户股份被轮候冻结公告。",
+        "评级报告：会计师事务所对公司 2025 年财务报表出具无法表示意见的审计报告，对 2025 年内部控制出具否定意见，公司股票被实施退市风险警示并叠加其他风险警示，简称冠以 *ST。",
+        "评级报告：三房巷集团、公司及下属子公司已经出现债务逾期。",
+        "联合资信 2026-06-26 将主体及三房转债评级由 A+/稳定 下调至 A-/负面。"
+      ],
+      "reasoning": "Canonical 要求区分『当前信用机制受损』与『最终到期一定违约』。这些事件确实破坏了现有现金与融资来源的可靠性（银行抽贷、保证金占用、再融资受阻），但尚未出现三房转债本身违约或发行人被受理重整的公告，故原到期 Path 未被消灭，只是支付稳定性显著下降。",
+      "conclusion": "硬信用事件已实质发生并持续恶化，闭合链受损，但尚未消灭原到期现金 Path。",
+      "evidence_ids": [
+        "AN202608271828555741",
+        "AN202606261824714680",
+        "PRELOADED:NOTICE_INDEX"
+      ]
+    },
+    {
+      "step_id": "M8_PAYMENT_STABILITY",
+      "title": "把以上链条合起来形成支付稳定性 Judgment",
+      "question": "综合合同责任、流动性、现金竞争、内生现金、外部闭合与硬信用事件，这笔 24.00 亿元到期现金责任的支付稳定性如何？",
+      "state": "DERIVED",
+      "answer": "支付稳定性判断为『风险较高』：存在真实且巨大的资金缺口，主要闭合来源不可靠，且已发生重大信用破坏。",
+      "facts": [
+        "责任 24.00 亿元 vs 可自由动用现金约 1.62 亿元（合并口径），缺口约 22.4 亿元。",
+        "经营现金流 -3.17 亿元（2026H1），持续消耗。",
+        "担保逾期累计 3.36 亿元且滚动新增，短期债务/现金比 0.17—0.34。",
+        "外部再融资渠道受阻，无已落实外部来源。",
+        "评级 A-/负面，*ST，无法表示意见审计报告。",
+        "剩余期限 27.43 个月，距到期仍较远。"
+      ],
+      "reasoning": "按 Canonical 四档定义：『风险较高』= 临近到期仍有明显资金缺口、主要来源不可靠，或存在重大信用破坏。本案例缺口巨大、来源不可靠、信用破坏已发生，符合『风险较高』。同时 Canonical 明确：对于距离到期仍较远的对象，这表示当前不能把到期现金当作高稳定性现金锚，不等于预测最终一定违约。剩余 27.4 个月为经营修复、融资恢复、资产处置或转股留出时间窗口，故不判为『暂无法判断』。",
+      "conclusion": "支付稳定性=风险较高；原到期 Path 仍存在，但兑现把握弱，不能作为高稳定性现金锚。该判断与第一阶段 Economic KEEP（C-P≈39.44 元/张）是两个独立判断轴，不倒推修改经济状态。",
+      "evidence_ids": [
+        "PRELOADED:FINANCIAL_FIRST_LAYER",
+        "AN202606261824714680",
+        "AN202608271828555738",
+        "AN202608271828555741"
+      ]
+    }
+  ],
+  "fact_spine": {
+    "contract_cash_responsibility": {
+      "remaining_size_yi": 21.185,
+      "unit_remaining_contract_cash": 113.3,
+      "max_contract_cash_responsibility_yi": 24.002605,
+      "maturity_date": "2029-01-06",
+      "remaining_months": 27.43382821002485,
+      "intermediate_coupons": [
+        {
+          "payment_date": "2027-01-06",
+          "rate": 1.5
+        },
+        {
+          "payment_date": "2028-01-06",
+          "rate": 1.8
+        }
+      ],
+      "maturity_redemption_cash": 110.0,
+      "redemption_includes_final_interest": true
+    },
+    "path_availability": {
+      "normal_maturity_path_available": true,
+      "reason": "NO_ACTIVE_EARLY_REDEMPTION_SIGNAL",
+      "redeem_counter": "0/15 | 30",
+      "current_event_state": "T_GT_12M"
+    },
+    "liquidity": {
+      "scope": "CONSOLIDATED",
+      "money_funds_yi": 4.4666700017,
+      "restricted_money_funds_yi": 2.8494170563,
+      "free_money_funds_yi_approx": 1.6172529454,
+      "cash_and_cash_equivalents_yi": 1.6172529454,
+      "parent_money_funds_yi": 0.083155332,
+      "statement_date": "20260630"
+    },
+    "internal_cash": {
+      "operating_cash_flow_yi": -3.1724884987,
+      "financing_cash_flow_yi": 2.038181528,
+      "net_cash_flow_yi": -1.0929650975,
+      "direction": "持续消耗"
+    },
+    "competing_cash": {
+      "guarantee_overdue_cumulative_yi": 3.358068,
+      "guarantee_overdue_pct_of_net_assets": 6.96,
+      "cash_short_term_debt_ratio": [
+        0.25,
+        0.34,
+        0.17
+      ],
+      "current_ratio_pct": [
+        104.91,
+        88.8,
+        90.33
+      ]
+    },
+    "hard_credit_events": [
+      "下属公司部分债务逾期（2026-04-29 起多次进展公告）",
+      "公司为下属公司及下属公司之间担保逾期累计 3.36 亿元（2026-08-28）",
+      "控股股东及一致行动人股份被多轮轮候冻结（2026-05-22 / 07-03 / 07-17 / 07-30）",
+      "2025 年报无法表示意见、内控否定意见、股票 *ST",
+      "联合资信评级由 A+/稳定 下调至 A-/负面（2026-06-26）"
+    ],
+    "external_closure": {
+      "status": "未落实",
+      "evidence": "评级报告明确外部再融资渠道受阻；无已签署融资/资产出售/股东注资公告；控股股东自身已违约且股份被冻结"
+    },
+    "payment_stability": "风险较高"
+  },
+  "judgments": {
+    "payment_stability": {
+      "level": "风险较高",
+      "basis": "24.00 亿元责任 vs 约 1.62 亿元可自由动用现金，缺口约 22.4 亿元；经营现金流为负；担保逾期滚动新增；外部再融资受阻；评级 A-/负面、*ST、无法表示意见。",
+      "not_a_default_prediction": "剩余期限 27.4 个月，仍存在经营修复、融资恢复、资产处置或转股降低兑付规模的时间窗口；本判断不预测最终一定违约。"
+    },
+    "economic_vs_payment_separation": "第一阶段 Economic KEEP（C-P≈39.44 元/张）与支付稳定性『风险较高』是两个独立判断轴。信用差不能倒推修改经济状态，高风险应暴露给后续总流程。",
+    "hard_credit_interpretation": "已发生的逾期、冻结、审计异常确实破坏了当前现金与融资来源的可靠性，但尚未出现三房转债本身违约或发行人重整受理，故原到期 Path 未被消灭。",
+    "external_support": "控股股东三房巷集团为民营主体且自身已债务违约、股份被冻结，不存在国有/集团信用背书；无任何已落实的股东注资、专项借款或资产处置回款证据。",
+    "uncertainty": "发行人未来是否能够修复经营、恢复融资、处置资产或推动转股，属未来本质不可知事项（UNKNOWN-A），当前无法可靠判断。"
+  },
+  "key_evidence": [
+    {
+      "evidence_id": "PRELOADED:REVISION_CONTRACT_FACT",
+      "source_type": "structured_contract_fact",
+      "title": "三房转债合同条款与剩余现金责任（Contract Fact）",
+      "source_date": null,
+      "locator": "path_research_task.existing_path_facts.contract_fact",
+      "supports": [
+        "M1_CONTRACT_CASH",
+        "M2_PATH_EXISTS"
+      ],
+      "confidence": "high"
+    },
+    {
+      "evidence_id": "PRELOADED:FINANCIAL_FIRST_LAYER",
+      "source_type": "structured_financial_statement",
+      "title": "2026H1 合并口径财务第一层（货币资金/负债/现金流）",
+      "source_date": "2026-08-28",
+      "locator": "evidence_pack.facts.financial_first_layer",
+      "supports": [
+        "M3_LIQUIDITY",
+        "M5_INTERNAL_CASH",
+        "M8_PAYMENT_STABILITY"
+      ],
+      "confidence": "high"
+    },
+    {
+      "evidence_id": "PRELOADED:PATH_AVAILABILITY",
+      "source_type": "structured_path_fact",
+      "title": "三房转债 Path Availability（无强赎信号）",
+      "source_date": null,
+      "locator": "path_research_task.existing_path_facts.path_availability",
+      "supports": [
+        "M2_PATH_EXISTS"
+      ],
+      "confidence": "high"
+    },
+    {
+      "evidence_id": "PRELOADED:ENGINEERING_ANCHOR",
+      "source_type": "engineering_anchor",
+      "title": "Engineering 当前状态锚（T_GT_12M，到期日 2029-01-06）",
+      "source_date": "2026-09-24",
+      "locator": "path_research_task.engineering_anchor_statement",
+      "supports": [
+        "M2_PATH_EXISTS"
+      ],
+      "confidence": "high"
+    },
+    {
+      "evidence_id": "PRELOADED:NOTICE_INDEX",
+      "source_type": "official_announcement_index",
+      "title": "600370 正式公告候选索引（2025-01-01 至 2026-09-24）",
+      "source_date": "2026-09-24",
+      "locator": "evidence_pack.facts.official_notice_candidate_index",
+      "supports": [
+        "M4_COMPETING_CASH",
+        "M6_EXTERNAL_CLOSURE",
+        "M7_HARD_CREDIT"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "evidence_id": "AN202606261824714680",
+      "source_type": "eastmoney_announcement",
+      "title": "*ST三房:江苏三房巷聚材股份有限公司公开发行可转换公司债券2026年跟踪评级报告",
+      "source_date": "2026-06-27",
+      "locator": "https://data.eastmoney.com/notices/detail/600370/AN202606261824714680.html",
+      "supports": [
+        "M4_COMPETING_CASH",
+        "M5_INTERNAL_CASH",
+        "M6_EXTERNAL_CLOSURE",
+        "M7_HARD_CREDIT",
+        "M8_PAYMENT_STABILITY"
+      ],
+      "confidence": "high"
+    },
+    {
+      "evidence_id": "AN202608271828555738",
+      "source_type": "eastmoney_announcement",
+      "title": "*ST三房:江苏三房巷聚材股份有限公司2026年半年度报告",
+      "source_date": "2026-08-28",
+      "locator": "https://data.eastmoney.com/notices/detail/600370/AN202608271828555738.html",
+      "supports": [
+        "M3_LIQUIDITY",
+        "M5_INTERNAL_CASH",
+        "M6_EXTERNAL_CLOSURE"
+      ],
+      "confidence": "high"
+    },
+    {
+      "evidence_id": "AN202608271828555741",
+      "source_type": "eastmoney_announcement",
+      "title": "*ST三房:江苏三房巷聚材股份有限公司关于公司为下属公司及下属公司之间担保逾期的进展公告",
+      "source_date": "2026-08-28",
+      "locator": "https://data.eastmoney.com/notices/detail/600370/AN202608271828555741.html",
+      "supports": [
+        "M4_COMPETING_CASH",
+        "M7_HARD_CREDIT"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "unknown_a": [
+    "未来 27 个月内发行人经营能否修复、经营现金流能否转正。",
+    "未来银行授信、债务滚续、新增融资能否恢复。",
+    "未来是否会有股东/集团实质注资、专项借款或资产处置回款。",
+    "未来转股比例及最终到期实际兑付规模。",
+    "未来是否出现三房转债本身违约或发行人重整受理。"
+  ],
+  "unknown_b": [],
+  "key_risks": [
+    "24.00 亿元到期责任与约 1.62 亿元可自由动用现金之间的数量级缺口，需在 27 个月内靠外部来源闭合。",
+    "经营现金流持续为负（2026H1 -3.17 亿元），现金储备进一步消耗。",
+    "担保逾期与债务逾期滚动新增，存在向发行人主体债务蔓延、触发交叉违约或加速到期的风险。",
+    "控股股东股份被轮候冻结、*ST、无法表示意见审计报告，使股权与债权再融资渠道基本受阻。",
+    "关联方大额应收账款（2026H1 36.81 亿元）回收风险高、坏账计提不足，可能进一步侵蚀流动性。",
+    "受限货币资金占比高（2.85/4.47≈63.8%），账面现金的可动用性显著低于表面数字。"
+  ],
+  "failure_conditions": [
+    "经营现金流持续为负且现金及现金等价物余额继续下降，2027-01-06 首笔票息兑付出现延迟或展期。",
+    "担保逾期/债务逾期规模继续快速扩大，或出现三房转债本身付息违约。",
+    "银行抽贷、授信收缩或主要融资渠道进一步冻结，筹资现金流由正转负。",
+    "控股股东股份冻结升级为司法处置，或发行人被申请/受理重整、破产。",
+    "审计机构对后续定期报告继续出具无法表示意见或持续经营重大不确定性段落。"
+  ],
+  "next_update_nodes": [
+    {
+      "date": "2026-10-31",
+      "event": "2026 年三季报披露：货币资金、受限资金、经营现金流、逾期与担保进展"
+    },
+    {
+      "date": "2027-01-06",
+      "event": "首笔中间票息 1.5 元/张兑付执行情况（现金支付纪律首次真实检验）"
+    },
+    {
+      "date": "2027-04-30",
+      "event": "2026 年年度报告及审计意见类型（是否延续无法表示意见）"
+    },
+    {
+      "date": "2027-06-30",
+      "event": "2027 年跟踪评级报告（评级与展望是否进一步下调）"
+    },
+    {
+      "date": "2028-01-06",
+      "event": "第二笔中间票息 1.8 元/张兑付执行情况"
+    },
+    {
+      "date": "2029-01-06",
+      "event": "合同到期日，110 元/张集中兑付"
+    }
+  ],
+  "economic_status_at_research": "KEEP",
+  "engineering_anchor_reference": {
+    "current_event_state": "T_GT_12M",
+    "market_state": {
+      "current_bond_price": 73.856,
+      "current_stock_price": 1.47,
+      "current_conversion_price": 3.02,
+      "current_conversion_value": 48.67549668874173,
+      "remaining_months": 27.43382821002485,
+      "remaining_size": 21.185,
+      "maturity_date": "2029-01-06"
+    },
+    "anchor_statement": "截至市场截面 2026-09-24：当前到期现金事件状态=T_GT_12M；合同到期日=2029-01-06；剩余期限（月）=27.43382821002485。"
+  },
+  "economic_judgment_reference": {
+    "economic_registry_run_id": "20260925_134900_discovery_3c07d557",
+    "market_snapshot_id": "market-map-2026-09-24-20260924_234053",
+    "economic_judgment": {
+      "runtime_status": "CONNECTED",
+      "bond_code": "110092",
+      "bond_name": "三房转债",
+      "economic_status": "KEEP",
+      "reason": "POSITIVE_MATURITY_CASH_SPREAD",
+      "current_price_P": 73.856,
+      "remaining_contract_cash_C": 113.3,
+      "remaining_contract_cash_C_min": 113.3,
+      "remaining_contract_cash_C_max": 113.3,
+      "spread_C_minus_P": 39.444,
+      "spread_min": 39.444,
+      "spread_max": 39.444,
+      "path_availability_required": true
+    }
+  }
+}

@@ -1,0 +1,496 @@
+{
+  "path_result_id": "pr_research_4d41305024fb542f",
+  "task_id": "research_4d41305024fb542f",
+  "trigger_key": "PUT_KEEP_ENTRY:110092:PUT:market-map-2026-09-24-20260924_234053:V2_GOLDEN_20260926",
+  "bond_code": "110092",
+  "bond_name": "三房转债",
+  "path_id": "PUT",
+  "research_cutoff": "2026-09-24",
+  "path_research_canonical_path": "05 套利研究/AI-Engineering-Runtime/05_Path Knowledge/03_回售/03_Path-Research.md",
+  "knowledge_commit_sha": "490a65611339ec153319f3a2b686d16e437b80a6",
+  "review_ready": true,
+  "research_status": "COMPLETED",
+  "summary": {
+    "core_conclusion": "三房转债（110092）普通回售机制真实存在且尚未进入适用期：截至市场截面 2026-09-24，回售事件状态=BEFORE_PUT_WINDOW，普通回售窗口起点=2027-01-06，合同到期日=2029-01-06。当前债价 73.856 元相对回售参考现金 100 元存在约 26.14 元的合同价差，但该价差在 2027-01-06 之前不可执行；权利形成程度=条件性可能（尚未进入适用期，需在最后两个计息年度内出现连续 30 个交易日收盘价低于当期转股价 70%，即低于 2.114 元）。现金支付稳定性=风险较高：发行人已被实施退市风险警示（*ST）、2026 年跟踪评级由 A+/稳定 下调至 A-/负面、2025 年报被出具无法表示意见、控股股东股份被司法冻结、下属公司债务与担保逾期持续累积（截至 2026-08-28 累计担保逾期 3.358 亿元，占最近一期经审计净资产 6.96%），合并口径货币资金 4.47 亿元中受限 2.85 亿元、期末现金及现金等价物仅 1.62 亿元，而 100% 行权压力上限为 21.185 亿元。因此这是一条“权利尚未形成、价差真实存在、但兑现稳定性弱”的远期回售路径。",
+    "why": [
+      "普通回售条款真实存在且机制仍可用：条款规定在最后两个计息年度，正股连续 30 个交易日收盘价低于当期转股价 70% 时持有人可按面值加当期应计利息回售；Engineering Anchor 已确定普通回售窗口起点=2027-01-06，当前状态=BEFORE_PUT_WINDOW。",
+      "当前价差显著但不可立即执行：P=73.856，回售参考现金=100，价差约 26.14 元；但权利须待 2027-01-06 进入最后两个计息年度后才可能形成，且需满足连续 30 个交易日触发条件。",
+      "触发条件在价格上已具备现实基础：S=1.47，K=3.02，触发线=K×70%=2.114 元，S 已显著低于触发线；但计数须从 2027-01-06 起重新累计，且任何下修都会重置计数。",
+      "发行人行为显示持续“不下修”倾向：2025-03 至 2026-07 共 5 轮预计触发提示，均以“不向下修正”结束，历史下修 0 次；说明公司当前不愿通过下修改变转股价，回售触发线因此维持在 2.114 元。",
+      "兑现稳定性弱：2026 年跟踪评级 A-/负面，2025 年报无法表示意见，*ST，控股股东股份被司法冻结，下属公司债务与担保逾期持续累积；合并货币资金 4.47 亿元中受限 2.85 亿元，期末现金及现金等价物仅 1.62 亿元，相对 100% 行权压力 21.185 亿元覆盖严重不足。",
+      "回售压力上限远大于现有可支配资源：30%/50%/80%/100% 行权对应现金压力 6.36/10.59/16.95/21.19 亿元，即便按 30% 低档也超过公司可自由动用现金规模。"
+    ],
+    "economic_result": "相对当前价 73.856 元，若回售权最终形成并按 100 元（面值+当期应计利息，实际略高于 100）执行，名义合同价差约 26.14 元/张。但该经济结果在 2027-01-06 之前不可执行，且兑现依赖发行人届时能否支付集中回售现金；在弱信用与高逾期背景下，应视为“高名义价差 + 低兑现确定性”的远期期权型机会，而非无风险套利。",
+    "main_risks": [
+      "权利形成风险：2027-01-06 前不进入适用期，且进入后需连续 30 个交易日满足触发条件；若期间发生下修，计数将从新转股价生效后重新计算。",
+      "支付稳定性风险：发行人已 *ST、评级 A-/负面、2025 年报无法表示意见、控股股东股份被冻结、债务与担保逾期持续累积，集中回售现金支付能力存疑。",
+      "下修改写风险：若未来公司实施下修，回售触发线将下移、计数重置，可能推迟甚至消除回售权形成。",
+      "退市与信用事件风险：*ST 状态下若进一步恶化（退市、重整、债务违约扩大），可能实质破坏回售兑现链。",
+      "时间价值风险：距最早可形成权利约 3.4 个月（至 2027-01-06），距合同到期 2029-01-06 尚有约 27.4 个月，期间不确定性高。"
+    ],
+    "next_focus": "2027-01-06 普通回售窗口起点：确认是否进入最后两个计息年度、触发计数是否开始累计、当期转股价是否仍为 3.02 元；同时跟踪 2026 年报/2027 跟踪评级、控股股东股份冻结与债务逾期进展、是否出现新的下修董事会公告。"
+  },
+  "logic_chain": [
+    {
+      "step_id": "P1_LEGAL_TIME",
+      "title": "法律与时间资格",
+      "question": "普通回售条款是否真实存在？适用期起止如何？当前是否已进入适用期？",
+      "state": "KNOWN",
+      "answer": "普通回售条款真实存在且机制仍可用；适用期为最后两个计息年度，Engineering Anchor 已确定普通回售窗口起点=2027-01-06，合同到期日=2029-01-06；截至 2026-09-24 状态=BEFORE_PUT_WINDOW，尚未进入适用期。",
+      "facts": [
+        "合同条款：在本次发行的可转债最后两个计息年度，当公司股票在任何连续三十个交易日的收盘价格低于当期转股价格的70%时，持有人有权按债券面值加上当期应计利息回售给公司。",
+        "Engineering Anchor：截至市场截面 2026-09-24，当前回售事件状态=BEFORE_PUT_WINDOW；普通回售机制可用=True；普通回售窗口起点=2027-01-06；合同到期日=2029-01-06。",
+        "existing_path_facts.contract_fact：ordinary_put_clause_exists=true，put_mechanism_still_available=true，reason=FUTURE_ORDINARY_PUT_WINDOW_REMAINS，value_date=2023-01-06。",
+        "附加回售条款存在：若募集资金用途发生重大变化并被认定为改变用途，持有人享有一次附加回售权。"
+      ],
+      "reasoning": "条款文本与 Engineering 冻结的合同事实一致，均指向普通回售适用期为最后两个计息年度。以合同到期日 2029-01-06 倒推，最后两个计息年度起点为 2027-01-06，与 Engineering Anchor 给出的窗口起点一致。当前日期 2026-09-24 早于该起点，故尚未进入适用期，权利不可能在 2027-01-06 之前形成。",
+      "conclusion": "普通回售机制真实存在且未被消灭；最早可能开始累计有效触发状态的日期为 2027-01-06；当前阶段=权利尚未形成（BEFORE_PUT_WINDOW）。",
+      "evidence_ids": [
+        "PRELOADED:PUT_RUNTIME_FACTS",
+        "PRELOADED:REVISION_CONTRACT_FACT"
+      ]
+    },
+    {
+      "step_id": "P2_TRIGGER_STATE",
+      "title": "触发条件与当前计数状态",
+      "question": "当前转股价、回售触发线、正股价格与计数状态如何？最早何时可能形成权利？",
+      "state": "MIXED",
+      "answer": "当前 K=3.02 元，回售触发线=K×70%=2.114 元，S=1.47 元已显著低于触发线；但适用期尚未开始，计数须自 2027-01-06 起累计，当前有效计数为 0，尚需连续 30 个交易日满足条件，最早可能形成权利的日期不早于 2027-01-06 之后的第 30 个交易日。",
+      "facts": [
+        "market_state：current_stock_price=1.47，current_conversion_price=3.02，current_conversion_value=48.6755。",
+        "回售触发线=3.02×70%=2.114 元；S=1.47 元 < 2.114 元，价格条件在数值上已满足。",
+        "Engineering Anchor：当前回售事件状态=BEFORE_PUT_WINDOW，普通回售窗口起点=2027-01-06。",
+        "条款规定：若出现转股价格向下修正，连续三十个交易日须从转股价格调整之后的第一个交易日起重新计算。",
+        "Evidence Pack 未预装当前触发计数（missing_or_deferred 中列明 current_put_trigger_count_if_not_structurally_available）。"
+      ],
+      "reasoning": "价格条件（S<K×70%）在数值上已满足，但由于尚未进入最后两个计息年度，该状态不能计入有效触发计数。计数只能在 2027-01-06 之后开始累计，且需连续 30 个交易日。因此当前权利形成程度为“条件性可能”，而非“接近形成”。",
+      "conclusion": "触发价格条件已具备现实基础，但时间资格未到，当前有效计数=0；最早可能形成权利不早于 2027-01-06 起连续 30 个交易日满足条件之后。",
+      "evidence_ids": [
+        "PRELOADED:PUT_RUNTIME_FACTS",
+        "PRELOADED:REVISION_CONTRACT_FACT"
+      ]
+    },
+    {
+      "step_id": "P3_REVISION_INTERACTION",
+      "title": "下修与转股价调整对回售的改写",
+      "question": "前方下修或转股价调整会如何改变回售触发线与有效计数？",
+      "state": "KNOWN",
+      "answer": "下修会同时下移回售触发线并重置连续 30 个交易日计数；发行人 2025-03 至 2026-07 共 5 轮预计触发提示均以“不向下修正”结束，历史下修 0 次，当前转股价维持 3.02 元，回售触发线维持 2.114 元。",
+      "facts": [
+        "条款规定：如果出现转股价格向下修正，连续三十个交易日须从转股价格调整之后的第一个交易日起重新计算。",
+        "cross_path_revision.contract_fact：revision_event_state=未进入，revision_count=--，historical_revision=0 次/成功 0，reset_start=2026-10-26，source_conversion_price=3.02。",
+        "official_notice_behavior_index：2025-03-28、2025-07-18、2025-11-20、2026-03-13、2026-07-17 五次“预计满足转股价格修正条件的提示性公告”，对应 2025-04-04、2025-07-25、2025-11-27、2026-04-03、2026-07-24 五次“不向下修正”公告。",
+        "最近一次不下修公告日期为 2026-07-24，标题为“*ST三房:江苏三房巷聚材股份有限公司关于不向下修正‘三房转债’转股价格的公告”。"
+      ],
+      "reasoning": "下修是回售路径的关键状态改写器：若下修，触发线随 K 下移，且计数重置，可能推迟或消除回售权形成；若不下修，触发线维持 2.114 元，S=1.47 元持续低于该线，一旦进入适用期即具备累计条件。发行人连续 5 轮选择不下修，说明当前治理倾向是维持现有转股价，而非通过下修降低回售压力。",
+      "conclusion": "当前转股价 3.02 元与触发线 2.114 元维持不变；未来若发生下修，将改写触发线与计数，属于需持续跟踪的状态更新节点；本轮已知结果为“不下修”，但剩余生命周期内仍可能重新进入下修程序。",
+      "evidence_ids": [
+        "PRELOADED:REVISION_CONTRACT_FACT",
+        "PRELOADED:REVISION_NOTICE_01",
+        "PRELOADED:REVISION_NOTICE_02",
+        "PRELOADED:REVISION_NOTICE_03",
+        "PRELOADED:REVISION_NOTICE_04",
+        "PRELOADED:REVISION_NOTICE_05"
+      ]
+    },
+    {
+      "step_id": "P4_CONTRACT_CASH",
+      "title": "形成权利后的合同现金结果",
+      "question": "若回售权形成，合同现金是多少？相对当前价空间多大？",
+      "state": "KNOWN",
+      "answer": "回售价=债券面值 100 元 + 当期应计利息；相对当前价 73.856 元，名义合同价差约 26.14 元/张（约 35.4%）。",
+      "facts": [
+        "economic_judgment：current_price_P=73.856，put_reference=100.0，spread=26.144。",
+        "条款：回售价格为债券面值加上当期应计利息。",
+        "put_exercise_pressure_scenarios：put_reference_cash_per_100=100.0，remaining_size_yi=21.185。",
+        "cross_path_maturity.contract_fact：remaining_contract_cash_C=113.3（含 2027-01-06 付息 1.5、2028-01-06 付息 1.8、到期赎回 110.0）。"
+      ],
+      "reasoning": "回售参考现金 100 元为保守口径（不含应计利息），实际回售价略高于 100 元。相对当前价 73.856 元，价差约 26.14 元，是 Economic KEEP 的直接来源。但该现金结果只有在权利形成且持有人申报回售后才可实现，属于条件性合同现金。",
+      "conclusion": "合同回售现金约 100 元/张（面值+应计利息），相对当前价名义价差约 26.14 元；该结果条件性成立，取决于权利形成与发行人支付。",
+      "evidence_ids": [
+        "PRELOADED:PUT_RUNTIME_FACTS",
+        "PRELOADED:PUT_PRESSURE_SCENARIOS",
+        "PRELOADED:MATURITY_CONTRACT_FACT"
+      ]
+    },
+    {
+      "step_id": "P5_EXERCISE_PRESSURE",
+      "title": "现实行权与集中现金压力",
+      "question": "若权利形成，不同行权比例下的集中现金压力有多大？",
+      "state": "DERIVED",
+      "answer": "按剩余规模 21.185 亿元与回售参考现金 100 元/张计算，30%/50%/80%/100% 行权对应现金压力分别为 6.36/10.59/16.95/21.19 亿元；即便按 30% 低档，也超过公司可自由动用现金规模。",
+      "facts": [
+        "PRELOADED:PUT_PRESSURE_SCENARIOS：remaining_size_yi=21.185，put_reference_cash_per_100=100.0。",
+        "30% 行权：cash_pressure_yi=6.3555。",
+        "50% 行权：cash_pressure_yi=10.5925。",
+        "80% 行权：cash_pressure_yi=16.948。",
+        "100% 行权：cash_pressure_yi=21.185。",
+        "当前债价 73.856 元显著低于回售价 100 元，若权利形成，回售对持有人具有明显吸引力，实际行权比例可能偏高。"
+      ],
+      "reasoning": "回售价 100 元相对市场价 73.856 元有约 26 元价差，理性持有人有较强行权动机，因此不能机械假设低行权率。弱信用主体应同时做高比例/接近全额行权的压力上限测试。四档场景显示，即使 30% 行权也需约 6.36 亿元现金，而公司可自由动用现金远低于此。",
+      "conclusion": "回售集中现金压力在 6.36—21.19 亿元区间；由于价差显著，实际行权比例可能偏高，压力测试应以中高档为主要参考。",
+      "evidence_ids": [
+        "PRELOADED:PUT_PRESSURE_SCENARIOS",
+        "PRELOADED:PUT_RUNTIME_FACTS"
+      ]
+    },
+    {
+      "step_id": "P6_PAYMENT_STABILITY",
+      "title": "形成权利后的支付稳定性",
+      "question": "若回售权形成并大量行权，公司能否正常支付？",
+      "state": "MIXED",
+      "answer": "支付稳定性=风险较高。合并口径货币资金 4.47 亿元中受限 2.85 亿元，期末现金及现金等价物仅 1.62 亿元，母公司货币资金仅 831.55 万元；而 30% 行权即需 6.36 亿元，100% 行权需 21.19 亿元，现有可支配资源覆盖严重不足。",
+      "facts": [
+        "financial_first_layer（CONSOLIDATED，2026-06-30）：money_funds_yi=4.4667，total_liabilities_yi=111.75，asset_liability_ratio_pct=68.40，operating_cash_flow_yi=-3.1725，financing_cash_flow_yi=2.0382，net_cash_flow_yi=-1.0930。",
+        "2026 年半年报：货币资金期末 446,667,000.17 元，其中受限货币资金 284,941,705.63 元（含冻结银行存款 3,504,950.55 元、银行承兑汇票保证金 24,319,627.11 元、信用证保证金 242,406,604.34 元等）；期末现金及现金等价物余额 161,725,294.54 元。",
+        "2026 年半年报母公司资产负债表：母公司货币资金仅 8,315,533.20 元。",
+        "2026 年跟踪评级报告（联合资信，2026-06-26）：主体及三房转债评级由 A+/稳定 下调至 A-/负面；指出货币资金受限占比高、关联应收账款回收风险很高、坏账准备计提不足、外部再融资渠道受阻、流动性持续收紧、整体财务风险处于高位。",
+        "2026 年跟踪评级报告：截至 2026-06-07 三房转债余额 21.19 亿元，多数债券未完成转股；公司 EBITDA 无法对债券余额形成覆盖。",
+        "2026-08-28 担保逾期进展公告：公司为下属公司及下属公司之间担保的共计 33,580.68 万元债务未能到期偿还，占最近一期经审计净资产的 6.96%；较 2026-08-01 的 30,699.80 万元进一步增加。",
+        "2026 年半年报：2025 年财务报表被出具无法表示意见的审计报告，内部控制被出具否定意见，公司股票被实施退市风险警示（*ST）。",
+        "2026 年半年报：三房转债信用等级由 A+ 下调为 A-，评级展望负面；公司偿付可转债资金主要来源于经营活动现金流。"
+      ],
+      "reasoning": "支付稳定性判断需闭合“可支配高流动资源 vs 集中现金责任”链条。合并货币资金 4.47 亿元中 2.85 亿元受限，可自由动用部分有限；期末现金及现金等价物仅 1.62 亿元，母公司层面仅 831.55 万元。经营现金流为负（-3.17 亿元），融资现金流为正（+2.04 亿元）但评级报告明确指出外部再融资渠道受阻。同时存在持续累积的债务与担保逾期、控股股东股份冻结、*ST 等硬信用事件。相对 6.36—21.19 亿元的回售压力，现有资源覆盖严重不足，且缺乏已落实的补洞来源。",
+      "conclusion": "现金支付稳定性=风险较高；权利形成程度与支付稳定性必须分开表达——即使权利形成，集中回售现金的兑现存在实质不确定性。",
+      "evidence_ids": [
+        "PRELOADED:FINANCIAL_FIRST_LAYER",
+        "AN202608271828555738",
+        "AN202606261824714680",
+        "AN202608271828555741"
+      ]
+    },
+    {
+      "step_id": "P7_PATH_JUDGMENT",
+      "title": "回售路径综合判断",
+      "question": "把权利形成 × 合同价差 × 支付风险 × 状态改写合起来，这条路径当前是什么？",
+      "state": "MIXED",
+      "answer": "这是一条“权利尚未形成、名义价差显著、兑现稳定性弱”的远期回售路径。经济 KEEP 成立（P=73.856 相对回售参考 100 元有约 26.14 元价差），但权利最早须待 2027-01-06 进入适用期后才可能形成，且支付稳定性为风险较高。",
+      "facts": [
+        "权利形成程度：条件性可能（BEFORE_PUT_WINDOW，窗口起点 2027-01-06，需连续 30 个交易日 S<K×70%=2.114 元）。",
+        "合同价差：P=73.856 vs 回售参考 100，spread=26.144。",
+        "支付稳定性：风险较高（受限货币资金 2.85 亿元、期末现金及现金等价物 1.62 亿元 vs 30% 行权压力 6.36 亿元）。",
+        "状态改写：5 轮不下修，当前 K=3.02 维持；未来下修将重置计数并下移触发线。",
+        "硬信用事件：*ST、评级 A-/负面、2025 年报无法表示意见、控股股东股份被司法冻结、担保逾期累计 3.358 亿元。"
+      ],
+      "reasoning": "回售路径的经济性来自合同价差，但该价差的可实现性受两个独立条件约束：一是权利能否形成（时间+触发+下修改写），二是形成后能否兑现（支付稳定性）。当前两个条件均未闭合：权利尚未形成，支付稳定性弱。因此不能把 26.14 元价差当作已实现收益，也不能因支付风险高就删除仍现实存在的回售机制。",
+      "conclusion": "路径定性：远期、条件性、弱兑现的回售机会；Economic KEEP 保留，权利形成程度=条件性可能，现金支付稳定性=风险较高；下一关键节点为 2027-01-06 回售窗口起点。",
+      "evidence_ids": [
+        "PRELOADED:PUT_RUNTIME_FACTS",
+        "PRELOADED:PUT_PRESSURE_SCENARIOS",
+        "PRELOADED:FINANCIAL_FIRST_LAYER",
+        "AN202608271828555738",
+        "AN202606261824714680",
+        "AN202608271828555741"
+      ]
+    }
+  ],
+  "fact_spine": {
+    "legal_time": {
+      "ordinary_put_clause_exists": true,
+      "put_mechanism_still_available": true,
+      "put_window_start": "2027-01-06",
+      "contract_maturity_date": "2029-01-06",
+      "current_event_state": "BEFORE_PUT_WINDOW",
+      "additional_put_clause_exists": true
+    },
+    "trigger_state": {
+      "current_conversion_price": 3.02,
+      "put_trigger_line": 2.114,
+      "current_stock_price": 1.47,
+      "price_condition_met": true,
+      "effective_trigger_count": 0,
+      "minimum_days_needed": 30,
+      "earliest_right_formation": "不早于 2027-01-06 起连续 30 个交易日满足条件之后"
+    },
+    "revision_interaction": {
+      "revision_event_state": "未进入",
+      "revision_count": "--",
+      "historical_revision": "0 次 / 成功 0",
+      "reset_start": "2026-10-26",
+      "no_revision_rounds_observed": 5,
+      "latest_no_revision_notice_date": "2026-07-24"
+    },
+    "contract_cash": {
+      "put_reference_cash_per_100": 100.0,
+      "current_price": 73.856,
+      "nominal_spread": 26.144,
+      "remaining_size_yi": 21.185
+    },
+    "exercise_pressure": {
+      "scenarios_yi": {
+        "30pct": 6.3555,
+        "50pct": 10.5925,
+        "80pct": 16.948,
+        "100pct": 21.185
+      }
+    },
+    "payment_stability": {
+      "consolidated_money_funds_yi": 4.4667,
+      "restricted_money_funds_yi": 2.8494,
+      "cash_and_cash_equivalents_yi": 1.6173,
+      "parent_money_funds_yi": 0.0832,
+      "operating_cash_flow_yi": -3.1725,
+      "financing_cash_flow_yi": 2.0382,
+      "asset_liability_ratio_pct": 68.4,
+      "structured_rating": "A-",
+      "rating_outlook": "负面",
+      "guarantee_overdue_yi": 3.3581,
+      "guarantee_overdue_pct_of_nav": 6.96,
+      "st_status": true,
+      "audit_opinion_2025": "无法表示意见",
+      "controlling_shareholder_shares_frozen": true
+    }
+  },
+  "judgments": {
+    "right_formation_degree": {
+      "value": "条件性可能",
+      "basis": "尚未进入最后两个计息年度（窗口起点 2027-01-06）；价格条件已满足（S=1.47 < 2.114），但计数须自窗口起点起累计，且下修会重置计数。",
+      "confidence": "高"
+    },
+    "cash_payment_stability": {
+      "value": "风险较高",
+      "basis": "受限货币资金 2.85 亿元、期末现金及现金等价物 1.62 亿元、母公司货币资金 831.55 万元，相对 30% 行权压力 6.36 亿元已不足；叠加 *ST、评级 A-/负面、2025 年报无法表示意见、控股股东股份冻结、担保逾期累计 3.358 亿元。",
+      "confidence": "中高"
+    },
+    "issuer_behavior_interpretation": {
+      "value": "持续不下修，倾向维持现有转股价",
+      "basis": "2025-03 至 2026-07 共 5 轮预计触发提示均以不向下修正结束，历史下修 0 次。",
+      "counter_evidence": "不下修可能并非主动选择，而是受净资产/面值等硬底价约束或治理僵局限制；本轮不下修不代表剩余生命周期内不会重新进入下修程序。",
+      "confidence": "中"
+    },
+    "economic_keep_preserved": {
+      "value": true,
+      "basis": "P=73.856 相对回售参考 100 元存在约 26.14 元价差，回售机制真实存在且未被消灭；本步骤不重新判断 Economic KEEP。",
+      "confidence": "高"
+    },
+    "uncertainty_notes": [
+      "发行人真实动机无法直接观测，不下修行为可能同时受硬底价约束、治理僵局与融资谈判影响。",
+      "实际行权比例本质不可知，取决于未来债价、转股价值与公司事件管理。",
+      "未来是否下修、下修深度、最终新 K 均属未来事件，保留为 UNKNOWN-A。"
+    ]
+  },
+  "key_evidence": [
+    {
+      "evidence_id": "PRELOADED:PUT_RUNTIME_FACTS",
+      "source_type": "runtime_contract_fact",
+      "title": "三房转债普通回售合同事实与当前任务状态",
+      "source_date": "2026-09-24",
+      "locator": "path_research_task.existing_path_facts.contract_fact / engineering_anchor_statement",
+      "supports": [
+        "P1_LEGAL_TIME",
+        "P2_TRIGGER_STATE",
+        "P4_CONTRACT_CASH"
+      ],
+      "confidence": "高"
+    },
+    {
+      "evidence_id": "PRELOADED:PUT_PRESSURE_SCENARIOS",
+      "source_type": "engineering_deterministic_scenario",
+      "title": "回售行权压力四档场景（30%/50%/80%/100%）",
+      "source_date": "2026-09-24",
+      "locator": "evidence_pack.facts.put_exercise_pressure_scenarios",
+      "supports": [
+        "P5_EXERCISE_PRESSURE",
+        "P6_PAYMENT_STABILITY"
+      ],
+      "confidence": "高"
+    },
+    {
+      "evidence_id": "PRELOADED:FINANCIAL_FIRST_LAYER",
+      "source_type": "bulk_financial_statement",
+      "title": "2026 年半年度合并口径财务第一层（货币资金/负债率/现金流）",
+      "source_date": "2026-06-30",
+      "locator": "evidence_pack.facts.financial_first_layer",
+      "supports": [
+        "P6_PAYMENT_STABILITY"
+      ],
+      "confidence": "中高（合并口径，非母公司自由可用现金）"
+    },
+    {
+      "evidence_id": "PRELOADED:REVISION_CONTRACT_FACT",
+      "source_type": "runtime_contract_fact",
+      "title": "三房转债下修合同事实（事件状态/计数/历史下修）",
+      "source_date": "2026-09-24",
+      "locator": "evidence_pack.facts.cross_path_revision.contract_fact",
+      "supports": [
+        "P2_TRIGGER_STATE",
+        "P3_REVISION_INTERACTION"
+      ],
+      "confidence": "高"
+    },
+    {
+      "evidence_id": "PRELOADED:REVISION_NOTICE_01",
+      "source_type": "official_announcement_index",
+      "title": "关于不向下修正“三房转债”转股价格的公告（2025-04-04）",
+      "source_date": "2025-04-04",
+      "locator": "https://data.eastmoney.com/notices/detail/600370/AN202504031650850395.html",
+      "supports": [
+        "P3_REVISION_INTERACTION"
+      ],
+      "confidence": "高"
+    },
+    {
+      "evidence_id": "PRELOADED:REVISION_NOTICE_02",
+      "source_type": "official_announcement_index",
+      "title": "关于不向下修正“三房转债”转股价格的公告（2025-07-25）",
+      "source_date": "2025-07-25",
+      "locator": "https://data.eastmoney.com/notices/detail/600370/AN202507241714801498.html",
+      "supports": [
+        "P3_REVISION_INTERACTION"
+      ],
+      "confidence": "高"
+    },
+    {
+      "evidence_id": "PRELOADED:REVISION_NOTICE_03",
+      "source_type": "official_announcement_index",
+      "title": "关于不向下修正“三房转债”转股价格的公告（2025-11-27）",
+      "source_date": "2025-11-27",
+      "locator": "https://data.eastmoney.com/notices/detail/600370/AN202511261788726640.html",
+      "supports": [
+        "P3_REVISION_INTERACTION"
+      ],
+      "confidence": "高"
+    },
+    {
+      "evidence_id": "PRELOADED:REVISION_NOTICE_04",
+      "source_type": "official_announcement_index",
+      "title": "关于不向下修正“三房转债”转股价格的公告（2026-04-03）",
+      "source_date": "2026-04-03",
+      "locator": "https://data.eastmoney.com/notices/detail/600370/AN202604021820982224.html",
+      "supports": [
+        "P3_REVISION_INTERACTION"
+      ],
+      "confidence": "高"
+    },
+    {
+      "evidence_id": "PRELOADED:REVISION_NOTICE_05",
+      "source_type": "official_announcement_index",
+      "title": "*ST三房:关于不向下修正“三房转债”转股价格的公告（2026-07-24）",
+      "source_date": "2026-07-24",
+      "locator": "https://data.eastmoney.com/notices/detail/600370/AN202607231827292129.html",
+      "supports": [
+        "P3_REVISION_INTERACTION"
+      ],
+      "confidence": "高"
+    },
+    {
+      "evidence_id": "PRELOADED:MATURITY_CONTRACT_FACT",
+      "source_type": "runtime_contract_fact",
+      "title": "三房转债到期现金合同事实（剩余合同现金 113.3 元）",
+      "source_date": "2026-09-24",
+      "locator": "evidence_pack.facts.cross_path_maturity.contract_fact",
+      "supports": [
+        "P4_CONTRACT_CASH"
+      ],
+      "confidence": "高"
+    },
+    {
+      "evidence_id": "AN202606261824714680",
+      "source_type": "eastmoney_announcement",
+      "title": "*ST三房:江苏三房巷聚材股份有限公司公开发行可转换公司债券2026年跟踪评级报告",
+      "source_date": "2026-06-27",
+      "locator": "https://data.eastmoney.com/notices/detail/600370/AN202606261824714680.html",
+      "supports": [
+        "P6_PAYMENT_STABILITY",
+        "P7_PATH_JUDGMENT"
+      ],
+      "confidence": "高"
+    },
+    {
+      "evidence_id": "AN202608271828555738",
+      "source_type": "eastmoney_announcement",
+      "title": "*ST三房:江苏三房巷聚材股份有限公司2026年半年度报告",
+      "source_date": "2026-08-28",
+      "locator": "https://data.eastmoney.com/notices/detail/600370/AN202608271828555738.html",
+      "supports": [
+        "P6_PAYMENT_STABILITY",
+        "P7_PATH_JUDGMENT"
+      ],
+      "confidence": "高"
+    },
+    {
+      "evidence_id": "AN202608271828555741",
+      "source_type": "eastmoney_announcement",
+      "title": "*ST三房:江苏三房巷聚材股份有限公司关于公司为下属公司及下属公司之间担保逾期的进展公告",
+      "source_date": "2026-08-28",
+      "locator": "https://data.eastmoney.com/notices/detail/600370/AN202608271828555741.html",
+      "supports": [
+        "P6_PAYMENT_STABILITY",
+        "P7_PATH_JUDGMENT"
+      ],
+      "confidence": "高"
+    }
+  ],
+  "unknown_a": [
+    "未来正股价格是否在 2027-01-06 之后持续满足连续 30 个交易日 S<K×70% 的触发条件。",
+    "未来是否发生下修、下修深度及最终新转股价 K。",
+    "若权利形成，实际回售行权比例。",
+    "发行人未来能否通过融资滚续、资产处置或股东支持落实补洞来源。",
+    "未来是否发生退市、重整或其他改变回售兑现链的重大事件。"
+  ],
+  "unknown_b": [],
+  "key_risks": [
+    "权利形成风险：2027-01-06 前不进入适用期，且进入后需连续 30 个交易日满足触发条件。",
+    "下修改写风险：未来下修将下移触发线并重置计数，可能推迟或消除回售权形成。",
+    "支付稳定性风险：受限货币资金 2.85 亿元、期末现金及现金等价物 1.62 亿元，相对 30% 行权压力 6.36 亿元已不足。",
+    "硬信用事件风险：*ST、评级 A-/负面、2025 年报无法表示意见、控股股东股份被司法冻结、担保逾期累计 3.358 亿元。",
+    "时间价值风险：距最早可形成权利约 3.4 个月，距合同到期约 27.4 个月，期间不确定性高。"
+  ],
+  "failure_conditions": [
+    "公司实施下修且新转股价使触发线显著下移，导致回售权在剩余生命周期内无法形成。",
+    "正股价格回升至 K×70%=2.114 元以上并持续，使连续 30 个交易日触发条件无法满足。",
+    "公司发生退市、重整或债务违约扩大，实质破坏回售现金兑现链。",
+    "回售权形成后公司无法支付集中回售现金，导致回售申报无法按约兑现。"
+  ],
+  "next_update_nodes": [
+    {
+      "date": "2027-01-06",
+      "event": "普通回售窗口起点：确认是否进入最后两个计息年度、触发计数是否开始累计、当期转股价是否仍为 3.02 元。"
+    },
+    {
+      "date": "2026-10-26",
+      "event": "下修计数重算起始日（reset_start）：跟踪是否重新进入下修触发程序。"
+    },
+    {
+      "date": null,
+      "event": "2026 年年度报告及 2027 年跟踪评级报告：核验货币资金受限、债务逾期、审计意见与评级变化。"
+    },
+    {
+      "date": null,
+      "event": "控股股东股份冻结、下属公司债务与担保逾期进展公告：跟踪硬信用事件是否进一步恶化。"
+    },
+    {
+      "date": null,
+      "event": "新的下修董事会公告或不下修公告：跟踪转股价与回售触发线是否被改写。"
+    }
+  ],
+  "economic_status_at_research": "KEEP",
+  "engineering_anchor_reference": {
+    "current_event_state": "BEFORE_PUT_WINDOW",
+    "market_state": {
+      "current_bond_price": 73.856,
+      "current_stock_price": 1.47,
+      "current_conversion_price": 3.02,
+      "current_conversion_value": 48.67549668874173,
+      "remaining_months": 27.43382821002485,
+      "remaining_size": 21.185,
+      "maturity_date": "2029-01-06"
+    },
+    "anchor_statement": "截至市场截面 2026-09-24：当前回售事件状态=BEFORE_PUT_WINDOW；普通回售机制可用=True；普通回售窗口起点=2027-01-06；合同到期日=2029-01-06 00:00:00。"
+  },
+  "economic_judgment_reference": {
+    "economic_registry_run_id": "20260925_134900_discovery_3c07d557",
+    "market_snapshot_id": "market-map-2026-09-24-20260924_234053",
+    "economic_judgment": {
+      "runtime_status": "CONNECTED",
+      "bond_code": "110092",
+      "bond_name": "三房转债",
+      "economic_status": "KEEP",
+      "reason": "POSITIVE_PUT_SPREAD",
+      "current_price_P": 73.856,
+      "put_reference": 100.0,
+      "spread": 26.144000000000005,
+      "mechanism_audit_required": true
+    }
+  }
+}

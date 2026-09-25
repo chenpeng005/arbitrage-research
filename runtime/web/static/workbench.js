@@ -268,10 +268,14 @@ function bondInActiveResearch(b){
 }
 
 function bondCardHtml(b){
+  const hasV2=["110092","127089"].includes(String(b.bond_code||""));
+  const preview=hasV2
+    ?'<a class="v2-preview-link" href="/opportunities-v2-preview/'+esc(b.bond_code)+'">查看 V2 研究样本</a>'
+    :"";
   return '<article class="opp-card" data-code="'+esc(b.bond_code)+'">'
     +'<div class="opp-head"><div><span class="bond-code">'+esc(b.bond_code)+'</span>'
     +'<span class="bond-name">'+esc(String(b.bond_name||"").replace(/转债$/,""))+'</span></div>'
-    +'<div class="opp-count">发现 '+esc(b.opportunity_path_count)+' 条机会路径</div></div>'
+    +'<div class="opp-actions"><div class="opp-count">发现 '+esc(b.opportunity_path_count)+' 条机会路径</div>'+preview+'</div></div>'
     +'<div class="path-strip">'+(b.paths||[]).map(renderPathRow).join("")+'</div>'
   +'</article>';
 }
@@ -291,6 +295,9 @@ function renderOpportunityList(){
     ?watch.map(bondCardHtml).join("")
     :'<div class="empty">当前筛选条件下，没有等待事件节点的长期监控对象。</div>';
 
+  document.querySelectorAll(".v2-preview-link").forEach(el=>{
+    el.addEventListener("click",e=>e.stopPropagation());
+  });
   document.querySelectorAll(".opp-card").forEach(el=>{
     el.addEventListener("click",()=>{
       window.location.href="/opportunities/"+encodeURIComponent(el.dataset.code);

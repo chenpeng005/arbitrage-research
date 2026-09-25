@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -65,6 +66,7 @@ REQUIRED_FIELDS = (
     "failure_conditions",
     "next_update_nodes",
     "economic_status_at_research",
+    "engineering_anchor_reference",
     "economic_judgment_reference",
 )
 
@@ -139,6 +141,31 @@ def validate_path_research_result(
 
     if result.get("economic_status_at_research") != "KEEP":
         errors.append("economic_status_at_research must remain KEEP")
+
+    anchor = result.get("engineering_anchor_reference")
+    if not isinstance(anchor, dict):
+        errors.append("engineering_anchor_reference must be an object")
+    else:
+        expected_event_state = (task.get("trigger_context") or {}).get(
+            "current_event_state"
+        )
+        if anchor.get("current_event_state") != expected_event_state:
+            errors.append(
+                "engineering_anchor_reference.current_event_state must exactly "
+                "match task.trigger_context.current_event_state"
+            )
+        if anchor.get("market_state") != (task.get("market_state") or {}):
+            errors.append(
+                "engineering_anchor_reference.market_state must exactly match "
+                "task.market_state"
+            )
+        if anchor.get("anchor_statement") != str(
+            task.get("engineering_anchor_statement") or ""
+        ):
+            errors.append(
+                "engineering_anchor_reference.anchor_statement must exactly "
+                "match task.engineering_anchor_statement"
+            )
 
     status = result.get("research_status")
     if status not in ALLOWED_STATUS:
@@ -216,7 +243,8 @@ def validate_path_research_result(
     if len(logic_step_ids) != len(set(logic_step_ids)):
         errors.append("logic_chain step_id must be unique")
 
-    expected_steps = PATH_LOGIC_STEPS.get(str(task.get("path_id") or ""), [])
+    path_id = str(task.get("path_id") or "")
+    expected_steps = PATH_LOGIC_STEPS.get(path_id, [])
     if review_ready:
         if logic_step_ids != expected_steps:
             errors.append(
@@ -238,6 +266,47 @@ def validate_path_research_result(
     }
     path_id = str(task.get("path_id") or "")
     if review_ready and path_id == "PUT":
+        p1 = logic_by_id.get("P1_LEGAL_TIME") or {}
+        put_anchor_statement = str(
+            task.get("engineering_anchor_statement") or ""
+        )
+        window_match = re.search(
+            r"普通回售窗口起点=(\d{4}-\d{2}-\d{2})",
+            put_anchor_statement,
+        )
+        expected_put_window_start = (
+            window_match.group(1) if window_match else ""
+        )
+        expected_put_state = str(
+            (task.get("trigger_context") or {}).get("current_event_state") or ""
+        )
+        put_anchor_surfaces = (
+            ("P1 answer", str(p1.get("answer") or "")),
+            ("P1 conclusion", str(p1.get("conclusion") or "")),
+            (
+                "summary.core_conclusion",
+                str((summary or {}).get("core_conclusion") or ""),
+            ),
+        )
+        for label, surface in put_anchor_surfaces:
+            if expected_put_window_start and expected_put_window_start not in surface:
+                errors.append(
+                    f"PUT {label} must use Engineering ordinary put "
+                    f"window start={expected_put_window_start}"
+                )
+        for label, surface in (
+            ("P1 answer", str(p1.get("answer") or "")),
+            (
+                "summary.core_conclusion",
+                str((summary or {}).get("core_conclusion") or ""),
+            ),
+        ):
+            if expected_put_state and expected_put_state not in surface:
+                errors.append(
+                    f"PUT {label} must preserve current Engineering "
+                    f"event state={expected_put_state}"
+                )
+
         p5 = logic_by_id.get("P5_EXERCISE_PRESSURE") or {}
         p5_ids = [str(x) for x in (p5.get("evidence_ids") or [])]
         if "PRELOADED:PUT_PRESSURE_SCENARIOS" not in p5_ids:
@@ -259,6 +328,92 @@ def validate_path_research_result(
                 )
 
     if review_ready and path_id == "DOWNWARD_REVISION":
+        r1 = logic_by_id.get("R1_CURRENT_START") or {}
+        r1_text = " ".join(
+            [
+                str(r1.get("answer") or ""),
+                *[str(x) for x in (r1.get("facts") or [])],
+                str(r1.get("reasoning") or ""),
+                str(r1.get("conclusion") or ""),
+            ]
+        )
+        r1_surface_text = " ".join(
+            [
+                str(r1.get("answer") or ""),
+                str(r1.get("conclusion") or ""),
+            ]
+        )
+        expected_event_state = str(
+            (task.get("trigger_context") or {}).get("current_event_state") or ""
+        )
+        contract_fact = (
+            (task.get("existing_path_facts") or {}).get("contract_fact") or {}
+        )
+        expected_revision_count = str(contract_fact.get("revision_count") or "")
+        r1_answer = str(r1.get("answer") or "")
+        r1_conclusion = str(r1.get("conclusion") or "")
+        core_summary = str((summary or {}).get("core_conclusion") or "")
+        strict_anchor_surfaces = (
+            ("R1 answer", r1_answer),
+            ("summary.core_conclusion", core_summary),
+        )
+        revision_state_aliases = {
+            "满足条件": ("满足条件", "触发条件已满足", "已触发"),
+        }
+        accepted_event_phrases = revision_state_aliases.get(
+            expected_event_state,
+            (expected_event_state,) if expected_event_state else (),
+        )
+        for label, surface in strict_anchor_surfaces:
+            if accepted_event_phrases and not any(
+                phrase in surface for phrase in accepted_event_phrases
+            ):
+                errors.append(
+                    "DOWNWARD_REVISION "
+                    f"{label} must preserve current Engineering event state="
+                    f"{expected_event_state}"
+                )
+            if expected_revision_count and expected_revision_count not in surface:
+                errors.append(
+                    "DOWNWARD_REVISION "
+                    f"{label} must use current Engineering revision_count="
+                    f"{expected_revision_count}"
+                )
+            if expected_revision_count:
+                counts = re.findall(r"(?<!\d)\d+/\d+(?!\d)", surface)
+                conflicts = [
+                    count for count in counts
+                    if count != expected_revision_count
+                ]
+                if conflicts:
+                    errors.append(
+                        "DOWNWARD_REVISION "
+                        f"{label} contains conflicting current count(s): "
+                        + ", ".join(conflicts)
+                    )
+
+        if accepted_event_phrases and not any(
+            phrase in r1_conclusion for phrase in accepted_event_phrases
+        ):
+            errors.append(
+                "DOWNWARD_REVISION R1 conclusion must preserve current "
+                f"Engineering event state={expected_event_state}"
+            )
+        if expected_revision_count:
+            conclusion_counts = re.findall(
+                r"(?<!\d)\d+/\d+(?!\d)", r1_conclusion
+            )
+            conclusion_conflicts = [
+                count for count in conclusion_counts
+                if count != expected_revision_count
+            ]
+            if conclusion_conflicts:
+                errors.append(
+                    "DOWNWARD_REVISION R1 conclusion contains conflicting "
+                    "current count(s): "
+                    + ", ".join(conclusion_conflicts)
+                )
+
         r7 = logic_by_id.get("R7_PRICE_TRANSLATION") or {}
         r7_ids = [str(x) for x in (r7.get("evidence_ids") or [])]
         if "PRELOADED:VALUATION_SCENARIO_GRID" not in r7_ids:

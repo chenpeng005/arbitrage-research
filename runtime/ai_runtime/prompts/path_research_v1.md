@@ -152,6 +152,42 @@ research_status = NEEDS_EVIDENCE 或 UNRESOLVED
 - 下修行为判断必须显式写出支持证据与反证；
 - 回售必须区分“经济 KEEP”与“权利是否已经形成”。
 
+### Engineering Anchor｜程序当前状态不可被旧证据静默覆盖
+
+`path_research_task.market_state` 与 `path_research_task.trigger_context.current_event_state`
+是本次市场截面下已经由 Engineering 冻结的**当前状态锚**。
+
+AI 可以解释这些状态，但不能被更早日期的公告、历史行为或旧计数静默覆盖。若 `path_research_task.engineering_anchor_statement` 存在，它是 Engineering 已经生成的当前状态句，必须作为当前状态的首要表述依据；历史公告只能解释它如何演变而来。
+
+若正式公告正文与 Engineering Anchor 出现真实冲突：
+
+1. 不得自行选择较旧证据覆盖当前状态；
+2. 必须在逻辑链中显式写出冲突；
+3. 若无法确认哪个口径正确，保留 UNKNOWN-B，`review_ready=false`；
+4. 只有能够证明 Engineering 当前状态本身错误时，才允许提出“状态需回退上游修正”，但本次 Path Result 仍不得自行改写上游状态。
+
+对 `DOWNWARD_REVISION` 尤其严格：
+
+- `existing_path_facts.contract_fact.revision_event_state`
+- `revision_count`
+- `minimum_days_needed`
+- `reset_start`
+
+属于当前结构化状态锚。历史公告只能用于解释行为，不得替代当前计数。
+`R1_CURRENT_START` 与 summary 必须显式保留当前 event state 和 revision_count。若较早公告只披露 10/15、11/15 等历史计数，而 Engineering Anchor 已更新到 15/15，则主答案必须写当前 15/15；较早公告只能作为行为/时间序列证据，不能成为当前状态答案。具体地，`summary.core_conclusion` 与 `R1_CURRENT_START.answer` 必须使用同一个当前 event state 与 revision_count，且不得出现与当前 revision_count 冲突的旧计数；`R1_CURRENT_START.conclusion` 必须保持同一个当前 event state，如再次写计数则也只能使用当前 revision_count。
+
+对 `PUT` 同样执行确定性时间锚：若 `engineering_anchor_statement` 已给出 `普通回售窗口起点=YYYY-MM-DD`，则 `summary.core_conclusion`、`P1_LEGAL_TIME.answer`、`P1_LEGAL_TIME.conclusion` 必须使用这个日期。AI 不再自行把“最后两个计息年度”重新数一遍；条款正文用于解释规则，不得覆盖 Engineering 已算出的窗口起点。
+
+最终输出还必须原样回填：
+
+```text
+engineering_anchor_reference = {
+  current_event_state: task.trigger_context.current_event_state,
+  market_state: task.market_state,
+  anchor_statement: task.engineering_anchor_statement
+}
+```
+
 ## 7. 强制研究逻辑链（Path Result V2）
 
 本轮不能只返回一组 `fact_spine` 与 `judgments`。必须把 Canonical 的研究顺序显式落成：

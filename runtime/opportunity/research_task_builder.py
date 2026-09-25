@@ -129,6 +129,52 @@ def _existing_path_facts(
     raise ValueError(f"unsupported path_id: {path_id}")
 
 
+def _engineering_anchor_statement(
+    path_id: str,
+    market_cutoff: str,
+    market_state: dict[str, Any],
+    pending: dict[str, Any],
+    existing_path_facts: dict[str, Any],
+) -> str:
+    event_state = pending.get("current_event_state")
+    if path_id == "DOWNWARD_REVISION":
+        fact = existing_path_facts.get("contract_fact") or {}
+        return (
+            f"截至市场截面 {market_cutoff}：当前下修事件状态={event_state or fact.get('revision_event_state') or 'UNKNOWN'}；"
+            f"触发计数={fact.get('revision_count') or 'UNKNOWN'}；"
+            f"尚需={fact.get('minimum_days_needed') or 'UNKNOWN'}；"
+            f"计数起点={fact.get('reset_start') or 'UNKNOWN'}。"
+            "更早公告中的较低计数只代表历史进度，不得覆盖本句当前状态。"
+        )
+    if path_id == "PUT":
+        fact = existing_path_facts.get("contract_fact") or {}
+        maturity_raw = (
+            fact.get("contract_maturity_date")
+            or market_state.get("maturity_date")
+        )
+        put_window_start = "UNKNOWN"
+        try:
+            maturity_dt = datetime.fromisoformat(str(maturity_raw)[:10])
+            put_window_start = maturity_dt.replace(
+                year=maturity_dt.year - 2
+            ).date().isoformat()
+        except (TypeError, ValueError):
+            pass
+        return (
+            f"截至市场截面 {market_cutoff}：当前回售事件状态={event_state or 'UNKNOWN'}；"
+            f"普通回售机制可用={fact.get('put_mechanism_still_available')}；"
+            f"普通回售窗口起点={put_window_start}；"
+            f"合同到期日={maturity_raw or 'UNKNOWN'}。"
+        )
+    if path_id == "MATURITY_CASH":
+        return (
+            f"截至市场截面 {market_cutoff}：当前到期现金事件状态={event_state or 'UNKNOWN'}；"
+            f"合同到期日={market_state.get('maturity_date') or 'UNKNOWN'}；"
+            f"剩余期限（月）={market_state.get('remaining_months')}。"
+        )
+    raise ValueError(f"unsupported path_id: {path_id}")
+
+
 def build_path_research_tasks(
     economic_registry_path: Path,
     pending_queue_path: Path,
@@ -180,6 +226,30 @@ def build_path_research_tasks(
             raise RuntimeError(f"pending task {trigger_key} is no longer Economic KEEP")
 
         task_id = _task_id(trigger_key)
+        market_state = {
+            key: market_row.get(key)
+            for key in (
+                "current_bond_price",
+                "current_stock_price",
+                "current_conversion_price",
+                "current_conversion_value",
+                "remaining_months",
+                "remaining_size",
+                "maturity_date",
+            )
+        }
+        existing_path_facts = _existing_path_facts(
+            path_id,
+            code,
+            path_facts,
+        )
+        engineering_anchor_statement = _engineering_anchor_statement(
+            path_id,
+            registry["market_cutoff"],
+            market_state,
+            pending,
+            existing_path_facts,
+        )
         package = {
             "task_id": task_id,
             "task_contract_version": TASK_CONTRACT_VERSION,
@@ -197,18 +267,8 @@ def build_path_research_tasks(
             "application_commit_sha": deployment.get("application_commit_sha"),
             "knowledge_commit_sha": deployment.get("knowledge_commit_sha"),
             "path_research_canonical_path": CANONICAL_BY_PATH[path_id],
-            "market_state": {
-                key: market_row.get(key)
-                for key in (
-                    "current_bond_price",
-                    "current_stock_price",
-                    "current_conversion_price",
-                    "current_conversion_value",
-                    "remaining_months",
-                    "remaining_size",
-                    "maturity_date",
-                )
-            },
+            "market_state": market_state,
+            "engineering_anchor_statement": engineering_anchor_statement,
             "economic_judgment": path_result,
             "trigger_context": {
                 "current_event_state": pending.get("current_event_state"),
@@ -216,11 +276,7 @@ def build_path_research_tasks(
                 "trigger_key": trigger_key,
                 "last_triggered_at": pending.get("last_triggered_at"),
             },
-            "existing_path_facts": _existing_path_facts(
-                path_id,
-                code,
-                path_facts,
-            ),
+            "existing_path_facts": existing_path_facts,
             "research_questions": RESEARCH_QUESTIONS[path_id],
             "research_rules": {
                 "do_not_rerun_discovery": True,
@@ -240,6 +296,8 @@ def build_path_research_tasks(
                 "research_cutoff",
                 "review_ready",
                 "research_status",
+                "summary",
+                "logic_chain",
                 "fact_spine",
                 "judgments",
                 "key_evidence",
@@ -249,6 +307,7 @@ def build_path_research_tasks(
                 "failure_conditions",
                 "next_update_nodes",
                 "economic_status_at_research",
+                "engineering_anchor_reference",
                 "economic_judgment_reference",
             ],
         }

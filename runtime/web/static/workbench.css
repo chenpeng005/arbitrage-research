@@ -475,3 +475,30 @@ body.detail-page .close-btn{display:none}
   color:#7a5600;
 }
 .preview-banner b{display:block;margin-bottom:3px}
+
+.opp-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.v2-preview-link{
+  text-decoration:none;
+  font-size:12px;
+  font-weight:700;
+  color:var(--accent);
+  border:1px solid #cfd8ee;
+  border-radius:999px;
+  padding:4px 8px;
+  background:#f8faff;
+}
+.v2-preview-link:hover{background:#eef3ff}
+.preview-banner{
+  margin-bottom:16px;
+  padding:12px 14px;
+  border:1px solid #d8c78e;
+  background:#fffaf0;
+  border-radius:10px;
+}
+.preview-banner b{display:block;margin-bottom:3px}

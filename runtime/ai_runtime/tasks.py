@@ -155,6 +155,7 @@ def path_research_spec(root: Path) -> AITaskSpec:
                 "failure_conditions",
                 "next_update_nodes",
                 "economic_status_at_research",
+                "engineering_anchor_reference",
                 "economic_judgment_reference",
             ],
             "properties": {
@@ -289,6 +290,19 @@ def path_research_spec(root: Path) -> AITaskSpec:
                 "economic_status_at_research": {
                     "type": "string",
                     "enum": ["KEEP"],
+                },
+                "engineering_anchor_reference": {
+                    "type": "object",
+                    "required": [
+                        "current_event_state",
+                        "market_state",
+                        "anchor_statement",
+                    ],
+                    "properties": {
+                        "current_event_state": {"type": ["string", "null"]},
+                        "market_state": {"type": "object"},
+                        "anchor_statement": {"type": "string"},
+                    },
                 },
                 "economic_judgment_reference": {"type": "object"},
             },

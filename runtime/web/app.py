@@ -39,14 +39,14 @@ LATEST_DISCOVERY_INGRESS_PATH = DATA_ROOT / "registry" / "latest_discovery_marke
 LATEST_CANDIDATE_POOL_PATH = DATA_ROOT / "registry" / "latest_candidate_pool.json"
 LATEST_OPPORTUNITY_RECORDS_PATH = DATA_ROOT / "registry" / "latest_opportunity_records.json"
 LATEST_FULL_RUNTIME_PATH = DATA_ROOT / "registry" / "latest_full_runtime.json"
-GOLDEN_V2_ROOT = DATA_ROOT / "golden_samples" / "path_result_v2"
+GOLDEN_V2_ROOT = ROOT / "runtime" / "golden_samples" / "path_result_v2"
 GOLDEN_V2_PATH_RESULTS = {
     "110092": {
-        "MATURITY_CASH": GOLDEN_V2_ROOT / "110092_MATURITY_CASH" / "path_research_result.json",
-        "PUT": GOLDEN_V2_ROOT / "110092_PUT_v2b" / "path_research_result.json",
+        "MATURITY_CASH": GOLDEN_V2_ROOT / "110092_MATURITY_CASH.json",
+        "PUT": GOLDEN_V2_ROOT / "110092_PUT.json",
     },
     "127089": {
-        "DOWNWARD_REVISION": GOLDEN_V2_ROOT / "127089_DOWNWARD_REVISION_v2b" / "path_research_result.json",
+        "DOWNWARD_REVISION": GOLDEN_V2_ROOT / "127089_DOWNWARD_REVISION.json",
     },
 }
 CHAT_TASK_ROOT = DATA_ROOT / "chat_tasks"
@@ -998,3 +998,1034 @@ def run_semantic_ai_for_acquisition(
 
 
 def market_map_pipeline_worker(
+    pipeline_job_id: str,
+    request: MarketMapPipelineRequest,
+) -> None:
+    if (
+        request.snapshot_mode == "HISTORICAL_REPLAY"
+        and request.historical_snapshot_id
+    ):
+        historical_entry, _ = resolve_historical_source(
+            request.historical_snapshot_id
+        )
+        cutoff = historical_entry.get("market_cutoff")
+    else:
+        cutoff = request.market_cutoff or datetime.now().date().isoformat()
+
+    try:
+        update_controller_job(
+            pipeline_job_id,
+            status="RUNNING",
+            phase="ACQUISITION",
+            command_started_at=utcnow(),
+        )
+
+        acquisition_request = RunRequest(
+            snapshot_mode=request.snapshot_mode,
+            market_cutoff=cutoff,
+            historical_snapshot_id=request.historical_snapshot_id,
+        )
+        acquisition_job_id = create_run(acquisition_request)["job_id"]
+        update_controller_job(
+            pipeline_job_id,
+            acquisition_job_id=acquisition_job_id,
+        )
+
+        acquisition_job = wait_for_job_terminal(acquisition_job_id)
+        acquisition_status = acquisition_job.get("status")
+        acquisition_run_dir = DATA_ROOT / "runs" / acquisition_job_id
+
+        if acquisition_status == "NEEDS_REVIEW":
+            if request.ai_execution_mode == "INTERACTIVE_CHAT":
+                chat_task = create_interactive_chat_task(
+                    pipeline_job_id=pipeline_job_id,
+                    acquisition_job_id=acquisition_job_id,
+                    acquisition_run_dir=acquisition_run_dir,
+                    market_cutoff=cutoff,
+                )
+                update_controller_job(
+                    pipeline_job_id,
+                    status="WAITING_FOR_CHAT",
+                    phase="WAITING_FOR_CHAT",
+                    chat_task_id=chat_task["task_id"],
+                    chat_task_path=str(
+                        CHAT_TASK_ROOT
+                        / chat_task["task_id"]
+                        / "chat_task.json"
+                    ),
+                    ai_execution_mode="INTERACTIVE_CHAT",
+                )
+                return
+
+            update_controller_job(
+                pipeline_job_id,
+                phase="AI_SEMANTIC_AUDIT",
+                ai_execution_mode="AUTO_API",
+            )
+            ai_result = run_semantic_ai_for_acquisition(
+                acquisition_job_id=acquisition_job_id,
+                acquisition_run_dir=acquisition_run_dir,
+            )
+            update_controller_job(
+                pipeline_job_id,
+                ai_job_id=ai_result.get("ai_job_id"),
+                ai_status=ai_result.get("status"),
+            )
+
+            if ai_result.get("status") != "PASS":
+                update_controller_job(
+                    pipeline_job_id,
+                    status=(
+                        "NEEDS_REVIEW"
+                        if ai_result.get("status") == "NEEDS_REVIEW"
+                        else "FAIL"
+                    ),
+                    phase="STOPPED_AT_AI",
+                    completed_at=utcnow(),
+                    error=ai_result.get("error"),
+                )
+                return
+
+            source_result_path = acquisition_run_dir / "acquisition_result.json"
+            source_status = None
+            if source_result_path.exists():
+                source_status = json.loads(
+                    source_result_path.read_text(encoding="utf-8")
+                ).get("status")
+
+            if not acquisition_input_is_trusted(
+                acquisition_run_dir,
+                source_status,
+            ):
+                update_controller_job(
+                    pipeline_job_id,
+                    status="FAIL",
+                    phase="STOPPED_AFTER_AI_VALIDATION",
+                    completed_at=utcnow(),
+                    error="AI job passed but acquisition input is still not trusted",
+                )
+                return
+
+        elif acquisition_status not in {"PASS", "WARNING"}:
+            update_controller_job(
+                pipeline_job_id,
+                status="FAIL",
+                phase="STOPPED_AT_ACQUISITION",
+                completed_at=utcnow(),
+                error=f"acquisition ended with status={acquisition_status}",
+            )
+            return
+
+        continue_pipeline_calculation(
+            pipeline_job_id,
+            acquisition_job_id,
+            cutoff,
+        )
+
+    except Exception as exc:
+        update_controller_job(
+            pipeline_job_id,
+            status="FAIL",
+            phase="CONTROLLER_ERROR",
+            completed_at=utcnow(),
+            error=f"{type(exc).__name__}: {exc}",
+        )
+
+
+def acquisition_input_is_trusted(path: Path, status: str | None) -> bool:
+    trusted_path = path / "trusted_market_input.csv"
+    if not trusted_path.exists():
+        return False
+
+    if status in {"PASS", "WARNING"}:
+        return True
+
+    if status == "NEEDS_REVIEW":
+        validation_path = path / "semantic_resolution_validation.json"
+        if not validation_path.exists():
+            return False
+        try:
+            validation = json.loads(validation_path.read_text(encoding="utf-8"))
+            return validation.get("status") == "PASS"
+        except Exception:
+            return False
+
+    return False
+
+
+def load_persisted_jobs() -> list[dict]:
+    jobs: list[dict] = []
+    jobs_dir = DATA_ROOT / "jobs"
+    if not jobs_dir.exists():
+        return jobs
+
+    for path in jobs_dir.glob("*/live_status.json"):
+        try:
+            jobs.append(json.loads(path.read_text(encoding="utf-8")))
+        except Exception:
+            continue
+
+    return jobs
+
+
+def find_latest_acquisition_input() -> tuple[str, Path] | None:
+    candidates: list[dict] = []
+
+    with _lock:
+        candidates.extend(_jobs.values())
+    candidates.extend(load_persisted_jobs())
+
+    valid: list[dict] = []
+    seen: set[str] = set()
+
+    for job in candidates:
+        job_id = job.get("job_id")
+        if not job_id or job_id in seen:
+            continue
+        seen.add(job_id)
+
+        if job.get("unit") != "Market Map Builder / Acquisition":
+            continue
+        path = DATA_ROOT / "runs" / job_id
+        if not acquisition_input_is_trusted(path, job.get("status")):
+            continue
+
+        valid.append(job)
+
+    if not valid:
+        return None
+
+    valid.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    latest = valid[0]
+    return latest["job_id"], DATA_ROOT / "runs" / latest["job_id"]
+
+
+@app.get("/", response_class=HTMLResponse)
+def home() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "index.html").read_text(encoding="utf-8"))
+
+
+@app.get("/review", response_class=HTMLResponse)
+def review_page() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "review.html").read_text(encoding="utf-8"))
+
+
+@app.get("/workbench", response_class=HTMLResponse)
+def workbench_page() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
+
+
+@app.get("/run-center", response_class=HTMLResponse)
+def run_center_page() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
+
+
+@app.get("/market-map", response_class=HTMLResponse)
+def market_map_page() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "index.html").read_text(encoding="utf-8"))
+
+
+@app.get("/opportunities", response_class=HTMLResponse)
+def opportunities_page() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
+
+
+@app.get("/opportunities/{bond_code}", response_class=HTMLResponse)
+def opportunity_detail_page(bond_code: str) -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
+
+
+@app.get("/opportunities-v2-preview/{bond_code}", response_class=HTMLResponse)
+def opportunity_v2_preview_page(bond_code: str) -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
+
+
+@app.get("/audit", response_class=HTMLResponse)
+def audit_page() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
+
+
+@app.post("/api/runs")
+def create_run(request: RunRequest) -> dict:
+    if request.snapshot_mode not in {
+        "LIVE_TEST",
+        "CLOSE",
+        "REPLAY_TEST",
+        "HISTORICAL_REPLAY",
+    }:
+        raise HTTPException(400, "unsupported snapshot_mode")
+
+    if request.snapshot_mode == "REPLAY_TEST" and not RAW_FIXTURE_DIR.exists():
+        raise HTTPException(400, "replay fixture is not available")
+
+    historical_entry = None
+    if request.snapshot_mode == "HISTORICAL_REPLAY":
+        if not request.historical_snapshot_id:
+            raise HTTPException(400, "historical_snapshot_id is required")
+        historical_entry, _ = resolve_historical_source(
+            request.historical_snapshot_id
+        )
+
+    job_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:6]
+    cutoff = (
+        historical_entry.get("market_cutoff")
+        if historical_entry is not None
+        else (request.market_cutoff or datetime.now().date().isoformat())
+    )
+
+    with _lock:
+        _jobs[job_id] = {
+            "job_id": job_id,
+            "unit": "Market Map Builder / Acquisition",
+            "status": "PENDING",
+            "snapshot_mode": request.snapshot_mode,
+            "historical_snapshot_id": request.historical_snapshot_id,
+            "historical_source_acquisition_job_id": (
+                historical_entry.get("acquisition_job_id")
+                if historical_entry is not None
+                else None
+            ),
+            "market_cutoff": cutoff,
+            "created_at": utcnow(),
+            "updated_at": utcnow(),
+            "steps": {},
+        }
+
+    persist_job(job_id)
+
+    threading.Thread(
+        target=acquisition_worker,
+        args=(job_id, request),
+        daemon=True,
+    ).start()
+
+    return {"job_id": job_id}
+
+
+@app.post("/api/calculation-runs")
+def create_calculation_run(request: CalculationRunRequest) -> dict:
+    if request.input_mode not in {"REPLAY_TEST", "LATEST_SUCCESS"}:
+        raise HTTPException(400, "unsupported input_mode")
+
+    source_job_id = None
+
+    if request.input_mode == "REPLAY_TEST":
+        input_dir = CALC_FIXTURE_DIR
+        if not (input_dir / "market_input_audit.csv").exists():
+            raise HTTPException(400, "calculation replay fixture is not available")
+
+    else:
+        if request.source_job_id:
+            input_dir = DATA_ROOT / "runs" / request.source_job_id
+            source_job_id = request.source_job_id
+
+            if not (input_dir / "trusted_market_input.csv").exists():
+                raise HTTPException(400, "source acquisition job has no trusted market input")
+
+            result_path = input_dir / "acquisition_result.json"
+            if not result_path.exists():
+                raise HTTPException(400, "source acquisition result is missing")
+            source_result = json.loads(result_path.read_text(encoding="utf-8"))
+            if not acquisition_input_is_trusted(
+                input_dir,
+                source_result.get("status"),
+            ):
+                raise HTTPException(
+                    400,
+                    "source acquisition job is not trusted for calculation",
+                )
+        else:
+            latest = find_latest_acquisition_input()
+            if latest is None:
+                raise HTTPException(400, "no successful acquisition run is available")
+            source_job_id, input_dir = latest
+
+    job_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:6]
+    cutoff = request.market_cutoff or datetime.now().date().isoformat()
+
+    with _lock:
+        _jobs[job_id] = {
+            "job_id": job_id,
+            "unit": "Market Map Builder / Calculation",
+            "status": "PENDING",
+            "input_mode": request.input_mode,
+            "source_job_id": source_job_id,
+            "input_dir": str(input_dir),
+            "market_cutoff": cutoff,
+            "created_at": utcnow(),
+            "updated_at": utcnow(),
+            "steps": {},
+        }
+
+    persist_job(job_id)
+
+    threading.Thread(
+        target=calculation_worker,
+        args=(job_id, request, input_dir),
+        daemon=True,
+    ).start()
+
+    return {"job_id": job_id}
+
+
+@app.post("/api/market-map-runs")
+def create_market_map_pipeline(
+    request: MarketMapPipelineRequest,
+) -> dict:
+    if request.snapshot_mode not in {
+        "LIVE_TEST",
+        "CLOSE",
+        "REPLAY_TEST",
+        "HISTORICAL_REPLAY",
+    }:
+        raise HTTPException(400, "unsupported snapshot_mode")
+
+    if request.snapshot_mode == "REPLAY_TEST" and not RAW_FIXTURE_DIR.exists():
+        raise HTTPException(400, "replay fixture is not available")
+
+    historical_entry = None
+    if request.snapshot_mode == "HISTORICAL_REPLAY":
+        if not request.historical_snapshot_id:
+            raise HTTPException(400, "historical_snapshot_id is required")
+        historical_entry, _ = resolve_historical_source(
+            request.historical_snapshot_id
+        )
+
+    if request.ai_execution_mode not in {"AUTO_API", "INTERACTIVE_CHAT"}:
+        raise HTTPException(400, "unsupported ai_execution_mode")
+
+    if request.snapshot_mode == "CLOSE":
+        market_status = close_mode_precheck()
+        if not market_status["after_close_gate"]:
+            raise HTTPException(
+                409,
+                "今天正式收盘截面尚未可用：中国市场时间 "
+                f"{market_status['china_time']}，请在 15:10 后运行；"
+                "当前请使用历史回放或盘中测试。",
+            )
+        request.market_cutoff = market_status["china_date"]
+
+    job_id = (
+        datetime.now().strftime("%Y%m%d_%H%M%S")
+        + "_pipeline_"
+        + uuid.uuid4().hex[:6]
+    )
+    cutoff = (
+        historical_entry.get("market_cutoff")
+        if historical_entry is not None
+        else (request.market_cutoff or datetime.now().date().isoformat())
+    )
+
+    with _lock:
+        _jobs[job_id] = {
+            "job_id": job_id,
+            "unit": "Market Map / Full Runtime",
+            "status": "PENDING",
+            "phase": "PENDING",
+            "snapshot_mode": request.snapshot_mode,
+            "ai_execution_mode": request.ai_execution_mode,
+            "historical_snapshot_id": request.historical_snapshot_id,
+            "historical_source_acquisition_job_id": (
+                historical_entry.get("acquisition_job_id")
+                if historical_entry is not None
+                else None
+            ),
+            "market_cutoff": cutoff,
+            "created_at": utcnow(),
+            "updated_at": utcnow(),
+            "acquisition_job_id": None,
+            "ai_job_id": None,
+            "ai_status": None,
+            "calculation_job_id": None,
+            "steps": {},
+        }
+
+    persist_job(job_id)
+
+    threading.Thread(
+        target=market_map_pipeline_worker,
+        args=(job_id, request),
+        daemon=True,
+    ).start()
+
+    return {"job_id": job_id}
+
+
+@app.get("/api/market-map/history")
+def get_market_map_history() -> dict:
+    entries = list_formal_market_map_entries()
+    return {
+        "count": len(entries),
+        "items": [
+            {
+                "snapshot_id": x.get("snapshot_id"),
+                "market_cutoff": x.get("market_cutoff"),
+                "model_version": x.get("model_version"),
+                "created_at": x.get("created_at"),
+                "acquisition_job_id": x.get("acquisition_job_id"),
+                "calculation_job_id": x.get("calculation_job_id"),
+                "replay_ready": x.get("replay_ready", False),
+            }
+            for x in entries
+        ],
+    }
+
+
+@app.get("/api/chat-tasks/{task_id}")
+def get_chat_task(task_id: str) -> dict:
+    task_path = CHAT_TASK_ROOT / task_id / "chat_task.json"
+    if not task_path.exists():
+        raise HTTPException(404, "chat task not found")
+    task = json.loads(task_path.read_text(encoding="utf-8"))
+
+    business_run_dir = Path(task["business_run_dir"])
+    validation_path = business_run_dir / "semantic_resolution_validation.json"
+    if validation_path.exists():
+        try:
+            validation = json.loads(
+                validation_path.read_text(encoding="utf-8")
+            )
+            task["validation_status"] = validation.get("status")
+        except Exception:
+            task["validation_status"] = "INVALID"
+    return task
+
+
+@app.post("/api/market-map-runs/{pipeline_job_id}/resume-after-chat")
+def resume_market_map_after_chat(pipeline_job_id: str) -> dict:
+    with _lock:
+        job = dict(_jobs.get(pipeline_job_id, {}))
+
+    if not job:
+        persisted = DATA_ROOT / "jobs" / pipeline_job_id / "live_status.json"
+        if not persisted.exists():
+            raise HTTPException(404, "pipeline job not found")
+        job = json.loads(persisted.read_text(encoding="utf-8"))
+        with _lock:
+            _jobs[pipeline_job_id] = job
+
+    if job.get("status") != "WAITING_FOR_CHAT":
+        raise HTTPException(
+            400,
+            f"pipeline is not waiting for chat: {job.get('status')}",
+        )
+
+    acquisition_job_id = job.get("acquisition_job_id")
+    if not acquisition_job_id:
+        raise HTTPException(400, "pipeline has no acquisition job")
+
+    acquisition_run_dir = DATA_ROOT / "runs" / acquisition_job_id
+    result_path = acquisition_run_dir / "acquisition_result.json"
+    if not result_path.exists():
+        raise HTTPException(400, "acquisition result is missing")
+    source_status = json.loads(
+        result_path.read_text(encoding="utf-8")
+    ).get("status")
+
+    if not acquisition_input_is_trusted(
+        acquisition_run_dir,
+        source_status,
+    ):
+        raise HTTPException(
+            409,
+            "Chat result has not passed Program Validator yet",
+        )
+
+    update_controller_job(
+        pipeline_job_id,
+        status="RUNNING",
+        phase="RESUMING_AFTER_CHAT",
+        ai_status="PASS",
+    )
+
+    threading.Thread(
+        target=continue_pipeline_calculation,
+        args=(
+            pipeline_job_id,
+            acquisition_job_id,
+            job.get("market_cutoff") or datetime.now().date().isoformat(),
+        ),
+        daemon=True,
+    ).start()
+
+    return {
+        "pipeline_job_id": pipeline_job_id,
+        "status": "RUNNING",
+        "phase": "RESUMING_AFTER_CHAT",
+    }
+
+
+@app.post("/api/opportunity/full-runs")
+def create_opportunity_full_run(request: OpportunityFullRunRequest) -> dict:
+    if request.source_mode not in {"LATEST_FORMAL", "CLOSE"}:
+        raise HTTPException(400, "unsupported source_mode")
+    job_id = (
+        datetime.now().strftime("%Y%m%d_%H%M%S")
+        + "_opportunity_full_"
+        + uuid.uuid4().hex[:6]
+    )
+    with _lock:
+        _jobs[job_id] = {
+            "job_id": job_id,
+            "unit": "Opportunity Discovery / Full Runtime",
+            "status": "PENDING",
+            "phase": "PENDING",
+            "source_mode": request.source_mode,
+            "run_research": request.run_research,
+            "research_batch_limit": request.research_batch_limit,
+            "max_research_rounds": request.max_research_rounds,
+            "created_at": utcnow(),
+            "updated_at": utcnow(),
+            "full_stages": [],
+        }
+    persist_job(job_id)
+    threading.Thread(
+        target=opportunity_full_worker,
+        args=(job_id, request),
+        daemon=True,
+    ).start()
+    return {"job_id": job_id}
+
+
+@app.get("/api/opportunity/full-runs/latest")
+def latest_opportunity_full_run() -> dict:
+    candidates = []
+    with _lock:
+        candidates.extend(
+            dict(job) for job in _jobs.values()
+            if job.get("unit") == "Opportunity Discovery / Full Runtime"
+        )
+    for job in load_persisted_jobs():
+        if job.get("unit") == "Opportunity Discovery / Full Runtime":
+            candidates.append(job)
+    if candidates:
+        candidates.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        return candidates[0]
+    if LATEST_FULL_RUNTIME_PATH.exists():
+        pointer = json.loads(LATEST_FULL_RUNTIME_PATH.read_text(encoding="utf-8"))
+        status_path = Path(str(pointer.get("status_path") or ""))
+        if status_path.exists():
+            return json.loads(status_path.read_text(encoding="utf-8"))
+    raise HTTPException(404, "no full opportunity runtime has completed")
+
+
+@app.get("/api/runs/{job_id}")
+def get_run(job_id: str) -> dict:
+    with _lock:
+        if job_id not in _jobs:
+            path = DATA_ROOT / "jobs" / job_id / "live_status.json"
+            if not path.exists():
+                raise HTTPException(404, "run not found")
+            _jobs[job_id] = json.loads(path.read_text(encoding="utf-8"))
+
+        return _jobs[job_id]
+
+
+
+def find_latest_market_map_output() -> tuple[dict, Path, Path] | None:
+    """
+    Visualization only follows the Formal Snapshot Registry.
+
+    The web layer must not guess the latest model from file mtimes and must
+    not silently fall back to TEST_ONLY calculation outputs.
+    """
+    if not LATEST_FORMAL_MARKET_MAP_PATH.exists():
+        return None
+
+    try:
+        entry = json.loads(
+            LATEST_FORMAL_MARKET_MAP_PATH.read_text(encoding="utf-8")
+        )
+    except Exception:
+        return None
+
+    snapshot_path_raw = entry.get("snapshot_path")
+    table_path_raw = entry.get("calculated_table_path")
+    if not snapshot_path_raw or not table_path_raw:
+        return None
+
+    snapshot_path = Path(snapshot_path_raw)
+    table_path = Path(table_path_raw)
+    if not snapshot_path.exists() or not table_path.exists():
+        return None
+
+    try:
+        snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+    if snapshot.get("snapshot_class") != "FORMAL_CLOSE":
+        return None
+    if snapshot.get("snapshot_id") != entry.get("snapshot_id"):
+        return None
+
+    return entry, snapshot_path, table_path
+
+
+def find_market_map_output_for_calculation_job(
+    calculation_job_id: str,
+) -> tuple[dict, Path, Path] | None:
+    run_dir = DATA_ROOT / "runs" / calculation_job_id
+    snapshot_path = run_dir / "market_map_snapshot.json"
+    table_path = run_dir / "market_map_calculated.csv"
+    if not snapshot_path.exists() or not table_path.exists():
+        return None
+    try:
+        snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+    if snapshot.get("snapshot_class") not in {
+        "FORMAL_CLOSE",
+        "HISTORICAL_REPLAY",
+    }:
+        return None
+
+    source_job_id = None
+    metadata_path = run_dir / "run_metadata.json"
+    if metadata_path.exists():
+        try:
+            source_job_id = json.loads(
+                metadata_path.read_text(encoding="utf-8")
+            ).get("source_job_id")
+        except Exception:
+            source_job_id = None
+
+    entry = {
+        "snapshot_id": snapshot.get("snapshot_id"),
+        "calculation_job_id": calculation_job_id,
+        "acquisition_job_id": source_job_id,
+    }
+    return entry, snapshot_path, table_path
+
+
+@app.get("/api/market-map/view")
+def get_market_map_view(calculation_job_id: str | None = None) -> dict:
+    found = (
+        find_market_map_output_for_calculation_job(calculation_job_id)
+        if calculation_job_id
+        else find_latest_market_map_output()
+    )
+    if found is None:
+        raise HTTPException(
+            404,
+            "no formal market map snapshot is registered",
+        )
+
+    registry_entry, snapshot_path, table_path = found
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    df = pd.read_csv(table_path, dtype={"bond_code": str})
+
+    reference_col = (
+        "discovery_reference"
+        if "discovery_reference" in df.columns
+        else "discovery_reference_candidate"
+    )
+
+    wanted = [
+        "bond_code",
+        "bond_name",
+        "P",
+        "trusted_CV",
+        "source_CV",
+        "remaining_months",
+        "remaining_size",
+        "base_anchor",
+        "duration_adjustment",
+        "scale_neutral",
+        "anchor_neutral",
+        "residual_base",
+        "residual_after_duration",
+        "residual_final",
+        reference_col,
+    ]
+    missing = [col for col in wanted if col not in df.columns]
+    if missing:
+        raise HTTPException(500, f"market map output missing columns: {missing}")
+
+    view = df[wanted].copy()
+    if reference_col != "discovery_reference":
+        view = view.rename(columns={reference_col: "discovery_reference"})
+
+    numeric_cols = [
+        col for col in view.columns
+        if col not in {"bond_code", "bond_name"}
+    ]
+    for col in numeric_cols:
+        view[col] = pd.to_numeric(view[col], errors="coerce")
+
+    view["diff_to_reference"] = (
+        view["P"] - view["discovery_reference"]
+    )
+
+    rows = json.loads(
+        view.to_json(
+            orient="records",
+            force_ascii=False,
+        )
+    )
+
+    return {
+        "source_type": (
+            "HISTORICAL_REPLAY"
+            if snapshot.get("snapshot_class") == "HISTORICAL_REPLAY"
+            else "FORMAL_REGISTRY"
+        ),
+        "snapshot_class": snapshot.get("snapshot_class"),
+        "market_cutoff": snapshot.get("market_cutoff"),
+        "model_version": snapshot.get("model_version"),
+        "snapshot_id": snapshot.get("snapshot_id"),
+        "registry_calculation_job_id": registry_entry.get("calculation_job_id"),
+        "registry_acquisition_job_id": registry_entry.get("acquisition_job_id"),
+        "zones": snapshot.get("zones", {}),
+        "components": snapshot.get("components", {}),
+        "residual_core_after_scale": snapshot.get("residual_core_after_scale", {}),
+        "diagnostics": snapshot.get("diagnostics", {}),
+        "discovery_reference": snapshot.get("discovery_reference", {}),
+        "acquisition_warnings": snapshot.get("input", {}).get(
+            "acquisition_warnings", []
+        ),
+        "rows": rows,
+    }
+
+
+@app.post("/api/market-map/resolve")
+def resolve_market_map_bond(
+    request: BondValuationResolverRequest,
+) -> dict:
+    if request.snapshot_id:
+        entry = get_formal_market_map_entry(request.snapshot_id)
+    else:
+        if not LATEST_FORMAL_MARKET_MAP_PATH.exists():
+            raise HTTPException(404, "no formal market map snapshot is registered")
+        try:
+            entry = json.loads(
+                LATEST_FORMAL_MARKET_MAP_PATH.read_text(encoding="utf-8")
+            )
+        except Exception as exc:
+            raise HTTPException(
+                500,
+                f"latest formal market map registry is invalid: {type(exc).__name__}",
+            )
+
+    contract_path_raw = entry.get("output_contract_path")
+    contract_status = entry.get("output_contract_status")
+    if not contract_path_raw or contract_status != "PASS":
+        raise HTTPException(
+            409,
+            "selected formal snapshot does not expose a validated "
+            "Market Map Output Contract V1",
+        )
+
+    try:
+        return resolve_bond_scenarios(
+            Path(contract_path_raw),
+            bond_code=request.bond_code,
+            scenarios=[x.dict() for x in request.scenarios],
+            require_formal=True,
+        )
+    except ResolverError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@app.post("/api/opportunity/market-ingress")
+def create_discovery_market_ingress() -> dict:
+    """Use the latest validated formal Market Map as the Discovery market input."""
+    if not LATEST_FORMAL_MARKET_MAP_PATH.exists():
+        raise HTTPException(404, "no formal market map snapshot is registered")
+    try:
+        entry = json.loads(LATEST_FORMAL_MARKET_MAP_PATH.read_text(encoding="utf-8"))
+        if entry.get("snapshot_class") != "FORMAL_CLOSE" or entry.get("output_contract_status") != "PASS":
+            raise ResolverError("latest formal snapshot has no validated output contract")
+        if not entry.get("snapshot_id"):
+            raise ResolverError("latest formal snapshot has no snapshot_id")
+        manifest_path = Path(entry["output_contract_path"])
+        result = build_market_ingress(manifest_path, DATA_ROOT, load_deployment_manifest(),
+                                      expected_snapshot_id=entry.get("snapshot_id"))
+        LATEST_DISCOVERY_INGRESS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        LATEST_DISCOVERY_INGRESS_PATH.write_text(
+            json.dumps({"run_id": result["run_id"], "market_snapshot_id": result["market_snapshot_id"]}, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        return result
+    except (KeyError, ValueError, OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(409, f"discovery market ingress failed: {exc}")
+
+
+@app.get("/api/opportunity/market-ingress/latest")
+def latest_discovery_market_ingress() -> dict:
+    if not LATEST_DISCOVERY_INGRESS_PATH.exists():
+        raise HTTPException(404, "no discovery market ingress run has completed")
+    try:
+        pointer = json.loads(LATEST_DISCOVERY_INGRESS_PATH.read_text(encoding="utf-8"))
+        run_id = str(pointer["run_id"])
+        if not run_id.replace("_", "").isalnum():
+            raise ValueError("invalid discovery run_id")
+        result_path = DATA_ROOT / "runs" / run_id / "discovery_market_input.json"
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        if result.get("run_id") != run_id or result.get("market_snapshot_id") != pointer.get("market_snapshot_id"):
+            raise ValueError("discovery ingress pointer and result disagree")
+        return result
+    except (KeyError, ValueError, OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(409, f"discovery market ingress result is invalid: {exc}")
+
+
+def _load_latest_runtime_artifact(pointer_path: Path, label: str) -> dict:
+    if not pointer_path.exists():
+        raise HTTPException(404, f"no {label} run has completed")
+    try:
+        pointer = json.loads(pointer_path.read_text(encoding="utf-8"))
+        run_id = str(pointer["run_id"])
+        result_path = Path(str(pointer["result_path"]))
+        if not result_path.is_absolute():
+            result_path = ROOT / result_path
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        if result.get("run_id") != run_id:
+            raise ValueError(f"{label} pointer and result disagree")
+        if result.get("status") != "PASS":
+            raise ValueError(f"{label} latest result is not PASS")
+        return result
+    except HTTPException:
+        raise
+    except (KeyError, ValueError, OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(409, f"{label} result is invalid: {exc}")
+
+
+@app.get("/api/opportunity/candidate-pool/latest")
+def latest_candidate_pool() -> dict:
+    return _load_latest_runtime_artifact(
+        LATEST_CANDIDATE_POOL_PATH,
+        "candidate pool",
+    )
+
+
+@app.get("/api/opportunity/records/latest")
+def latest_opportunity_records() -> dict:
+    return _load_latest_runtime_artifact(
+        LATEST_OPPORTUNITY_RECORDS_PATH,
+        "opportunity records",
+    )
+
+
+@app.get("/api/opportunity/view/latest")
+def latest_opportunity_view() -> dict:
+    records = _load_latest_runtime_artifact(
+        LATEST_OPPORTUNITY_RECORDS_PATH,
+        "opportunity records",
+    )
+    return build_opportunity_list(records)
+
+
+@app.get("/api/opportunity/view/{bond_code}")
+def latest_opportunity_view_for_bond(bond_code: str) -> dict:
+    record = latest_opportunity_record_for_bond(bond_code)
+    return build_opportunity_view(record)
+
+
+@app.get("/api/opportunity/records/{bond_code}")
+def latest_opportunity_record_for_bond(bond_code: str) -> dict:
+    code = str(bond_code).strip().zfill(6)
+    if len(code) != 6 or not code.isdigit():
+        raise HTTPException(400, "bond_code must be a 6-digit code")
+
+    records = _load_latest_runtime_artifact(
+        LATEST_OPPORTUNITY_RECORDS_PATH,
+        "opportunity records",
+    )
+    matches = [
+        item for item in records.get("records", [])
+        if str(item.get("bond_code") or "").zfill(6) == code
+    ]
+    if len(matches) != 1:
+        raise HTTPException(
+            404 if not matches else 409,
+            "bond is not uniquely present in latest opportunity records",
+        )
+    return matches[0]
+
+
+@app.get("/api/opportunity/preview-v2/{bond_code}")
+def opportunity_v2_preview_for_bond(bond_code: str) -> dict:
+    code = str(bond_code).strip().zfill(6)
+    replacements = GOLDEN_V2_PATH_RESULTS.get(code)
+    if not replacements:
+        raise HTTPException(404, "no Path Result V2 golden preview for this bond")
+
+    record = copy.deepcopy(latest_opportunity_record_for_bond(code))
+    replaced_paths: list[str] = []
+    for path in record.get("paths", []):
+        path_id = str(path.get("path_id") or "")
+        result_path = replacements.get(path_id)
+        if result_path is None:
+            continue
+        if not result_path.exists():
+            raise HTTPException(
+                409,
+                f"golden V2 result is missing for {code}:{path_id}",
+            )
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        if (
+            str(result.get("bond_code") or "").zfill(6) != code
+            or result.get("path_id") != path_id
+            or result.get("review_ready") is not True
+        ):
+            raise HTTPException(
+                409,
+                f"golden V2 result failed identity/readiness check: {code}:{path_id}",
+            )
+        path["path_result"] = result
+        path["research_state"] = "COMPLETED"
+        path["research_status"] = result.get("research_status")
+        path["review_ready"] = True
+        path["latest_path_result_id"] = result.get("path_result_id")
+        path["latest_path_result_path"] = str(result_path)
+        replaced_paths.append(path_id)
+
+    view = build_opportunity_view(record)
+    view["preview"] = {
+        "type": "PATH_RESULT_V2_GOLDEN_SAMPLE",
+        "is_formal_ledger": False,
+        "message": (
+            "这是 Path Result V2 隔离 Golden Sample 预览；"
+            "未写入 Research Ledger，不覆盖当前正式研究结果。"
+        ),
+        "replaced_paths": replaced_paths,
+    }
+    return view
+
+
+@app.get("/api/market-status")
+def market_status() -> dict:
+    status = close_mode_precheck()
+    history = list_formal_market_map_entries()
+    latest_replay = next(
+        (x for x in history if x.get("replay_ready")),
+        None,
+    )
+    status["latest_replay"] = (
+        {
+            "snapshot_id": latest_replay.get("snapshot_id"),
+            "market_cutoff": latest_replay.get("market_cutoff"),
+            "model_version": latest_replay.get("model_version"),
+        }
+        if latest_replay
+        else None
+    )
+    return status
+
+
+@app.get("/api/health")
+def health() -> dict:
+    return {
+        "status": "ok",
+        "units": [
+            "Market Map Builder / Acquisition",
+            "Market Map Builder / Calculation",
+        ],
+        "root": str(ROOT),
+        "data_root": str(DATA_ROOT),
+        "acquisition_script_exists": ACQ_SCRIPT.exists(),
+        "calculation_script_exists": CALC_SCRIPT.exists(),
+        "replay_fixture_exists": RAW_FIXTURE_DIR.exists(),
+        "calculation_fixture_exists": CALC_FIXTURE_DIR.exists(),
+    }

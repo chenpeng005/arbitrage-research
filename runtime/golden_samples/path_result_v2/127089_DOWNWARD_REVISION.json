@@ -1,0 +1,506 @@
+{
+  "path_result_id": "pr_research_413a5bcff4bc1ca9",
+  "task_id": "research_413a5bcff4bc1ca9",
+  "trigger_key": "REVISION_EVENT_CONDITION_MET:127089:DOWNWARD_REVISION:market-map-2026-09-24-20260924_234053:market-map-2026-09-24-20260924_234053:V2_GOLDEN_20260926",
+  "bond_code": "127089",
+  "bond_name": "晶澳转债",
+  "path_id": "DOWNWARD_REVISION",
+  "research_cutoff": "2026-09-24",
+  "path_research_canonical_path": "05 套利研究/AI-Engineering-Runtime/05_Path Knowledge/02_下修/02_Path-Research.md",
+  "knowledge_commit_sha": "490a65611339ec153319f3a2b686d16e437b80a6",
+  "review_ready": true,
+  "research_status": "COMPLETED",
+  "summary": {
+    "core_conclusion": "截至 2026-09-24，晶澳转债下修路径处于「本轮触发条件已满足（15/15，尚需 0 天，计数起点 2026-09-04）、董事会尚未就本轮表态」的节点。发行人过去 19 个月的行为轨迹是「反复触发—多次不修—两次真实下修」，且最近一次（2026-06-29 生效）已把 K 从 11.66 元修到 8.90 元、修到当时有效底价（股东会前20日均价 8.614 元与前一交易日均价 8.044 元的较高者），但正股继续下跌至 6.70 元，CV 仅 75.28，下修效果被股价下跌吞掉。因此本轮的核心问题不是「有没有下修空间」，而是「发行人是否愿意在 8.90 元基础上继续向下修、以及现实能修到多深」。",
+    "why": [
+      "当前事件状态锚：满足条件，触发计数 15/15，尚需 0 天，计数起点 2026-09-04（Engineering Anchor，2026-09-18 公告的 10/15 只是历史进度，不覆盖当前状态）。",
+      "发行人行为轨迹显示「不轻易修、但压力大时会真修」：2025-02/03/05 三次触发均不下修，2025-07 与 2026-06 两次真实下修，2026-07-30 与 2026-09-04 又两次不下修；最近一次下修（2026-06-29 生效）修到当时有效底价 8.90 元。",
+      "下修效果已被股价下跌吞掉：K=8.90、S=6.70，CV=75.28，仍低于 85% 触发线（7.565 元）与回售边界（0.7×K=6.23 元）之间，说明 8.90 元并未把正股抬出危险区。",
+      "规则硬底价当前不构成阻塞：最近一期经审计每股净资产 6.5962 元（2025-12-31，2026-04-29 披露）低于当前 K=8.90，股票面值 1 元更低，因此本轮现实可执行下修空间存在，硬底价主要由股东会前20日/前一交易日均价决定。",
+      "经济翻译：若现实下修把 CV 抬到 70—80 区间，正式估值网格对应中性债价约 115.0—118.2 元，相对当前 113.253 元有约 +1.7 至 +4.9 元空间；若只做程序型浅修（CV 仍约 75），则几乎无正向空间。",
+      "回售窗口尚未开启（2027-07-18 起），当前首要目标更接近「促转股/降低未来兑付压力」而非「防回售」，但 2027-07-18 后回售管理会升级为首要目标。"
+    ],
+    "economic_result": "相对当前债价 113.253 元：若本轮最终落地为「经济型下修」（现实 CV 抬到约 70—80），按正式估值网格中性债价约 115.0—118.2 元，对应中性经济空间约 +1.7% 至 +4.9%；若只做「程序型浅修」（CV 仍约 75），中性债价约 116.5 元附近但相对当前价空间有限且高度依赖事件后估值。保守情景（CV≈65—70）中性债价约 113.5—115.1 元，接近当前价，属于「正向存在但估值敏感」。",
+    "main_risks": [
+      "发行人可能再次选择不下修（2026-07-30、2026-09-04 已连续两次不下修），本轮可能重演「触发但不修」。",
+      "即使下修，若只做程序型浅修（新 K 仅略低于 8.90），CV 改善有限，经济空间可能不足以覆盖交易成本。",
+      "正股继续下跌会再次吞掉下修效果，使 CV 无法稳定站上 70—80。",
+      "下修需股东会三分之二通过且持债股东回避，治理环节存在不确定性。",
+      "剩余规模 89.588 亿元偏大，估值网格已含规模下移调整，事件后溢价可能低于历史可比。"
+    ],
+    "next_focus": "本轮董事会是否就 2026-09-04 起算的新触发周期正式表态（不下修公告 / 董事会提议下修公告），以及若提议下修，股东会召开日与最终新 K 的确定。"
+  },
+  "logic_chain": [
+    {
+      "step_id": "R1_CURRENT_START",
+      "title": "当前经济起点与事件状态",
+      "question": "当前债价、正股、转股价、转股价值、期限/余额与下修事件状态是什么？",
+      "state": "KNOWN",
+      "answer": "截至 2026-09-24：债价 113.253 元，正股 6.70 元，当期转股价 8.90 元，CV=75.28，剩余期限约 33.77 个月，剩余规模 89.588 亿元；下修事件状态=满足条件，触发计数 15/15，尚需 0 天，计数起点 2026-09-04。",
+      "facts": [
+        "current_bond_price=113.253 元",
+        "current_stock_price=6.70 元",
+        "current_conversion_price=8.90 元",
+        "current_conversion_value=75.28089887640449",
+        "remaining_months=33.77482083821023",
+        "remaining_size=89.588 亿元",
+        "maturity_date=2029-07-18",
+        "revision_event_state=满足条件",
+        "revision_count=15/15",
+        "minimum_days_needed=0 天",
+        "reset_start=2026-09-04"
+      ],
+      "reasoning": "Engineering Anchor 已冻结当前状态：截至 2026-09-24 触发计数 15/15、尚需 0 天、计数起点 2026-09-04。2026-09-18 公告披露的 10/15 是 2026-09-04 至 2026-09-17 期间的历史进度，只用于解释计数如何演变，不覆盖当前 15/15 状态。CV=100×6.70/8.90=75.28，与预装值一致。",
+      "conclusion": "本轮下修触发条件已满足，董事会尚未就本轮（2026-09-04 起算周期）表态，当前处于「已触发、待董事会决定」节点。",
+      "evidence_ids": [
+        "PRELOADED:REVISION_CONTRACT_FACT",
+        "PRELOADED:MARKET_STATE",
+        "AN202609171829516264",
+        "AN202609031828971953"
+      ]
+    },
+    {
+      "step_id": "R2_EXECUTABLE_SPACE",
+      "title": "现实可执行下修空间与有效硬底价",
+      "question": "合同上是否仍有现实可执行的下修空间？有效硬底价是什么？",
+      "state": "KNOWN",
+      "answer": "有现实可执行空间。有效硬底价取「股东会召开日前20个交易日均价、前一交易日均价、最近一期经审计每股净资产、股票面值」中的最高者；当前最近一期经审计每股净资产 6.5962 元、股票面值 1 元均低于当前 K=8.90，因此硬底价主要由股东会前均价决定，理论上存在向下修正空间。",
+      "facts": [
+        "下修条款：任意连续30个交易日中至少15个交易日收盘价低于当期转股价的85%时，董事会有权提议下修",
+        "修正后转股价不低于股东会召开日前20个交易日均价与前一交易日均价的较高者",
+        "修正后转股价不低于最近一期经审计每股净资产值和股票面值",
+        "最近一期经审计每股净资产=6.596163803973 元（2025-12-31，2026-04-29 披露）",
+        "股票面值=1 元",
+        "当前 K=8.90 元",
+        "触发线=8.90×85%=7.565 元"
+      ],
+      "reasoning": "净资产 6.5962 元 < 当前 K 8.90 元，面值 1 元更低，故净资产/面值不构成阻塞；只要股东会前均价低于 8.90，就存在向下修正空间。2026-06 那次下修正是以股东会前20日均价 8.614 元与前一交易日均价 8.044 元的较高者 8.614 元为底价，最终定为 8.90 元（略高于底价）。",
+      "conclusion": "本轮不存在永久性下修阻塞，现实可执行空间存在，但深度受股东会前均价约束，属于「均价底价型」而非「净资产底价型」。",
+      "evidence_ids": [
+        "PRELOADED:REVISION_CONTRACT_FACT",
+        "AN202606261824959608",
+        "AN202609031828971953"
+      ]
+    },
+    {
+      "step_id": "R3_BEHAVIOR_HISTORY",
+      "title": "发行人真实历史下修/不修行为",
+      "question": "发行人过去真实的下修与不修行为说明了什么？",
+      "state": "KNOWN",
+      "answer": "19 个月内共 19 条下修相关公告：触发提示 8 次、不下修 5 次、董事会提议 3 次、最终下修 2 次。行为模式是「反复触发—多次不修—压力大时真修」，且最近一次（2026-06-29 生效）修到当时有效底价 8.90 元。",
+      "facts": [
+        "2025-02-18 不下修",
+        "2025-03-11 不下修",
+        "2025-04-01 董事会提议下修",
+        "2025-05-13 不下修",
+        "2025-07-04 董事会提议下修",
+        "2025-07-23 下修生效：K 由 38.22 元修至 11.66 元",
+        "2026-06-11 董事会提议下修",
+        "2026-06-27 下修生效：K 由 11.66 元修至 8.90 元（2026-06-29 生效）",
+        "2026-07-30 不下修",
+        "2026-09-04 不下修（下一触发周期自 2026-09-04 重新起算）",
+        "历史下修：3 次触发提议 / 成功 2 次"
+      ],
+      "reasoning": "不下修次数多于下修次数，说明发行人有明显等待意愿；但两次真实下修都发生在触发后不久且修到当时底价，说明当压力足够大时发行人愿意付出稀释成本。2026-06 修到 8.90 元后仅两个月又触发，说明 8.90 元并未解决问题，为下一轮继续下修提供了行为证据。",
+      "conclusion": "发行人不是「坚决不修」型，而是「择时下修」型；最近一次修到底的行为与修后再次触发的事实，共同支持本轮仍存在真实下修可能。",
+      "evidence_ids": [
+        "PRELOADED:REVISION_NOTICE_INDEX",
+        "AN202606261824959608",
+        "AN202609031828971953"
+      ]
+    },
+    {
+      "step_id": "R4_ISSUER_OBJECTIVE",
+      "title": "本轮首要目标与治理瓶颈",
+      "question": "发行人本轮推进下修的首要目标是什么？当前治理瓶颈在哪里？",
+      "state": "MIXED",
+      "answer": "当前（2026-09-24）回售窗口尚未开启（2027-07-18 起），首要目标更接近「促转股 / 降低未来到期与回售兑付压力」，而非「防回售」；治理瓶颈在于下修需股东会三分之二通过且持债股东回避，以及董事会是否愿意在 8.90 元基础上继续让渡股权。",
+      "facts": [
+        "普通回售窗口：2027-07-18 至 2029-07-17（最后两个计息年度）",
+        "回售触发条件：连续30个交易日收盘价低于当期转股价的70%（当前边界=8.90×70%=6.23 元）",
+        "当前 S=6.70 元，高于回售边界 6.23 元，尚未进入回售触发计数",
+        "剩余规模 89.588 亿元，到期日 2029-07-18",
+        "下修需出席股东会股东所持表决权三分之二以上通过，持债股东回避",
+        "2026-06 下修经 2026 年第一次临时股东会通过"
+      ],
+      "reasoning": "回售窗口未开启，故「防回售」尚不是当前首要目标；但 CV=75.28 长期低于 100，转股几乎不发生，发行人面临 2029 年到期 89.588 亿元现金兑付压力，促转股/降低兑付压力是更合理的当前目标。治理上，2026-06 股东会已成功通过一次下修，说明治理通道可用，但每次仍需重新走流程。",
+      "conclusion": "本轮首要目标判断为「促转股 / 降低未来兑付压力」，治理瓶颈为「董事会意愿 + 股东会通过」，其中 2026-06 已证明治理通道可用。",
+      "evidence_ids": [
+        "PRELOADED:CROSS_PATH_PUT",
+        "PRELOADED:CROSS_PATH_MATURITY",
+        "AN202606261824959608"
+      ]
+    },
+    {
+      "step_id": "R5_RULE_BOUNDARY",
+      "title": "规则允许的修到底边界",
+      "question": "如果修到底，规则允许新转股价最低到哪里？",
+      "state": "DERIVED",
+      "answer": "规则边界=股东会召开日前20个交易日均价与前一交易日均价的较高者（且不低于净资产 6.5962 元与面值 1 元）。以当前 S=6.70 元近似，若股东会前均价与当前股价接近，修到底后 CV 理论上可接近 100；但这是上界，不是现实结果。",
+      "facts": [
+        "底价规则：不低于股东会前20日均价与前一交易日均价的较高者",
+        "净资产底价=6.5962 元（低于当前 K，不阻塞）",
+        "面值底价=1 元",
+        "当前 S=6.70 元",
+        "2026-06 实际底价=8.614 元（股东会前20日均价），最终 K=8.90 元"
+      ],
+      "reasoning": "均价底价型转债在事件时点正股价格未相对最终底价发生明显变化时，修到底后的最大可达 CV 天然锚定在约 100 附近（CV=100×S/K_floor，K_floor≈S 时 CV≈100）。但最终底价在股东会召开日才锁定，当前只能给动态估计。",
+      "conclusion": "规则边界回答「最多能修多深」：若股东会前均价与当前股价接近，修到底 CV 理论上可接近 100；但这是上界，不得冒充现实结果。",
+      "evidence_ids": [
+        "PRELOADED:REVISION_CONTRACT_FACT",
+        "AN202606261824959608"
+      ]
+    },
+    {
+      "step_id": "R6_REALISTIC_RESULT",
+      "title": "现实更可能的新 K / CV 区间",
+      "question": "结合行为证据，发行人现实更可能把 K 修到哪里？",
+      "state": "MIXED",
+      "answer": "现实更可能落在「程序型浅修」与「经济型下修」之间：新 K 大致在 7.5—8.6 元区间，对应 CV 约 78—89；若发行人只想重置计数/购买时间，则可能只做极浅下修（新 K 接近 8.90，CV 仍约 75）。",
+      "facts": [
+        "最近一次真实 K=8.90 元（2026-06-29 生效），修到当时底价",
+        "修后仅两个月再次触发，说明 8.90 元未解决问题",
+        "2026-07-30、2026-09-04 连续两次不下修，显示等待意愿",
+        "当前 S=6.70 元，CV=75.28",
+        "回售边界=6.23 元，CV≈70 对应 K≈9.57 元（100×6.70/70）",
+        "CV≈100 对应 K≈6.70 元"
+      ],
+      "reasoning": "发行人历史显示「不轻易修、但压力大时修到底」。当前回售窗口未开启，压力尚未到最强，因此本轮可能仍偏保守；但 8.90 元已被证明无效，若继续下修，为真正改善转股条件，新 K 需明显低于 8.90。以当前 S=6.70 为参照，CV≈70（回售边界）对应 K≈9.57，CV≈80 对应 K≈8.375，CV≈90 对应 K≈7.44。综合行为证据，现实区间取 CV 约 75—85 较为合理，对应新 K 约 7.9—8.9 元。",
+      "conclusion": "现实预计 CV 区间约 75—85（新 K 约 7.9—8.9 元），置信度中等；不排除只做程序型浅修（CV 仍约 75）或再次不下修。",
+      "evidence_ids": [
+        "PRELOADED:REVISION_NOTICE_INDEX",
+        "AN202606261824959608",
+        "AN202609031828971953",
+        "PRELOADED:REVISION_CONTRACT_FACT"
+      ]
+    },
+    {
+      "step_id": "R7_PRICE_TRANSLATION",
+      "title": "现实 CV → 正式估值网格债价 → 经济空间",
+      "question": "把现实 CV 区间翻译成转债价格，相对当前价有多少经济空间？",
+      "state": "DERIVED",
+      "answer": "按正式估值网格：CV=75 → 中性债价 116.52 元（+3.27 元）；CV=80 → 118.15 元（+4.90 元）；CV=85 → 119.88 元（+6.63 元）。保守端 CV=70 → 114.98 元（+1.73 元）；CV=65 → 113.54 元（+0.29 元）。",
+      "facts": [
+        "CV_65：neutral_reference=113.6093069966223，reference_minus_current_price=+0.28931898392417565",
+        "CV_70：neutral_reference=115.0518337329462，reference_minus_current_price=+1.7318457202480886",
+        "CV_75：neutral_reference=116.58891086411576，reference_minus_current_price=+3.268922851417642",
+        "CV_80：neutral_reference=118.220538390131，reference_minus_current_price=+4.900550377432879",
+        "CV_85：neutral_reference=119.9467163109919，reference_minus_current_price=+6.626728298293784",
+        "当前债价=113.253 元"
+      ],
+      "reasoning": "现实 CV 区间 75—85 对应中性债价 116.52—119.88 元，相对当前 113.253 元有 +3.27 至 +6.63 元空间；保守端 CV=65—70 对应 113.54—115.05 元，空间 +0.29 至 +1.73 元，接近当前价。因此属于「正向经济性现实存在，但缺乏保守价格保护，对事件后估值敏感」。",
+      "conclusion": "中性经济空间约 +2.9% 至 +5.9%，保守经济空间约 +0.3% 至 +1.5%；经济性状态为「保守不正、中性为正」的估值敏感型。",
+      "evidence_ids": [
+        "PRELOADED:VALUATION_SCENARIO_GRID"
+      ]
+    },
+    {
+      "step_id": "R8_PATH_JUDGMENT",
+      "title": "路径综合判断与关键反证",
+      "question": "为什么可能修、现实可能修到哪里、修成后为什么可能赚钱？关键反证是什么？",
+      "state": "MIXED",
+      "answer": "可能修：触发条件已满足（15/15），8.90 元已被证明无效，发行人历史上有压力时真修的行为。现实可能修到 CV 约 75—85（新 K 约 7.9—8.9 元）。修成后赚钱：CV 抬到 75—85 对应中性债价 116.5—119.9 元，相对当前 113.253 元有 +3.3 至 +6.6 元空间。关键反证：2026-07-30、2026-09-04 连续两次不下修，且回售窗口未开启，发行人可能继续等待。",
+      "facts": [
+        "触发计数 15/15，尚需 0 天",
+        "2026-07-30 不下修",
+        "2026-09-04 不下修",
+        "最近一次真实下修 K=8.90 元",
+        "CV=75.28",
+        "现实 CV 区间 75—85 对应中性债价 116.52—119.88 元",
+        "当前债价 113.253 元"
+      ],
+      "reasoning": "支持证据：触发条件已满足、8.90 元无效、历史有真修行为、净资产底价不阻塞。反证：连续两次不下修显示等待意愿、回售窗口未开启使压力不足、剩余规模大可能压制事件后溢价。综合看，本轮下修「有一定可能」落地，且落地后经济空间为正但估值敏感。",
+      "conclusion": "本轮下修最终成功成立程度为「有一定可能」；若落地，现实 CV 约 75—85，中性经济空间约 +2.9% 至 +5.9%，属于估值敏感型正向机会。",
+      "evidence_ids": [
+        "PRELOADED:REVISION_NOTICE_INDEX",
+        "AN202609031828971953",
+        "AN202606261824959608",
+        "PRELOADED:VALUATION_SCENARIO_GRID"
+      ]
+    }
+  ],
+  "fact_spine": {
+    "current_state": {
+      "bond_price": 113.253,
+      "stock_price": 6.7,
+      "conversion_price": 8.9,
+      "conversion_value": 75.28089887640449,
+      "remaining_months": 33.77482083821023,
+      "remaining_size_yi": 89.588,
+      "maturity_date": "2029-07-18"
+    },
+    "revision_event": {
+      "revision_event_state": "满足条件",
+      "revision_count": "15/15",
+      "minimum_days_needed": "0 天",
+      "reset_start": "2026-09-04",
+      "trigger_price_text": "7.56585%",
+      "permanent_revision_blocker": false
+    },
+    "revision_clause": {
+      "trigger": "任意连续30个交易日中至少15个交易日收盘价低于当期转股价的85%",
+      "floor": "不低于股东会前20日均价与前一交易日均价的较高者，且不低于最近一期经审计每股净资产值和股票面值",
+      "shareholder_approval": "出席股东会股东所持表决权三分之二以上通过，持债股东回避"
+    },
+    "hard_floor": {
+      "latest_audited_nav_per_share": 6.596163803973,
+      "nav_report_date": "20251231",
+      "nav_announcement_date": "2026-04-29",
+      "par_value": 1.0,
+      "nav_floor_binding": false
+    },
+    "behavior_history": {
+      "total_revision_notices": 19,
+      "expected_trigger": 8,
+      "no_revision": 5,
+      "revision_action": 3,
+      "final_revision": 2,
+      "last_revision": {
+        "effective_date": "2026-06-29",
+        "from": 11.66,
+        "to": 8.9
+      },
+      "last_no_revision": "2026-09-04"
+    },
+    "cross_path": {
+      "put_window_start": "2027-07-18",
+      "put_window_end": "2029-07-17",
+      "put_trigger": "连续30个交易日收盘价低于当期转股价的70%",
+      "put_boundary_current": 6.23,
+      "maturity_remaining_contract_cash": 111.3
+    },
+    "financial_first_layer": {
+      "statement_date": "20260630",
+      "scope": "CONSOLIDATED",
+      "money_funds_yi": 224.61932669770002,
+      "asset_liability_ratio_pct": 79.3339887415,
+      "operating_cash_flow_yi": 8.6100556938,
+      "financing_cash_flow_yi": -14.5584708025,
+      "net_cash_flow_yi": -10.9256688467
+    },
+    "structured_rating": "AA+sti"
+  },
+  "judgments": {
+    "current_node": "本轮触发条件已满足（15/15），董事会尚未就本轮表态",
+    "issuer_objective": "促转股 / 降低未来到期与回售兑付压力（回售窗口 2027-07-18 才开启，防回售尚非首要目标）",
+    "final_success_probability": "有一定可能",
+    "rule_boundary": "修到底 CV 理论上可接近 100（均价底价型），但为规则上界",
+    "realistic_result": "现实 CV 约 75—85，对应新 K 约 7.9—8.9 元，置信度中等",
+    "economic_state": "保守不正、中性为正，估值敏感型正向机会",
+    "governance_bottleneck": "董事会意愿 + 股东会三分之二通过（2026-06 已证明通道可用）",
+    "uncertainty_note": "发行人真实动机无法直接观测，本判断基于可见行为轨迹；若正股继续下跌或发行人再次选择不下修，结论需下调"
+  },
+  "key_evidence": [
+    {
+      "evidence_id": "PRELOADED:REVISION_CONTRACT_FACT",
+      "source_type": "structured_contract_fact",
+      "title": "晶澳转债下修合同事实（事件状态/计数/底价）",
+      "source_date": "2026-09-24",
+      "locator": "evidence_pack.facts.existing_contract_fact",
+      "supports": [
+        "R1_CURRENT_START",
+        "R2_EXECUTABLE_SPACE",
+        "R5_RULE_BOUNDARY"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "evidence_id": "PRELOADED:MARKET_STATE",
+      "source_type": "market_snapshot",
+      "title": "2026-09-24 市场截面（P/S/K/CV/期限/余额）",
+      "source_date": "2026-09-24",
+      "locator": "path_research_task.market_state",
+      "supports": [
+        "R1_CURRENT_START"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "evidence_id": "PRELOADED:REVISION_NOTICE_INDEX",
+      "source_type": "official_announcement_index",
+      "title": "晶澳转债下修相关公告索引（19 条）",
+      "source_date": "2026-09-24",
+      "locator": "evidence_pack.facts.official_notice_behavior_index",
+      "supports": [
+        "R3_BEHAVIOR_HISTORY",
+        "R6_REALISTIC_RESULT",
+        "R8_PATH_JUDGMENT"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "evidence_id": "PRELOADED:VALUATION_SCENARIO_GRID",
+      "source_type": "formal_valuation_resolver",
+      "title": "Bond Valuation Resolver Scenario Grid（CV 50—110）",
+      "source_date": "2026-09-24",
+      "locator": "evidence_pack.facts.valuation_scenario_grid",
+      "supports": [
+        "R7_PRICE_TRANSLATION",
+        "R8_PATH_JUDGMENT"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "evidence_id": "PRELOADED:CROSS_PATH_PUT",
+      "source_type": "cross_path_contract_fact",
+      "title": "同券普通回售条款与窗口状态",
+      "source_date": "2026-09-24",
+      "locator": "evidence_pack.facts.cross_path_put",
+      "supports": [
+        "R4_ISSUER_OBJECTIVE"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "evidence_id": "PRELOADED:CROSS_PATH_MATURITY",
+      "source_type": "cross_path_contract_fact",
+      "title": "同券到期合同现金责任（111.3 元/张）",
+      "source_date": "2026-09-24",
+      "locator": "evidence_pack.facts.cross_path_maturity",
+      "supports": [
+        "R4_ISSUER_OBJECTIVE"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "evidence_id": "PRELOADED:FINANCIAL_FIRST_LAYER",
+      "source_type": "financial_statement",
+      "title": "2026H1 合并口径财务第一层",
+      "source_date": "2026-08-28",
+      "locator": "evidence_pack.facts.financial_first_layer",
+      "supports": [
+        "R4_ISSUER_OBJECTIVE"
+      ],
+      "confidence": "MEDIUM"
+    },
+    {
+      "evidence_id": "PRELOADED:STRUCTURED_RATING",
+      "source_type": "structured_rating",
+      "title": "晶澳转债结构化评级 AA+sti",
+      "source_date": "2026-09-24",
+      "locator": "evidence_pack.facts.structured_rating",
+      "supports": [
+        "R7_PRICE_TRANSLATION"
+      ],
+      "confidence": "MEDIUM"
+    },
+    {
+      "evidence_id": "AN202609031828971953",
+      "source_type": "eastmoney_announcement",
+      "title": "晶澳科技:关于不向下修正“晶澳转债”转股价格的公告",
+      "source_date": "2026-09-04",
+      "locator": "https://data.eastmoney.com/notices/detail/002459/AN202609031828971953.html",
+      "supports": [
+        "R1_CURRENT_START",
+        "R3_BEHAVIOR_HISTORY",
+        "R8_PATH_JUDGMENT"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "evidence_id": "AN202606261824959608",
+      "source_type": "eastmoney_announcement",
+      "title": "晶澳科技:关于向下修正“晶澳转债”转股价格的公告",
+      "source_date": "2026-06-27",
+      "locator": "https://data.eastmoney.com/notices/detail/002459/AN202606261824959608.html",
+      "supports": [
+        "R2_EXECUTABLE_SPACE",
+        "R3_BEHAVIOR_HISTORY",
+        "R5_RULE_BOUNDARY",
+        "R6_REALISTIC_RESULT"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "evidence_id": "AN202609171829516264",
+      "source_type": "eastmoney_announcement",
+      "title": "晶澳科技:关于“晶澳转债”预计触发转股价格修正条件的提示性公告",
+      "source_date": "2026-09-18",
+      "locator": "https://data.eastmoney.com/notices/detail/002459/AN202609171829516264.html",
+      "supports": [
+        "R1_CURRENT_START"
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "unknown_a": [
+    "未来董事会是否就本轮触发正式提议下修",
+    "未来最终新转股价 K 的精确值",
+    "未来股东会表决结果",
+    "未来正股价格走势",
+    "未来实际转股率与余额下降幅度"
+  ],
+  "unknown_b": [],
+  "key_risks": [
+    "发行人可能再次选择不下修（2026-07-30、2026-09-04 已连续两次不下修）",
+    "即使下修，若只做程序型浅修，CV 改善有限，经济空间可能不足以覆盖交易成本",
+    "正股继续下跌会再次吞掉下修效果",
+    "股东会三分之二通过且持债股东回避的治理不确定性",
+    "剩余规模 89.588 亿元偏大，事件后溢价可能低于历史可比"
+  ],
+  "failure_conditions": [
+    "本轮董事会公告明确不下修，且下一触发周期重新起算",
+    "正股持续下跌使 CV 无法稳定站上 70—80",
+    "股东会否决下修议案",
+    "发行人长期不再提议下修，等待意愿显著增强",
+    "市场整体估值下移使估值网格整体下移"
+  ],
+  "next_update_nodes": [
+    {
+      "date": "2026-10-01",
+      "event": "本轮触发周期（2026-09-04 起算）董事会是否就下修正式表态（不下修公告或董事会提议下修公告）"
+    },
+    {
+      "date": null,
+      "event": "若董事会提议下修，股东会通知与召开日、最终新 K 公告"
+    },
+    {
+      "date": "2027-07-18",
+      "event": "普通回售窗口开启，回售管理可能升级为首要目标"
+    },
+    {
+      "date": null,
+      "event": "正股价格相对 8.90 元与 6.23 元（回售边界）的位置变化"
+    }
+  ],
+  "economic_status_at_research": "KEEP",
+  "engineering_anchor_reference": {
+    "current_event_state": "满足条件",
+    "market_state": {
+      "current_bond_price": 113.253,
+      "current_stock_price": 6.7,
+      "current_conversion_price": 8.9,
+      "current_conversion_value": 75.28089887640449,
+      "remaining_months": 33.77482083821023,
+      "remaining_size": 89.588,
+      "maturity_date": "2029-07-18"
+    },
+    "anchor_statement": "截至市场截面 2026-09-24：当前下修事件状态=满足条件；触发计数=15/15；尚需=0 天；计数起点=2026-09-04。更早公告中的较低计数只代表历史进度，不得覆盖本句当前状态。"
+  },
+  "economic_judgment_reference": {
+    "economic_registry_run_id": "20260925_134900_discovery_3c07d557",
+    "market_snapshot_id": "market-map-2026-09-24-20260924_234053",
+    "economic_judgment": {
+      "runtime_status": "CONNECTED",
+      "bond_code": "127089",
+      "bond_name": "晶澳转债",
+      "economic_status": "KEEP",
+      "reason": "POSITIVE_REVISION_ECONOMIC_SPACE",
+      "mechanism_available": true,
+      "permanent_revision_blocker": false,
+      "current_price": 113.253,
+      "current_cv": 75.28089887640449,
+      "stock_price": 6.7,
+      "audited_nav": 6.596163803973,
+      "nav_floor_decision_sensitive": false,
+      "nav_floor_applicable": null,
+      "revision_cv_ceiling": 100.0,
+      "revision_cv_ceiling_basis": "NAV_SCREEN_NOT_BINDING",
+      "neutral_reference": 125.69255244264859,
+      "discovery_reference": 125.62556442995047,
+      "discovery_spread": 12.372564429950472,
+      "model_zone": "CORE",
+      "valuation_sensitive": false
+    }
+  }
+}
