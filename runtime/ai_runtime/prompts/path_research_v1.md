@@ -93,6 +93,9 @@ research_status = NEEDS_EVIDENCE 或 UNRESOLVED
 ## 6. Judgment 原则
 
 - 区分事实、解释、判断和未来不确定性；
+- task.market_state.maturity_date 是合同到期日；兑付登记日、最后交易日、最后转股日不得误标成“到期日”；
+- 对下修：若 cutoff 前已有正式董事会公告明确“本次不下修”，必须把“当前这一轮结果=NO_REVISION/已结束”与“剩余生命周期未来仍可能重新进入下修”分开表达；不得在本轮结果已知后再把本轮写成“小概率成功”；
+- “发行人真实动机无法被直接观测”不是 UNKNOWN-B；应基于可见行为给出带置信度的解释，无法可靠判断就写入 judgments 的不确定性。UNKNOWN-B 只放当前公开信息本可取得但尚未核验的具体事实；
 - 不把“规则允许的上界”写成“现实一定结果”；
 - 不把聚合来源的状态直接包装成公司意愿；
 - 信用 / 支付稳定性判断必须说明闭合链与失效条件；
@@ -125,10 +128,10 @@ PRELOADED:<简短稳定名称>
 - `path_result_id` 必须等于输入中的 `expected_path_result_id`；
 - `research_cutoff` 必须等于输入中的 `research_cutoff`；
 - `path_research_canonical_path` 和 `knowledge_commit_sha` 必须原样回填；
-- `economic_judgment_reference` 至少保留原 task 的：
+- `economic_judgment_reference` 必须原样指回本次 task：
   - economic_registry_run_id
   - market_snapshot_id
-  - economic_judgment
+  - economic_judgment（必须复制 task 中完整的 economic_judgment 对象，不得压缩成 KEEP 字符串）
 - `key_evidence` 中每条必须有来源身份；
 - `next_update_nodes` 描述未来需要重新研究的现实节点，不是价格预测。
 
