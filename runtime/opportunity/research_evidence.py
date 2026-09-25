@@ -43,6 +43,42 @@ def _begin_date(cutoff: str) -> str:
     return f"{year - 1}0101"
 
 
+def _ordinary_put_window_state(
+    fact: dict[str, Any] | None,
+    cutoff: str,
+) -> dict[str, Any]:
+    if not fact or not fact.get("ordinary_put_clause_exists"):
+        return {
+            "ordinary_put_clause_exists": False,
+            "state": "NO_ORDINARY_PUT",
+            "window_start": None,
+        }
+    value_date = pd.to_datetime(fact.get("value_date"), errors="coerce")
+    maturity_date = pd.to_datetime(
+        fact.get("contract_maturity_date"), errors="coerce"
+    )
+    cutoff_date = pd.to_datetime(cutoff, errors="coerce")
+    if pd.isna(value_date) or pd.isna(maturity_date) or pd.isna(cutoff_date):
+        return {
+            "ordinary_put_clause_exists": True,
+            "state": "WINDOW_UNKNOWN",
+            "window_start": None,
+        }
+    term_years = round((maturity_date - value_date).days / 365.2425)
+    window_start = value_date + pd.DateOffset(years=max(term_years - 2, 0))
+    return {
+        "ordinary_put_clause_exists": True,
+        "state": (
+            "IN_PUT_WINDOW"
+            if cutoff_date >= window_start
+            else "BEFORE_PUT_WINDOW"
+        ),
+        "window_start": str(window_start.date()),
+        "contract_maturity_date": str(maturity_date.date()),
+        "resale_clause": fact.get("resale_clause"),
+    }
+
+
 def build_research_evidence(
     task_batch_path: Path,
     data_root: Path,
@@ -74,6 +110,20 @@ def build_research_evidence(
         / "discovery_market_input.json"
     )
     market_rows = _index(market_input["rows"])
+    registry_bonds = _index(registry["bonds"])
+
+    maturity_run = registry["path_summary"]["MATURITY_CASH"]["child_run_id"]
+    put_run = registry["path_summary"]["PUT"]["child_run_id"]
+    maturity_contract_rows = _index(
+        _read_json(
+            data_root / "runs" / maturity_run / "maturity_contract_facts.json"
+        )["rows"]
+    )
+    put_contract_rows = _index(
+        _read_json(
+            data_root / "runs" / put_run / "put_contract_facts.json"
+        )["rows"]
+    )
 
     task_packages = [
         _read_json(Path(item["task_path"]))
@@ -88,7 +138,7 @@ def build_research_evidence(
     balance_index: dict[str, dict[str, Any]] = {}
     cashflow_index: dict[str, dict[str, Any]] = {}
 
-    if maturity_tasks:
+    if maturity_tasks or revision_tasks:
         balance, cashflow = fetch_bulk_financial(statement_date)
         balance.to_csv(raw_dir / "bulk_balance_sheet.csv", index=False)
         cashflow.to_csv(raw_dir / "bulk_cash_flow.csv", index=False)
@@ -172,6 +222,30 @@ def build_research_evidence(
             ]
 
         elif path_id == "DOWNWARD_REVISION":
+            financial = compact_financial_fact(
+                stock_code,
+                statement_date,
+                balance_index,
+                cashflow_index,
+            )
+            rating = fetch_structured_rating(code)
+            rating_rows.append({
+                "bond_code": code,
+                "bond_name": task["bond_name"],
+                "stock_code": stock_code,
+                **rating,
+            })
+
+            cross_maturity_judgment = (
+                registry_bonds[code]["paths"].get("MATURITY_CASH") or {}
+            )
+            cross_maturity_contract = maturity_contract_rows.get(code)
+            cross_put_contract = put_contract_rows.get(code)
+            cross_put_state = _ordinary_put_window_state(
+                cross_put_contract,
+                batch["market_cutoff"],
+            )
+
             frame, notices = fetch_revision_notice_index(
                 stock_code,
                 _begin_date(batch["market_cutoff"]),
@@ -191,14 +265,42 @@ def build_research_evidence(
                     "contract_fact"
                 ),
                 "official_notice_behavior_index": notices,
+                "cross_path_put": {
+                    "contract_fact": cross_put_contract,
+                    "window_state": cross_put_state,
+                },
+                "cross_path_maturity": {
+                    "economic_judgment": cross_maturity_judgment,
+                    "contract_fact": cross_maturity_contract,
+                },
+                "financial_first_layer": financial,
+                "structured_rating": rating,
             }
-            sources = [{
-                "source_id": "REVISION_NOTICE_INDEX",
-                "source": "AKShare/Eastmoney official-announcement index",
-                "begin_date": _begin_date(batch["market_cutoff"]),
-                "end_date": batch["market_cutoff"],
-                "stock_code": stock_code,
-            }]
+            sources = [
+                {
+                    "source_id": "REVISION_NOTICE_INDEX",
+                    "source": "AKShare/Eastmoney official-announcement index",
+                    "begin_date": _begin_date(batch["market_cutoff"]),
+                    "end_date": batch["market_cutoff"],
+                    "stock_code": stock_code,
+                },
+                {
+                    "source_id": "CROSS_PATH_RUNTIME_FACTS",
+                    "source": "Economic Path Registry + child Path contract facts",
+                    "scope": "SAME_BOND",
+                },
+                {
+                    "source_id": "BULK_FINANCIALS",
+                    "source": financial["source"],
+                    "statement_date": statement_date,
+                    "scope": "CONSOLIDATED",
+                },
+                {
+                    "source_id": "STRUCTURED_RATING",
+                    "source": rating["source"],
+                    "scope": "BOND",
+                },
+            ]
             coverage = {
                 "revision_notice_source_retrieved": True,
                 "revision_behavior_history_nonempty": bool(notices),
@@ -206,9 +308,20 @@ def build_research_evidence(
                 "behavior_history_status": (
                     "HISTORY_FOUND" if notices else "NO_RELEVANT_HISTORY_AS_OF_CUTOFF"
                 ),
+                "cross_path_put_fact_matched": cross_put_contract is not None,
+                "cross_path_maturity_fact_matched": (
+                    cross_maturity_contract is not None
+                ),
+                "financial_matched": (
+                    financial["balance_sheet_matched"]
+                    and financial["cash_flow_matched"]
+                ),
+                "rating_matched": bool(rating["matched"]),
             }
             missing_or_deferred = [
                 "primary_document_semantic_read_for_decision_sensitive_events",
+                "latest_rating_report_semantic_review_if_material",
+                "hard_credit_event_semantic_review_if_material",
                 "issuer_objective_interpretation",
                 "governance_bottleneck_interpretation",
                 "realistic_revision_depth_judgment",
