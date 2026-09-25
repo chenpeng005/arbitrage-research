@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>机会 Review｜机会发现运行台</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/review.css">
+</head>
+<body>
+  <main class="shell review-shell">
+    <header class="hero review-hero">
+      <div>
+        <p class="eyebrow">Opportunity Discovery Runtime · Review</p>
+        <h1>机会 Review</h1>
+        <p class="sub">只读 Candidate Pool / Opportunity Record；展示不改变 Runtime。</p>
+      </div>
+      <div class="review-head-actions">
+        <a class="ghost-link" href="/">返回运行台</a>
+        <div id="reviewOverall" class="overall idle">加载中</div>
+      </div>
+    </header>
+
+    <section id="reviewMeta" class="card meta muted">正在读取最新 Candidate Pool。</section>
+
+    <section class="summary card">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">当前正式候选池</p>
+          <h2>全量 KEEP 状态</h2>
+        </div>
+        <span id="visibleCount" class="muted">—</span>
+      </div>
+      <div id="reviewSummary" class="summary-grid review-summary"></div>
+    </section>
+
+    <section class="card review-filter">
+      <div class="filter-field filter-search">
+        <label for="reviewSearch">搜索</label>
+        <input id="reviewSearch" type="search" placeholder="代码或转债名称">
+      </div>
+      <div class="filter-field">
+        <label for="reviewPath">Path</label>
+        <select id="reviewPath">
+          <option value="">全部 Path</option>
+          <option value="MATURITY_CASH">到期现金</option>
+          <option value="PUT">回售</option>
+          <option value="DOWNWARD_REVISION">下修</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label for="reviewState">Research State</label>
+        <select id="reviewState">
+          <option value="">全部状态</option>
+          <option value="COMPLETED">已完成深研</option>
+          <option value="HOLD_WAITING_EVIDENCE">等待证据</option>
+          <option value="NOT_TRIGGERED">尚未触发深研</option>
+          <option value="PENDING">等待研究</option>
+          <option value="IN_PROGRESS">研究中</option>
+        </select>
+      </div>
+      <button id="reviewReset" type="button">重置</button>
+    </section>
+
+    <section id="reviewNotice" class="card review-note">
+      <strong>阅读口径：</strong>
+      <span>Economic KEEP 是候选池准入依据；NOT_TRIGGERED 与 HOLD 仍然是 KEEP，只代表研究状态不同。</span>
+    </section>
+
+    <section id="reviewList" class="review-list">
+      <article class="card muted">正在加载候选债券……</article>
+    </section>
+
+    <section class="card tech">
+      <details>
+        <summary>Review V1 技术说明</summary>
+        <p>列表只读取 Candidate Pool。展开单只债券时，才按 bond_code 读取完整 Opportunity Record / Path Result。页面筛选只是视图过滤，不修改 Candidate Pool、Research Ledger 或任何 Runtime 状态。</p>
+      </details>
+    </section>
+  </main>
+  <script src="/static/review.js"></script>
+</body>
+</html>
