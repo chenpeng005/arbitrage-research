@@ -202,9 +202,105 @@ def evidence_fetch(ctx: ToolContext, args: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def path_evidence_search(
+    ctx: ToolContext,
+    args: dict[str, Any],
+) -> dict[str, Any]:
+    task = ctx.input_payload.get("path_research_task") or {}
+    pack = ctx.input_payload.get("evidence_pack") or {}
+
+    bond_code = str(task.get("bond_code") or "").zfill(6)
+    bond_name = str(task.get("bond_name") or "")
+    stock_code = str(pack.get("stock_code") or "").zfill(6)
+    cutoff = str(task.get("market_cutoff") or "")
+
+    if len(bond_code) != 6 or not bond_code.isdigit():
+        raise RuntimeError("PATH_RESEARCH input has invalid bond_code")
+    if len(stock_code) != 6 or not stock_code.isdigit():
+        raise RuntimeError("PATH_RESEARCH input has invalid stock_code")
+    if not cutoff:
+        raise RuntimeError("PATH_RESEARCH input has no market_cutoff")
+
+    keyword = str(args.get("keyword") or "转债").strip() or "转债"
+    start_date, end_date = _bounded_dates(
+        cutoff,
+        args.get("start_date"),
+        args.get("end_date"),
+    )
+
+    df = ak.stock_zh_a_disclosure_report_cninfo(
+        symbol=stock_code,
+        market="沪深京",
+        keyword=keyword,
+        category="",
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    results: list[dict[str, Any]] = []
+    for _, item in df.head(MAX_SEARCH_RESULTS).iterrows():
+        detail_url = str(item.get("公告链接") or "")
+        parsed = parse_qs(urlparse(detail_url).query)
+        announcement_id = (parsed.get("announcementId") or [None])[0]
+        published_value = item.get("公告时间")
+        if not announcement_id or pd.isna(published_value):
+            continue
+        published = pd.Timestamp(published_value).date().isoformat()
+        pdf_url = (
+            f"http://static.cninfo.com.cn/finalpage/"
+            f"{published}/{announcement_id}.PDF"
+        )
+        results.append(
+            {
+                "evidence_id": str(announcement_id),
+                "source_type": "cninfo_announcement",
+                "stock_code": stock_code,
+                "bond_code": bond_code,
+                "bond_name": bond_name,
+                "title": _strip_html(item.get("公告标题")),
+                "published_at": published,
+                "detail_url": detail_url,
+                "pdf_url": pdf_url,
+                "keyword": keyword,
+            }
+        )
+
+    catalog_path = ctx.ai_job_dir / "evidence_catalog.json"
+    catalog = {}
+    if catalog_path.exists():
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    for item in results:
+        catalog[item["evidence_id"]] = item
+    catalog_path.write_text(
+        json.dumps(catalog, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    return {
+        "task_id": str(task.get("task_id") or ""),
+        "query": {
+            "stock_code": stock_code,
+            "keyword": keyword,
+            "start_date": start_date,
+            "end_date": end_date,
+        },
+        "count": len(results),
+        "results": results,
+    }
+
+
+def path_evidence_fetch(
+    ctx: ToolContext,
+    args: dict[str, Any],
+) -> dict[str, Any]:
+    return evidence_fetch(ctx, args)
+
+
 TOOL_HANDLERS = {
     "evidence_search": evidence_search,
     "evidence_fetch": evidence_fetch,
+    "path_evidence_search": path_evidence_search,
+    "path_evidence_fetch": path_evidence_fetch,
 }
 
 
