@@ -133,3 +133,58 @@ def fetch_revision_notice_index(
         })
     selected.sort(key=lambda x: x["notice_date"])
     return frame, selected
+
+
+
+def maturity_notice_kind(title: str) -> str:
+    if "半年度报告" in title or "年度报告" in title:
+        return "FINANCIAL_REPORT"
+    if "跟踪评级" in title or "评级报告" in title:
+        return "RATING_REPORT"
+    if "受托管理" in title:
+        return "TRUSTEE_REPORT"
+    if re.search(r"逾期|违约|冻结|重整|预重整|破产|持续经营", title):
+        return "HARD_CREDIT_EVENT"
+    if re.search(r"授信|借款|融资|发行.*债券|债券.*发行", title):
+        return "FINANCING_SUPPORT"
+    if re.search(r"担保|资产出售|资产转让|增资|控股股东.*支持", title):
+        return "SUPPORT_OR_ASSET"
+    return "OTHER"
+
+
+def is_maturity_research_notice(title: str) -> bool:
+    return bool(re.search(
+        r"半年度报告|年度报告|跟踪评级|评级报告|受托管理|"
+        r"逾期|违约|冻结|重整|预重整|破产|持续经营|"
+        r"授信|借款|融资|发行.*债券|债券.*发行|担保|资产出售|资产转让|增资",
+        title,
+    ))
+
+
+def fetch_maturity_notice_index(
+    stock_code: str,
+    begin_date: str,
+    end_date: str,
+    max_items: int = 40,
+) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
+    frame = ak.stock_individual_notice_report(
+        security=stock_code,
+        symbol="全部",
+        begin_date=begin_date,
+        end_date=end_date,
+    ).copy()
+    selected: list[dict[str, Any]] = []
+    for _, row in frame.iterrows():
+        title = str(row.get("公告标题", ""))
+        if not is_maturity_research_notice(title):
+            continue
+        selected.append({
+            "notice_date": str(row.get("公告日期")),
+            "title": title,
+            "notice_type": str(row.get("公告类型", "")),
+            "url": str(row.get("网址", "")),
+            "event_kind": maturity_notice_kind(title),
+            "source": "AKShare/Eastmoney official-announcement index",
+        })
+    selected.sort(key=lambda x: x["notice_date"], reverse=True)
+    return frame, selected[:max_items]
