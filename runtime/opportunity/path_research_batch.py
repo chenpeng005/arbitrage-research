@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-import signal
+import os
+import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from runtime.opportunity.path_research_runner import run_one_path_research
+from runtime.opportunity.path_research_runner import set_trigger_research_status
 
 
 def _now() -> str:
@@ -39,27 +41,82 @@ def _run_one_with_wall_timeout(
     model: str,
     wall_timeout_seconds: int,
 ) -> dict[str, Any]:
-    previous_handler = signal.getsignal(signal.SIGALRM)
-
-    def _timeout_handler(signum: int, frame: Any) -> None:
-        raise TimeoutError(
-            f"PATH_RESEARCH wall timeout after {wall_timeout_seconds}s"
-        )
-
-    signal.signal(signal.SIGALRM, _timeout_handler)
-    signal.alarm(max(1, int(wall_timeout_seconds)))
+    command = [
+        sys.executable,
+        "-m",
+        "runtime.opportunity.path_research_worker",
+        "--root",
+        str(root),
+        "--data-root",
+        str(data_root),
+        "--task-id",
+        task_id,
+        "--provider",
+        provider_name,
+        "--model",
+        model,
+    ]
     try:
-        return run_one_path_research(
-            root=root,
-            data_root=data_root,
-            task_id=task_id,
-            provider_name=provider_name,
-            model=model,
+        proc = subprocess.run(
+            command,
+            cwd=str(root),
+            env=os.environ.copy(),
+            capture_output=True,
+            text=True,
+            timeout=max(1, int(wall_timeout_seconds)),
+            check=False,
         )
-    finally:
-        signal.alarm(0)
-        signal.signal(signal.SIGALRM, previous_handler)
+    except subprocess.TimeoutExpired as exc:
+        set_trigger_research_status(data_root, task_id, "PENDING")
+        return {
+            "task_id": task_id,
+            "status": "FAIL",
+            "error": (
+                f"TimeoutError: PATH_RESEARCH worker exceeded "
+                f"{wall_timeout_seconds}s"
+            ),
+            "worker_exit_code": None,
+            "stdout_tail": (exc.stdout or "")[-2000:] if isinstance(exc.stdout, str) else "",
+            "stderr_tail": (exc.stderr or "")[-2000:] if isinstance(exc.stderr, str) else "",
+        }
 
+    lines = [line for line in proc.stdout.splitlines() if line.strip()]
+    result: dict[str, Any] | None = None
+    if lines:
+        try:
+            parsed = json.loads(lines[-1])
+            if isinstance(parsed, dict):
+                result = parsed
+        except Exception:
+            result = None
+
+    if result is None:
+        runner_result = (
+            data_root / "path_research_work" / task_id / "runner_result.json"
+        )
+        if runner_result.exists():
+            try:
+                parsed = _read_json(runner_result)
+                if isinstance(parsed, dict):
+                    result = parsed
+            except Exception:
+                result = None
+
+    if result is None:
+        set_trigger_research_status(data_root, task_id, "PENDING")
+        return {
+            "task_id": task_id,
+            "status": "FAIL",
+            "error": "Worker did not return parseable JSON result",
+            "worker_exit_code": proc.returncode,
+            "stdout_tail": proc.stdout[-2000:],
+            "stderr_tail": proc.stderr[-2000:],
+        }
+
+    result["worker_exit_code"] = proc.returncode
+    result["worker_stdout_tail"] = proc.stdout[-1000:]
+    result["worker_stderr_tail"] = proc.stderr[-1000:]
+    return result
 
 def run_path_research_batch(
     *,
