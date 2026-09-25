@@ -127,14 +127,31 @@ def validate_path_research_result(
         if not isinstance(result.get(key), dict):
             errors.append(f"{key} must be an object")
 
-    expected_economic_reference = {
-        "economic_registry_run_id": task.get("economic_registry_run_id"),
-        "market_snapshot_id": task.get("market_snapshot_id"),
-        "economic_judgment": task.get("economic_judgment"),
-    }
-    if result.get("economic_judgment_reference") != expected_economic_reference:
+    actual_reference = result.get("economic_judgment_reference")
+    expected_judgment = task.get("economic_judgment") or {}
+    reference_ok = False
+    if isinstance(actual_reference, dict):
+        same_identity = (
+            actual_reference.get("economic_registry_run_id")
+            == task.get("economic_registry_run_id")
+            and actual_reference.get("market_snapshot_id")
+            == task.get("market_snapshot_id")
+        )
+        nested = actual_reference.get("economic_judgment")
+        if same_identity and nested == expected_judgment:
+            reference_ok = True
+        if same_identity:
+            flattened = {
+                key: value
+                for key, value in actual_reference.items()
+                if key not in {"economic_registry_run_id", "market_snapshot_id"}
+            }
+            if flattened == expected_judgment:
+                reference_ok = True
+    if not reference_ok:
         errors.append(
-            "economic_judgment_reference must exactly preserve the task economic judgment reference"
+            "economic_judgment_reference must preserve the complete task "
+            "economic judgment plus registry/snapshot identity"
         )
 
     for key in ("key_risks", "failure_conditions", "next_update_nodes"):
