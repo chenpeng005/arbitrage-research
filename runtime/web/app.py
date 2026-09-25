@@ -1608,7 +1608,7 @@ def resolve_market_map_bond(
         return resolve_bond_scenarios(
             Path(contract_path_raw),
             bond_code=request.bond_code,
-            scenarios=[x.model_dump() for x in request.scenarios],
+            scenarios=[x.dict() for x in request.scenarios],
             require_formal=True,
         )
     except ResolverError as exc:
