@@ -17,6 +17,7 @@ from runtime.opportunity.put_contract_facts import (
 )
 from runtime.opportunity.evidence_sources import (
     compact_financial_fact,
+    extract_revision_contract_documents,
     fetch_bulk_financial,
     fetch_maturity_notice_index,
     fetch_revision_notice_index,
@@ -365,11 +366,31 @@ def build_research_evidence(
             if notices:
                 revision_behavior_history_nonempty += 1
 
+            existing_revision_fact = task["existing_path_facts"].get(
+                "contract_fact"
+            ) or {}
+            need_contract_document = (
+                existing_revision_fact.get("nav_floor_applicable") is None
+            )
+            contract_documents = (
+                extract_revision_contract_documents(frame)
+                if need_contract_document
+                else []
+            )
+
             facts = {
-                "existing_contract_fact": task["existing_path_facts"].get(
-                    "contract_fact"
-                ),
+                "existing_contract_fact": existing_revision_fact,
                 "official_notice_behavior_index": notices,
+                "official_contract_document_index": contract_documents,
+                "revision_notice_source_audit": {
+                    "source_retrieved": True,
+                    "total_notice_count": int(len(frame)),
+                    "relevant_revision_notice_count": int(len(notices)),
+                    "no_relevant_revision_notice_confirmed_as_of_cutoff": (
+                        len(notices) == 0
+                    ),
+                    "cutoff": batch["market_cutoff"],
+                },
                 "cross_path_put": {
                     "contract_fact": cross_put_contract,
                     "window_state": cross_put_state,
@@ -414,6 +435,8 @@ def build_research_evidence(
                 "behavior_history_status": (
                     "HISTORY_FOUND" if notices else "NO_RELEVANT_HISTORY_AS_OF_CUTOFF"
                 ),
+                "revision_contract_document_needed": need_contract_document,
+                "revision_contract_document_count": len(contract_documents),
                 "cross_path_put_fact_matched": cross_put_contract is not None,
                 "cross_path_maturity_fact_matched": (
                     cross_maturity_contract is not None
@@ -426,6 +449,7 @@ def build_research_evidence(
             }
             missing_or_deferred = [
                 "primary_document_semantic_read_for_decision_sensitive_events",
+                "revision_contract_document_semantic_read_if_nav_floor_unknown",
                 "latest_rating_report_semantic_review_if_material",
                 "hard_credit_event_semantic_review_if_material",
                 "issuer_objective_interpretation",
