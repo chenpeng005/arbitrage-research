@@ -127,9 +127,34 @@ def validate_path_research_result(
         if not isinstance(result.get(key), dict):
             errors.append(f"{key} must be an object")
 
+    expected_economic_reference = {
+        "economic_registry_run_id": task.get("economic_registry_run_id"),
+        "market_snapshot_id": task.get("market_snapshot_id"),
+        "economic_judgment": task.get("economic_judgment"),
+    }
+    if result.get("economic_judgment_reference") != expected_economic_reference:
+        errors.append(
+            "economic_judgment_reference must exactly preserve the task economic judgment reference"
+        )
+
     for key in ("key_risks", "failure_conditions", "next_update_nodes"):
         if not isinstance(result.get(key), list):
             errors.append(f"{key} must be a list")
+
+    if task.get("path_id") == "MATURITY_CASH":
+        maturity_date = str(
+            (task.get("market_state") or {}).get("maturity_date") or ""
+        )
+        for idx, node in enumerate(result.get("next_update_nodes") or []):
+            if not isinstance(node, dict):
+                continue
+            event = str(node.get("event") or "")
+            node_date = str(node.get("date") or "")
+            if "到期日" in event and node_date and maturity_date and node_date != maturity_date:
+                errors.append(
+                    f"next_update_nodes[{idx}] labels {node_date} as 到期日, "
+                    f"but task maturity_date is {maturity_date}"
+                )
 
     evidence = result.get("key_evidence")
     if not isinstance(evidence, list):
