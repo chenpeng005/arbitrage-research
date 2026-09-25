@@ -1046,8 +1046,8 @@ $("#mapScale").addEventListener("change",function(){renderMarketMap();renderMapT
   });
 });
 $("#mapFilterReset").addEventListener("click",function(){
-  $("#mapPriceMin").value="70";
-  $("#mapPriceMax").value="200";
+  $("#mapPriceMin").value="80";
+  $("#mapPriceMax").value="160";
   $("#mapCvMin").value="20";
   $("#mapCvMax").value="200";
   $("#mapSizeMax").value="";
