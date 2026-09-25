@@ -214,11 +214,58 @@ Trigger
 
 可以闭环运行。
 
+### Path Research Evidence / AI Runtime
+
+新增正式实现：
+
+- `runtime/opportunity/evidence_sources.py`：结构化证据来源适配；
+- `runtime/opportunity/research_evidence.py`：任务级 Evidence Pack；
+- `runtime/opportunity/research_ai_input.py`：Knowledge Snapshot 校验并把 Canonical 原文嵌入 AI Input；
+- `runtime/opportunity/path_research_validation.py`：Path Result Program Validator；
+- `runtime/opportunity/path_research_runner.py`：单任务 AI → Validator → Ledger 编排；
+- `runtime/ai_runtime/prompts/path_research_v1.md`；
+- `PATH_RESEARCH` 已注册到既有 AI Runtime；
+- 新增 `path_evidence_search / path_evidence_fetch`，对象与 cutoff 由 Program 固定；
+- AI Runtime validator 改为按 task spec 动态分发，原 Market Map AI 流程不受影响。
+
+Evidence Pack 实跑：
+
+- 当前剩余任务35个时，35/35 成功建包；
+- MATURITY：财务25/25、结构化评级25/25；
+- DOWNWARD_REVISION：公告源10/10，8只有行为历史，2只新债截至 cutoff 暂无相关历史；
+- Revision Evidence Pack 继续预装同券 PUT / MATURITY facts、合并财务第一层和评级，避免 AI 重复拿项目已有事实。
+
+真实 DeepSeek API smoke：
+
+- 洽洽转债 / MATURITY_CASH：
+  - 首轮因6轮工具上限安全停止为 NEEDS_REVIEW，任务未丢；
+  - 审计确认工具调用均为有效证据闭合；
+  - PATH_RESEARCH 上限调整至8轮；
+  - 第二轮实际使用4轮，validator PASS；
+  - COMPLETED / review_ready=true；
+  - 自动写 Ledger，pending 35→34；
+- 仙乐转债 / DOWNWARD_REVISION：
+  - 实际使用2轮；
+  - 读取2026-09-24正式“不下修”公告；
+  - Economic KEEP 未被篡改；
+  - validator PASS；
+  - UNRESOLVED / review_ready=false；
+  - 自动写 Ledger，pending 34→33。
+
+本轮同时新增质量护栏：
+
+- Economic Judgment Reference 必须精确指回原 Task；
+- MATURITY 的“到期日”标签必须与冻结的 contract maturity_date 一致；
+- Revision 必须区分“当前这一轮已不下修”和“剩余生命周期未来仍可再次下修”；
+- UNKNOWN-B 只允许具体、当前可核验但尚未闭合的事实。
+
 ## 下一工程节点
 
-当前仍处于 **Path Research Runtime**，但接口与三 Path smoke test 已通过。
+当前仍处于 **Path Research Runtime**。
 
-下一步对剩余 persistent pending queue 做批量 Path Research；在全部或足够一批 Path Result 形成之前，不提前进入 Candidate Pool。
+当前 persistent pending queue = **33**。批量前先用最新质量护栏再验证1只 MATURITY、1只 DOWNWARD_REVISION；通过后采用有限并发批量消费，而不是无上限并发调用外部数据源 / AI Provider。
+
+在全部或足够一批 Path Result 形成之前，不提前进入 Candidate Pool。
 
 ## 运行外循环
 
