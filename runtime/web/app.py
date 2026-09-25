@@ -1099,6 +1099,11 @@ def home() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "index.html").read_text(encoding="utf-8"))
 
 
+@app.get("/review", response_class=HTMLResponse)
+def review_page() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "review.html").read_text(encoding="utf-8"))
+
+
 @app.post("/api/runs")
 def create_run(request: RunRequest) -> dict:
     if request.snapshot_mode not in {
