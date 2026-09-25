@@ -100,7 +100,8 @@ def build_research_evidence(
         ).to_dict("index")
 
     rating_rows = []
-    revision_notice_matched = 0
+    revision_notice_source_retrieved = 0
+    revision_behavior_history_nonempty = 0
     packs = []
 
     for task in task_packages:
@@ -181,8 +182,9 @@ def build_research_evidence(
                 raw_dir / f"revision_notices_{safe_code}.csv",
                 index=False,
             )
+            revision_notice_source_retrieved += 1
             if notices:
-                revision_notice_matched += 1
+                revision_behavior_history_nonempty += 1
 
             facts = {
                 "existing_contract_fact": task["existing_path_facts"].get(
@@ -198,8 +200,12 @@ def build_research_evidence(
                 "stock_code": stock_code,
             }]
             coverage = {
-                "revision_notice_index_matched": bool(notices),
+                "revision_notice_source_retrieved": True,
+                "revision_behavior_history_nonempty": bool(notices),
                 "revision_notice_count": len(notices),
+                "behavior_history_status": (
+                    "HISTORY_FOUND" if notices else "NO_RELEVANT_HISTORY_AS_OF_CUTOFF"
+                ),
             }
             missing_or_deferred = [
                 "primary_document_semantic_read_for_decision_sensitive_events",
@@ -279,7 +285,8 @@ def build_research_evidence(
         "maturity_financial_matched": maturity_financial_matched,
         "maturity_rating_matched": maturity_rating_matched,
         "revision_tasks": len(revision_tasks),
-        "revision_notice_index_matched": revision_notice_matched,
+        "revision_notice_source_retrieved": revision_notice_source_retrieved,
+        "revision_behavior_history_nonempty": revision_behavior_history_nonempty,
         "packs": packs,
     }
 
