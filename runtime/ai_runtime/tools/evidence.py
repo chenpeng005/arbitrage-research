@@ -498,6 +498,208 @@ def path_evidence_fetch(
     }
 
 
+def _prefetch_priority(path_id: str, item: dict[str, Any]) -> tuple[int, str]:
+    kind = str(item.get("event_kind") or "")
+    title = str(item.get("title") or "")
+    if path_id == "MATURITY_CASH":
+        if kind == "RATING_REPORT":
+            rank = 0
+        elif kind == "FINANCIAL_REPORT" and "摘要" not in title:
+            rank = 1
+        elif kind == "HARD_CREDIT_EVENT":
+            rank = 2
+        elif kind == "FINANCING_SUPPORT":
+            rank = 3
+        elif kind == "SUPPORT_OR_ASSET":
+            rank = 4
+        else:
+            rank = 20
+    elif path_id == "DOWNWARD_REVISION":
+        rank = {
+            "NO_REVISION": 0,
+            "REVISION_ACTION": 1,
+            "CONVERSION_PRICE_EVENT": 2,
+            "TRIGGER": 3,
+            "EXPECTED_TRIGGER": 4,
+        }.get(kind, 20)
+    else:
+        rank = 20
+    # More recent notices first within the same evidence class.
+    return rank, str(item.get("notice_date") or "")
+
+
+def _snippet_keywords(path_id: str, event_kind: str) -> list[str]:
+    if path_id == "MATURITY_CASH":
+        if event_kind == "RATING_REPORT":
+            return [
+                "评级观点", "偿债", "流动性", "现金短期债务比",
+                "授信", "债务", "支持", "风险",
+            ]
+        if event_kind == "FINANCIAL_REPORT":
+            return [
+                "母公司资产负债表", "母公司现金流量表", "货币资金",
+                "受限", "短期借款", "一年内到期", "应付债券",
+                "长期借款", "取得借款", "发行债券", "偿还债务",
+            ]
+        if event_kind == "HARD_CREDIT_EVENT":
+            return ["逾期", "违约", "冻结", "重整", "持续经营"]
+        if event_kind == "FINANCING_SUPPORT":
+            return ["授信", "借款", "融资", "额度", "担保"]
+        return ["现金", "债务", "偿债", "融资"]
+    if path_id == "DOWNWARD_REVISION":
+        return [
+            "不向下修正", "向下修正", "转股价格", "董事会",
+            "股东大会", "触发", "修正条款",
+        ]
+    return []
+
+
+def _extract_relevant_snippets(
+    text: str,
+    keywords: list[str],
+    *,
+    radius: int = 500,
+    max_snippets: int = 8,
+    max_chars: int = 9000,
+) -> list[str]:
+    clean = str(text or "")
+    snippets: list[str] = []
+    occupied: list[tuple[int, int]] = []
+    for keyword in keywords:
+        start = 0
+        while len(snippets) < max_snippets:
+            idx = clean.find(keyword, start)
+            if idx < 0:
+                break
+            left = max(0, idx - radius)
+            right = min(len(clean), idx + len(keyword) + radius)
+            start = idx + len(keyword)
+            if any(not (right <= a or left >= b) for a, b in occupied):
+                continue
+            snippet = clean[left:right].strip()
+            if snippet:
+                snippets.append(snippet)
+                occupied.append((left, right))
+            if sum(len(x) for x in snippets) >= max_chars:
+                break
+        if len(snippets) >= max_snippets or sum(len(x) for x in snippets) >= max_chars:
+            break
+    if not snippets and clean:
+        snippets = [clean[: min(len(clean), 4000)]]
+    return snippets
+
+
+def prefetch_path_research_evidence(
+    ctx: ToolContext,
+    *,
+    max_docs: int = 3,
+) -> list[dict[str, Any]]:
+    """Program-side bounded evidence prefetch before the first AI response."""
+    task = ctx.input_payload.get("path_research_task") or {}
+    path_id = str(task.get("path_id") or "")
+    candidates = _path_preloaded_notice_candidates(ctx)
+    if not candidates:
+        return []
+
+    # Prefer distinct evidence classes so three slots do not get consumed by
+    # duplicate annual-report summaries or repeated notices of the same type.
+    ordered = sorted(
+        candidates,
+        key=lambda x: (
+            _prefetch_priority(path_id, x)[0],
+            -pd.Timestamp(x.get("notice_date") or "1900-01-01").value,
+        ),
+    )
+    selected: list[dict[str, Any]] = []
+    seen_classes: set[str] = set()
+    for item in ordered:
+        rank, _ = _prefetch_priority(path_id, item)
+        if rank >= 20:
+            continue
+        kind = str(item.get("event_kind") or "OTHER")
+        class_key = kind
+        if kind == "FINANCIAL_REPORT":
+            if "摘要" in str(item.get("title") or ""):
+                continue
+            class_key = "FINANCIAL_REPORT_FULL"
+        if class_key in seen_classes:
+            continue
+        if not _eastmoney_announcement_id(str(item.get("url") or "")):
+            continue
+        selected.append(item)
+        seen_classes.add(class_key)
+        if len(selected) >= max_docs:
+            break
+
+    if not selected:
+        return []
+
+    catalog_path = ctx.ai_job_dir / "evidence_catalog.json"
+    catalog = {}
+    if catalog_path.exists():
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+
+    for candidate in selected:
+        evidence_id = _eastmoney_announcement_id(str(candidate.get("url") or ""))
+        if not evidence_id:
+            continue
+        catalog[evidence_id] = {
+            "evidence_id": evidence_id,
+            "source_type": "eastmoney_announcement",
+            "stock_code": str((ctx.input_payload.get("evidence_pack") or {}).get("stock_code") or "").zfill(6),
+            "bond_code": str(task.get("bond_code") or "").zfill(6),
+            "bond_name": str(task.get("bond_name") or ""),
+            "title": str(candidate.get("title") or ""),
+            "published_at": str(candidate.get("notice_date") or ""),
+            "detail_url": str(candidate.get("url") or ""),
+            "content_api_url": "https://np-cnotice-stock.eastmoney.com/api/content/ann",
+            "event_kind": candidate.get("event_kind"),
+            "keyword": "",
+            "preloaded_candidate": True,
+            "engineering_prefetch": True,
+        }
+
+    catalog_path.write_text(
+        json.dumps(catalog, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    results: list[dict[str, Any]] = []
+    for candidate in selected:
+        evidence_id = _eastmoney_announcement_id(str(candidate.get("url") or ""))
+        if not evidence_id:
+            continue
+        try:
+            fetched = path_evidence_fetch(ctx, {"evidence_id": evidence_id})
+            kind = str(candidate.get("event_kind") or "")
+            snippets = _extract_relevant_snippets(
+                str(fetched.get("text") or ""),
+                _snippet_keywords(path_id, kind),
+            )
+            results.append({
+                "evidence_id": evidence_id,
+                "source_type": fetched.get("source_type"),
+                "event_kind": kind,
+                "title": fetched.get("title"),
+                "published_at": fetched.get("published_at"),
+                "detail_url": fetched.get("detail_url"),
+                "pdf_url": fetched.get("pdf_url"),
+                "text_source": fetched.get("text_source"),
+                "text_chars": fetched.get("text_chars"),
+                "snippets": snippets,
+            })
+        except Exception as exc:
+            results.append({
+                "evidence_id": evidence_id,
+                "event_kind": candidate.get("event_kind"),
+                "title": candidate.get("title"),
+                "published_at": candidate.get("notice_date"),
+                "error": f"{type(exc).__name__}: {exc}",
+                "snippets": [],
+            })
+    return results
+
+
 TOOL_HANDLERS = {
     "evidence_search": evidence_search,
     "evidence_fetch": evidence_fetch,
