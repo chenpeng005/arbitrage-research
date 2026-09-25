@@ -101,6 +101,15 @@ TERMINAL_JOB_STATUSES = {"PASS", "WARNING", "FAIL", "NEEDS_REVIEW"}
 
 @app.middleware("http")
 async def runtime_basic_auth(request, call_next):
+    # The public listener is protected by Caddy Basic Auth. Only the local
+    # reverse proxy may skip the application's separate credentials.
+    if (
+        os.environ.get("RUNTIME_TRUST_LOCAL_PROXY_AUTH") == "1"
+        and request.client is not None
+        and request.client.host in {"127.0.0.1", "::1"}
+    ):
+        return await call_next(request)
+
     if not RUNTIME_USER or not RUNTIME_PASSWORD:
         return Response("Runtime authentication is not configured.", status_code=503)
 
