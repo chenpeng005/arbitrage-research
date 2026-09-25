@@ -26,6 +26,8 @@ from runtime.market_map.resolver import (
     resolve_bond_scenarios,
 )
 from runtime.opportunity.ingress import build_market_ingress
+from runtime.opportunity.full_runtime_controller import run_opportunity_full_downstream
+from runtime.opportunity.view_contract import build_opportunity_list, build_opportunity_view
 
 ROOT = Path(os.environ.get("RUNTIME_ROOT", Path(__file__).resolve().parents[2]))
 DATA_ROOT = Path(os.environ.get("RUNTIME_DATA_ROOT", ROOT / "runtime_data"))
@@ -35,6 +37,7 @@ LATEST_FORMAL_MARKET_MAP_PATH = DATA_ROOT / "registry" / "latest_formal_market_m
 LATEST_DISCOVERY_INGRESS_PATH = DATA_ROOT / "registry" / "latest_discovery_market_ingress.json"
 LATEST_CANDIDATE_POOL_PATH = DATA_ROOT / "registry" / "latest_candidate_pool.json"
 LATEST_OPPORTUNITY_RECORDS_PATH = DATA_ROOT / "registry" / "latest_opportunity_records.json"
+LATEST_FULL_RUNTIME_PATH = DATA_ROOT / "registry" / "latest_full_runtime.json"
 CHAT_TASK_ROOT = DATA_ROOT / "chat_tasks"
 
 ACQ_SCRIPT = ROOT / "runtime" / "market_map" / "acquisition.py"
@@ -83,6 +86,13 @@ class MarketMapPipelineRequest(BaseModel):
     market_cutoff: str | None = None
     ai_execution_mode: str = "AUTO_API"
     historical_snapshot_id: str | None = None
+
+
+class OpportunityFullRunRequest(BaseModel):
+    source_mode: str = "LATEST_FORMAL"
+    run_research: bool = True
+    research_batch_limit: int = 5
+    max_research_rounds: int = 20
 
 
 class BondValuationScenario(BaseModel):
@@ -691,6 +701,91 @@ def update_controller_job(
     persist_job(job_id)
 
 
+def update_full_stage(job_id: str, stage: str, status: str, meta: dict | None = None) -> None:
+    event = {"stage": stage, "status": status, "at": utcnow(), **(meta or {})}
+    with _lock:
+        if job_id not in _jobs:
+            return
+        job = _jobs[job_id]
+        job.setdefault("full_stages", []).append(event)
+        job["phase"] = stage
+        job["updated_at"] = event["at"]
+    persist_job(job_id)
+
+
+def opportunity_full_worker(job_id: str, request: OpportunityFullRunRequest) -> None:
+    try:
+        update_controller_job(job_id, status="RUNNING", phase="MARKET_MAP")
+        if request.source_mode == "CLOSE":
+            update_full_stage(job_id, "MARKET_MAP", "RUNNING")
+            child_id = create_market_map_pipeline(
+                MarketMapPipelineRequest(snapshot_mode="CLOSE", ai_execution_mode="AUTO_API")
+            )["job_id"]
+            update_controller_job(job_id, market_map_job_id=child_id)
+            child = wait_for_job_terminal(child_id, timeout_seconds=1800)
+            if child.get("status") not in {"PASS", "WARNING"}:
+                raise RuntimeError(f"Market Map ended with status={child.get('status')}")
+            if not LATEST_FORMAL_MARKET_MAP_PATH.exists():
+                raise RuntimeError("Market Map passed but no FORMAL_CLOSE registry exists")
+            entry = json.loads(LATEST_FORMAL_MARKET_MAP_PATH.read_text(encoding="utf-8"))
+            if entry.get("calculation_job_id") != child.get("calculation_job_id"):
+                raise RuntimeError("latest FORMAL_CLOSE does not belong to this full run")
+            update_full_stage(
+                job_id, "MARKET_MAP", "PASS",
+                {"market_snapshot_id": entry.get("snapshot_id"), "market_cutoff": entry.get("market_cutoff")},
+            )
+        elif request.source_mode == "LATEST_FORMAL":
+            if not LATEST_FORMAL_MARKET_MAP_PATH.exists():
+                raise RuntimeError("no FORMAL_CLOSE Market Map is available")
+            entry = json.loads(LATEST_FORMAL_MARKET_MAP_PATH.read_text(encoding="utf-8"))
+            update_full_stage(
+                job_id, "MARKET_MAP", "REUSED",
+                {"market_snapshot_id": entry.get("snapshot_id"), "market_cutoff": entry.get("market_cutoff")},
+            )
+        else:
+            raise RuntimeError(f"unsupported source_mode={request.source_mode}")
+
+        provider_name = os.environ.get("AI_PROVIDER", "")
+        model = os.environ.get("AI_MODEL", "")
+        if request.run_research and (not provider_name or not model):
+            raise RuntimeError("AI provider/model is not configured")
+
+        def stage_callback(stage: str, status: str, meta: dict) -> None:
+            update_full_stage(job_id, stage, status, meta)
+
+        result = run_opportunity_full_downstream(
+            formal_entry_path=LATEST_FORMAL_MARKET_MAP_PATH,
+            data_root=DATA_ROOT,
+            deployment=load_deployment_manifest(),
+            provider_name=provider_name or "disabled",
+            model=model or "disabled",
+            research_batch_limit=max(1, min(request.research_batch_limit, 20)),
+            max_research_rounds=max(1, min(request.max_research_rounds, 100)),
+            run_research=request.run_research,
+            stage_callback=stage_callback,
+        )
+        update_controller_job(
+            job_id,
+            status="PASS",
+            phase="COMPLETE",
+            completed_at=utcnow(),
+            full_runtime_run_id=result.get("run_id"),
+            market_snapshot_id=result.get("market_snapshot_id"),
+            market_cutoff=result.get("market_cutoff"),
+            summary=result.get("summary"),
+            artifacts=result.get("artifacts"),
+        )
+    except Exception as exc:
+        update_full_stage(job_id, "FULL_RUNTIME", "FAIL", {"error": f"{type(exc).__name__}: {exc}"})
+        update_controller_job(
+            job_id,
+            status="FAIL",
+            phase="FULL_RUNTIME_ERROR",
+            completed_at=utcnow(),
+            error=f"{type(exc).__name__}: {exc}",
+        )
+
+
 def create_interactive_chat_task(
     *,
     pipeline_job_id: str,
@@ -1104,6 +1199,11 @@ def review_page() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "review.html").read_text(encoding="utf-8"))
 
 
+@app.get("/workbench", response_class=HTMLResponse)
+def workbench_page() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
+
+
 @app.post("/api/runs")
 def create_run(request: RunRequest) -> dict:
     if request.snapshot_mode not in {
@@ -1414,6 +1514,60 @@ def resume_market_map_after_chat(pipeline_job_id: str) -> dict:
     }
 
 
+@app.post("/api/opportunity/full-runs")
+def create_opportunity_full_run(request: OpportunityFullRunRequest) -> dict:
+    if request.source_mode not in {"LATEST_FORMAL", "CLOSE"}:
+        raise HTTPException(400, "unsupported source_mode")
+    job_id = (
+        datetime.now().strftime("%Y%m%d_%H%M%S")
+        + "_opportunity_full_"
+        + uuid.uuid4().hex[:6]
+    )
+    with _lock:
+        _jobs[job_id] = {
+            "job_id": job_id,
+            "unit": "Opportunity Discovery / Full Runtime",
+            "status": "PENDING",
+            "phase": "PENDING",
+            "source_mode": request.source_mode,
+            "run_research": request.run_research,
+            "research_batch_limit": request.research_batch_limit,
+            "max_research_rounds": request.max_research_rounds,
+            "created_at": utcnow(),
+            "updated_at": utcnow(),
+            "full_stages": [],
+        }
+    persist_job(job_id)
+    threading.Thread(
+        target=opportunity_full_worker,
+        args=(job_id, request),
+        daemon=True,
+    ).start()
+    return {"job_id": job_id}
+
+
+@app.get("/api/opportunity/full-runs/latest")
+def latest_opportunity_full_run() -> dict:
+    candidates = []
+    with _lock:
+        candidates.extend(
+            dict(job) for job in _jobs.values()
+            if job.get("unit") == "Opportunity Discovery / Full Runtime"
+        )
+    for job in load_persisted_jobs():
+        if job.get("unit") == "Opportunity Discovery / Full Runtime":
+            candidates.append(job)
+    if candidates:
+        candidates.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        return candidates[0]
+    if LATEST_FULL_RUNTIME_PATH.exists():
+        pointer = json.loads(LATEST_FULL_RUNTIME_PATH.read_text(encoding="utf-8"))
+        status_path = Path(str(pointer.get("status_path") or ""))
+        if status_path.exists():
+            return json.loads(status_path.read_text(encoding="utf-8"))
+    raise HTTPException(404, "no full opportunity runtime has completed")
+
+
 @app.get("/api/runs/{job_id}")
 def get_run(job_id: str) -> dict:
     with _lock:
@@ -1710,6 +1864,21 @@ def latest_opportunity_records() -> dict:
         LATEST_OPPORTUNITY_RECORDS_PATH,
         "opportunity records",
     )
+
+
+@app.get("/api/opportunity/view/latest")
+def latest_opportunity_view() -> dict:
+    records = _load_latest_runtime_artifact(
+        LATEST_OPPORTUNITY_RECORDS_PATH,
+        "opportunity records",
+    )
+    return build_opportunity_list(records)
+
+
+@app.get("/api/opportunity/view/{bond_code}")
+def latest_opportunity_view_for_bond(bond_code: str) -> dict:
+    record = latest_opportunity_record_for_bond(bond_code)
+    return build_opportunity_view(record)
 
 
 @app.get("/api/opportunity/records/{bond_code}")
