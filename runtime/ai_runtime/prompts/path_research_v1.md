@@ -61,7 +61,15 @@ Evidence Pack 是默认研究起点。先尝试仅用预装事实完成 Path Res
 
 如果 Evidence Pack 已经给出 `official_notice_candidate_index` 或 `official_notice_behavior_index`，且其中某个候选的标题 / event_kind 与重大 UNKNOWN-B 直接相关，则该候选不是“可选参考”，而是**必须优先读取的正式证据入口**。
 
-在这种情况下，准备返回 `NEEDS_EVIDENCE` / `UNRESOLVED` 前必须完成：
+Engineering 可能在模型第一次回答前已经把最重要的正式公告读取并放入：
+
+```text
+engineering_prefetched_evidence
+```
+
+如果其中已经包含同一候选的正文片段，则视为该候选已经读取，不要求为了形式再重复调用工具。
+
+若相关候选没有被 Engineering 预取，或预取片段仍不足以闭合 UNKNOWN-B，则准备返回 `NEEDS_EVIDENCE` / `UNRESOLVED` 前必须完成：
 
 1. 调用 `path_evidence_search` 用对应关键词命中冻结候选；
 2. 对最相关候选调用 `path_evidence_fetch` 读取正文；
@@ -75,7 +83,7 @@ Evidence Pack 是默认研究起点。先尝试仅用预装事实完成 Path Res
 - 逾期、冻结、重整等硬信用事件 → 读取对应 HARD_CREDIT_EVENT 候选；
 - 下修行为与治理 → 读取最近的不下修、触发、股东会、转股价修正公告。
 
-**若相关冻结候选已经存在，禁止 tool_rounds=0 就直接把对应事项列为 UNKNOWN-B。**
+**若相关冻结候选已经存在，且既没有对应的 `engineering_prefetched_evidence`，也没有实际调用工具读取正文，禁止直接把对应事项列为 UNKNOWN-B。**
 
 单轮最多优先读取 3 份最相关正式公告。只有搜索确实无结果、抓取失败、或已读取正文仍不能闭合时，才保留 UNKNOWN-B。
 
