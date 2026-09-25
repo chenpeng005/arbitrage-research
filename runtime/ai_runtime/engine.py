@@ -12,7 +12,11 @@ from .deepseek_provider import DeepSeekProvider
 from .mock_provider import MockProvider
 from .provider import AIProvider
 from .tasks import get_task_spec
-from .tools.evidence import ToolContext, execute_tool
+from .tools.evidence import (
+    ToolContext,
+    execute_tool,
+    prefetch_path_research_evidence,
+)
 from .validation import run_validator
 
 
@@ -116,6 +120,34 @@ def run_ai_job(
             ai_job_dir=job_dir,
             input_payload=input_payload,
         )
+
+        prefetched_evidence: list[dict[str, Any]] = []
+        if task_type == "PATH_RESEARCH":
+            prefetched_evidence = prefetch_path_research_evidence(
+                tool_ctx,
+                max_docs=3,
+            )
+            write_json(
+                job_dir / "engineering_prefetched_evidence.json",
+                {"evidence": prefetched_evidence},
+            )
+            if prefetched_evidence:
+                messages.append({
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "engineering_prefetched_evidence": prefetched_evidence,
+                            "instruction": (
+                                "这些证据已由 Engineering 在模型首次回答前读取。"
+                                "请把它们作为正式证据使用；只有仍存在未闭合的重大"
+                                " UNKNOWN-B 时才继续调用工具。"
+                            ),
+                        },
+                        ensure_ascii=False,
+                    ),
+                })
+            metadata["prefetched_evidence_count"] = len(prefetched_evidence)
+            write_json(job_dir / "ai_job_metadata.json", metadata)
 
         provider_round_dir = job_dir / "provider_rounds"
         provider_round_dir.mkdir()
