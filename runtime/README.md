@@ -122,7 +122,9 @@ Path Availability 是条件性数据需求，而不是全市场无条件深查�
 
 ## 下一工程节点
 
-先补齐到期现金正式 Runtime 的 authoritative override / Path Availability 持久化，使到期现金与回售两条 Path 都成为正式可重复运行单元；随后建立统一 Opportunity Discovery Controller，再接下修 Path。
+到期现金与回售两条 Path 已成为正式可重复运行单元。
+
+当前进入统一 Opportunity Discovery Controller：固定消费同一个 Discovery Market Ingress，调用各 Path Runtime，按“债券为容器、Path 状态独立”聚合 Economic Path Registry；随后接入下修 Path。
 
 ## 运行外循环
 
