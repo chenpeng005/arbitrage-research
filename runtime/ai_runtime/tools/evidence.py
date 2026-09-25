@@ -432,14 +432,13 @@ def path_evidence_fetch(
         page_data = (response.json().get("data") or {})
         text_parts.append(str(page_data.get("notice_content") or ""))
 
-    text = "\n".join(part for part in text_parts if part)
-    txt_path.write_text(text, encoding="utf-8")
-    text_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    api_text = "\n".join(part for part in text_parts if part)
 
     pdf_url = str(data.get("attach_url_web") or data.get("attach_url") or "")
     pdf_sha256 = None
     page_count = None
     pdf_artifact = None
+    pdf_text = ""
     if pdf_url:
         try:
             response = requests.get(
@@ -453,13 +452,23 @@ def path_evidence_fetch(
                 pdf_sha256 = hashlib.sha256(response.content).hexdigest()
                 pdf_artifact = str(pdf_path.relative_to(ctx.ai_job_dir))
                 try:
-                    page_count = len(PdfReader(str(pdf_path)).pages)
+                    reader = PdfReader(str(pdf_path))
+                    page_count = len(reader.pages)
+                    pdf_text = "\n".join(
+                        (page.extract_text() or "") for page in reader.pages
+                    )
                 except Exception:
                     page_count = None
+                    pdf_text = ""
         except Exception:
             # The official announcement text from the content API remains
             # usable even when the mirrored PDF endpoint is temporarily down.
             pass
+
+    text = pdf_text if len(pdf_text.strip()) > len(api_text.strip()) else api_text
+    text_source = "PDF_EXTRACTED" if text is pdf_text and pdf_text else "CONTENT_API"
+    txt_path.write_text(text, encoding="utf-8")
+    text_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     meta = {
         **item,
@@ -472,6 +481,9 @@ def path_evidence_fetch(
         "text_sha256": text_sha256,
         "page_count": page_count,
         "content_page_count": page_size,
+        "text_source": text_source,
+        "api_text_chars": len(api_text),
+        "pdf_text_chars": len(pdf_text),
         "text_chars": len(text),
     }
     meta_path.write_text(
