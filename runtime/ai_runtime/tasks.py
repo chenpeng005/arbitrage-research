@@ -338,7 +338,8 @@ def path_research_spec(root: Path) -> AITaskSpec:
             {
                 "name": "path_evidence_fetch",
                 "description": (
-                    "读取本 AI Job 之前 path_evidence_search 返回过的正式公告。"
+                    "读取本 AI Job 的 path_evidence_search 返回结果，或当前 "
+                    "Evidence Pack 已预装的正式公告候选。"
                     "对冻结候选优先抓正文并在可用时读取 PDF 全文，"
                     "Program 保存 PDF、文本和 hash。"
                 ),
@@ -355,7 +356,7 @@ def path_research_spec(root: Path) -> AITaskSpec:
             "runtime.opportunity.path_research_validation."
             "validate_path_research_result"
         ),
-        max_tool_rounds=4,
+        max_tool_rounds=8,
         timeout_seconds=180,
     )
 
