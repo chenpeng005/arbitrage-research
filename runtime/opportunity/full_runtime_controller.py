@@ -49,6 +49,35 @@ def _pending_count(data_root: Path) -> int:
     return len(payload.get("pending_tasks", []))
 
 
+def _waiting_chat_tasks_for_run(
+    data_root: Path,
+    full_runtime_run_id: str,
+) -> list[dict[str, Any]]:
+    root = data_root / "chat_tasks"
+    if not root.exists():
+        return []
+    waiting: list[dict[str, Any]] = []
+    for path in sorted(root.glob("*/chat_task.json")):
+        try:
+            task = _read_json(path)
+        except Exception:
+            continue
+        if task.get("task_type") != "PATH_RESEARCH":
+            continue
+        if task.get("full_runtime_run_id") != full_runtime_run_id:
+            continue
+        if task.get("status") in {"WAITING_FOR_CHAT", "CLAIMED_BY_CHAT"}:
+            waiting.append(
+                {
+                    "task_id": task.get("task_id"),
+                    "status": task.get("status"),
+                    "bond_code": task.get("bond_code"),
+                    "path_id": task.get("path_id"),
+                }
+            )
+    return waiting
+
+
 def run_opportunity_full_downstream(
     *,
     formal_entry_path: Path,
@@ -56,6 +85,7 @@ def run_opportunity_full_downstream(
     deployment: dict[str, Any],
     provider_name: str,
     model: str,
+    ai_execution_mode: str = "AUTO_API",
     research_batch_limit: int = 5,
     max_research_rounds: int = 20,
     wall_timeout_seconds: int = 180,
@@ -93,6 +123,7 @@ def run_opportunity_full_downstream(
         "market_cutoff": entry.get("market_cutoff"),
         "application_commit_sha": deployment.get("application_commit_sha"),
         "knowledge_commit_sha": deployment.get("knowledge_commit_sha"),
+        "ai_execution_mode": ai_execution_mode,
         "current_stage": None,
         "stages": [],
         "artifacts": {},
@@ -198,6 +229,8 @@ def run_opportunity_full_downstream(
                         data_root=data_root,
                         provider_name=provider_name,
                         model=model,
+                        execution_mode=ai_execution_mode,
+                        full_runtime_run_id=run_id,
                         limit=research_batch_limit,
                         retry_once=False,
                         wall_timeout_seconds=wall_timeout_seconds,
@@ -212,12 +245,33 @@ def run_opportunity_full_downstream(
                         previous_pending = current_pending
                         break
                     previous_pending = current_pending
+                path_research_stage_status = (
+                    "WAITING_FOR_CHAT"
+                    if ai_execution_mode == "INTERACTIVE_CHAT"
+                    and previous_pending > 0
+                    else ("PASS" if previous_pending == 0 else "PARTIAL")
+                )
                 mark(
                     "PATH_RESEARCH",
-                    "PASS" if previous_pending == 0 else "PARTIAL",
+                    path_research_stage_status,
                     rounds=len(research_rounds),
                     remaining_pending=previous_pending,
+                    ai_execution_mode=ai_execution_mode,
                 )
+                if ai_execution_mode == "INTERACTIVE_CHAT":
+                    waiting_chat_tasks = _waiting_chat_tasks_for_run(data_root, run_id)
+                    if waiting_chat_tasks:
+                        state["status"] = "WAITING_FOR_CHAT"
+                        state["current_stage"] = "PATH_RESEARCH"
+                        state["waiting_chat_tasks"] = waiting_chat_tasks
+                        state["summary"] = {
+                            "opportunity_bonds": discovery["bonds_with_any_keep"],
+                            "remaining_pending_research": _pending_count(data_root),
+                            "waiting_chat_tasks": len(waiting_chat_tasks),
+                        }
+                        state["updated_at"] = _now()
+                        _write_json(status_path, state)
+                        return state
             else:
                 mark("PATH_RESEARCH", "SKIPPED", pending_tasks=pending)
         else:
@@ -293,3 +347,125 @@ def run_opportunity_full_downstream(
                 {"error": state["error"]},
             )
         raise
+
+
+def resume_opportunity_full_after_chat(
+    *,
+    run_id: str,
+    data_root: Path,
+    deployment: dict[str, Any],
+    stage_callback: StageCallback | None = None,
+) -> dict[str, Any]:
+    run_dir = data_root / "full_runtime_runs" / run_id
+    status_path = run_dir / "status.json"
+    if not status_path.exists():
+        raise FileNotFoundError(f"full runtime status not found: {status_path}")
+
+    state = _read_json(status_path)
+    if state.get("status") == "PASS":
+        return state
+    if state.get("status") != "WAITING_FOR_CHAT":
+        raise RuntimeError(
+            f"full runtime is not waiting for Chat: status={state.get('status')}"
+        )
+
+    waiting_chat_tasks = _waiting_chat_tasks_for_run(data_root, run_id)
+    if waiting_chat_tasks:
+        state["current_stage"] = "PATH_RESEARCH"
+        state["waiting_chat_tasks"] = waiting_chat_tasks
+        state.setdefault("summary", {})["remaining_pending_research"] = _pending_count(
+            data_root
+        )
+        state["summary"]["waiting_chat_tasks"] = len(waiting_chat_tasks)
+        state["updated_at"] = _now()
+        _write_json(status_path, state)
+        if stage_callback:
+            stage_callback(
+                "PATH_RESEARCH",
+                "WAITING_FOR_CHAT",
+                {
+                    "waiting_chat_tasks": len(waiting_chat_tasks),
+                    "remaining_pending": _pending_count(data_root),
+                },
+            )
+        return state
+
+    registry_path = Path(
+        str((state.get("artifacts") or {}).get("economic_path_registry") or "")
+    )
+    if not registry_path.exists():
+        raise FileNotFoundError(
+            f"economic path registry missing for full runtime resume: {registry_path}"
+        )
+
+    def mark(stage: str, status: str, **meta: Any) -> None:
+        event = {"stage": stage, "status": status, "at": _now(), **meta}
+        state["current_stage"] = stage
+        state["updated_at"] = event["at"]
+        state.setdefault("stages", []).append(event)
+        _write_json(status_path, state)
+        if stage_callback:
+            stage_callback(stage, status, meta)
+
+    mark("PATH_RESEARCH", "PASS", waiting_chat_tasks=0)
+
+    mark("CANDIDATE_POOL", "RUNNING")
+    pool = build_candidate_pool(registry_path, data_root, deployment)
+    if pool.get("status") != "PASS":
+        raise RuntimeError("Candidate Pool audit failed after Chat resume")
+    pool_path = _result_path(data_root, pool["run_id"], "candidate_pool.json")
+    state.setdefault("artifacts", {})["candidate_pool"] = str(pool_path)
+    mark(
+        "CANDIDATE_POOL",
+        "PASS",
+        bond_count=pool["bond_count"],
+        keep_path_count=pool["keep_path_count"],
+        research_state_summary=pool.get("research_state_summary", {}),
+    )
+
+    mark("OPPORTUNITY_RECORD", "RUNNING")
+    records = build_opportunity_records(pool_path, data_root, deployment)
+    if records.get("status") != "PASS":
+        raise RuntimeError("Opportunity Record audit failed after Chat resume")
+    record_path = _result_path(
+        data_root, records["run_id"], "opportunity_records.json"
+    )
+    state["artifacts"]["opportunity_records"] = str(record_path)
+    mark(
+        "OPPORTUNITY_RECORD",
+        "PASS",
+        bond_count=records["bond_count"],
+        keep_path_count=records["keep_path_count"],
+        record_state_summary=records.get("record_state_summary", {}),
+    )
+
+    state["status"] = "PASS"
+    state["current_stage"] = "COMPLETE"
+    state["completed_at"] = _now()
+    state["updated_at"] = state["completed_at"]
+    state.pop("waiting_chat_tasks", None)
+    state["summary"] = {
+        "opportunity_bonds": records["bond_count"],
+        "keep_paths": records["keep_path_count"],
+        "research_state_summary": pool.get("research_state_summary", {}),
+        "remaining_pending_research": _pending_count(data_root),
+        "waiting_chat_tasks": 0,
+    }
+    _write_json(status_path, state)
+    _write_json(
+        data_root / "registry" / "latest_full_runtime.json",
+        {
+            "run_id": run_id,
+            "status": state["status"],
+            "market_snapshot_id": state.get("market_snapshot_id"),
+            "market_cutoff": state.get("market_cutoff"),
+            "status_path": str(status_path),
+            "opportunity_records_path": str(record_path),
+        },
+    )
+    if stage_callback:
+        stage_callback("COMPLETE", "PASS", state["summary"])
+    return state
+
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

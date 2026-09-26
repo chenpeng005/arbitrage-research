@@ -27,7 +27,10 @@ from runtime.market_map.resolver import (
     resolve_bond_scenarios,
 )
 from runtime.opportunity.ingress import build_market_ingress
-from runtime.opportunity.full_runtime_controller import run_opportunity_full_downstream
+from runtime.opportunity.full_runtime_controller import (
+    resume_opportunity_full_after_chat,
+    run_opportunity_full_downstream,
+)
 from runtime.opportunity.view_contract import build_opportunity_list, build_opportunity_view
 
 ROOT = Path(os.environ.get("RUNTIME_ROOT", Path(__file__).resolve().parents[2]))
@@ -103,6 +106,7 @@ class MarketMapPipelineRequest(BaseModel):
 class OpportunityFullRunRequest(BaseModel):
     source_mode: str = "LATEST_FORMAL"
     run_research: bool = True
+    ai_execution_mode: str = "AUTO_API"
     research_batch_limit: int = 5
     max_research_rounds: int = 20
 
@@ -222,7 +226,7 @@ def close_mode_precheck() -> dict:
         (
             job for job in _full_run_candidates()
             if job.get("market_cutoff") == date_text
-            and job.get("status") in {"PENDING", "RUNNING"}
+            and job.get("status") in {"PENDING", "RUNNING", "WAITING_FOR_CHAT"}
         ),
         None,
     )
@@ -824,7 +828,15 @@ def opportunity_full_worker(job_id: str, request: OpportunityFullRunRequest) -> 
 
         provider_name = os.environ.get("AI_PROVIDER", "")
         model = os.environ.get("AI_MODEL", "")
-        if request.run_research and (not provider_name or not model):
+        if request.ai_execution_mode not in {"AUTO_API", "INTERACTIVE_CHAT"}:
+            raise RuntimeError(
+                f"unsupported ai_execution_mode={request.ai_execution_mode}"
+            )
+        if (
+            request.run_research
+            and request.ai_execution_mode == "AUTO_API"
+            and (not provider_name or not model)
+        ):
             raise RuntimeError("AI provider/model is not configured")
 
         def stage_callback(stage: str, status: str, meta: dict) -> None:
@@ -836,11 +848,28 @@ def opportunity_full_worker(job_id: str, request: OpportunityFullRunRequest) -> 
             deployment=load_deployment_manifest(),
             provider_name=provider_name or "disabled",
             model=model or "disabled",
+            ai_execution_mode=request.ai_execution_mode,
             research_batch_limit=max(1, min(request.research_batch_limit, 20)),
             max_research_rounds=max(1, min(request.max_research_rounds, 100)),
             run_research=request.run_research,
             stage_callback=stage_callback,
         )
+        if result.get("status") == "WAITING_FOR_CHAT":
+            update_controller_job(
+                job_id,
+                status="WAITING_FOR_CHAT",
+                phase="PATH_RESEARCH",
+                full_runtime_run_id=result.get("run_id"),
+                market_snapshot_id=result.get("market_snapshot_id"),
+                market_cutoff=result.get("market_cutoff"),
+                summary=result.get("summary"),
+                artifacts=result.get("artifacts"),
+            )
+            return
+        if result.get("status") != "PASS":
+            raise RuntimeError(
+                f"Full Runtime ended with unexpected status={result.get('status')}"
+            )
         update_controller_job(
             job_id,
             status="PASS",
@@ -869,6 +898,8 @@ def create_interactive_chat_task(
     acquisition_job_id: str,
     acquisition_run_dir: Path,
     market_cutoff: str,
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
 ) -> dict:
     request_path = acquisition_run_dir / "semantic_review_request.json"
     if not request_path.exists():
@@ -1625,6 +1656,8 @@ def resume_market_map_after_chat(pipeline_job_id: str) -> dict:
 def create_opportunity_full_run(request: OpportunityFullRunRequest) -> dict:
     if request.source_mode not in {"LATEST_FORMAL", "CLOSE"}:
         raise HTTPException(400, "unsupported source_mode")
+    if request.ai_execution_mode not in {"AUTO_API", "INTERACTIVE_CHAT"}:
+        raise HTTPException(400, "unsupported ai_execution_mode")
 
     planned_cutoff = None
     if request.source_mode == "CLOSE":
@@ -1648,7 +1681,7 @@ def create_opportunity_full_run(request: OpportunityFullRunRequest) -> dict:
         active = [
             job for job in _full_run_candidates()
             if job.get("market_cutoff") == policy["china_date"]
-            and job.get("status") in {"PENDING", "RUNNING"}
+            and job.get("status") in {"PENDING", "RUNNING", "WAITING_FOR_CHAT"}
         ]
         if active:
             raise HTTPException(
@@ -1670,6 +1703,7 @@ def create_opportunity_full_run(request: OpportunityFullRunRequest) -> dict:
             "source_mode": request.source_mode,
             "market_cutoff": planned_cutoff,
             "run_research": request.run_research,
+            "ai_execution_mode": request.ai_execution_mode,
             "research_batch_limit": request.research_batch_limit,
             "max_research_rounds": request.max_research_rounds,
             "created_at": utcnow(),
@@ -1683,6 +1717,54 @@ def create_opportunity_full_run(request: OpportunityFullRunRequest) -> dict:
         daemon=True,
     ).start()
     return {"job_id": job_id}
+
+
+@app.post("/api/opportunity/full-runs/{full_runtime_run_id}/resume-after-chat")
+def resume_opportunity_full_run_after_chat(full_runtime_run_id: str) -> dict:
+    result = resume_opportunity_full_after_chat(
+        run_id=full_runtime_run_id,
+        data_root=DATA_ROOT,
+        deployment=load_deployment_manifest(),
+    )
+
+    controller_job = next(
+        (
+            job for job in _full_run_candidates()
+            if job.get("full_runtime_run_id") == full_runtime_run_id
+        ),
+        None,
+    )
+    if controller_job:
+        job_id = str(controller_job["job_id"])
+        with _lock:
+            if job_id not in _jobs:
+                path = DATA_ROOT / "jobs" / job_id / "live_status.json"
+                if path.exists():
+                    _jobs[job_id] = json.loads(path.read_text(encoding="utf-8"))
+        if result.get("status") == "WAITING_FOR_CHAT":
+            update_controller_job(
+                job_id,
+                status="WAITING_FOR_CHAT",
+                phase="PATH_RESEARCH",
+                summary=result.get("summary"),
+                artifacts=result.get("artifacts"),
+            )
+        elif result.get("status") == "PASS":
+            update_controller_job(
+                job_id,
+                status="PASS",
+                phase="COMPLETE",
+                completed_at=utcnow(),
+                summary=result.get("summary"),
+                artifacts=result.get("artifacts"),
+            )
+
+    return {
+        "full_runtime_run_id": full_runtime_run_id,
+        "status": result.get("status"),
+        "phase": result.get("current_stage"),
+        "summary": result.get("summary"),
+    }
 
 
 @app.get("/api/opportunity/full-runs/latest")
@@ -1719,6 +1801,7 @@ def get_run(job_id: str) -> dict:
         return _jobs[job_id]
 
 
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
 
 def find_latest_market_map_output() -> tuple[dict, Path, Path] | None:
     """
@@ -2156,3 +2239,5 @@ def health() -> dict:
         "replay_fixture_exists": RAW_FIXTURE_DIR.exists(),
         "calculation_fixture_exists": CALC_FIXTURE_DIR.exists(),
     }
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

@@ -47,6 +47,12 @@
           <h3>每日收盘正式运行</h3>
           <p>每个交易日只接受一个正式收盘截面。15:10 后可启动一次完整流程；同一收盘数据正式完成后不重复运行。</p>
         </div>
+        <label class="run-ai-mode">研究执行
+          <select id="pathResearchAiMode">
+            <option value="AUTO_API">自动 API</option>
+            <option value="INTERACTIVE_CHAT">ChatGPT 交互</option>
+          </select>
+        </label>
         <button id="runCloseBtn" class="primary">检查今日正式运行</button>
         <button id="runReuseBtn" class="hidden" aria-hidden="true">工程复跑</button>
       </div>
@@ -89,6 +95,7 @@
           <option value="COMPLETED">已完成深研</option>
           <option value="HOLD_WAITING_EVIDENCE">等待补充证据</option>
           <option value="PENDING">等待研究</option>
+          <option value="WAITING_FOR_CHAT">等待 ChatGPT 研究</option>
           <option value="IN_PROGRESS">研究中</option>
           <option value="NOT_TRIGGERED">等待事件节点</option>
         </select>
@@ -170,3 +177,5 @@
   <script src="/static/workbench.js" defer></script>
 </body>
 </html>
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

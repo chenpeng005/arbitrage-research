@@ -54,6 +54,8 @@ def _research_state(
         return "HOLD_WAITING_EVIDENCE"
     if status == "PENDING":
         return "PENDING"
+    if status == "WAITING_FOR_CHAT":
+        return "WAITING_FOR_CHAT"
     if status == "IN_PROGRESS":
         return "IN_PROGRESS"
 
@@ -297,3 +299,5 @@ def build_candidate_pool(
         )
 
     return result
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

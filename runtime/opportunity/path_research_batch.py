@@ -12,7 +12,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from runtime.opportunity.path_research_runner import set_trigger_research_status
+from runtime.opportunity.path_research_runner import (
+    create_path_research_chat_task,
+    set_trigger_research_status,
+)
 from runtime.opportunity.research_queue import (
     pending_item_is_runnable,
     task_id_from_trigger,
@@ -143,11 +146,15 @@ def _run_path_research_batch_unlocked(
     data_root: Path,
     provider_name: str,
     model: str,
+    execution_mode: str = "AUTO_API",
+    full_runtime_run_id: str | None = None,
     limit: int = 5,
     path_id: str | None = None,
     retry_once: bool = False,
     wall_timeout_seconds: int = 180,
 ) -> dict[str, Any]:
+    if execution_mode not in {"AUTO_API", "INTERACTIVE_CHAT"}:
+        raise ValueError(f"unsupported execution_mode={execution_mode}")
     pending = _read_json(data_root / "registry" / "pending_research_tasks.json")
     all_items = list(pending.get("pending_tasks", []))
     if path_id:
@@ -177,24 +184,23 @@ def _run_path_research_batch_unlocked(
         task_id = task_id_from_trigger(str(item["trigger_key"]))
         attempts: list[dict[str, Any]] = []
 
-        first = _run_one_with_wall_timeout(
-            root=root,
-            data_root=data_root,
-            task_id=task_id,
-            provider_name=provider_name,
-            model=model,
-            wall_timeout_seconds=wall_timeout_seconds,
-        )
-        attempts.append(first)
-
-        timed_out = "wall timeout" in str(first.get("error") or "")
-        should_retry = (
-            retry_once
-            and not timed_out
-            and first.get("status") in {"FAIL", "NEEDS_REVIEW"}
-        )
-        if should_retry:
-            second = _run_one_with_wall_timeout(
+        if execution_mode == "INTERACTIVE_CHAT":
+            chat_task = create_path_research_chat_task(
+                root=root,
+                data_root=data_root,
+                task_id=task_id,
+                writeback_mode="FORMAL",
+                full_runtime_run_id=full_runtime_run_id,
+            )
+            first = {
+                "task_id": task_id,
+                "status": "WAITING_FOR_CHAT",
+                "chat_task_id": chat_task["task_id"],
+                "execution_mode": "INTERACTIVE_CHAT",
+            }
+            attempts.append(first)
+        else:
+            first = _run_one_with_wall_timeout(
                 root=root,
                 data_root=data_root,
                 task_id=task_id,
@@ -202,7 +208,24 @@ def _run_path_research_batch_unlocked(
                 model=model,
                 wall_timeout_seconds=wall_timeout_seconds,
             )
-            attempts.append(second)
+            attempts.append(first)
+
+            timed_out = "wall timeout" in str(first.get("error") or "")
+            should_retry = (
+                retry_once
+                and not timed_out
+                and first.get("status") in {"FAIL", "NEEDS_REVIEW"}
+            )
+            if should_retry:
+                second = _run_one_with_wall_timeout(
+                    root=root,
+                    data_root=data_root,
+                    task_id=task_id,
+                    provider_name=provider_name,
+                    model=model,
+                    wall_timeout_seconds=wall_timeout_seconds,
+                )
+                attempts.append(second)
 
         final = attempts[-1]
         results.append({
@@ -236,6 +259,8 @@ def _run_path_research_batch_unlocked(
         "path_filter": path_id,
         "provider": provider_name,
         "model": model,
+        "execution_mode": execution_mode,
+        "full_runtime_run_id": full_runtime_run_id,
         "retry_once": retry_once,
         "wall_timeout_seconds": wall_timeout_seconds,
         "status_counts": status_counts,
@@ -265,6 +290,8 @@ def run_path_research_batch(
     data_root: Path,
     provider_name: str,
     model: str,
+    execution_mode: str = "AUTO_API",
+    full_runtime_run_id: str | None = None,
     limit: int = 5,
     path_id: str | None = None,
     retry_once: bool = False,
@@ -276,8 +303,12 @@ def run_path_research_batch(
             data_root=data_root,
             provider_name=provider_name,
             model=model,
+            execution_mode=execution_mode,
+            full_runtime_run_id=full_runtime_run_id,
             limit=limit,
             path_id=path_id,
             retry_once=retry_once,
             wall_timeout_seconds=wall_timeout_seconds,
         )
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

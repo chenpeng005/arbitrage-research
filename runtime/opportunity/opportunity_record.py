@@ -38,7 +38,7 @@ def _record_state(path_records: list[dict[str, Any]]) -> str:
     states = {str(x.get("research_state") or "") for x in path_records}
     if "HOLD_WAITING_EVIDENCE" in states:
         return "HAS_HOLD"
-    if states & {"PENDING", "IN_PROGRESS"}:
+    if states & {"PENDING", "IN_PROGRESS", "WAITING_FOR_CHAT"}:
         return "RESEARCH_IN_PROGRESS"
     if "COMPLETED" in states:
         return "HAS_COMPLETED_RESEARCH"
@@ -126,7 +126,7 @@ def build_opportunity_records(
                         f"NOT_TRIGGERED has Path Result ref: {code}:{path_id}"
                     )
                     continue
-            elif research_state in {"PENDING", "IN_PROGRESS"}:
+            elif research_state in {"PENDING", "IN_PROGRESS", "WAITING_FOR_CHAT"}:
                 # Current research may not have a valid result yet.
                 result_payload = None
             else:
@@ -233,3 +233,5 @@ def build_opportunity_records(
         )
 
     return result
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

@@ -13,7 +13,10 @@ import requests
 
 from runtime.ai_runtime.tools.evidence import ToolContext, execute_tool
 from runtime.market_map.semantic_resolution import validate_resolution
+from runtime.opportunity.candidate_pool import build_candidate_pool
+from runtime.opportunity.opportunity_record import build_opportunity_records
 from runtime.opportunity.path_research_validation import validate_path_research_result
+from runtime.opportunity.research_ledger import record_path_research_result
 
 
 def now_utc() -> str:
@@ -63,6 +66,38 @@ def _validate_submission(
         business_run_dir,
         structured_output_path,
     )
+
+
+def _refresh_opportunity_outputs_after_research(
+    data_root: Path,
+) -> dict[str, Any]:
+    registry_pointer = load_json(
+        data_root / "registry" / "latest_economic_path_registry.json"
+    )
+    registry_path = Path(str(registry_pointer["result_path"]))
+    if not registry_path.is_absolute():
+        registry_path = data_root.parent / registry_path
+    deployment = load_json(data_root / "deployment_manifest.json")
+
+    pool = build_candidate_pool(registry_path, data_root, deployment)
+    if pool.get("status") != "PASS":
+        raise RuntimeError("Candidate Pool refresh failed after Chat research")
+    pool_path = (
+        data_root
+        / "runs"
+        / str(pool["run_id"])
+        / "candidate_pool.json"
+    )
+    records = build_opportunity_records(pool_path, data_root, deployment)
+    if records.get("status") != "PASS":
+        raise RuntimeError("Opportunity Record refresh failed after Chat research")
+    return {
+        "status": "PASS",
+        "candidate_pool_run_id": pool["run_id"],
+        "opportunity_record_run_id": records["run_id"],
+        "bond_count": records["bond_count"],
+        "keep_path_count": records["keep_path_count"],
+    }
 
 
 CLAIM_TTL_SECONDS = 45 * 60
@@ -348,12 +383,24 @@ def build_evidence_manifest(
 
 
 def resume_pipeline(task: dict[str, Any]) -> dict[str, Any]:
-    pipeline_job_id = task.get("pipeline_job_id")
-    if not pipeline_job_id:
-        return {
-            "status": "SKIPPED",
-            "reason": "task has no pipeline_job_id",
-        }
+    if task.get("task_type") == "PATH_RESEARCH":
+        full_runtime_run_id = task.get("full_runtime_run_id")
+        if not full_runtime_run_id:
+            return {
+                "status": "SKIPPED",
+                "reason": "PATH_RESEARCH task has no full_runtime_run_id",
+            }
+        resume_path = (
+            f"/api/opportunity/full-runs/{full_runtime_run_id}/resume-after-chat"
+        )
+    else:
+        pipeline_job_id = task.get("pipeline_job_id")
+        if not pipeline_job_id:
+            return {
+                "status": "SKIPPED",
+                "reason": "task has no pipeline_job_id",
+            }
+        resume_path = f"/api/market-map-runs/{pipeline_job_id}/resume-after-chat"
 
     user = os.environ.get("RUNTIME_USER")
     password = os.environ.get("RUNTIME_PASSWORD")
@@ -364,10 +411,7 @@ def resume_pipeline(task: dict[str, Any]) -> dict[str, Any]:
         }
 
     token = base64.b64encode(f"{user}:{password}".encode()).decode()
-    url = (
-        "http://127.0.0.1:8010"
-        f"/api/market-map-runs/{pipeline_job_id}/resume-after-chat"
-    )
+    url = "http://127.0.0.1:8010" + resume_path
     response = requests.post(
         url,
         headers={"Authorization": f"Basic {token}"},
@@ -417,8 +461,72 @@ def submit_resolution(
 
     task["validation_status"] = validation.get("status")
     task["completed_at"] = now_utc()
+    writeback_result = None
+    writeback_ok = True
 
-    if validation.get("status") == "PASS":
+    if (
+        validation.get("status") == "PASS"
+        and task.get("task_type") == "PATH_RESEARCH"
+        and task.get("writeback_mode", "VALIDATE_ONLY") == "FORMAL"
+    ):
+        try:
+            structured_output = tdir / "structured_output.json"
+            result_payload = load_json(structured_output)
+            research_task_path = (
+                data_root
+                / "research_tasks"
+                / f"{result_payload['task_id']}.json"
+            )
+            if not research_task_path.exists():
+                raise FileNotFoundError(
+                    f"formal research task missing: {research_task_path}"
+                )
+            research_task = load_json(research_task_path)
+            state_path = data_root / "registry" / "research_trigger_state.json"
+            state = load_json(state_path)
+            state_key = (
+                f"{str(result_payload['bond_code']).zfill(6)}:"
+                f"{result_payload['path_id']}"
+            )
+            state_row = state.get("paths", {}).get(state_key)
+            if state_row is None:
+                raise RuntimeError(
+                    f"formal trigger state missing: {state_key}"
+                )
+            if state_row.get("last_trigger_key") != result_payload.get("trigger_key"):
+                raise RuntimeError(
+                    "formal writeback blocked: result trigger_key is not current"
+                )
+            if research_task.get("trigger_key") != result_payload.get("trigger_key"):
+                raise RuntimeError(
+                    "formal writeback blocked: task/result trigger mismatch"
+                )
+            writeback_result = record_path_research_result(
+                structured_output,
+                data_root,
+            )
+            task["writeback_status"] = "PASS"
+            task["writeback_result"] = writeback_result
+            if task.get("full_runtime_run_id"):
+                task["downstream_refresh_status"] = "DEFERRED_TO_FULL_RUNTIME_RESUME"
+            else:
+                try:
+                    downstream_refresh = _refresh_opportunity_outputs_after_research(
+                        data_root
+                    )
+                    task["downstream_refresh_status"] = "PASS"
+                    task["downstream_refresh"] = downstream_refresh
+                except Exception as refresh_exc:
+                    task["downstream_refresh_status"] = "FAIL"
+                    task["downstream_refresh_error"] = (
+                        f"{type(refresh_exc).__name__}: {refresh_exc}"
+                    )
+        except Exception as exc:
+            writeback_ok = False
+            task["writeback_status"] = "FAIL"
+            task["writeback_error"] = f"{type(exc).__name__}: {exc}"
+
+    if validation.get("status") == "PASS" and writeback_ok:
         task["status"] = "PASS"
         cp = claim_path(data_root, task_id)
         if cp.exists():
@@ -432,7 +540,7 @@ def submit_resolution(
     write_json(tdir / "chat_task.json", task)
 
     resume_result = None
-    if auto_resume and validation.get("status") == "PASS":
+    if auto_resume and validation.get("status") == "PASS" and writeback_ok:
         resume_result = resume_pipeline(task)
         task["resume_result"] = resume_result
         write_json(tdir / "chat_task.json", task)
@@ -546,3 +654,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

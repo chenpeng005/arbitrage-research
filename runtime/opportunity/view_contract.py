@@ -23,6 +23,7 @@ STATE_LABELS = {
     "HOLD_WAITING_EVIDENCE": "等待补充证据",
     "NOT_TRIGGERED": "机会已发现，尚未到深研节点",
     "PENDING": "等待研究",
+    "WAITING_FOR_CHAT": "等待 ChatGPT 研究",
     "IN_PROGRESS": "研究中",
 }
 
@@ -598,6 +599,8 @@ def _status_explanation(path_id: str, state: str, event_state: Any) -> str:
         return "经济机会继续保留，但当前仍有关键证据未闭合；不会因为缺证据自动删除机会。"
     if state == "PENDING":
         return "已进入工程研究触发节点，正在等待本轮路径研究。"
+    if state == "WAITING_FOR_CHAT":
+        return "已进入研究触发节点，本轮使用 ChatGPT 交互执行；经济机会继续保留，等待 Chat 研究完成并通过同一 Validator。"
     if state == "IN_PROGRESS":
         return "路径研究正在进行中。"
     if state == "NOT_TRIGGERED" and path_id == "DOWNWARD_REVISION":
@@ -794,6 +797,7 @@ def build_opportunity_view(
     completed = sum(p["research_state"] == "COMPLETED" for p in paths)
     hold = sum(p["research_state"] == "HOLD_WAITING_EVIDENCE" for p in paths)
     waiting = sum(p["research_state"] == "NOT_TRIGGERED" for p in paths)
+    waiting_chat = sum(p["research_state"] == "WAITING_FOR_CHAT" for p in paths)
     floor_class, floor_reason = _bond_floor_class(record)
     return {
         "view_contract_version": VIEW_CONTRACT_VERSION,
@@ -806,6 +810,7 @@ def build_opportunity_view(
         "research_summary": {
             "已完成深研": completed,
             "等待补充证据": hold,
+            "等待 ChatGPT 研究": waiting_chat,
             "等待事件节点": waiting,
         },
         "paths": paths,
@@ -893,6 +898,8 @@ def build_opportunity_list(
         "view_contract_version": VIEW_CONTRACT_VERSION,
         "market_snapshot_id": payload.get("market_snapshot_id"),
         "market_cutoff": payload.get("market_cutoff"),
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
         "bond_count": payload.get("bond_count", len(records)),
         "keep_path_count": payload.get("keep_path_count"),
         "record_state_summary": payload.get("record_state_summary", {}),
@@ -906,3 +913,5 @@ def build_opportunity_list(
             for record in records
         ],
     }
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

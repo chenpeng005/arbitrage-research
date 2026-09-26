@@ -55,6 +55,8 @@ def pending_item_is_runnable(
     data_root: Path,
 ) -> tuple[bool, str]:
     status = str(item.get("research_status") or "PENDING")
+    if status == "WAITING_FOR_CHAT":
+        return False, "WAITING_FOR_CHAT"
     if status not in HOLD_STATUSES:
         return True, "READY"
 
@@ -174,3 +176,5 @@ def restore_unresolved_ledger_to_pending(data_root: Path) -> dict[str, Any]:
         "skipped": skipped,
         "pending_total": len(pending.get("pending_tasks", [])),
     }
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

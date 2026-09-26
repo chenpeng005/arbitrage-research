@@ -90,7 +90,7 @@ function fmtMetric(m){
 }
 function badgeClass(status){
   if(["PASS","COMPLETED","REUSED","SKIPPED"].includes(status))return "pass";
-  if(["RUNNING","PENDING","IN_PROGRESS"].includes(status))return "running";
+  if(["RUNNING","PENDING","IN_PROGRESS","WAITING_FOR_CHAT"].includes(status))return "running";
   if(["PARTIAL","HOLD_WAITING_EVIDENCE","NEEDS_REVIEW"].includes(status))return "warn";
   if(status==="FAIL")return "fail";
   return "idle";
@@ -98,7 +98,7 @@ function badgeClass(status){
 function statusText(status){
   return ({
     PASS:"已完成",COMPLETED:"已完成",REUSED:"已沿用",SKIPPED:"无需执行",
-    RUNNING:"运行中",PENDING:"等待中",IN_PROGRESS:"研究中",
+    RUNNING:"运行中",PENDING:"等待中",WAITING_FOR_CHAT:"等待 ChatGPT",IN_PROGRESS:"研究中",
     PARTIAL:"部分完成",FAIL:"失败",NEEDS_REVIEW:"需要处理"
   })[status]||status||"未开始";
 }
@@ -209,6 +209,7 @@ async function startRun(sourceMode){
       body:JSON.stringify({
         source_mode:sourceMode,
         run_research:true,
+        ai_execution_mode:($("#pathResearchAiMode")||{}).value||"AUTO_API",
         research_batch_limit:5,
         max_research_rounds:20
       })
@@ -266,7 +267,7 @@ async function loadMarketMapMeta(){
   }
 }
 function researchStateCounts(data){
-  const out={COMPLETED:0,HOLD_WAITING_EVIDENCE:0,NOT_TRIGGERED:0,PENDING:0,IN_PROGRESS:0};
+  const out={COMPLETED:0,HOLD_WAITING_EVIDENCE:0,NOT_TRIGGERED:0,PENDING:0,WAITING_FOR_CHAT:0,IN_PROGRESS:0};
   for(const b of data.opportunities||[]){
     for(const p of b.paths||[]){
       if(out[p.research_state]!==undefined)out[p.research_state]++;
@@ -401,7 +402,7 @@ function earliestOpportunityTime(b){
 }
 
 function researchSortValue(b){
-  const rank={COMPLETED:1,HOLD_WAITING_EVIDENCE:2,IN_PROGRESS:3,PENDING:4,NOT_TRIGGERED:5};
+  const rank={COMPLETED:1,HOLD_WAITING_EVIDENCE:2,IN_PROGRESS:3,WAITING_FOR_CHAT:4,PENDING:5,NOT_TRIGGERED:6};
   const vals=visiblePathsForBond(b).map(p=>rank[p.research_state]||9);
   return vals.length?Math.min(...vals):null;
 }
@@ -782,3 +783,5 @@ async function init(){
   }
 }
 init();
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
