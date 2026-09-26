@@ -263,6 +263,14 @@ def _humanize_prose(value: Any) -> str:
         "证据包 未预装当前触发计数（missing_or_deferred 中列明 current_put_trigger_count_if_not_structurally_available）",
         "当前回售触发计数尚未由结构化数据预装；进入回售适用期后需要继续更新计数",
     )
+
+    def _round_long_decimal(match: re.Match[str]) -> str:
+        value = float(match.group(0))
+        if abs(value) >= 10:
+            return f"{value:.2f}"
+        return f"{value:.3f}".rstrip("0").rstrip(".")
+
+    text = re.sub(r"(?<!\d)-?\d+\.\d{5,}(?!\d)", _round_long_decimal, text)
     return text
 
 
