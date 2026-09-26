@@ -359,6 +359,16 @@ def validate_path_research_result(
         )
         revision_state_aliases = {
             "满足条件": ("满足条件", "触发条件已满足", "已触发"),
+            "临近触发": ("临近触发", "接近触发", "预计满足", "预计触发"),
+            "待股东会": (
+                "待股东会",
+                "股东会待审",
+                "等待股东会",
+                "股东会待表决",
+                "股东大会待审",
+                "股东大会待召开",
+                "股东会尚未召开",
+            ),
         }
         accepted_event_phrases = revision_state_aliases.get(
             expected_event_state,
@@ -518,7 +528,16 @@ def validate_path_research_result(
                 str(fetched.get("detail_url") or ""),
             }
             valid.discard("")
-            if locator and locator not in valid:
+            locator_matches = (
+                not locator
+                or locator in valid
+                or any(
+                    locator.startswith(url + " (")
+                    and locator.endswith(")")
+                    for url in valid
+                )
+            )
+            if not locator_matches:
                 errors.append(
                     f"evidence_id={evidence_id} locator does not match fetched evidence"
                 )
