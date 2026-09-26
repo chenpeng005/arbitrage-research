@@ -213,8 +213,17 @@ def _path_preloaded_notice_candidates(
         "official_notice_candidate_index",
         "official_notice_behavior_index",
         "official_contract_document_index",
+        "official_payment_notice_candidate_index",
     ):
         value = facts.get(key)
+        if isinstance(value, list):
+            candidates.extend(
+                item for item in value if isinstance(item, dict)
+            )
+
+    cross_revision = facts.get("cross_path_revision") or {}
+    if isinstance(cross_revision, dict):
+        value = cross_revision.get("official_notice_behavior_index")
         if isinstance(value, list):
             candidates.extend(
                 item for item in value if isinstance(item, dict)
@@ -379,10 +388,55 @@ def path_evidence_fetch(
         )
     catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
     item = catalog.get(evidence_id)
+
+    # Engineering-prefetched announcement candidates are already part of this
+    # PATH_RESEARCH task's frozen Evidence Pack and therefore have valid
+    # provenance even if a later narrow path_evidence_search query returns no
+    # match. Allow fetch to hydrate such a candidate, but nothing outside the
+    # current task's frozen candidate indexes.
+    if item is None:
+        task = ctx.input_payload.get("path_research_task") or {}
+        pack = ctx.input_payload.get("evidence_pack") or {}
+        stock_code = str(pack.get("stock_code") or "").zfill(6)
+        bond_code = str(task.get("bond_code") or "").zfill(6)
+        bond_name = str(task.get("bond_name") or "")
+        for candidate in _path_preloaded_notice_candidates(ctx):
+            detail_url = str(candidate.get("url") or "")
+            announcement_id = _eastmoney_announcement_id(detail_url)
+            if announcement_id != evidence_id:
+                continue
+            published_value = candidate.get("notice_date")
+            published_ts = pd.to_datetime(published_value, errors="coerce")
+            if pd.isna(published_ts):
+                continue
+            item = {
+                "evidence_id": announcement_id,
+                "source_type": "eastmoney_announcement",
+                "stock_code": stock_code,
+                "bond_code": bond_code,
+                "bond_name": bond_name,
+                "title": str(candidate.get("title") or ""),
+                "published_at": published_ts.date().isoformat(),
+                "detail_url": detail_url,
+                "content_api_url": (
+                    "https://np-cnotice-stock.eastmoney.com/"
+                    "api/content/ann"
+                ),
+                "event_kind": candidate.get("event_kind"),
+                "keyword": "PRELOADED_EVIDENCE_PACK",
+                "preloaded_candidate": True,
+            }
+            catalog[evidence_id] = item
+            catalog_path.write_text(
+                json.dumps(catalog, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            break
+
     if item is None:
         raise ValueError(
-            "evidence_id was not returned by path_evidence_search "
-            "in this AI job"
+            "evidence_id is neither a path_evidence_search result nor a "
+            "prefetched candidate in this AI job"
         )
 
     if item.get("source_type") != "eastmoney_announcement":
@@ -542,6 +596,19 @@ def _prefetch_priority(path_id: str, item: dict[str, Any]) -> tuple[int, str]:
             rank = 4
         else:
             rank = 20
+    elif path_id == "PUT":
+        if kind == "RATING_REPORT":
+            rank = 0
+        elif kind == "FINANCIAL_REPORT" and "摘要" not in title:
+            rank = 1
+        elif kind == "HARD_CREDIT_EVENT":
+            rank = 2
+        elif kind in {"NO_REVISION", "REVISION_ACTION", "CONVERSION_PRICE_EVENT"}:
+            rank = 3
+        elif kind == "FINANCING_SUPPORT":
+            rank = 4
+        else:
+            rank = 20
     elif path_id == "DOWNWARD_REVISION":
         rank = {
             "NO_REVISION": 0,
@@ -575,6 +642,26 @@ def _snippet_keywords(path_id: str, event_kind: str) -> list[str]:
         if event_kind == "FINANCING_SUPPORT":
             return ["授信", "借款", "融资", "额度", "担保"]
         return ["现金", "债务", "偿债", "融资"]
+    if path_id == "PUT":
+        if event_kind == "RATING_REPORT":
+            return [
+                "评级观点", "偿债", "流动性", "现金短期债务比",
+                "授信", "债务", "逾期", "支持", "风险",
+            ]
+        if event_kind == "FINANCIAL_REPORT":
+            return [
+                "母公司资产负债表", "母公司现金流量表", "货币资金",
+                "受限", "短期借款", "一年内到期", "应付债券",
+                "长期借款", "经营活动产生的现金流量净额",
+            ]
+        if event_kind == "HARD_CREDIT_EVENT":
+            return [
+                "逾期", "违约", "冻结", "担保逾期", "债务逾期",
+                "重整", "持续经营",
+            ]
+        return [
+            "回售", "下修", "转股价格", "债务", "现金", "偿债", "融资",
+        ]
     if path_id == "DOWNWARD_REVISION":
         if event_kind == "CONTRACT_DOCUMENT":
             return [
