@@ -174,9 +174,18 @@ AI 可以解释这些状态，但不能被更早日期的公告、历史行为�
 - `reset_start`
 
 属于当前结构化状态锚。历史公告只能用于解释行为，不得替代当前计数。
-`R1_CURRENT_START` 与 summary 必须显式保留当前 event state 和 revision_count。若较早公告只披露 10/15、11/15 等历史计数，而 Engineering Anchor 已更新到 15/15，则主答案必须写当前 15/15；较早公告只能作为行为/时间序列证据，不能成为当前状态答案。具体地，`summary.core_conclusion` 与 `R1_CURRENT_START.answer` 必须使用同一个当前 event state 与 revision_count，且不得出现与当前 revision_count 冲突的旧计数；`R1_CURRENT_START.conclusion` 必须保持同一个当前 event state，如再次写计数则也只能使用当前 revision_count。
+`R1_CURRENT_START` 与 summary 必须显式保留当前 event state 和 revision_count。若较早公告只披露 10/15、11/15 等历史计数，而 Engineering Anchor 已更新到 15/15，则主答案必须写当前 15/15；较早公告只能作为行为/时间序列证据，不能成为当前状态答案。具体地：
 
-对 `PUT` 同样执行确定性时间锚：若 `engineering_anchor_statement` 已给出 `普通回售窗口起点=YYYY-MM-DD`，则 `summary.core_conclusion`、`P1_LEGAL_TIME.answer`、`P1_LEGAL_TIME.conclusion` 必须使用这个日期。AI 不再自行把“最后两个计息年度”重新数一遍；条款正文用于解释规则，不得覆盖 Engineering 已算出的窗口起点。
+- `summary.core_conclusion` 必须逐字包含当前 `trigger_context.current_event_state` 与当前 `revision_count`；
+- `R1_CURRENT_START.answer` 必须逐字包含同一个当前 event state 与 revision_count；
+- `R1_CURRENT_START.conclusion` **也必须逐字包含当前 event state token**（例如当前是“满足条件”，结论中就必须真的出现“满足条件”四个字），不能只改写成“已正式触发”“已达到触发标准”等同义句；
+- 如 R1 conclusion 再次写计数，也只能使用当前 revision_count。
+
+对 `PUT` 同样执行确定性时间锚：若 `engineering_anchor_statement` 已给出 `普通回售窗口起点=YYYY-MM-DD`，则 `summary.core_conclusion`、`P1_LEGAL_TIME.answer`、`P1_LEGAL_TIME.conclusion` 必须使用这个日期。并且：
+
+- `summary.core_conclusion` 与 `P1_LEGAL_TIME.answer` 必须**逐字保留当前 `trigger_context.current_event_state` 原始 token**（例如 `BEFORE_PUT_WINDOW`）；
+- 可以在 token 后补自然中文解释，例如“BEFORE_PUT_WINDOW（尚未进入普通回售期）”，但不能只写中文同义句而删掉 token；
+- AI 不再自行把“最后两个计息年度”重新数一遍；条款正文用于解释规则，不得覆盖 Engineering 已算出的窗口起点。
 
 最终输出还必须原样回填：
 

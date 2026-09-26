@@ -58,9 +58,15 @@ def _is_v2(result: dict[str, Any]) -> bool:
     )
 
 
-def _migration_task_id(trigger_key: str, knowledge_sha: str) -> str:
+def _migration_task_id(
+    trigger_key: str,
+    knowledge_sha: str,
+    application_sha: str,
+) -> str:
     digest = hashlib.sha256(
-        f"V2_BASELINE|{trigger_key}|{knowledge_sha}".encode("utf-8")
+        (
+            f"V2_BASELINE|{trigger_key}|{knowledge_sha}|{application_sha}"
+        ).encode("utf-8")
     ).hexdigest()[:16]
     return f"research_v2m_{digest}"
 
@@ -222,6 +228,7 @@ def prepare(root: Path, data_root: Path) -> dict[str, Any]:
         migration_task_id = _migration_task_id(
             trigger_key,
             str(deployment.get("knowledge_commit_sha") or ""),
+            str(deployment.get("application_commit_sha") or ""),
         )
         package["task_id"] = migration_task_id
         package["migration_context"] = {
