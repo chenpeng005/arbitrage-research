@@ -33,16 +33,10 @@ def build_candidate_projection(*, target_db: Path) -> dict[str, Any]:
             """SELECT s.*, b.bond_name, mo.market_order
                FROM scope_state_current s
                JOIN bond_master b ON b.bond_code=s.bond_code
-               LEFT JOIN market_observation mo
+               JOIN market_observation mo
                  ON mo.snapshot_id=s.source_snapshot_id AND mo.bond_code=s.bond_code
                WHERE s.scope_type='PATH' AND s.economic_status='KEEP'
-               ORDER BY mo.market_order,
-                 CASE s.scope_id
-                   WHEN 'MATURITY_CASH' THEN 1
-                   WHEN 'PUT' THEN 2
-                   WHEN 'DOWNWARD_REVISION' THEN 3
-                   ELSE 99
-                 END"""
+               ORDER BY mo.market_order, s.scope_order"""
         ))
         by_bond: dict[str,list[dict[str,Any]]] = {}
         names: dict[str,str] = {}
@@ -149,9 +143,7 @@ def _index(rows: list[dict[str,Any]]) -> dict[str,dict[str,Any]]:
     return {str(x["bond_code"]).zfill(6):x for x in rows}
 
 def _normalize(value: dict[str,Any]) -> dict[str,Any]:
-    out = json.loads(json.dumps(value,ensure_ascii=False))
-    out["paths"] = sorted(out.get("paths",[]),key=lambda x:x["path_id"])
-    return out
+    return json.loads(json.dumps(value,ensure_ascii=False))
 def audit_projection_parity(*, data_root: Path, target_db: Path, max_samples: int=20) -> dict[str,Any]:
     cp = json.loads((data_root/"registry"/"latest_candidate_pool.json").read_text())
     cj = json.loads(Path(cp["result_path"]).read_text())

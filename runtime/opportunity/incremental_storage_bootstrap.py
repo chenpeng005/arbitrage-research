@@ -233,6 +233,11 @@ def bootstrap_current_runtime(
             str(row["bond_code"]).zfill(6): row
             for row in registry.get("bonds", [])
         }
+        path_order_by_pair = {
+            (str(bond["bond_code"]).zfill(6), path_id): path_order
+            for bond in registry.get("bonds", [])
+            for path_order, path_id in enumerate((bond.get("paths") or {}).keys())
+        }
         state_rows = []
         for key, trigger_row in sorted(
             trigger_state.get("paths", {}).items()
@@ -271,6 +276,7 @@ def bootstrap_current_runtime(
                     state_code,
                     1,
                     _stable_hash(current_state_identity),
+                    path_order_by_pair[(code, path_id)],
                     1,
                     _stable_hash(research_state_identity),
                     registry["market_snapshot_id"],
@@ -290,9 +296,9 @@ def bootstrap_current_runtime(
         conn.executemany(
             """INSERT INTO scope_state_current
                (bond_code,scope_type,scope_id,economic_status,state_code,
-                state_version,state_hash,research_state_version,research_state_hash,
+                state_version,state_hash,scope_order,research_state_version,research_state_hash,
                 source_snapshot_id,source_event_update_id,payload_json,updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             state_rows,
         )
 

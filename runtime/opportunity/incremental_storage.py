@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS scope_state_current (
     state_code TEXT,
     state_version INTEGER NOT NULL CHECK (state_version >= 1),
     state_hash TEXT NOT NULL,
+    scope_order INTEGER NOT NULL CHECK (scope_order >= 0),
     research_state_version INTEGER NOT NULL CHECK (research_state_version >= 1),
     research_state_hash TEXT NOT NULL,
     source_snapshot_id TEXT,
