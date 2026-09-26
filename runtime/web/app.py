@@ -31,6 +31,7 @@ from runtime.opportunity.full_runtime_controller import (
     resume_opportunity_full_after_chat,
     run_opportunity_full_downstream,
 )
+from runtime.opportunity.incremental_storage_cutover import evaluate_cutover_readiness
 from runtime.opportunity.view_contract import build_opportunity_list, build_opportunity_view
 
 ROOT = Path(os.environ.get("RUNTIME_ROOT", Path(__file__).resolve().parents[2]))
@@ -897,9 +898,9 @@ def create_interactive_chat_task(
     pipeline_job_id: str,
     acquisition_job_id: str,
     acquisition_run_dir: Path,
-    market_cutoff: str,
 
 [executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
+    market_cutoff: str,
 ) -> dict:
     request_path = acquisition_run_dir / "semantic_review_request.json"
     if not request_path.exists():
@@ -1767,6 +1768,29 @@ def resume_opportunity_full_run_after_chat(full_runtime_run_id: str) -> dict:
     }
 
 
+@app.get("/api/opportunity/storage-status")
+def opportunity_storage_status() -> dict:
+    status_path = DATA_ROOT / "registry" / "incremental_storage_status.json"
+    sync_path = DATA_ROOT / "registry" / "latest_incremental_storage_sync.json"
+    if not status_path.exists():
+        raise HTTPException(404, "incremental storage is not initialized")
+    status = json.loads(status_path.read_text(encoding="utf-8"))
+    latest_sync = (
+        json.loads(sync_path.read_text(encoding="utf-8"))
+        if sync_path.exists()
+        else None
+    )
+    return {
+        "storage": status,
+        "latest_shadow_sync": latest_sync,
+    }
+
+
+@app.get("/api/opportunity/storage-cutover-readiness")
+def opportunity_storage_cutover_readiness() -> dict:
+    return evaluate_cutover_readiness(data_root=DATA_ROOT)
+
+
 @app.get("/api/opportunity/full-runs/latest")
 def latest_opportunity_full_run() -> dict:
     candidates = []
@@ -1776,6 +1800,8 @@ def latest_opportunity_full_run() -> dict:
             if job.get("unit") == "Opportunity Discovery / Full Runtime"
         )
     for job in load_persisted_jobs():
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
         if job.get("unit") == "Opportunity Discovery / Full Runtime":
             candidates.append(job)
     if candidates:
@@ -1801,7 +1827,6 @@ def get_run(job_id: str) -> dict:
         return _jobs[job_id]
 
 
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
 
 def find_latest_market_map_output() -> tuple[dict, Path, Path] | None:
     """

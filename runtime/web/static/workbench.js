@@ -199,6 +199,39 @@ async function loadRunPolicy(){
   }
 }
 
+async function loadStorageStatus(){
+  const box=$("#storageMeta");
+  if(!box)return;
+  try{
+    const [sr,cr]=await Promise.all([
+      fetch("/api/opportunity/storage-status"),
+      fetch("/api/opportunity/storage-cutover-readiness")
+    ]);
+    if(!sr.ok)throw new Error(await sr.text());
+    if(!cr.ok)throw new Error(await cr.text());
+    const s=(await sr.json()).storage||{};
+    const c=await cr.json();
+    const ready=c.status==="READY";
+    const reasons=(c.reasons||[]).map(x=>{
+      if(x==="NEED_3_DISTINCT_FORMAL_PARITY_PASSES")return "还需累计 3 个不同正式收盘截面的连续对照";
+      if(x==="NEED_AT_LEAST_ONE_FORMAL_PASS_WITH_STATE_CHANGE")return "还需至少 1 个真实状态发生变化的正式截面";
+      return x;
+    });
+    box.innerHTML="<b>增量存储：</b> 主读 "+esc(s.primary_read_source==="JSON_RUNTIME"?"JSON（当前正式）":s.primary_read_source||"—")
+      +"　·　SQLite "+esc(s.status||"—")
+      +"　·　状态对照 "+esc(s.last_state_parity_status||"—")
+      +" / 差异 "+esc(s.last_state_mismatch_count??"—")
+      +"　·　读模型对照 "+esc(s.last_projection_parity_status||"—")
+      +" / 差异 "+esc(s.last_projection_mismatch_count??"—")
+      +"　·　正式连续通过 "+esc(s.parity_consecutive_passes??0)+" 次"
+      +"　·　有状态变化 "+esc(s.parity_passes_with_state_change??0)+" 次"
+      +"　·　切主 "+(ready?"<b>READY</b>":"未就绪")
+      +(reasons.length?"<br><span class=\"muted\">"+reasons.map(esc).join("；")+"</span>":"");
+  }catch(e){
+    box.textContent="增量存储状态读取失败："+e.message;
+  }
+}
+
 async function startRun(sourceMode){
   const closeBtn=$("#runCloseBtn"), reuseBtn=$("#runReuseBtn");
   closeBtn.disabled=true; reuseBtn.disabled=true;
@@ -771,7 +804,7 @@ async function init(){
     await loadLandingSummary();
   }else if(mode==="run"){
     document.title="运行中心｜机会发现";
-    await Promise.all([loadLatestRun(),loadRunPolicy()]);
+    await Promise.all([loadLatestRun(),loadRunPolicy(),loadStorageStatus()]);
   }else if(mode==="opportunities"){
     document.title="机会结果｜机会发现";
     await loadOpportunities();
