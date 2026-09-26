@@ -31,6 +31,10 @@ from runtime.opportunity.full_runtime_controller import (
     resume_opportunity_full_after_chat,
     run_opportunity_full_downstream,
 )
+from runtime.opportunity.incremental_read_source import (
+    load_candidate_pool as load_primary_candidate_pool,
+    load_opportunity_records as load_primary_opportunity_records,
+)
 from runtime.opportunity.incremental_storage_cutover import evaluate_cutover_readiness
 from runtime.opportunity.view_contract import build_opportunity_list, build_opportunity_view
 
@@ -894,12 +898,12 @@ def opportunity_full_worker(job_id: str, request: OpportunityFullRunRequest) -> 
 
 
 def create_interactive_chat_task(
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
     *,
     pipeline_job_id: str,
     acquisition_job_id: str,
     acquisition_run_dir: Path,
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
     market_cutoff: str,
 ) -> dict:
     request_path = acquisition_run_dir / "semantic_review_request.json"
@@ -1796,12 +1800,12 @@ def latest_opportunity_full_run() -> dict:
     candidates = []
     with _lock:
         candidates.extend(
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
             dict(job) for job in _jobs.values()
             if job.get("unit") == "Opportunity Discovery / Full Runtime"
         )
     for job in load_persisted_jobs():
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
         if job.get("unit") == "Opportunity Discovery / Full Runtime":
             candidates.append(job)
     if candidates:
@@ -2116,28 +2120,34 @@ def _load_latest_runtime_artifact(pointer_path: Path, label: str) -> dict:
         raise HTTPException(409, f"{label} result is invalid: {exc}")
 
 
+def _load_primary_opportunity_artifact(kind: str) -> dict:
+    try:
+        if kind == "candidate_pool":
+            payload = load_primary_candidate_pool(data_root=DATA_ROOT)
+        elif kind == "opportunity_records":
+            payload = load_primary_opportunity_records(data_root=DATA_ROOT)
+        else:
+            raise ValueError(f"unsupported opportunity artifact kind={kind!r}")
+        if payload.get("status") != "PASS":
+            raise ValueError(f"{kind} primary read payload is not PASS")
+        return payload
+    except (ValueError, OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(409, f"{kind} primary read source is invalid: {exc}")
+
+
 @app.get("/api/opportunity/candidate-pool/latest")
 def latest_candidate_pool() -> dict:
-    return _load_latest_runtime_artifact(
-        LATEST_CANDIDATE_POOL_PATH,
-        "candidate pool",
-    )
+    return _load_primary_opportunity_artifact("candidate_pool")
 
 
 @app.get("/api/opportunity/records/latest")
 def latest_opportunity_records() -> dict:
-    return _load_latest_runtime_artifact(
-        LATEST_OPPORTUNITY_RECORDS_PATH,
-        "opportunity records",
-    )
+    return _load_primary_opportunity_artifact("opportunity_records")
 
 
 @app.get("/api/opportunity/view/latest")
 def latest_opportunity_view() -> dict:
-    records = _load_latest_runtime_artifact(
-        LATEST_OPPORTUNITY_RECORDS_PATH,
-        "opportunity records",
-    )
+    records = _load_primary_opportunity_artifact("opportunity_records")
     return build_opportunity_list(
         records,
         maturity_contracts=_load_latest_maturity_contracts(),
@@ -2160,10 +2170,7 @@ def latest_opportunity_record_for_bond(bond_code: str) -> dict:
     if len(code) != 6 or not code.isdigit():
         raise HTTPException(400, "bond_code must be a 6-digit code")
 
-    records = _load_latest_runtime_artifact(
-        LATEST_OPPORTUNITY_RECORDS_PATH,
-        "opportunity records",
-    )
+    records = _load_primary_opportunity_artifact("opportunity_records")
     matches = [
         item for item in records.get("records", [])
         if str(item.get("bond_code") or "").zfill(6) == code
