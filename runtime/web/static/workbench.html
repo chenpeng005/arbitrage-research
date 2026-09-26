@@ -85,14 +85,13 @@
           <option value="DOWNWARD_REVISION">下修</option>
         </select>
         <select id="researchFilter">
-          <option value="">全部研究状态</option>
+          <option value="">已进入研究层</option>
           <option value="COMPLETED">已完成深研</option>
           <option value="HOLD_WAITING_EVIDENCE">等待补充证据</option>
           <option value="PENDING">等待研究</option>
           <option value="IN_PROGRESS">研究中</option>
           <option value="NOT_TRIGGERED">等待事件节点</option>
         </select>
-        <label class="table-toggle"><input id="showWatchToggle" type="checkbox"> 显示长期监控</label>
         <button id="resetFilters">重置</button>
       </div>
 
@@ -105,8 +104,8 @@
           <table class="opportunity-table jsl-table">
             <thead>
               <tr>
-                <th>#</th><th>代码</th><th>转债</th><th>现价</th>
-                <th>机会路径</th><th>当前状态</th><th>机会时间</th><th>YTM / 空间</th><th>研究</th>
+                <th>#</th><th data-sort="code">代码</th><th data-sort="name">转债</th><th data-sort="price">现价</th>
+                <th data-sort="path">机会路径</th><th data-sort="status">当前状态</th><th data-sort="time">机会时间</th><th data-sort="space">YTM / 空间</th><th data-sort="research">研究</th>
               </tr>
             </thead>
             <tbody id="floorOpportunityTableBody">
@@ -125,8 +124,8 @@
           <table class="opportunity-table jsl-table">
             <thead>
               <tr>
-                <th>#</th><th>代码</th><th>转债</th><th>现价</th>
-                <th>机会路径</th><th>当前状态</th><th>机会时间</th><th>YTM / 空间</th><th>研究</th>
+                <th>#</th><th data-sort="code">代码</th><th data-sort="name">转债</th><th data-sort="price">现价</th>
+                <th data-sort="path">机会路径</th><th data-sort="status">当前状态</th><th data-sort="time">机会时间</th><th data-sort="space">YTM / 空间</th><th data-sort="research">研究</th>
               </tr>
             </thead>
             <tbody id="nonFloorOpportunityTableBody">

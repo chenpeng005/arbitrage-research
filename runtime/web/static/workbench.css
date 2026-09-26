@@ -768,3 +768,31 @@ details.research-section>summary{
   background:var(--accent-soft);
   border-color:#ced8ff;
 }
+
+/* 2026-09-26 opportunity table sorting + full grid */
+.jsl-table{
+  border-collapse:collapse;
+  border:1px solid var(--line);
+}
+.jsl-table th,
+.jsl-table td{
+  border:1px solid var(--line);
+}
+.jsl-table th[data-sort]{
+  cursor:pointer;
+  user-select:none;
+  white-space:nowrap;
+}
+.jsl-table th[data-sort]::after{
+  content:" ↕";
+  color:#98a2b3;
+  font-size:10px;
+}
+.jsl-table th.sort-asc::after{
+  content:" ↑";
+  color:var(--accent);
+}
+.jsl-table th.sort-desc::after{
+  content:" ↓";
+  color:var(--accent);
+}

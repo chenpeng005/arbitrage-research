@@ -403,11 +403,29 @@ def _metrics(path_id: str, economic: dict[str, Any]) -> list[dict[str, Any]]:
             {"label": "相对当前价空间", "value": _pct(spread, price), "unit": "%"},
         ]
     if path_id == "DOWNWARD_REVISION":
+        reference = economic.get("discovery_reference")
+        spread = economic.get("discovery_spread")
+        reference_min = economic.get("discovery_reference_min")
+        reference_max = economic.get("discovery_reference_max")
+        spread_min = economic.get("discovery_spread_min")
+        spread_max = economic.get("discovery_spread_max")
         return [
             {"label": "当前价格", "value": economic.get("current_price"), "unit": "元"},
             {"label": "当前转股价值", "value": economic.get("current_cv"), "unit": "元"},
-            {"label": "模型参考价值", "value": economic.get("discovery_reference"), "unit": "元"},
-            {"label": "模型价差", "value": economic.get("discovery_spread"), "unit": "元"},
+            {
+                "label": "模型参考价值" if reference is not None else "模型参考价值区间",
+                "value": reference,
+                "min_value": reference_min,
+                "max_value": reference_max,
+                "unit": "元",
+            },
+            {
+                "label": "模型价差" if spread is not None else "模型价差区间",
+                "value": spread,
+                "min_value": spread_min,
+                "max_value": spread_max,
+                "unit": "元",
+            },
         ]
     return []
 

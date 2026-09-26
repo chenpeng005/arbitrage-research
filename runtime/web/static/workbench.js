@@ -1,6 +1,7 @@
 const state={
   opportunities:null,
-  filters:{search:"",path:"",research:"",showWatch:false},
+  filters:{search:"",path:"",research:""},
+  sort:{key:null,dir:"asc"},
   polling:null
 };
 
@@ -78,7 +79,14 @@ function num(x){
   return n.toFixed(3).replace(/0+$/,"").replace(/\.$/,"");
 }
 function fmtMetric(m){
-  return num(m.value)+(m.unit||"");
+  if(m.value!==null&&m.value!==undefined&&m.value!==""){
+    return num(m.value)+(m.unit||"");
+  }
+  if(m.min_value!==null&&m.min_value!==undefined
+    &&m.max_value!==null&&m.max_value!==undefined){
+    return num(m.min_value)+"–"+num(m.max_value)+(m.unit||"");
+  }
+  return "—";
 }
 function badgeClass(status){
   if(["PASS","COMPLETED","REUSED","SKIPPED"].includes(status))return "pass";
@@ -288,10 +296,11 @@ function bondMatches(b){
     if(!hay.includes(q))return false;
   }
   if(f.path||f.research){
-    const matched=(b.paths||[]).some(p=>
-      (!f.path||p.path_id===f.path)
-      &&(!f.research||p.research_state===f.research)
-    );
+    const matched=(b.paths||[]).some(p=>{
+      if(!f.research&&p.research_state==="NOT_TRIGGERED")return false;
+      return (!f.path||p.path_id===f.path)
+        &&(!f.research||p.research_state===f.research);
+    });
     if(!matched)return false;
   }
   return true;
@@ -321,19 +330,46 @@ function bondCurrentPrice(b){
   return null;
 }
 
+function signedNum(x){
+  const n=Number(x);
+  if(!Number.isFinite(n))return "—";
+  return (n>=0?"+":"")+num(n);
+}
+
 function pathSpaceText(p){
   if(p.ytm_pct!==null&&p.ytm_pct!==undefined){
     return "税前YTM "+Number(p.ytm_pct).toFixed(2)+"%";
   }
   const rel=(p.metrics||[]).find(x=>x.label==="相对当前价空间");
   if(rel&&rel.value!==null&&rel.value!==undefined){
-    return (Number(rel.value)>=0?"+":"")+num(rel.value)+"%";
+    return signedNum(rel.value)+"%";
   }
   const gap=(p.metrics||[]).find(x=>x.label==="模型价差");
   if(gap&&gap.value!==null&&gap.value!==undefined){
-    return (Number(gap.value)>=0?"+":"")+num(gap.value)+"元";
+    return signedNum(gap.value)+"元";
+  }
+  const range=(p.metrics||[]).find(x=>x.label==="模型价差区间");
+  if(range&&range.min_value!==null&&range.min_value!==undefined
+    &&range.max_value!==null&&range.max_value!==undefined){
+    return signedNum(range.min_value)+"–"+signedNum(range.max_value)+"元";
   }
   return "—";
+}
+
+function pathSpaceSortValue(p,b){
+  if(p.ytm_pct!==null&&p.ytm_pct!==undefined)return Number(p.ytm_pct);
+  const rel=(p.metrics||[]).find(x=>x.label==="相对当前价空间");
+  if(rel&&Number.isFinite(Number(rel.value)))return Number(rel.value);
+  const price=Number(bondCurrentPrice(b));
+  const gap=(p.metrics||[]).find(x=>x.label==="模型价差");
+  if(Number.isFinite(price)&&price>0&&gap&&Number.isFinite(Number(gap.value))){
+    return Number(gap.value)/price*100;
+  }
+  const range=(p.metrics||[]).find(x=>x.label==="模型价差区间");
+  if(Number.isFinite(price)&&price>0&&range&&Number.isFinite(Number(range.max_value))){
+    return Number(range.max_value)/price*100;
+  }
+  return null;
 }
 
 function pathLines(paths,fn){
@@ -342,9 +378,72 @@ function pathLines(paths,fn){
 
 function visiblePathsForBond(b){
   let paths=(b.paths||[]).slice();
+  if(state.filters.research){
+    paths=paths.filter(p=>p.research_state===state.filters.research);
+  }else{
+    paths=paths.filter(p=>p.research_state!=="NOT_TRIGGERED");
+  }
   if(state.filters.path)paths=paths.filter(p=>p.path_id===state.filters.path);
-  if(state.filters.research)paths=paths.filter(p=>p.research_state===state.filters.research);
   return paths;
+}
+
+function firstVisibleText(b,fn){
+  const values=visiblePathsForBond(b).map(fn).filter(Boolean);
+  return values.join(" / ");
+}
+
+function earliestOpportunityTime(b){
+  const times=visiblePathsForBond(b).map(p=>String(p.opportunity_time||"")).map(x=>{
+    const m=x.match(/(20\d{2}-\d{2}-\d{2})/);
+    return m?Date.parse(m[1]):null;
+  }).filter(x=>x!==null&&!Number.isNaN(x));
+  return times.length?Math.min(...times):null;
+}
+
+function researchSortValue(b){
+  const rank={COMPLETED:1,HOLD_WAITING_EVIDENCE:2,IN_PROGRESS:3,PENDING:4,NOT_TRIGGERED:5};
+  const vals=visiblePathsForBond(b).map(p=>rank[p.research_state]||9);
+  return vals.length?Math.min(...vals):null;
+}
+
+function opportunitySortValue(b,key){
+  if(key==="code")return String(b.bond_code||"");
+  if(key==="name")return String(b.bond_name||"").replace(/转债$/,"");
+  if(key==="price")return Number(bondCurrentPrice(b));
+  if(key==="path")return firstVisibleText(b,p=>p.path_name);
+  if(key==="status")return firstVisibleText(b,p=>p.current_event_state_text);
+  if(key==="time")return earliestOpportunityTime(b);
+  if(key==="space"){
+    const vals=visiblePathsForBond(b).map(p=>pathSpaceSortValue(p,b)).filter(x=>x!==null&&Number.isFinite(x));
+    return vals.length?Math.max(...vals):null;
+  }
+  if(key==="research")return researchSortValue(b);
+  return null;
+}
+
+function sortOpportunityRows(rows){
+  const key=state.sort.key;
+  if(!key)return rows.slice();
+  const dir=state.sort.dir==="desc"?-1:1;
+  return rows.slice().sort((a,b)=>{
+    const av=opportunitySortValue(a,key),bv=opportunitySortValue(b,key);
+    const am=av===null||av===undefined||av===""||(typeof av==="number"&&!Number.isFinite(av));
+    const bm=bv===null||bv===undefined||bv===""||(typeof bv==="number"&&!Number.isFinite(bv));
+    if(am&&bm)return 0;
+    if(am)return 1;
+    if(bm)return -1;
+    if(typeof av==="number"&&typeof bv==="number")return (av-bv)*dir;
+    return String(av).localeCompare(String(bv),"zh-CN",{numeric:true})*dir;
+  });
+}
+
+function updateSortHeaders(){
+  document.querySelectorAll('.opportunity-table th[data-sort]').forEach(th=>{
+    const active=th.dataset.sort===state.sort.key;
+    th.classList.toggle('sort-asc',active&&state.sort.dir==='asc');
+    th.classList.toggle('sort-desc',active&&state.sort.dir==='desc');
+    th.setAttribute('aria-sort',active?(state.sort.dir==='asc'?'ascending':'descending'):'none');
+  });
 }
 
 function opportunityRowHtml(b,index){
@@ -378,17 +477,17 @@ function fillOpportunityGroup(target,rows){
 function renderOpportunityList(){
   const data=state.opportunities;
   if(!data)return;
-  let filtered=(data.opportunities||[]).filter(bondMatches);
-  const active=filtered.filter(bondInActiveResearch);
-  const watch=filtered.filter(b=>!bondInActiveResearch(b));
-  const rows=state.filters.showWatch?active.concat(watch):active;
-  const floor=rows.filter(b=>b.floor_class==="保底型");
-  const nonFloor=rows.filter(b=>b.floor_class!=="保底型");
+  const filtered=(data.opportunities||[]).filter(bondMatches);
+  const showWaiting=state.filters.research==="NOT_TRIGGERED";
+  const rows=showWaiting?filtered:filtered.filter(bondInActiveResearch);
+  const floor=sortOpportunityRows(rows.filter(b=>b.floor_class==="保底型"));
+  const nonFloor=sortOpportunityRows(rows.filter(b=>b.floor_class!=="保底型"));
 
   $("#floorVisibleCount").textContent=floor.length+" 只";
   $("#nonFloorVisibleCount").textContent=nonFloor.length+" 只";
   fillOpportunityGroup("#floorOpportunityTableBody",floor);
   fillOpportunityGroup("#nonFloorOpportunityTableBody",nonFloor);
+  updateSortHeaders();
 
   document.querySelectorAll(".v2-preview-link").forEach(el=>{
     el.addEventListener("click",e=>e.stopPropagation());
@@ -617,20 +716,24 @@ function bind(){
   $("#pathFilter").addEventListener("change",e=>{state.filters.path=e.target.value;renderOpportunityList();});
   $("#researchFilter").addEventListener("change",e=>{
     state.filters.research=e.target.value;
-    if(e.target.value==="NOT_TRIGGERED"){
-      state.filters.showWatch=true;
-      $("#showWatchToggle").checked=true;
-    }
-    renderOpportunityList();
-  });
-  $("#showWatchToggle").addEventListener("change",e=>{
-    state.filters.showWatch=e.target.checked;
     renderOpportunityList();
   });
   $("#resetFilters").addEventListener("click",()=>{
-    state.filters={search:"",path:"",research:"",showWatch:false};
-    $("#searchInput").value="";$("#pathFilter").value="";$("#researchFilter").value="";$("#showWatchToggle").checked=false;
+    state.filters={search:"",path:"",research:""};
+    state.sort={key:null,dir:"asc"};
+    $("#searchInput").value="";$("#pathFilter").value="";$("#researchFilter").value="";
     renderOpportunityList();
+  });
+  document.querySelectorAll(".opportunity-table th[data-sort]").forEach(th=>{
+    th.addEventListener("click",()=>{
+      const key=th.dataset.sort;
+      if(state.sort.key===key){
+        state.sort.dir=state.sort.dir==="asc"?"desc":"asc";
+      }else{
+        state.sort={key,dir:"asc"};
+      }
+      renderOpportunityList();
+    });
   });
   $("#detailClose").addEventListener("click",closeDetail);
   $("#detailOverlay").addEventListener("click",e=>{if(e.target===$("#detailOverlay"))closeDetail();});
