@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>可转债藏宝图｜机会发现</title>
+  <link rel="stylesheet" href="/static/workbench.css">
+  <link rel="stylesheet" href="/static/market_map.css">
+</head>
+<body>
+  <main class="shell map-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">可转债机会发现系统</p>
+        <h1>可转债藏宝图</h1>
+        <p class="subtitle">只看当前正式市场截面的价格位置与藏宝图参考。</p>
+      </div>
+      <nav class="nav">
+        <a href="/workbench">总览</a>
+        <a href="/run-center">运行中心</a>
+        <a class="active" href="/market-map">藏宝图</a>
+        <a href="/opportunities">机会结果</a>
+        <a href="/audit">工程审计</a>
+      </nav>
+    </header>
+
+    <div class="map-meta-line">
+      <span id="mapMeta">正在读取正式藏宝图。</span>
+      <span id="mapCount"></span>
+    </div>
+
+    <div class="map-toolbar">
+      <input id="mapSearch" type="search" placeholder="搜索代码或转债">
+      <label>价格 <input id="priceMin" type="number" value="80" step="1"> — <input id="priceMax" type="number" value="160" step="1"></label>
+      <label>转股价值 <input id="cvMin" type="number" value="20" step="1"> — <input id="cvMax" type="number" value="200" step="1"></label>
+      <button id="mapReset" type="button">重置</button>
+    </div>
+
+    <section class="map-panel">
+      <div class="map-panel-head">
+        <div>
+          <h2>可转债藏宝图</h2>
+          <p>横轴：转股价值　纵轴：实际转债价格　红线：藏宝图基础参考</p>
+        </div>
+      </div>
+      <div id="mapChart" class="treasure-chart"><div class="map-empty">正在加载。</div></div>
+      <div id="mapSelected" class="map-selected muted">鼠标移到散点查看单券；点击可固定。</div>
+    </section>
+
+    <section class="map-panel table-panel">
+      <div class="map-panel-head">
+        <div>
+          <h2>实际价格 vs 藏宝图参考</h2>
+          <p>按“实际价格－藏宝图参考”从低到高排列。</p>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="map-simple-table">
+          <thead>
+            <tr>
+              <th>#</th><th>代码</th><th>转债</th><th>实际价</th><th>转股价值</th><th>藏宝图参考</th><th>实际－参考</th>
+            </tr>
+          </thead>
+          <tbody id="mapTableBody">
+            <tr><td colspan="7">正在加载。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script src="/static/market_map.js" defer></script>
+</body>
+</html>

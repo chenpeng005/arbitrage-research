@@ -605,3 +605,87 @@ body.detail-page .close-btn{display:none}
   .opportunity-table-head{display:block}
   .opportunity-table-head .badge{margin-top:8px}
 }
+
+/* Opportunity list: compact, table-first */
+.opportunity-summary-line{
+  margin:4px 0 12px;
+  color:#667085;
+  font-size:13px;
+}
+.compact-filters{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  padding:8px 0 10px;
+  border:0;
+  box-shadow:none;
+  background:transparent;
+}
+.compact-filters input,.compact-filters select{
+  height:36px;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:#fff;
+  padding:0 10px;
+}
+.compact-filters input{min-width:210px}
+.compact-filters button{padding:7px 12px;border-radius:7px}
+.opportunity-group-simple{margin-top:18px}
+.opportunity-group-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  gap:16px;
+  margin:0 2px 7px;
+}
+.opportunity-group-title>div{display:flex;align-items:baseline;gap:10px}
+.opportunity-group-title h3{font-size:17px}
+.opportunity-group-title span{font-size:12px;color:var(--muted)}
+.opportunity-group-title b{font-size:13px;color:#475467}
+.jsl-table{min-width:1040px;font-size:12.5px}
+.jsl-table th{padding:7px 8px;background:#f3f5f7}
+.jsl-table td{padding:7px 8px}
+.jsl-table .row-no{width:34px}
+.jsl-table .judgment-cell{min-width:0}
+.path-subline{
+  min-height:22px;
+  line-height:22px;
+  white-space:nowrap;
+  border-bottom:1px dotted #edf0f4;
+}
+.path-subline:last-child{border-bottom:0}
+.v2-preview-link{
+  font-size:11px;
+  margin-left:6px;
+  padding:1px 4px;
+  border:1px solid #d6dce7;
+  border-radius:4px;
+  text-decoration:none;
+  color:#3157d5;
+}
+.risk-flow{margin-top:4px}
+.risk-flow-block{
+  padding:11px 0;
+  border-top:1px solid var(--line);
+}
+.risk-flow-block:first-child{border-top:0}
+.risk-flow-block h4{margin:0 0 5px;font-size:14px}
+.risk-flow-block ul{margin:0;padding-left:20px}
+.risk-flow-block li{margin:4px 0}
+.update-table th:first-child,.update-table td:first-child{
+  width:140px;
+  white-space:nowrap;
+}
+details.research-section>summary{
+  cursor:pointer;
+  font-weight:700;
+  color:#344054;
+  padding:4px 0;
+}
+@media(max-width:760px){
+  .opportunity-group-title{display:block}
+  .opportunity-group-title>div{display:block}
+  .compact-filters{align-items:stretch}
+  .compact-filters input,.compact-filters select{width:100%}
+}

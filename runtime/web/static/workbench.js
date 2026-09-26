@@ -262,19 +262,16 @@ function researchStateCounts(data){
 }
 
 function renderOpportunitySummary(data){
-  const c=researchStateCounts(data);
-  const active=(data.opportunities||[]).filter(bondInActiveResearch).length;
-  const watch=(data.opportunities||[]).length-active;
-  const items=[
-    ["当前值得深研",active],
-    ["已完成深研路径",c.COMPLETED],
-    ["等待补充证据",c.HOLD_WAITING_EVIDENCE],
-    ["长期监控",watch],
-    ["全部正向路径",data.keep_path_count||0]
-  ];
-  $("#opportunitySummary").innerHTML=items.map(x=>
-    '<div class="metric"><span>'+esc(x[0])+'</span><strong>'+esc(x[1])+'</strong></div>'
-  ).join("");
+  const active=(data.opportunities||[]).filter(bondInActiveResearch);
+  const watch=(data.opportunities||[]).length-active.length;
+  const floor=active.filter(b=>b.floor_class==="保底型").length;
+  const nonFloor=active.length-floor;
+  $("#opportunitySummary").innerHTML=
+    '<b>市场截面 '+esc(data.market_cutoff||"—")+'</b>'
+    +'　研究层 '+esc(active.length)+' 只'
+    +'　·　保底 '+esc(floor)+' 只'
+    +'　·　非保底 '+esc(nonFloor)+' 只'
+    +'　·　长期监控 '+esc(watch)+' 只';
 }
 
 function bondMatches(b){
@@ -313,64 +310,67 @@ function bondCurrentPrice(b){
   return null;
 }
 
-function compactPathText(p){
-  const gap=(p.metrics||[]).find(x=>["绝对价差","模型价差"].includes(x.label));
-  const gapText=gap?(" · "+gap.label+" "+fmtMetric(gap)):"";
-  return p.path_name+gapText;
+function pathSpaceText(p){
+  if(p.ytm_pct!==null&&p.ytm_pct!==undefined){
+    return "税前YTM "+Number(p.ytm_pct).toFixed(2)+"%";
+  }
+  const rel=(p.metrics||[]).find(x=>x.label==="相对当前价空间");
+  if(rel&&rel.value!==null&&rel.value!==undefined){
+    return (Number(rel.value)>=0?"+":"")+num(rel.value)+"%";
+  }
+  const gap=(p.metrics||[]).find(x=>x.label==="模型价差");
+  if(gap&&gap.value!==null&&gap.value!==undefined){
+    return (Number(gap.value)>=0?"+":"")+num(gap.value)+"元";
+  }
+  return "—";
 }
 
-function compactJudgment(b){
-  const paths=b.paths||[];
-  const preferred=paths.find(p=>p.research_state==="COMPLETED")
-    ||paths.find(p=>p.research_state!=="NOT_TRIGGERED")
-    ||paths[0];
-  return preferred?.quick_judgment||preferred?.status_explanation||"";
-}
-
-function researchProgressText(b){
-  const states=(b.paths||[]).map(p=>p.research_state);
-  if(states.includes("IN_PROGRESS"))return "研究中";
-  if(states.includes("PENDING"))return "等待研究";
-  if(states.includes("HOLD_WAITING_EVIDENCE"))return "等待补充证据";
-  if(states.includes("COMPLETED"))return "已完成深研";
-  return "等待事件节点";
-}
-
-function eventStateText(b){
-  const vals=[...new Set((b.paths||[]).map(p=>p.current_event_state).filter(Boolean))];
-  return vals.length?vals.join(" / "):"—";
+function pathLines(paths,fn){
+  return (paths||[]).map(p=>'<div class="path-subline">'+fn(p)+'</div>').join("");
 }
 
 function opportunityRowHtml(b,index){
   const hasV2=["110092","127089"].includes(String(b.bond_code||""));
   const name=String(b.bond_name||"").replace(/转债$/,"");
-  const pathText=(b.paths||[]).map(compactPathText).join("；");
   const preview=hasV2
-    ?'<a class="v2-preview-link" href="/opportunities-v2-preview/'+esc(b.bond_code)+'">V2样本</a>'
+    ?'<a class="v2-preview-link" href="/opportunities-v2-preview/'+esc(b.bond_code)+'">V2</a>'
     :"";
+  const paths=b.paths||[];
   return '<tr class="opportunity-row" data-code="'+esc(b.bond_code)+'">'
     +'<td class="row-no">'+esc(index+1)+'</td>'
     +'<td class="code-cell">'+esc(b.bond_code)+'</td>'
     +'<td><b>'+esc(name)+'</b>'+preview+'</td>'
     +'<td class="num-cell">'+esc(num(bondCurrentPrice(b)))+'</td>'
-    +'<td>'+esc(pathText)+'</td>'
-    +'<td><span class="table-status">'+esc(researchProgressText(b))+'</span></td>'
-    +'<td>'+esc(eventStateText(b))+'</td>'
-    +'<td class="judgment-cell">'+esc(compactJudgment(b))+'</td>'
+    +'<td>'+pathLines(paths,p=>esc(p.path_name))+'</td>'
+    +'<td>'+pathLines(paths,p=>esc(p.current_event_state_text||"—"))+'</td>'
+    +'<td>'+pathLines(paths,p=>esc(p.opportunity_time||"—"))+'</td>'
+    +'<td class="num-cell">'+pathLines(paths,p=>esc(pathSpaceText(p)))+'</td>'
+    +'<td>'+pathLines(paths,p=>esc(p.research_state_text||"—"))+'</td>'
     +'</tr>';
+}
+
+function fillOpportunityGroup(target,rows){
+  const el=$(target);
+  if(!el)return;
+  el.innerHTML=rows.length
+    ?rows.map(opportunityRowHtml).join("")
+    :'<tr><td colspan="9" class="muted">当前筛选条件下没有对象。</td></tr>';
 }
 
 function renderOpportunityList(){
   const data=state.opportunities;
   if(!data)return;
-  let rows=(data.opportunities||[]).filter(bondMatches);
-  const active=rows.filter(bondInActiveResearch);
-  const watch=rows.filter(b=>!bondInActiveResearch(b));
-  rows=state.filters.showWatch?active.concat(watch):active;
-  $("#visibleCount").textContent=rows.length+" / "+(data.bond_count||0)+" 只";
-  $("#opportunityTableBody").innerHTML=rows.length
-    ?rows.map(opportunityRowHtml).join("")
-    :'<tr><td colspan="8" class="muted">当前筛选条件下没有机会。</td></tr>';
+  let filtered=(data.opportunities||[]).filter(bondMatches);
+  const active=filtered.filter(bondInActiveResearch);
+  const watch=filtered.filter(b=>!bondInActiveResearch(b));
+  const rows=state.filters.showWatch?active.concat(watch):active;
+  const floor=rows.filter(b=>b.floor_class==="保底型");
+  const nonFloor=rows.filter(b=>b.floor_class!=="保底型");
+
+  $("#floorVisibleCount").textContent=floor.length+" 只";
+  $("#nonFloorVisibleCount").textContent=nonFloor.length+" 只";
+  fillOpportunityGroup("#floorOpportunityTableBody",floor);
+  fillOpportunityGroup("#nonFloorOpportunityTableBody",nonFloor);
 
   document.querySelectorAll(".v2-preview-link").forEach(el=>{
     el.addEventListener("click",e=>e.stopPropagation());
@@ -394,7 +394,9 @@ async function loadOpportunities(){
   }catch(e){
     $("#opportunityBadge").textContent="读取失败";
     $("#opportunityBadge").className="badge fail";
-    $("#opportunityTableBody").innerHTML='<tr><td colspan="8" class="muted">机会结果读取失败：'+esc(e.message)+'</td></tr>';
+    const msg='<tr><td colspan="9" class="muted">机会结果读取失败：'+esc(e.message)+'</td></tr>';
+    $("#floorOpportunityTableBody").innerHTML=msg;
+    $("#nonFloorOpportunityTableBody").innerHTML=msg;
   }
 }
 
@@ -443,7 +445,6 @@ function renderLogicChain(items){
         +renderFactTable(x["事实表格"])
         +(facts.length?'<div class="logic-facts"><b>关键事实</b><ul>'+facts.map(f=>'<li>'+esc(f)+'</li>').join("")+'</ul></div>':"")
         +(x["为什么"]?'<div class="logic-reason"><b>为什么：</b>'+esc(x["为什么"])+'</div>':"")
-        +(x["本步结论"]?'<div class="logic-conclusion"><b>本步结论：</b>'+esc(x["本步结论"])+'</div>':"")
         +'</article>';
     }).join("")+'</div></section>';
 }
@@ -472,36 +473,32 @@ function renderListSection(title,items){
 
 function renderRiskMatrix(obj){
   if(!obj||typeof obj!=="object")return "";
-  const groups=[
-    ["当前风险","这些因素已经存在，会影响路径兑现。"],
-    ["失效条件","出现这些情况时，这条路径需要下调或重新判断。"],
-    ["未来天然不确定","这些是未来事件，本来就无法在今天确定。"],
-    ["当前仍待查证","这些是今天原则上可以查清、但证据尚未闭合的事项。"]
-  ];
-  const visible=groups.filter(([key])=>Array.isArray(obj[key])&&obj[key].length);
+  const groups=["当前风险","失效条件","未来天然不确定","当前仍待查证"];
+  const visible=groups.filter(key=>Array.isArray(obj[key])&&obj[key].length);
   if(!visible.length)return "";
   return '<section class="research-section risk-section">'
     +'<div class="logic-heading"><div><p class="eyebrow">风险与未决事项</p><h4>哪些东西可能让结论改变</h4></div></div>'
-    +'<div class="risk-grid">'+visible.map(([key,desc])=>
-      '<div class="risk-box"><h4>'+esc(key)+'</h4><p>'+esc(desc)+'</p><ul>'
+    +'<div class="risk-flow">'+visible.map(key=>
+      '<div class="risk-flow-block"><h4>'+esc(key)+'</h4><ul>'
       +obj[key].map(x=>'<li>'+esc(valueText(x))+'</li>').join("")
       +'</ul></div>'
     ).join("")+'</div></section>';
 }
 function renderUpdates(items){
   if(!Array.isArray(items)||!items.length)return "";
-  return '<section class="research-section"><h4>下一更新节点</h4><div class="update-list">'
+  return '<section class="research-section"><h4>下一更新节点</h4>'
+    +'<div class="logic-table-wrap"><table class="logic-table update-table"><thead><tr><th>时间</th><th>更新节点</th></tr></thead><tbody>'
     +items.map(x=>{
-      if(typeof x!=="object")return '<div class="update-item">'+esc(valueText(x))+'</div>';
-      const date=x["日期"]||"时间待定";
+      if(typeof x!=="object")return '<tr><td>待定</td><td>'+esc(valueText(x))+'</td></tr>';
+      const date=x["日期"]||"待定";
       const event=x["事件"]||valueText(x);
-      return '<div class="update-item"><b>'+esc(date)+'</b><div>'+esc(event)+'</div></div>';
-    }).join("")+'</div></section>';
+      return '<tr><td>'+esc(date)+'</td><td>'+esc(event)+'</td></tr>';
+    }).join("")+'</tbody></table></div></section>';
 }
 
 function renderEvidence(items){
   if(!Array.isArray(items)||!items.length)return "";
-  return '<section class="research-section"><h4>关键证据</h4><div class="evidence-list">'
+  return '<details class="research-section"><summary>展开关键证据（'+items.length+' 条）</summary><div class="evidence-list">'
     +items.map(x=>{
       const supports=Array.isArray(x["支持内容"])?x["支持内容"].join("；"):x["支持内容"];
       return '<div class="evidence-item"><div class="evidence-title">'+esc(x["标题"]||"证据")+'</div>'
@@ -509,7 +506,7 @@ function renderEvidence(items){
         +(supports?'<div>'+esc(supports)+'</div>':"")
         +(x["定位"]?'<div class="evidence-meta">'+esc(x["定位"])+'</div>':"")
         +'</div>';
-    }).join("")+'</div></section>';
+    }).join("")+'</div></details>';
 }
 
 function renderObject(value,depth=0){

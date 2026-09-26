@@ -7,6 +7,7 @@ user view. It must not change Economic KEEP or Path research conclusions.
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from typing import Any
 
 VIEW_CONTRACT_VERSION = "opportunity-view-v2"
@@ -23,6 +24,18 @@ STATE_LABELS = {
     "NOT_TRIGGERED": "机会已发现，尚未到深研节点",
     "PENDING": "等待研究",
     "IN_PROGRESS": "研究中",
+}
+
+EVENT_STATE_LABELS = {
+    "T_LE_1M": "距到期 1 个月内",
+    "T_LE_3M": "距到期 3 个月内",
+    "T_LE_6M": "距到期 6 个月内",
+    "T_LE_12M": "距到期 1 年内",
+    "T_GT_12M": "距到期 1 年以上",
+    "BEFORE_PUT_WINDOW": "尚未进入普通回售期",
+    "满足条件": "已满足下修触发条件",
+    "临近触发": "接近下修触发条件",
+    "未进入": "尚未进入下修触发阶段",
 }
 
 FIELD_OVERRIDES = {
@@ -145,6 +158,13 @@ FACT_KEY_LABELS = {
     "value_date": "条款基准日期",
     "source_conversion_price": "当前转股价基准",
     "historical_revision": "历史下修记录",
+    "cross_path_maturity.contract_fact": "同券到期现金事实",
+    "cross_path_revision.contract_fact": "同券下修事实",
+    "remaining_contract_cash_C": "剩余合同现金",
+    "cash_pressure_yi": "集中现金压力",
+    "put_reference": "回售参考现金",
+    "put_window_start": "普通回售窗口起点",
+    "earliest_right_formation": "最早可能形成回售权",
 }
 
 FACT_VALUE_LABELS = {
@@ -270,6 +290,16 @@ def _humanize_prose(value: Any) -> str:
     text = re.sub(r"当前\s*K\s*=\s*", "当前转股价 K 为 ", text)
     text = re.sub(r"触发线\s*=\s*", "触发线为 ", text)
     text = re.sub(r"回售边界\s*=\s*", "回售边界为 ", text)
+    text = re.sub(
+        r"cash_pressure_yi\s*[=：]\s*([+-]?\d+(?:\.\d+)?)",
+        r"集中现金压力：\1 亿元",
+        text,
+    )
+    text = re.sub(
+        r"remaining_contract_cash_C\s*[=：]\s*([+-]?\d+(?:\.\d+)?)",
+        r"剩余合同现金：\1 元",
+        text,
+    )
     text = text.replace(
         "证据包 未预装当前触发计数（missing_or_deferred 中列明 current_put_trigger_count_if_not_structurally_available）",
         "当前回售触发计数尚未由结构化数据预装；进入回售适用期后需要继续更新计数",
@@ -307,6 +337,7 @@ def _humanize_machine_fact(fact: Any) -> str:
         ("economic_judgment：", "当前经济判断："),
         ("existing_path_facts.contract_fact：", "当前合同事实："),
         ("cross_path_revision.contract_fact：", "同券下修状态："),
+        ("cross_path_maturity.contract_fact：", "同券到期现金事实："),
         ("put_exercise_pressure_scenarios：", "回售压力场景："),
         ("PRELOADED:PUT_PRESSURE_SCENARIOS：", "回售压力场景："),
     ):
@@ -379,6 +410,167 @@ def _metrics(path_id: str, economic: dict[str, Any]) -> list[dict[str, Any]]:
             {"label": "模型价差", "value": economic.get("discovery_spread"), "unit": "元"},
         ]
     return []
+
+
+def _event_state_text(path_id: str, event_state: Any) -> str:
+    raw = str(event_state or "").strip()
+    if not raw:
+        return "—"
+    if raw in EVENT_STATE_LABELS:
+        return EVENT_STATE_LABELS[raw]
+    return _humanize_prose(raw)
+
+
+def _payment_stability_text(path: dict[str, Any]) -> str:
+    result = path.get("path_result") or {}
+    judgments = result.get("judgments") or {}
+    candidates = [
+        judgments.get("payment_stability"),
+        judgments.get("cash_payment_stability"),
+    ]
+    for value in candidates:
+        if isinstance(value, dict):
+            text = value.get("level") or value.get("value") or value.get("reasoning")
+        else:
+            text = value
+        if isinstance(text, str) and text.strip():
+            return text.strip()
+    return ""
+
+
+def _path_is_floor(path: dict[str, Any]) -> bool:
+    if path.get("research_state") != "COMPLETED":
+        return False
+    path_id = str(path.get("path_id") or "")
+    stability = _payment_stability_text(path)
+    if "大概率稳定" not in stability:
+        return False
+    if path_id == "MATURITY_CASH":
+        return True
+    if path_id == "PUT":
+        state = str(path.get("current_event_state") or "")
+        return state not in {"", "BEFORE_PUT_WINDOW", "未进入"}
+    return False
+
+
+def _bond_floor_class(record: dict[str, Any]) -> tuple[str, str | None]:
+    for path in record.get("paths", []):
+        if _path_is_floor(path):
+            return (
+                "保底型",
+                f"{PATH_LABELS.get(str(path.get('path_id') or ''), path.get('path_id'))}"
+                "路径已完成研究，支付稳定性为大概率稳定。",
+            )
+    return "非保底型", None
+
+
+def _parse_date(value: Any) -> datetime | None:
+    if value in (None, ""):
+        return None
+    text = str(value)[:10]
+    try:
+        return datetime.fromisoformat(text)
+    except Exception:
+        return None
+
+
+def _solve_ytm(
+    *,
+    current_price: Any,
+    market_cutoff: Any,
+    contract_fact: dict[str, Any] | None,
+) -> float | None:
+    if not isinstance(contract_fact, dict):
+        return None
+    try:
+        price = float(current_price)
+    except Exception:
+        return None
+    cutoff = _parse_date(market_cutoff)
+    maturity = _parse_date(contract_fact.get("contract_maturity_date"))
+    if not cutoff or not maturity or maturity <= cutoff or price <= 0:
+        return None
+
+    cashflows: list[tuple[float, float]] = []
+    for item in contract_fact.get("remaining_intermediate_coupons") or []:
+        payment = _parse_date(item.get("payment_date"))
+        try:
+            cash = float(item.get("cash"))
+        except Exception:
+            continue
+        if payment and payment > cutoff and cash > 0:
+            years = (payment - cutoff).days / 365.2425
+            cashflows.append((years, cash))
+
+    try:
+        final_cash = float(contract_fact.get("maturity_redemption_cash"))
+    except Exception:
+        final_cash = 0.0
+    if final_cash > 0:
+        years = (maturity - cutoff).days / 365.2425
+        cashflows.append((years, final_cash))
+    if not cashflows:
+        return None
+
+    def npv(rate: float) -> float:
+        return sum(cash / ((1.0 + rate) ** years) for years, cash in cashflows)
+
+    low, high = -0.99, 10.0
+    if npv(low) < price or npv(high) > price:
+        return None
+    for _ in range(120):
+        mid = (low + high) / 2.0
+        if npv(mid) > price:
+            low = mid
+        else:
+            high = mid
+    return round(((low + high) / 2.0) * 100.0, 2)
+
+
+def _path_time_and_ytm(
+    path: dict[str, Any],
+    *,
+    market_cutoff: Any,
+    maturity_contract_fact: dict[str, Any] | None,
+) -> tuple[str | None, float | None]:
+    path_id = str(path.get("path_id") or "")
+    economic = path.get("economic_judgment") or {}
+    if path_id == "MATURITY_CASH":
+        date_text = (
+            (maturity_contract_fact or {}).get("contract_maturity_date")
+            if isinstance(maturity_contract_fact, dict)
+            else None
+        )
+        ytm = _solve_ytm(
+            current_price=economic.get("current_price_P"),
+            market_cutoff=market_cutoff,
+            contract_fact=maturity_contract_fact,
+        )
+        return (str(date_text)[:10] if date_text else None), ytm
+
+    result = path.get("path_result") or {}
+    fact_spine = result.get("fact_spine") or {}
+    if path_id == "PUT":
+        trigger = fact_spine.get("trigger_state") or {}
+        legal = fact_spine.get("legal_time") or {}
+        earliest = trigger.get("earliest_right_formation")
+        if isinstance(earliest, str) and earliest.strip():
+            return earliest.strip(), None
+        window = legal.get("put_window_start")
+        if window:
+            return f"最早自 {str(window)[:10]} 起形成", None
+        maturity = _parse_date(
+            (maturity_contract_fact or {}).get("contract_maturity_date")
+            if isinstance(maturity_contract_fact, dict)
+            else None
+        )
+        if maturity:
+            try:
+                window = maturity.replace(year=maturity.year - 2)
+                return f"最早自 {window.date().isoformat()} 起形成", None
+            except Exception:
+                pass
+    return None, None
 
 
 def _status_explanation(path_id: str, state: str, event_state: Any) -> str:
@@ -508,11 +700,21 @@ def _logic_chain_view(items: list[dict[str, Any]] | None) -> list[dict[str, Any]
     return output
 
 
-def build_path_view(path: dict[str, Any]) -> dict[str, Any]:
+def build_path_view(
+    path: dict[str, Any],
+    *,
+    market_cutoff: Any = None,
+    maturity_contract_fact: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     path_id = str(path.get("path_id") or "")
     state = str(path.get("research_state") or "")
     result = path.get("path_result") or {}
     judgments = result.get("judgments") or {}
+    opportunity_time, ytm_pct = _path_time_and_ytm(
+        path,
+        market_cutoff=market_cutoff,
+        maturity_contract_fact=maturity_contract_fact,
+    )
 
     return {
         "path_id": path_id,
@@ -521,6 +723,11 @@ def build_path_view(path: dict[str, Any]) -> dict[str, Any]:
         "research_state": state,
         "research_state_text": STATE_LABELS.get(state, state),
         "current_event_state": path.get("current_event_state"),
+        "current_event_state_text": _event_state_text(
+            path_id, path.get("current_event_state")
+        ),
+        "opportunity_time": opportunity_time,
+        "ytm_pct": ytm_pct,
         "status_explanation": _status_explanation(
             path_id, state, path.get("current_event_state")
         ),
@@ -553,17 +760,31 @@ def build_path_view(path: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def build_opportunity_view(record: dict[str, Any]) -> dict[str, Any]:
-    paths = [build_path_view(path) for path in record.get("paths", [])]
+def build_opportunity_view(
+    record: dict[str, Any],
+    *,
+    maturity_contract_fact: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    paths = [
+        build_path_view(
+            path,
+            market_cutoff=record.get("market_cutoff"),
+            maturity_contract_fact=maturity_contract_fact,
+        )
+        for path in record.get("paths", [])
+    ]
     completed = sum(p["research_state"] == "COMPLETED" for p in paths)
     hold = sum(p["research_state"] == "HOLD_WAITING_EVIDENCE" for p in paths)
     waiting = sum(p["research_state"] == "NOT_TRIGGERED" for p in paths)
+    floor_class, floor_reason = _bond_floor_class(record)
     return {
         "view_contract_version": VIEW_CONTRACT_VERSION,
         "bond_code": record.get("bond_code"),
         "bond_name": record.get("bond_name"),
         "market_cutoff": record.get("market_cutoff"),
         "opportunity_path_count": len(paths),
+        "floor_class": floor_class,
+        "floor_reason": floor_reason,
         "research_summary": {
             "已完成深研": completed,
             "等待补充证据": hold,
@@ -603,31 +824,53 @@ def _quick_judgment(path: dict[str, Any]) -> str | None:
     return None
 
 
-def build_opportunity_card(record: dict[str, Any]) -> dict[str, Any]:
+def build_opportunity_card(
+    record: dict[str, Any],
+    *,
+    maturity_contract_fact: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     paths = []
     for path in record.get("paths", []):
         path_id = str(path.get("path_id") or "")
         state = str(path.get("research_state") or "")
+        opportunity_time, ytm_pct = _path_time_and_ytm(
+            path,
+            market_cutoff=record.get("market_cutoff"),
+            maturity_contract_fact=maturity_contract_fact,
+        )
         paths.append({
             "path_id": path_id,
             "path_name": PATH_LABELS.get(path_id, path_id),
             "research_state": state,
             "research_state_text": STATE_LABELS.get(state, state),
             "current_event_state": path.get("current_event_state"),
+            "current_event_state_text": _event_state_text(
+                path_id, path.get("current_event_state")
+            ),
+            "opportunity_time": opportunity_time,
+            "ytm_pct": ytm_pct,
             "metrics": _metrics(path_id, path.get("economic_judgment") or {}),
             "quick_judgment": _quick_judgment(path),
         })
+    floor_class, floor_reason = _bond_floor_class(record)
     return {
         "bond_code": record.get("bond_code"),
         "bond_name": record.get("bond_name"),
         "market_cutoff": record.get("market_cutoff"),
         "opportunity_path_count": len(paths),
+        "floor_class": floor_class,
+        "floor_reason": floor_reason,
         "paths": paths,
     }
 
 
-def build_opportunity_list(payload: dict[str, Any]) -> dict[str, Any]:
+def build_opportunity_list(
+    payload: dict[str, Any],
+    *,
+    maturity_contracts: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     records = payload.get("records") or []
+    maturity_contracts = maturity_contracts or {}
     return {
         "view_contract_version": VIEW_CONTRACT_VERSION,
         "market_snapshot_id": payload.get("market_snapshot_id"),
@@ -635,5 +878,13 @@ def build_opportunity_list(payload: dict[str, Any]) -> dict[str, Any]:
         "bond_count": payload.get("bond_count", len(records)),
         "keep_path_count": payload.get("keep_path_count"),
         "record_state_summary": payload.get("record_state_summary", {}),
-        "opportunities": [build_opportunity_card(record) for record in records],
+        "opportunities": [
+            build_opportunity_card(
+                record,
+                maturity_contract_fact=maturity_contracts.get(
+                    str(record.get("bond_code") or "").zfill(6)
+                ),
+            )
+            for record in records
+        ],
     }

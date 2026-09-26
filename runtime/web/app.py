@@ -36,6 +36,7 @@ DEPLOYMENT_MANIFEST_PATH = DATA_ROOT / "deployment_manifest.json"
 MARKET_MAP_REGISTRY_DIR = DATA_ROOT / "registry" / "market_map_snapshots"
 LATEST_FORMAL_MARKET_MAP_PATH = DATA_ROOT / "registry" / "latest_formal_market_map.json"
 LATEST_DISCOVERY_INGRESS_PATH = DATA_ROOT / "registry" / "latest_discovery_market_ingress.json"
+LATEST_MATURITY_DISCOVERY_PATH = DATA_ROOT / "registry" / "latest_maturity_discovery.json"
 LATEST_CANDIDATE_POOL_PATH = DATA_ROOT / "registry" / "latest_candidate_pool.json"
 LATEST_OPPORTUNITY_RECORDS_PATH = DATA_ROOT / "registry" / "latest_opportunity_records.json"
 LATEST_FULL_RUNTIME_PATH = DATA_ROOT / "registry" / "latest_full_runtime.json"
@@ -1287,7 +1288,7 @@ def run_center_page() -> HTMLResponse:
 
 @app.get("/market-map", response_class=HTMLResponse)
 def market_map_page() -> HTMLResponse:
-    return HTMLResponse((STATIC_DIR / "index.html").read_text(encoding="utf-8"))
+    return HTMLResponse((STATIC_DIR / "market_map.html").read_text(encoding="utf-8"))
 
 
 @app.get("/opportunities", response_class=HTMLResponse)
@@ -1967,6 +1968,25 @@ def latest_discovery_market_ingress() -> dict:
         raise HTTPException(409, f"discovery market ingress result is invalid: {exc}")
 
 
+def _load_latest_maturity_contracts() -> dict[str, dict]:
+    if not LATEST_MATURITY_DISCOVERY_PATH.exists():
+        return {}
+    try:
+        pointer = json.loads(
+            LATEST_MATURITY_DISCOVERY_PATH.read_text(encoding="utf-8")
+        )
+        run_id = str(pointer["run_id"])
+        path = DATA_ROOT / "runs" / run_id / "maturity_contract_facts.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return {
+            str(row.get("bond_code") or "").zfill(6): row
+            for row in payload.get("rows", [])
+            if row.get("bond_code")
+        }
+    except Exception:
+        return {}
+
+
 def _load_latest_runtime_artifact(pointer_path: Path, label: str) -> dict:
     if not pointer_path.exists():
         raise HTTPException(404, f"no {label} run has completed")
@@ -2010,13 +2030,20 @@ def latest_opportunity_view() -> dict:
         LATEST_OPPORTUNITY_RECORDS_PATH,
         "opportunity records",
     )
-    return build_opportunity_list(records)
+    return build_opportunity_list(
+        records,
+        maturity_contracts=_load_latest_maturity_contracts(),
+    )
 
 
 @app.get("/api/opportunity/view/{bond_code}")
 def latest_opportunity_view_for_bond(bond_code: str) -> dict:
     record = latest_opportunity_record_for_bond(bond_code)
-    return build_opportunity_view(record)
+    code = str(record.get("bond_code") or "").zfill(6)
+    return build_opportunity_view(
+        record,
+        maturity_contract_fact=_load_latest_maturity_contracts().get(code),
+    )
 
 
 @app.get("/api/opportunity/records/{bond_code}")
@@ -2078,7 +2105,10 @@ def opportunity_v2_preview_for_bond(bond_code: str) -> dict:
         path["latest_path_result_path"] = str(result_path)
         replaced_paths.append(path_id)
 
-    view = build_opportunity_view(record)
+    view = build_opportunity_view(
+        record,
+        maturity_contract_fact=_load_latest_maturity_contracts().get(code),
+    )
     view["preview"] = {
         "type": "PATH_RESULT_V2_GOLDEN_SAMPLE",
         "is_formal_ledger": False,

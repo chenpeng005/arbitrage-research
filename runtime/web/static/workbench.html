@@ -86,9 +86,9 @@
         </div>
         <span id="opportunityBadge" class="badge idle">读取中</span>
       </div>
-      <div id="opportunitySummary" class="summary-grid"></div>
-      <div class="filters card">
-        <input id="searchInput" type="search" placeholder="搜索转债名称或代码">
+      <div id="opportunitySummary" class="opportunity-summary-line">正在读取机会。</div>
+      <div class="filters compact-filters">
+        <input id="searchInput" type="search" placeholder="搜索代码或转债">
         <select id="pathFilter">
           <option value="">全部路径</option>
           <option value="MATURITY_CASH">到期现金</option>
@@ -103,34 +103,48 @@
           <option value="IN_PROGRESS">研究中</option>
           <option value="NOT_TRIGGERED">等待事件节点</option>
         </select>
-        <label class="table-toggle"><input id="showWatchToggle" type="checkbox"> 显示尚未进入深研节点的机会</label>
+        <label class="table-toggle"><input id="showWatchToggle" type="checkbox"> 显示长期监控</label>
         <button id="resetFilters">重置</button>
       </div>
-      <div class="opportunity-table-head">
-        <div>
-          <h3>机会浏览</h3>
-          <p>默认只显示已经进入研究层的机会；已完成、研究中、待补证据都保留。等待事件节点的长期监控机会可手动展开。</p>
+
+      <div class="opportunity-group-simple">
+        <div class="opportunity-group-title">
+          <div><h3>保底型</h3><span>存在已高度锁定、兑现大概率稳定的正收益锚</span></div>
+          <b id="floorVisibleCount">—</b>
         </div>
-        <span id="visibleCount" class="badge idle">—</span>
+        <div class="table-scroll opportunity-table-wrap">
+          <table class="opportunity-table jsl-table">
+            <thead>
+              <tr>
+                <th>#</th><th>代码</th><th>转债</th><th>现价</th>
+                <th>机会路径</th><th>当前状态</th><th>机会时间</th><th>YTM / 空间</th><th>研究</th>
+              </tr>
+            </thead>
+            <tbody id="floorOpportunityTableBody">
+              <tr><td colspan="9" class="muted">正在读取机会。</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div class="table-scroll opportunity-table-wrap">
-        <table class="opportunity-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>代码</th>
-              <th>转债</th>
-              <th>现价</th>
-              <th>机会路径</th>
-              <th>研究进度</th>
-              <th>当前事件状态</th>
-              <th>经济空间 / 核心判断</th>
-            </tr>
-          </thead>
-          <tbody id="opportunityTableBody">
-            <tr><td colspan="8" class="muted">正在读取机会。</td></tr>
-          </tbody>
-        </table>
+
+      <div class="opportunity-group-simple">
+        <div class="opportunity-group-title">
+          <div><h3>非保底型</h3><span>存在正向经济空间，但仍依赖未来事件、信用兑现或其他不确定条件</span></div>
+          <b id="nonFloorVisibleCount">—</b>
+        </div>
+        <div class="table-scroll opportunity-table-wrap">
+          <table class="opportunity-table jsl-table">
+            <thead>
+              <tr>
+                <th>#</th><th>代码</th><th>转债</th><th>现价</th>
+                <th>机会路径</th><th>当前状态</th><th>机会时间</th><th>YTM / 空间</th><th>研究</th>
+              </tr>
+            </thead>
+            <tbody id="nonFloorOpportunityTableBody">
+              <tr><td colspan="9" class="muted">正在读取机会。</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 

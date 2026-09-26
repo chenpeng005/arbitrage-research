@@ -1,0 +1,57 @@
+.nav a.active{color:var(--accent);background:var(--accent-soft);border-color:#ced8ff}
+.map-shell{max-width:1280px}
+.map-meta-line{
+  display:flex;justify-content:space-between;gap:16px;align-items:center;
+  margin:12px 0 10px;color:var(--muted);font-size:13px
+}
+.map-toolbar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:9px 0 13px;border-bottom:1px solid var(--line)
+}
+.map-toolbar input{
+  height:34px;border:1px solid var(--line);border-radius:7px;padding:0 9px;background:#fff
+}
+.map-toolbar>input{min-width:200px}
+.map-toolbar label{display:flex;align-items:center;gap:6px;color:#475467;font-size:13px}
+.map-toolbar label input{width:80px}
+.map-toolbar button{padding:6px 11px;border-radius:7px}
+.map-panel{
+  margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);padding:16px
+}
+.map-panel-head{display:flex;justify-content:space-between;gap:16px;margin-bottom:10px}
+.map-panel-head h2{font-size:18px}
+.map-panel-head p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.treasure-chart{min-height:520px;position:relative}
+.treasure-chart svg{display:block;width:100%;height:auto}
+.map-empty{padding:120px 20px;text-align:center;color:var(--muted)}
+.plot-bg{fill:#fbfcfe}
+.grid-line{stroke:#edf0f5;stroke-width:1}
+.axis-line{stroke:#98a2b3;stroke-width:1}
+.axis-text{font-size:11px;fill:#667085}
+.axis-label{font-size:12px;fill:#475467}
+.base-line{fill:none;stroke:#d92d20;stroke-width:2.2}
+.base-line.extrapolated{stroke-dasharray:6 5;opacity:.55}
+.point{fill:#3157d5;opacity:.72;cursor:pointer}
+.point.selected{fill:#101828;opacity:1}
+.point-label{font-size:9px;fill:#667085;pointer-events:none}
+.map-selected{padding:9px 2px 0;font-size:13px;min-height:34px}
+.selected-line{display:flex;gap:16px;flex-wrap:wrap}
+.selected-line b{color:#101828}
+.diff-low{color:#16794b;font-weight:700}
+.diff-high{color:#b42318;font-weight:700}
+.table-panel{padding-bottom:8px}
+.map-simple-table{width:100%;border-collapse:collapse;min-width:760px;font-size:12.5px}
+.map-simple-table th{
+  text-align:left;background:#f3f5f7;color:#475467;padding:7px 8px;
+  border-bottom:1px solid var(--line);white-space:nowrap
+}
+.map-simple-table td{padding:7px 8px;border-bottom:1px solid #edf0f4;white-space:nowrap}
+.map-simple-table tbody tr{cursor:pointer}
+.map-simple-table tbody tr:hover{background:#f8faff}
+@media(max-width:760px){
+  .map-meta-line{display:block}
+  .map-toolbar{align-items:stretch}
+  .map-toolbar>input,.map-toolbar label{width:100%}
+  .treasure-chart{min-height:340px}
+}
