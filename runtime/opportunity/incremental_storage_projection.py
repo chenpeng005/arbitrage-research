@@ -30,10 +30,19 @@ def build_candidate_projection(*, target_db: Path) -> dict[str, Any]:
     conn = connect(target_db)
     try:
         rows = list(conn.execute(
-            """SELECT s.*, b.bond_name FROM scope_state_current s
+            """SELECT s.*, b.bond_name, mo.market_order
+               FROM scope_state_current s
                JOIN bond_master b ON b.bond_code=s.bond_code
+               LEFT JOIN market_observation mo
+                 ON mo.snapshot_id=s.source_snapshot_id AND mo.bond_code=s.bond_code
                WHERE s.scope_type='PATH' AND s.economic_status='KEEP'
-               ORDER BY s.bond_code, s.scope_id"""
+               ORDER BY mo.market_order,
+                 CASE s.scope_id
+                   WHEN 'MATURITY_CASH' THEN 1
+                   WHEN 'PUT' THEN 2
+                   WHEN 'DOWNWARD_REVISION' THEN 3
+                   ELSE 99
+                 END"""
         ))
         by_bond: dict[str,list[dict[str,Any]]] = {}
         names: dict[str,str] = {}
@@ -79,7 +88,7 @@ def build_candidate_projection(*, target_db: Path) -> dict[str, Any]:
             by_bond.setdefault(code,[]).append(record)
             counter[state] += 1
         bonds = []
-        for code, paths in sorted(by_bond.items()):
+        for code, paths in by_bond.items():
             snapshot_id = conn.execute(
                 """SELECT source_snapshot_id FROM scope_state_current
                    WHERE bond_code=? AND scope_type='PATH' AND economic_status='KEEP' LIMIT 1""",
@@ -93,10 +102,14 @@ def build_candidate_projection(*, target_db: Path) -> dict[str, Any]:
                 "market_snapshot_id": snapshot_id,
                 "market_cutoff": snap["market_cutoff"] if snap else None,
                 "keep_path_count": len(paths),
-                "paths": sorted(paths,key=lambda x:x["path_id"]),
+                "paths": paths,
             })
+        top_snapshot = bonds[0]["market_snapshot_id"] if bonds else None
+        top_cutoff = bonds[0]["market_cutoff"] if bonds else None
         return {
             "projection_version": PROJECTION_VERSION,
+            "market_snapshot_id": top_snapshot,
+            "market_cutoff": top_cutoff,
             "bond_count": len(bonds), "keep_path_count": len(rows),
             "research_state_summary": dict(sorted(counter.items())),
             "bonds": bonds,
@@ -125,6 +138,8 @@ def build_opportunity_projection(*, target_db: Path) -> dict[str, Any]:
         })
     return {
         "projection_version": PROJECTION_VERSION,
+        "market_snapshot_id": pool.get("market_snapshot_id"),
+        "market_cutoff": pool.get("market_cutoff"),
         "bond_count": len(records), "keep_path_count": count,
         "record_state_summary": dict(sorted(counter.items())),
         "records": records,

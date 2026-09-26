@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = "incremental-runtime-sqlite-schema-v1.1"
+SCHEMA_VERSION = "incremental-runtime-sqlite-schema-v1.2"
 
 
 def _now() -> str:
@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS market_snapshot (
 CREATE TABLE IF NOT EXISTS market_observation (
     snapshot_id TEXT NOT NULL,
     bond_code TEXT NOT NULL,
+    market_order INTEGER NOT NULL CHECK (market_order >= 0),
     bond_price REAL,
     stock_price REAL,
     conversion_price REAL,

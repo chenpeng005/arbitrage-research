@@ -208,13 +208,14 @@ def bootstrap_current_runtime(
 
         conn.executemany(
             """INSERT INTO market_observation
-               (snapshot_id,bond_code,bond_price,stock_price,conversion_price,
+               (snapshot_id,bond_code,market_order,bond_price,stock_price,conversion_price,
                 conversion_value,remaining_months,remaining_size,payload_json)
-               VALUES (?,?,?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
             [
                 (
                     registry["market_snapshot_id"],
                     str(row["bond_code"]).zfill(6),
+                    market_order,
                     row.get("current_bond_price"),
                     row.get("current_stock_price"),
                     row.get("current_conversion_price"),
@@ -223,7 +224,7 @@ def bootstrap_current_runtime(
                     row.get("remaining_size"),
                     json_text(row),
                 )
-                for row in market_rows
+                for market_order, row in enumerate(market_rows)
             ],
         )
 

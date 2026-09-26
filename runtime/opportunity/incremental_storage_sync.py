@@ -94,7 +94,7 @@ def shadow_sync_current_runtime(
         schema_version = conn.execute(
             "SELECT value FROM schema_meta WHERE key='schema_version'"
         ).fetchone()
-        if not schema_version or schema_version["value"] != "incremental-runtime-sqlite-schema-v1.1":
+        if not schema_version or schema_version["value"] != "incremental-runtime-sqlite-schema-v1.2":
             raise RuntimeError(f"unexpected schema_version={schema_version['value'] if schema_version else None}")
 
         # Bond + snapshot + observations.
@@ -135,16 +135,17 @@ def shadow_sync_current_runtime(
         )
         stats["snapshot_inserts"] = conn.total_changes - before
 
-        for row in market_input.get("rows", []):
+        for market_order, row in enumerate(market_input.get("rows", [])):
             before = conn.total_changes
             conn.execute(
                 """INSERT OR IGNORE INTO market_observation
-                   (snapshot_id,bond_code,bond_price,stock_price,conversion_price,
+                   (snapshot_id,bond_code,market_order,bond_price,stock_price,conversion_price,
                     conversion_value,remaining_months,remaining_size,payload_json)
-                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
                 (
                     registry["market_snapshot_id"],
                     str(row["bond_code"]).zfill(6),
+                    market_order,
                     row.get("current_bond_price"),
                     row.get("current_stock_price"),
                     row.get("current_conversion_price"),

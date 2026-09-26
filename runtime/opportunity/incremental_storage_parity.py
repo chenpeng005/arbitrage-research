@@ -56,10 +56,10 @@ def audit_json_sqlite_parity(
             "SELECT value FROM schema_meta WHERE key='schema_version'"
         ).fetchone()
         schema_version = schema["value"] if schema else None
-        if schema_version != "incremental-runtime-sqlite-schema-v1.1":
+        if schema_version != "incremental-runtime-sqlite-schema-v1.2":
             add(
                 "SCHEMA_VERSION",
-                expected="incremental-runtime-sqlite-schema-v1.1",
+                expected="incremental-runtime-sqlite-schema-v1.2",
                 actual=schema_version,
             )
 
