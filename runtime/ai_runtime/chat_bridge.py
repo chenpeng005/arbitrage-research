@@ -13,6 +13,7 @@ import requests
 
 from runtime.ai_runtime.tools.evidence import ToolContext, execute_tool
 from runtime.market_map.semantic_resolution import validate_resolution
+from runtime.opportunity.path_research_validation import validate_path_research_result
 
 
 def now_utc() -> str:
@@ -40,6 +41,28 @@ def task_dir(data_root: Path, task_id: str) -> Path:
 
 def task_path(data_root: Path, task_id: str) -> Path:
     return task_dir(data_root, task_id) / "chat_task.json"
+
+
+def _validation_path(task: dict[str, Any], business_run_dir: Path) -> Path:
+    if task.get("task_type") == "PATH_RESEARCH":
+        return business_run_dir / "path_research_validation.json"
+    return business_run_dir / "semantic_resolution_validation.json"
+
+
+def _validate_submission(
+    task: dict[str, Any],
+    business_run_dir: Path,
+    structured_output_path: Path,
+) -> dict[str, Any]:
+    if task.get("task_type") == "PATH_RESEARCH":
+        return validate_path_research_result(
+            business_run_dir,
+            structured_output_path,
+        )
+    return validate_resolution(
+        business_run_dir,
+        structured_output_path,
+    )
 
 
 CLAIM_TTL_SECONDS = 45 * 60
@@ -200,7 +223,7 @@ def list_tasks(data_root: Path, status: str | None = None) -> list[dict[str, Any
             continue
 
         business_run_dir = Path(task.get("business_run_dir") or "")
-        validation_path = business_run_dir / "semantic_resolution_validation.json"
+        validation_path = _validation_path(task, business_run_dir)
         if validation_path.exists():
             try:
                 validation = load_json(validation_path)
@@ -385,7 +408,8 @@ def submit_resolution(
     structured = load_json(resolution_file)
     write_json(tdir / "structured_output.json", structured)
 
-    validation = validate_resolution(
+    validation = _validate_submission(
+        task,
         business_run_dir,
         tdir / "structured_output.json",
     )
