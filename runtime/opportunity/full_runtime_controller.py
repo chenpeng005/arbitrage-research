@@ -16,6 +16,7 @@ from typing import Any, Callable
 from runtime.opportunity.candidate_pool import build_candidate_pool
 from runtime.opportunity.discovery_controller import run_opportunity_discovery
 from runtime.opportunity.ingress import build_market_ingress
+from runtime.opportunity.incremental_storage_shadow import run_incremental_storage_shadow
 from runtime.opportunity.opportunity_record import build_opportunity_records
 from runtime.opportunity.path_research_batch import run_path_research_batch
 from runtime.opportunity.research_evidence import build_research_evidence
@@ -309,6 +310,18 @@ def run_opportunity_full_downstream(
             record_state_summary=records.get("record_state_summary", {}),
         )
 
+        shadow_storage = run_incremental_storage_shadow(data_root=data_root)
+        state["artifacts"]["incremental_storage_shadow"] = str(
+            data_root / "registry" / "latest_incremental_storage_sync.json"
+        )
+        mark(
+            "INCREMENTAL_STORAGE_SHADOW",
+            shadow_storage.get("status", "FAIL"),
+            parity_status=(shadow_storage.get("parity") or {}).get("status"),
+            mismatch_count=(shadow_storage.get("parity") or {}).get("mismatch_count"),
+            non_blocking=True,
+        )
+
         state["status"] = "PASS"
         state["current_stage"] = "COMPLETE"
         state["completed_at"] = _now()
@@ -318,6 +331,7 @@ def run_opportunity_full_downstream(
             "keep_paths": records["keep_path_count"],
             "research_state_summary": pool.get("research_state_summary", {}),
             "remaining_pending_research": _pending_count(data_root),
+            "incremental_storage_shadow_status": shadow_storage.get("status"),
         }
         _write_json(status_path, state)
         _write_json(
@@ -439,6 +453,18 @@ def resume_opportunity_full_after_chat(
         record_state_summary=records.get("record_state_summary", {}),
     )
 
+    shadow_storage = run_incremental_storage_shadow(data_root=data_root)
+    state["artifacts"]["incremental_storage_shadow"] = str(
+        data_root / "registry" / "latest_incremental_storage_sync.json"
+    )
+    mark(
+        "INCREMENTAL_STORAGE_SHADOW",
+        shadow_storage.get("status", "FAIL"),
+        parity_status=(shadow_storage.get("parity") or {}).get("status"),
+        mismatch_count=(shadow_storage.get("parity") or {}).get("mismatch_count"),
+        non_blocking=True,
+    )
+
     state["status"] = "PASS"
     state["current_stage"] = "COMPLETE"
     state["completed_at"] = _now()
@@ -450,6 +476,7 @@ def resume_opportunity_full_after_chat(
         "research_state_summary": pool.get("research_state_summary", {}),
         "remaining_pending_research": _pending_count(data_root),
         "waiting_chat_tasks": 0,
+        "incremental_storage_shadow_status": shadow_storage.get("status"),
     }
     _write_json(status_path, state)
     _write_json(
