@@ -7,6 +7,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from runtime.opportunity.incremental_market_change_writer import (
+    capture_market_path_state,
+    persist_market_transition_changes,
+)
 from runtime.opportunity.incremental_storage_parity import audit_json_sqlite_parity
 from runtime.opportunity.incremental_storage_projection import audit_projection_parity
 from runtime.opportunity.incremental_storage_sync import shadow_sync_current_runtime
@@ -48,7 +52,12 @@ def run_incremental_storage_shadow(*, data_root: Path) -> dict[str, Any]:
     previous_changed_passes = int(storage_status.get("parity_passes_with_state_change") or 0)
 
     try:
+        previous_market_states = capture_market_path_state(target_db=db_path)
         sync = shadow_sync_current_runtime(data_root=data_root, target_db=db_path)
+        market_changes = persist_market_transition_changes(
+            target_db=db_path,
+            previous_states=previous_market_states,
+        )
         parity = audit_json_sqlite_parity(data_root=data_root, target_db=db_path)
         projection_parity = audit_projection_parity(
             data_root=data_root,
@@ -57,6 +66,7 @@ def run_incremental_storage_shadow(*, data_root: Path) -> dict[str, Any]:
         status = (
             "PASS"
             if sync.get("status") == "PASS"
+            and market_changes.get("status") == "PASS"
             and parity.get("status") == "PASS"
             and projection_parity.get("status") == "PASS"
             else "FAIL"
@@ -78,6 +88,7 @@ def run_incremental_storage_shadow(*, data_root: Path) -> dict[str, Any]:
             "shadow_stage_version": SHADOW_STAGE_VERSION,
             "status": status,
             "sync": sync,
+            "market_changes": market_changes,
             "parity": parity,
             "projection_parity": projection_parity,
             "completed_at": _now(),
@@ -97,6 +108,8 @@ def run_incremental_storage_shadow(*, data_root: Path) -> dict[str, Any]:
                 "last_projection_mismatch_count": projection_parity.get("mismatch_count"),
                 "last_state_version_increments": (sync.get("stats") or {}).get("state_version_increments"),
                 "last_research_state_version_increments": (sync.get("stats") or {}).get("research_state_version_increments"),
+                "last_market_transition_count": market_changes.get("detected_transition_count"),
+                "last_market_notification_group_count": market_changes.get("notification_group_count"),
                 "parity_consecutive_passes": streak,
                 "parity_passes_with_state_change": changed_passes,
                 "next_gate": "CONTROLLED_CUTOVER_REVIEW",

@@ -319,6 +319,12 @@ def run_opportunity_full_downstream(
             shadow_storage.get("status", "FAIL"),
             parity_status=(shadow_storage.get("parity") or {}).get("status"),
             mismatch_count=(shadow_storage.get("parity") or {}).get("mismatch_count"),
+            market_transition_count=(shadow_storage.get("market_changes") or {}).get(
+                "detected_transition_count"
+            ),
+            notification_group_count=(shadow_storage.get("market_changes") or {}).get(
+                "notification_group_count"
+            ),
             non_blocking=True,
         )
 
@@ -462,6 +468,12 @@ def resume_opportunity_full_after_chat(
         shadow_storage.get("status", "FAIL"),
         parity_status=(shadow_storage.get("parity") or {}).get("status"),
         mismatch_count=(shadow_storage.get("parity") or {}).get("mismatch_count"),
+        market_transition_count=(shadow_storage.get("market_changes") or {}).get(
+            "detected_transition_count"
+        ),
+        notification_group_count=(shadow_storage.get("market_changes") or {}).get(
+            "notification_group_count"
+        ),
         non_blocking=True,
     )
 
