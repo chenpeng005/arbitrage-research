@@ -1,6 +1,6 @@
 const state={
   opportunities:null,
-  filters:{search:"",path:"",research:""},
+  filters:{search:"",path:"",research:"",showWatch:false},
   polling:null
 };
 
@@ -145,10 +145,46 @@ async function loadLatestRun(){
   }catch(e){
     $("#runBadge").textContent="尚无记录";
     $("#runBadge").className="badge idle";
-    $("#runMeta").textContent="尚未找到完整整机运行记录。可以从最新正式藏宝图继续，或在收盘后从头运行。";
+    $("#runMeta").textContent="尚未找到完整整机运行记录。正式运行只在交易日收盘后进行。";
     renderRun({status:"",full_stages:[]});
   }
 }
+
+async function loadRunPolicy(){
+  const btn=$("#runCloseBtn");
+  const box=$("#runPolicy");
+  try{
+    const r=await fetch("/api/market-status");
+    if(!r.ok)throw new Error(await r.text());
+    const d=await r.json();
+    if(d.formal_run_completed){
+      btn.disabled=true;
+      btn.textContent="今日正式运行已完成";
+      box.innerHTML="<b>"+esc(d.china_date)+"：</b> 今日正式收盘 Full Runtime 已完成。同一收盘截面不会重复正式运行。";
+    }else if(d.formal_run_active){
+      btn.disabled=true;
+      btn.textContent="今日正式运行中";
+      box.innerHTML="<b>"+esc(d.china_date)+"：</b> 今日正式流程正在运行，请查看下方阶段进度。";
+    }else if(!d.is_trade_day){
+      btn.disabled=true;
+      btn.textContent="等待下一个交易日收盘";
+      box.innerHTML="<b>"+esc(d.china_date)+"：</b> 今天不是交易日。运行中心等待下一个正式收盘截面。";
+    }else if(!d.after_close_gate){
+      btn.disabled=true;
+      btn.textContent="15:10 后可运行";
+      box.innerHTML="<b>"+esc(d.china_date)+"：</b> 今天是交易日，但正式收盘截面尚未冻结；北京时间 "+esc(d.close_gate_time)+" 后开放一次正式运行。";
+    }else{
+      btn.disabled=false;
+      btn.textContent="启动今日正式全流程";
+      box.innerHTML="<b>"+esc(d.china_date)+"：</b> 今日正式收盘截面已可用，尚未运行。现在可以启动一次完整机会发现。";
+    }
+  }catch(e){
+    btn.disabled=true;
+    btn.textContent="运行状态读取失败";
+    box.textContent="无法确认今日正式运行条件："+e.message;
+  }
+}
+
 async function startRun(sourceMode){
   const closeBtn=$("#runCloseBtn"), reuseBtn=$("#runReuseBtn");
   closeBtn.disabled=true; reuseBtn.disabled=true;
@@ -185,7 +221,7 @@ function pollRun(jobId){
         state.polling=null;
         $("#runCloseBtn").disabled=false;
         $("#runReuseBtn").disabled=false;
-        await Promise.all([loadMarketMapMeta(),loadOpportunities()]);
+        await Promise.all([loadRunPolicy(),loadMarketMapMeta(),loadOpportunities()]);
       }
     }catch(e){
       clearInterval(state.polling);
@@ -227,12 +263,14 @@ function researchStateCounts(data){
 
 function renderOpportunitySummary(data){
   const c=researchStateCounts(data);
+  const active=(data.opportunities||[]).filter(bondInActiveResearch).length;
+  const watch=(data.opportunities||[]).length-active;
   const items=[
-    ["机会转债",data.bond_count||0],
-    ["正向经济路径",data.keep_path_count||0],
-    ["已完成深研",c.COMPLETED],
+    ["当前值得深研",active],
+    ["已完成深研路径",c.COMPLETED],
     ["等待补充证据",c.HOLD_WAITING_EVIDENCE],
-    ["等待事件节点",c.NOT_TRIGGERED]
+    ["长期监控",watch],
+    ["全部正向路径",data.keep_path_count||0]
   ];
   $("#opportunitySummary").innerHTML=items.map(x=>
     '<div class="metric"><span>'+esc(x[0])+'</span><strong>'+esc(x[1])+'</strong></div>'
@@ -267,38 +305,77 @@ function bondInActiveResearch(b){
   return (b.paths||[]).some(p=>p.research_state!=="NOT_TRIGGERED");
 }
 
-function bondCardHtml(b){
+function bondCurrentPrice(b){
+  for(const p of b.paths||[]){
+    const m=(p.metrics||[]).find(x=>x.label==="当前价格");
+    if(m&&m.value!==null&&m.value!==undefined)return m.value;
+  }
+  return null;
+}
+
+function compactPathText(p){
+  const gap=(p.metrics||[]).find(x=>["绝对价差","模型价差"].includes(x.label));
+  const gapText=gap?(" · "+gap.label+" "+fmtMetric(gap)):"";
+  return p.path_name+gapText;
+}
+
+function compactJudgment(b){
+  const paths=b.paths||[];
+  const preferred=paths.find(p=>p.research_state==="COMPLETED")
+    ||paths.find(p=>p.research_state!=="NOT_TRIGGERED")
+    ||paths[0];
+  return preferred?.quick_judgment||preferred?.status_explanation||"";
+}
+
+function researchProgressText(b){
+  const states=(b.paths||[]).map(p=>p.research_state);
+  if(states.includes("IN_PROGRESS"))return "研究中";
+  if(states.includes("PENDING"))return "等待研究";
+  if(states.includes("HOLD_WAITING_EVIDENCE"))return "等待补充证据";
+  if(states.includes("COMPLETED"))return "已完成深研";
+  return "等待事件节点";
+}
+
+function eventStateText(b){
+  const vals=[...new Set((b.paths||[]).map(p=>p.current_event_state).filter(Boolean))];
+  return vals.length?vals.join(" / "):"—";
+}
+
+function opportunityRowHtml(b,index){
   const hasV2=["110092","127089"].includes(String(b.bond_code||""));
+  const name=String(b.bond_name||"").replace(/转债$/,"");
+  const pathText=(b.paths||[]).map(compactPathText).join("；");
   const preview=hasV2
-    ?'<a class="v2-preview-link" href="/opportunities-v2-preview/'+esc(b.bond_code)+'">查看 V2 研究样本</a>'
+    ?'<a class="v2-preview-link" href="/opportunities-v2-preview/'+esc(b.bond_code)+'">V2样本</a>'
     :"";
-  return '<article class="opp-card" data-code="'+esc(b.bond_code)+'">'
-    +'<div class="opp-head"><div><span class="bond-code">'+esc(b.bond_code)+'</span>'
-    +'<span class="bond-name">'+esc(String(b.bond_name||"").replace(/转债$/,""))+'</span></div>'
-    +'<div class="opp-actions"><div class="opp-count">发现 '+esc(b.opportunity_path_count)+' 条机会路径</div>'+preview+'</div></div>'
-    +'<div class="path-strip">'+(b.paths||[]).map(renderPathRow).join("")+'</div>'
-  +'</article>';
+  return '<tr class="opportunity-row" data-code="'+esc(b.bond_code)+'">'
+    +'<td class="row-no">'+esc(index+1)+'</td>'
+    +'<td class="code-cell">'+esc(b.bond_code)+'</td>'
+    +'<td><b>'+esc(name)+'</b>'+preview+'</td>'
+    +'<td class="num-cell">'+esc(num(bondCurrentPrice(b)))+'</td>'
+    +'<td>'+esc(pathText)+'</td>'
+    +'<td><span class="table-status">'+esc(researchProgressText(b))+'</span></td>'
+    +'<td>'+esc(eventStateText(b))+'</td>'
+    +'<td class="judgment-cell">'+esc(compactJudgment(b))+'</td>'
+    +'</tr>';
 }
 
 function renderOpportunityList(){
   const data=state.opportunities;
   if(!data)return;
-  const rows=(data.opportunities||[]).filter(bondMatches);
+  let rows=(data.opportunities||[]).filter(bondMatches);
   const active=rows.filter(bondInActiveResearch);
   const watch=rows.filter(b=>!bondInActiveResearch(b));
-  $("#activeVisibleCount").textContent=active.length+" 只";
-  $("#watchVisibleCount").textContent=watch.length+" 只";
-  $("#activeOpportunityList").innerHTML=active.length
-    ?active.map(bondCardHtml).join("")
-    :'<div class="empty">当前筛选条件下，没有已经进入研究层的机会。</div>';
-  $("#watchOpportunityList").innerHTML=watch.length
-    ?watch.map(bondCardHtml).join("")
-    :'<div class="empty">当前筛选条件下，没有等待事件节点的长期监控对象。</div>';
+  rows=state.filters.showWatch?active.concat(watch):active;
+  $("#visibleCount").textContent=rows.length+" / "+(data.bond_count||0)+" 只";
+  $("#opportunityTableBody").innerHTML=rows.length
+    ?rows.map(opportunityRowHtml).join("")
+    :'<tr><td colspan="8" class="muted">当前筛选条件下没有机会。</td></tr>';
 
   document.querySelectorAll(".v2-preview-link").forEach(el=>{
     el.addEventListener("click",e=>e.stopPropagation());
   });
-  document.querySelectorAll(".opp-card").forEach(el=>{
+  document.querySelectorAll(".opportunity-row").forEach(el=>{
     el.addEventListener("click",()=>{
       window.location.href="/opportunities/"+encodeURIComponent(el.dataset.code);
     });
@@ -317,9 +394,7 @@ async function loadOpportunities(){
   }catch(e){
     $("#opportunityBadge").textContent="读取失败";
     $("#opportunityBadge").className="badge fail";
-    const msg='<div class="empty">机会结果读取失败：'+esc(e.message)+'</div>';
-    $("#activeOpportunityList").innerHTML=msg;
-    $("#watchOpportunityList").innerHTML="";
+    $("#opportunityTableBody").innerHTML='<tr><td colspan="8" class="muted">机会结果读取失败：'+esc(e.message)+'</td></tr>';
   }
 }
 
@@ -343,6 +418,15 @@ function renderResearchSummary(obj){
     +'</section>';
 }
 
+function renderFactTable(table){
+  if(!table||!Array.isArray(table.columns)||!Array.isArray(table.rows))return "";
+  return '<div class="logic-table-wrap"><table class="logic-table"><thead><tr>'
+    +table.columns.map(x=>'<th>'+esc(x)+'</th>').join("")
+    +'</tr></thead><tbody>'
+    +table.rows.map(row=>'<tr>'+row.map(cell=>'<td>'+esc(cell)+'</td>').join("")+'</tr>').join("")
+    +'</tbody></table></div>';
+}
+
 function renderLogicChain(items){
   if(!Array.isArray(items)||!items.length)return "";
   return '<section class="research-section logic-section"><div class="logic-heading">'
@@ -356,6 +440,7 @@ function renderLogicChain(items){
         +'<div class="logic-question">'+esc(x["问题"]||"")+'</div></div>'
         +'<span class="logic-state">'+esc(x["状态"]||"")+'</span></div>'
         +(x["先给答案"]?'<div class="logic-answer"><b>答案：</b>'+esc(x["先给答案"])+'</div>':"")
+        +renderFactTable(x["事实表格"])
         +(facts.length?'<div class="logic-facts"><b>关键事实</b><ul>'+facts.map(f=>'<li>'+esc(f)+'</li>').join("")+'</ul></div>':"")
         +(x["为什么"]?'<div class="logic-reason"><b>为什么：</b>'+esc(x["为什么"])+'</div>':"")
         +(x["本步结论"]?'<div class="logic-conclusion"><b>本步结论：</b>'+esc(x["本步结论"])+'</div>':"")
@@ -515,10 +600,21 @@ function bind(){
   $("#runReuseBtn").addEventListener("click",()=>startRun("LATEST_FORMAL"));
   $("#searchInput").addEventListener("input",e=>{state.filters.search=e.target.value;renderOpportunityList();});
   $("#pathFilter").addEventListener("change",e=>{state.filters.path=e.target.value;renderOpportunityList();});
-  $("#researchFilter").addEventListener("change",e=>{state.filters.research=e.target.value;renderOpportunityList();});
+  $("#researchFilter").addEventListener("change",e=>{
+    state.filters.research=e.target.value;
+    if(e.target.value==="NOT_TRIGGERED"){
+      state.filters.showWatch=true;
+      $("#showWatchToggle").checked=true;
+    }
+    renderOpportunityList();
+  });
+  $("#showWatchToggle").addEventListener("change",e=>{
+    state.filters.showWatch=e.target.checked;
+    renderOpportunityList();
+  });
   $("#resetFilters").addEventListener("click",()=>{
-    state.filters={search:"",path:"",research:""};
-    $("#searchInput").value="";$("#pathFilter").value="";$("#researchFilter").value="";
+    state.filters={search:"",path:"",research:"",showWatch:false};
+    $("#searchInput").value="";$("#pathFilter").value="";$("#researchFilter").value="";$("#showWatchToggle").checked=false;
     renderOpportunityList();
   });
   $("#detailClose").addEventListener("click",closeDetail);
@@ -556,7 +652,7 @@ async function init(){
     await loadLandingSummary();
   }else if(mode==="run"){
     document.title="运行中心｜机会发现";
-    await loadLatestRun();
+    await Promise.all([loadLatestRun(),loadRunPolicy()]);
   }else if(mode==="opportunities"){
     document.title="机会结果｜机会发现";
     await loadOpportunities();

@@ -998,3 +998,112 @@ function renderMarketMap(){
       renderMapSelected(fixed||null);
     });
     g.addEventListener("click",function(){
+      marketMapSelectedCode=code;
+      renderMapSelected(row);
+      renderMarketMap();
+    });
+  });
+}
+
+async function loadMarketMap(calculationJobId=null){
+  marketMapCalculationJobId=calculationJobId||null;
+  $("#mapOverall").textContent="加载中";
+  $("#mapOverall").className="overall running";
+  try{
+    const url=calculationJobId
+      ?"api/market-map/view?calculation_job_id="+encodeURIComponent(calculationJobId)
+      :"api/market-map/view";
+    const r=await fetch(url);
+    if(!r.ok)throw new Error(await r.text());
+    marketMapData=await r.json();
+    $("#mapOverall").textContent="已加载";
+    $("#mapOverall").className="overall pass";
+    renderMapMeta();
+    renderMapSummary();
+    renderMapTable();
+    renderMarketMap();
+  }catch(err){
+    $("#mapOverall").textContent="加载失败";
+    $("#mapOverall").className="overall fail";
+    $("#mapMeta").textContent="藏宝图加载失败："+err.message;
+  }
+}
+
+$("#mapRawBtn").addEventListener("click",function(){
+  marketMapMode="raw";
+  renderMarketMap();
+});
+$("#mapStdBtn").addEventListener("click",function(){
+  marketMapMode="standard";
+  renderMarketMap();
+});
+$("#mapDuration").addEventListener("change",function(){renderMarketMap();renderMapTable();});
+$("#mapScale").addEventListener("change",function(){renderMarketMap();renderMapTable();});
+["#mapPriceMin","#mapPriceMax","#mapCvMin","#mapCvMax","#mapSizeMax","#mapPremiumMax"].forEach(function(sel){
+  $(sel).addEventListener("input",function(){
+    renderMarketMap();
+    renderMapTable();
+  });
+});
+$("#mapFilterReset").addEventListener("click",function(){
+  $("#mapPriceMin").value="80";
+  $("#mapPriceMax").value="160";
+  $("#mapCvMin").value="20";
+  $("#mapCvMax").value="200";
+  $("#mapSizeMax").value="";
+  $("#mapPremiumMax").value="";
+  renderMarketMap();
+  renderMapTable();
+});
+$("#mapReloadBtn").addEventListener("click",function(){
+  loadMarketMap(marketMapCalculationJobId);
+});
+
+$("#pipelineMode").addEventListener("change",updatePipelineModeUi);
+$("#pipelineHistorySnapshot").addEventListener("change",syncHistoricalSelection);
+initializeMarketStatus();
+
+loadMarketMap();
+
+
+function configureStandaloneMarketMapPage(){
+  if(window.location.pathname.replace(/\/+$/,"")!=="/market-map")return;
+  document.title="可转债藏宝图｜机会发现";
+  document.body.classList.add("standalone-market-map");
+  const main=document.querySelector("main.shell");
+  if(!main)return;
+  const children=Array.from(main.children);
+  const start=children.findIndex(el=>el.querySelector&&el.querySelector("#mapOverall"));
+  children.forEach((el,index)=>{
+    if(index===0)return;
+    if(start<0 || index<start)el.classList.add("hidden");
+  });
+  const hero=children[0];
+  if(hero){
+    hero.className="market-topbar";
+    hero.innerHTML=
+      '<div><p class="eyebrow">可转债机会发现系统</p>'
+      +'<h1>可转债藏宝图</h1>'
+      +'<p class="sub">只看当前正式市场截面的藏宝图结果与单券相对位置。</p></div>'
+      +'<nav class="market-nav">'
+      +'<a href="/workbench">总览</a>'
+      +'<a href="/run-center">运行中心</a>'
+      +'<a class="active" href="/market-map">藏宝图</a>'
+      +'<a href="/opportunities">机会结果</a>'
+      +'<a href="/audit">工程审计</a>'
+      +'</nav>';
+  }
+  const mapMeta=document.querySelector("#mapMeta");
+  const mapSummary=document.querySelector("#mapSummary");
+  const tech=document.querySelector("section.tech");
+  if(mapMeta)mapMeta.classList.add("hidden");
+  if(mapSummary)mapSummary.classList.add("hidden");
+  if(tech)tech.classList.add("hidden");
+  const title=document.querySelector("#mapTitle");
+  if(title)title.textContent="可转债藏宝图";
+  const rawBtn=document.querySelector("#mapRawBtn");
+  const stdBtn=document.querySelector("#mapStdBtn");
+  if(rawBtn)rawBtn.textContent="实际市场";
+  if(stdBtn)stdBtn.textContent="标准化参考";
+}
+configureStandaloneMarketMapPage();

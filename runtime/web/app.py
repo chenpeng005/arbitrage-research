@@ -168,14 +168,79 @@ def china_now() -> datetime:
     return datetime.now(ZoneInfo("Asia/Shanghai"))
 
 
+def _latest_cached_trade_calendar() -> Path | None:
+    candidates = list((DATA_ROOT / "runs").glob("*/raw/trade_calendar_sina.csv"))
+    if not candidates:
+        candidates = list(DATA_ROOT.glob("**/trade_calendar_sina.csv"))
+    return max(candidates, key=lambda p: p.stat().st_mtime) if candidates else None
+
+
+def _is_cached_trade_day(date_text: str) -> bool:
+    path = _latest_cached_trade_calendar()
+    if path is None:
+        return datetime.fromisoformat(date_text).weekday() < 5
+    try:
+        frame = pd.read_csv(path, usecols=["trade_date"])
+        dates = set(frame["trade_date"].astype(str))
+        return date_text in dates
+    except Exception:
+        return datetime.fromisoformat(date_text).weekday() < 5
+
+
+def _full_run_candidates() -> list[dict]:
+    candidates = []
+    with _lock:
+        candidates.extend(
+            dict(job) for job in _jobs.values()
+            if job.get("unit") == "Opportunity Discovery / Full Runtime"
+        )
+    for job in load_persisted_jobs():
+        if job.get("unit") == "Opportunity Discovery / Full Runtime":
+            candidates.append(job)
+    return candidates
+
+
+def _completed_full_run_for_cutoff(cutoff: str) -> dict | None:
+    matches = [
+        job for job in _full_run_candidates()
+        if job.get("status") == "PASS" and job.get("market_cutoff") == cutoff
+    ]
+    if not matches:
+        return None
+    matches.sort(key=lambda x: x.get("completed_at") or x.get("updated_at") or "", reverse=True)
+    return matches[0]
+
+
 def close_mode_precheck() -> dict:
     now = china_now()
+    date_text = now.date().isoformat()
     after_close_gate = (now.hour, now.minute) >= (15, 10)
+    is_trade_day = _is_cached_trade_day(date_text)
+    completed = _completed_full_run_for_cutoff(date_text)
+    active = next(
+        (
+            job for job in _full_run_candidates()
+            if job.get("market_cutoff") == date_text
+            and job.get("status") in {"PENDING", "RUNNING"}
+        ),
+        None,
+    )
     return {
         "china_time": now.isoformat(timespec="minutes"),
-        "china_date": now.date().isoformat(),
+        "china_date": date_text,
         "after_close_gate": after_close_gate,
+        "is_trade_day": is_trade_day,
         "close_gate_time": "15:10",
+        "formal_run_completed": completed is not None,
+        "completed_job_id": completed.get("job_id") if completed else None,
+        "formal_run_active": active is not None,
+        "active_job_id": active.get("job_id") if active else None,
+        "formal_run_available": (
+            is_trade_day
+            and after_close_gate
+            and completed is None
+            and active is None
+        ),
     }
 
 
@@ -1559,6 +1624,37 @@ def resume_market_map_after_chat(pipeline_job_id: str) -> dict:
 def create_opportunity_full_run(request: OpportunityFullRunRequest) -> dict:
     if request.source_mode not in {"LATEST_FORMAL", "CLOSE"}:
         raise HTTPException(400, "unsupported source_mode")
+
+    planned_cutoff = None
+    if request.source_mode == "CLOSE":
+        policy = close_mode_precheck()
+        planned_cutoff = policy["china_date"]
+        if not policy["is_trade_day"]:
+            raise HTTPException(
+                409,
+                "今天不是交易日，正式 Full Runtime 只在交易日收盘后运行。",
+            )
+        if not policy["after_close_gate"]:
+            raise HTTPException(
+                409,
+                f"今天正式收盘截面尚未可用，请在 {policy['close_gate_time']} 后运行。",
+            )
+        if policy["formal_run_completed"]:
+            raise HTTPException(
+                409,
+                "今天的正式收盘 Full Runtime 已经完成；同一收盘截面不重复正式运行。",
+            )
+        active = [
+            job for job in _full_run_candidates()
+            if job.get("market_cutoff") == policy["china_date"]
+            and job.get("status") in {"PENDING", "RUNNING"}
+        ]
+        if active:
+            raise HTTPException(
+                409,
+                "今天的正式 Full Runtime 已经在运行中，请查看当前运行进度。",
+            )
+
     job_id = (
         datetime.now().strftime("%Y%m%d_%H%M%S")
         + "_opportunity_full_"
@@ -1571,6 +1667,7 @@ def create_opportunity_full_run(request: OpportunityFullRunRequest) -> dict:
             "status": "PENDING",
             "phase": "PENDING",
             "source_mode": request.source_mode,
+            "market_cutoff": planned_cutoff,
             "run_research": request.run_research,
             "research_batch_limit": request.research_batch_limit,
             "max_research_rounds": request.max_research_rounds,

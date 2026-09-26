@@ -192,7 +192,14 @@ def _format_fact_value(key: str, value: str) -> str:
     if numeric:
         number = float(numeric.group(1))
         unit = numeric.group(2) or ""
-        if abs(number) >= 100:
+        if key in {
+            "remaining_size", "remaining_size_yi", "money_funds_yi",
+            "total_liabilities_yi", "operating_cash_flow_yi",
+            "financing_cash_flow_yi", "net_cash_flow_yi",
+            "cash_pressure_yi",
+        }:
+            shown = f"{number:.2f}"
+        elif abs(number) >= 100:
             shown = f"{number:.2f}".rstrip("0").rstrip(".")
         elif abs(number) >= 10:
             shown = f"{number:.2f}".rstrip("0").rstrip(".")
@@ -217,6 +224,8 @@ def _format_fact_value(key: str, value: str) -> str:
                 "reference_minus_current_price",
             }:
                 unit = "元"
+        if unit == "%":
+            return f"{shown}%"
         return f"{shown}{(' ' + unit) if unit else ''}"
     return FACT_VALUE_LABELS.get(raw, raw)
 
@@ -241,6 +250,7 @@ def _humanize_prose(value: Any) -> str:
         ("Engineering Anchor", "当前状态锚"),
         ("Evidence Pack", "证据包"),
         ("Economic KEEP", "存在正向经济空间"),
+        ("现实 CV → 正式估值网格债价 → 经济空间", "不同转股价值情景下的债价与经济空间"),
         (" Path ", "路径"),
         (" Path", "路径"),
         ("Path ", "路径"),
@@ -250,6 +260,7 @@ def _humanize_prose(value: Any) -> str:
         text = text.replace(old, new)
     text = text.replace("T_GT_12M", "距到期 12 个月以上")
     text = text.replace("BEFORE_PUT_WINDOW", "尚未进入普通回售适用期")
+    text = text.replace("CONSOLIDATED", "合并口径")
     text = text.replace("普通回售机制可用=True", "普通回售机制：当前可用")
     text = text.replace("普通回售机制可用=false", "普通回售机制：当前不可用")
     text = re.sub(r"普通回售窗口起点\s*=\s*", "普通回售窗口起点：", text)
@@ -283,9 +294,16 @@ def _humanize_machine_fact(fact: Any) -> str:
 
     prefix = ""
     body = text
+    financial_match = re.match(
+        r"^financial_first_layer（合并口径，(\d{4}-\d{2}-\d{2})）：(.+)$",
+        body,
+    )
+    if financial_match:
+        prefix = f"最新合并口径财务数据（{financial_match.group(1)}）："
+        body = financial_match.group(2)
     for marker, label in (
         ("market_state：", "当前市场状态："),
-        ("financial_first_layer（CONSOLIDATED，", "最新合并口径财务数据（"),
+        ("financial_first_layer（合并口径，", "最新合并口径财务数据（"),
         ("economic_judgment：", "当前经济判断："),
         ("existing_path_facts.contract_fact：", "当前合同事实："),
         ("cross_path_revision.contract_fact：", "同券下修状态："),
@@ -407,11 +425,71 @@ def _summary_view(summary: dict[str, Any] | None) -> dict[str, Any] | None:
     }
 
 
+def _structured_fact_table(facts: list[Any]) -> dict[str, Any] | None:
+    timeline_rows = []
+    non_timeline = []
+    for fact in facts or []:
+        text = str(fact or "").strip()
+        match = re.match(r"^(\d{4}-\d{2}-\d{2})\s+(.+)$", text)
+        if match:
+            timeline_rows.append([match.group(1), _humanize_prose(match.group(2))])
+        else:
+            non_timeline.append(text)
+    if len(timeline_rows) >= 3:
+        return {
+            "type": "timeline",
+            "columns": ["日期", "事件"],
+            "rows": timeline_rows,
+            "remaining_facts": [
+                _humanize_machine_fact(x) for x in non_timeline if x
+            ],
+        }
+
+    scenario_rows = []
+    non_scenario = []
+    pattern = re.compile(
+        r"^CV_(\d+(?:\.\d+)?)：neutral_reference=([+-]?\d+(?:\.\d+)?)"
+        r"，reference_minus_current_price=([+-]?\d+(?:\.\d+)?)$"
+    )
+    for fact in facts or []:
+        text = str(fact or "").strip()
+        match = pattern.match(text)
+        if match:
+            scenario_rows.append([
+                f"{match.group(1)} 元",
+                f"{float(match.group(2)):.2f} 元",
+                f"{float(match.group(3)):+.2f} 元",
+            ])
+        else:
+            non_scenario.append(text)
+    if len(scenario_rows) >= 3:
+        return {
+            "type": "scenario",
+            "columns": ["转股价值情景", "模型参考债价", "相对当前价空间"],
+            "rows": scenario_rows,
+            "remaining_facts": [
+                _humanize_machine_fact(x) for x in non_scenario if x
+            ],
+        }
+    return None
+
+
 def _logic_chain_view(items: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
     output = []
     for idx, item in enumerate(items or [], start=1):
         if not isinstance(item, dict):
             continue
+        raw_facts = item.get("facts") or []
+        fact_table = _structured_fact_table(raw_facts)
+        display_facts = (
+            fact_table.get("remaining_facts", [])
+            if fact_table
+            else [
+                _humanize_machine_fact(fact)
+                for fact in raw_facts
+                if str(fact or "").strip()
+            ]
+        )
         output.append({
             "序号": idx,
             "节点编号": item.get("step_id"),
@@ -421,11 +499,8 @@ def _logic_chain_view(items: list[dict[str, Any]] | None) -> list[dict[str, Any]
                 str(item.get("state") or ""), item.get("state")
             ),
             "先给答案": _humanize_prose(item.get("answer")),
-            "关键事实": [
-                _humanize_machine_fact(fact)
-                for fact in (item.get("facts") or [])
-                if str(fact or "").strip()
-            ],
+            "关键事实": display_facts,
+            "事实表格": fact_table,
             "为什么": _humanize_prose(item.get("reasoning")),
             "本步结论": _humanize_prose(item.get("conclusion")),
             "证据编号": item.get("evidence_ids") or [],

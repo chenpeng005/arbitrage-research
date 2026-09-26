@@ -50,12 +50,13 @@
       </div>
       <div class="run-actions card">
         <div>
-          <h3>今日正式运行</h3>
-          <p>从今日收盘市场数据开始，依次完成藏宝图、经济判断、必要深研和最终机会汇总。</p>
+          <h3>每日收盘正式运行</h3>
+          <p>每个交易日只接受一个正式收盘截面。15:10 后可启动一次完整流程；同一收盘数据正式完成后不重复运行。</p>
         </div>
-        <button id="runCloseBtn" class="primary">从今日收盘从头运行</button>
-        <button id="runReuseBtn">使用最新正式藏宝图继续</button>
+        <button id="runCloseBtn" class="primary">检查今日正式运行</button>
+        <button id="runReuseBtn" class="hidden" aria-hidden="true">工程复跑</button>
       </div>
+      <div id="runPolicy" class="meta card">正在判断今天是否可以进行正式运行。</div>
       <div id="runMeta" class="meta card">正在读取最近一次整机运行。</div>
       <div id="stageGrid" class="stage-grid"></div>
     </section>
@@ -98,23 +99,39 @@
           <option value="">全部研究状态</option>
           <option value="COMPLETED">已完成深研</option>
           <option value="HOLD_WAITING_EVIDENCE">等待补充证据</option>
-          <option value="NOT_TRIGGERED">等待事件节点</option>
           <option value="PENDING">等待研究</option>
           <option value="IN_PROGRESS">研究中</option>
+          <option value="NOT_TRIGGERED">等待事件节点</option>
         </select>
+        <label class="table-toggle"><input id="showWatchToggle" type="checkbox"> 显示尚未进入深研节点的机会</label>
         <button id="resetFilters">重置</button>
       </div>
-      <div class="opportunity-group-head">
-        <div><h3>已进入研究层</h3><p>至少一条路径已经触发研究、完成深研或正在等待补充证据。这里优先阅读。</p></div>
-        <span id="activeVisibleCount" class="badge idle">—</span>
+      <div class="opportunity-table-head">
+        <div>
+          <h3>机会浏览</h3>
+          <p>默认只显示已经进入研究层的机会；已完成、研究中、待补证据都保留。等待事件节点的长期监控机会可手动展开。</p>
+        </div>
+        <span id="visibleCount" class="badge idle">—</span>
       </div>
-      <div id="activeOpportunityList" class="opportunity-list"></div>
-
-      <div class="opportunity-group-head watch-head">
-        <div><h3>等待事件节点</h3><p>经济可能性继续保留，但当前所有路径都还没有进入需要完整深研的现实节点。它们属于监控池，不从系统删除。</p></div>
-        <span id="watchVisibleCount" class="badge idle">—</span>
+      <div class="table-scroll opportunity-table-wrap">
+        <table class="opportunity-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>代码</th>
+              <th>转债</th>
+              <th>现价</th>
+              <th>机会路径</th>
+              <th>研究进度</th>
+              <th>当前事件状态</th>
+              <th>经济空间 / 核心判断</th>
+            </tr>
+          </thead>
+          <tbody id="opportunityTableBody">
+            <tr><td colspan="8" class="muted">正在读取机会。</td></tr>
+          </tbody>
+        </table>
       </div>
-      <div id="watchOpportunityList" class="opportunity-list"></div>
     </section>
 
     <section id="audit" class="section">
