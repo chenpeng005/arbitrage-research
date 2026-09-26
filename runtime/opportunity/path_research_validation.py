@@ -391,8 +391,17 @@ def validate_path_research_result(
                 )
             if expected_revision_count:
                 counts = re.findall(r"(?<!\d)\d+/\d+(?!\d)", surface)
-                conflicts = [
+                try:
+                    expected_denominator = expected_revision_count.split("/", 1)[1]
+                except Exception:
+                    expected_denominator = ""
+                comparable_counts = [
                     count for count in counts
+                    if expected_denominator
+                    and count.split("/", 1)[1] == expected_denominator
+                ]
+                conflicts = [
+                    count for count in comparable_counts
                     if count != expected_revision_count
                 ]
                 if conflicts:
@@ -413,8 +422,17 @@ def validate_path_research_result(
             conclusion_counts = re.findall(
                 r"(?<!\d)\d+/\d+(?!\d)", r1_conclusion
             )
-            conclusion_conflicts = [
+            try:
+                expected_denominator = expected_revision_count.split("/", 1)[1]
+            except Exception:
+                expected_denominator = ""
+            comparable_conclusion_counts = [
                 count for count in conclusion_counts
+                if expected_denominator
+                and count.split("/", 1)[1] == expected_denominator
+            ]
+            conclusion_conflicts = [
+                count for count in comparable_conclusion_counts
                 if count != expected_revision_count
             ]
             if conclusion_conflicts:
