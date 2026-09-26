@@ -30,6 +30,12 @@ function isV2PreviewPage(){
 
 function configurePage(){
   const mode=pageMode();
+  document.querySelectorAll(".nav a").forEach(a=>{
+    const href=a.getAttribute("href");
+    const active=(mode==="run"&&href==="/run-center")
+      ||(mode==="opportunities"&&href==="/opportunities");
+    a.classList.toggle("active",active);
+  });
   const ids={landing:"#landing",run:"#runCenter",opportunities:"#opportunities",audit:"#audit"};
   Object.entries(ids).forEach(([key,sel])=>{
     const el=$(sel);
@@ -281,8 +287,13 @@ function bondMatches(b){
     const hay=(b.bond_code+" "+b.bond_name).toLowerCase();
     if(!hay.includes(q))return false;
   }
-  if(f.path && !(b.paths||[]).some(p=>p.path_id===f.path))return false;
-  if(f.research && !(b.paths||[]).some(p=>p.research_state===f.research))return false;
+  if(f.path||f.research){
+    const matched=(b.paths||[]).some(p=>
+      (!f.path||p.path_id===f.path)
+      &&(!f.research||p.research_state===f.research)
+    );
+    if(!matched)return false;
+  }
   return true;
 }
 
@@ -329,13 +340,20 @@ function pathLines(paths,fn){
   return (paths||[]).map(p=>'<div class="path-subline">'+fn(p)+'</div>').join("");
 }
 
+function visiblePathsForBond(b){
+  let paths=(b.paths||[]).slice();
+  if(state.filters.path)paths=paths.filter(p=>p.path_id===state.filters.path);
+  if(state.filters.research)paths=paths.filter(p=>p.research_state===state.filters.research);
+  return paths;
+}
+
 function opportunityRowHtml(b,index){
   const hasV2=["110092","127089"].includes(String(b.bond_code||""));
   const name=String(b.bond_name||"").replace(/转债$/,"");
   const preview=hasV2
     ?'<a class="v2-preview-link" href="/opportunities-v2-preview/'+esc(b.bond_code)+'">V2</a>'
     :"";
-  const paths=b.paths||[];
+  const paths=visiblePathsForBond(b);
   return '<tr class="opportunity-row" data-code="'+esc(b.bond_code)+'">'
     +'<td class="row-no">'+esc(index+1)+'</td>'
     +'<td class="code-cell">'+esc(b.bond_code)+'</td>'
@@ -387,13 +405,9 @@ async function loadOpportunities(){
     if(!r.ok)throw new Error(await r.text());
     const data=await r.json();
     state.opportunities=data;
-    $("#opportunityBadge").textContent="已加载";
-    $("#opportunityBadge").className="badge pass";
     renderOpportunitySummary(data);
     renderOpportunityList();
   }catch(e){
-    $("#opportunityBadge").textContent="读取失败";
-    $("#opportunityBadge").className="badge fail";
     const msg='<tr><td colspan="9" class="muted">机会结果读取失败：'+esc(e.message)+'</td></tr>';
     $("#floorOpportunityTableBody").innerHTML=msg;
     $("#nonFloorOpportunityTableBody").innerHTML=msg;
@@ -545,13 +559,17 @@ function renderResearch(path){
 }
 function renderDetail(data){
   $("#detailTitle").textContent=(data.bond_code||"")+" "+String(data.bond_name||"").replace(/转债$/,"");
-  $("#detailMeta").textContent="市场截面 "+(data.market_cutoff||"—")+" · 发现 "+data.opportunity_path_count+" 条机会路径";
-  const preview=data.preview
-    ?'<div class="preview-banner"><b>Path Result V2 Golden Sample 预览</b><div>'
-      +esc(data.preview.message||"")+'</div></div>'
-    :"";
-  $("#detailBody").innerHTML=preview+(data.paths||[]).map(path=>
-    '<article class="detail-path">'
+  const paths=data.paths||[];
+  const pathGuide=paths.map(path=>
+    '<a class="detail-path-link" href="#path-'+esc(path.path_id)+'">'+esc(path.path_name)+'</a>'
+  ).join('<span class="meta-sep">/</span>');
+  $("#detailMeta").innerHTML=
+    '市场截面 '+esc(data.market_cutoff||"—")
+    +' · '+esc(data.opportunity_path_count)+' 条机会路径'
+    +(pathGuide?' · 路径：'+pathGuide:'')
+    +(data.preview?' · <span class="preview-inline">V2 隔离样本</span>':'');
+  $("#detailBody").innerHTML=paths.map(path=>
+    '<article class="detail-path" id="path-'+esc(path.path_id)+'">'
       +'<div class="detail-path-head"><div><h3>'+esc(path.path_name)+'</h3>'
       +'<div class="muted">'+esc(path.opportunity_status)+' · '+esc(path.research_state_text)+'</div></div>'
       +'<span class="badge '+badgeClass(path.research_state)+'">'+esc(path.research_state_text)+'</span></div>'

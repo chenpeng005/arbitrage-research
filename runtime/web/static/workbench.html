@@ -8,18 +8,12 @@
 </head>
 <body>
   <main class="shell">
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">可转债机会发现系统</p>
-        <h1>机会发现工作台</h1>
-        <p class="subtitle">启动整机 → 查看运行进度 → 看藏宝图 → 只看真正的机会 → 进入完整个券研究</p>
-      </div>
+    <header class="topbar compact-topbar">
+      <div><h1>可转债机会发现</h1></div>
       <nav class="nav">
-        <a href="/workbench">总览</a>
         <a href="/run-center">运行中心</a>
         <a href="/market-map">藏宝图</a>
-        <a href="/opportunities">机会结果</a>
-        <a href="/audit">工程审计</a>
+        <a href="/opportunities">机会中心</a>
       </nav>
     </header>
 
@@ -77,16 +71,11 @@
         <a class="button-link" href="/#mapOverall">进入完整藏宝图</a>
       </div>
     </section>
-    <section id="opportunities" class="section">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow">03 · 最终输出</p>
-          <h2>机会结果</h2>
-          <p class="section-note">这里只展示已经确认存在正向经济空间的转债。研究是否完成只影响信息丰富度，不会把机会自动删除。</p>
-        </div>
-        <span id="opportunityBadge" class="badge idle">读取中</span>
+    <section id="opportunities" class="section opportunity-section">
+      <div class="opportunity-page-head">
+        <h2>机会中心</h2>
+        <div id="opportunitySummary" class="opportunity-summary-line">正在读取机会。</div>
       </div>
-      <div id="opportunitySummary" class="opportunity-summary-line">正在读取机会。</div>
       <div class="filters compact-filters">
         <input id="searchInput" type="search" placeholder="搜索代码或转债">
         <select id="pathFilter">

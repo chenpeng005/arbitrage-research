@@ -640,7 +640,7 @@ def _structured_fact_table(facts: list[Any]) -> dict[str, Any] | None:
     scenario_rows = []
     non_scenario = []
     pattern = re.compile(
-        r"^CV_(\d+(?:\.\d+)?)：neutral_reference=([+-]?\d+(?:\.\d+)?)"
+        r"^CV_(\d+(?:\.\d+)?)：(?:neutral_reference|discovery_reference)=([+-]?\d+(?:\.\d+)?)"
         r"，reference_minus_current_price=([+-]?\d+(?:\.\d+)?)$"
     )
     for fact in facts or []:
@@ -657,7 +657,7 @@ def _structured_fact_table(facts: list[Any]) -> dict[str, Any] | None:
     if len(scenario_rows) >= 3:
         return {
             "type": "scenario",
-            "columns": ["转股价值情景", "模型参考债价", "相对当前价空间"],
+            "columns": ["转股价值情景", "藏宝图参考债价", "相对当前价空间"],
             "rows": scenario_rows,
             "remaining_facts": [
                 _humanize_machine_fact(x) for x in non_scenario if x

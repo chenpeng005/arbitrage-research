@@ -288,9 +288,17 @@ state = NOT_MATERIAL
 3. `R3_BEHAVIOR_HISTORY`：发行人过去真实下修 / 不修行为说明了什么；
 4. `R4_ISSUER_OBJECTIVE`：本轮/未来真正可能解决什么问题，当前治理瓶颈在哪里；
 5. `R5_RULE_BOUNDARY`：规则允许修到底时的边界，只作为上界；
-6. `R6_REALISTIC_RESULT`：结合行为证据，现实更可能的新 K / CV 或宽区间是什么；不能把规则上界冒充现实结果；
-7. `R7_PRICE_TRANSLATION`：把现实结果翻译成保守—中性债价并与当前价格比较；必须使用 Evidence Pack 的 `valuation_scenario_grid`（正式 Market Map Bond Valuation Resolver 输出），按现实 CV 区间选择/插值相邻场景并引用 `PRELOADED:VALUATION_SCENARIO_GRID`；不得凭经验自行估一个债价区间；
-8. `R8_PATH_JUDGMENT`：回答“为什么可能修、现实可能修到哪里、修成后为什么可能赚钱”，并保留关键反证。
+6. `R6_REALISTIC_RESULT`：结合行为证据，现实更可能的新 K / CV 或宽区间是什么；不能把规则上界冒充现实结果；**若证据同时支持“基准情景”和“接近动态底价的更深情景”，必须分层表达，不能用单一基准区间把有现实依据的深修尾部裁掉**；
+7. `R7_PRICE_TRANSLATION`：把基准情景、重要深修情景与规则边界分别翻译成债价并与当前价格比较；必须使用 Evidence Pack 的 `valuation_scenario_grid`（正式 Market Map Bond Valuation Resolver 输出），优先使用正式 `discovery_reference` 作为机会经济空间口径并引用 `PRELOADED:VALUATION_SCENARIO_GRID`；不得凭经验自行估一个债价区间；若 R5/R6 明确认为 CV 接近 100 具有条件性现实可能，而 grid 已覆盖 90/95/100，则 R7 不得只展示 75—85；
+8. `R8_PATH_JUDGMENT`：回答“为什么可能修、基准可能修到哪里、是否存在更深下修尾部、修成后为什么可能赚钱”，并保留关键反证。
+
+对于均价动态底价型下修，还必须区分：
+
+- 当前可确定的静态底价（如最近一期经审计每股净资产 / 面值）；
+- 未来股东会时点才会锁定的动态有效底价（前20日均价 / 前一交易日均价）；
+- 最近一次真实下修的有效底价、最终 K、以及最终 K 高于底价多少。
+
+禁止把“最终 K”误写成“有效底价”。
 
 如果未来精确 K 本质不可知，可以 UNKNOWN-A；但已存在的历史 K、公告、规则底价、当前市场状态不能因为难写而省略。
 

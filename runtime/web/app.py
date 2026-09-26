@@ -15,7 +15,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -1266,9 +1266,9 @@ def find_latest_acquisition_input() -> tuple[str, Path] | None:
     return latest["job_id"], DATA_ROOT / "runs" / latest["job_id"]
 
 
-@app.get("/", response_class=HTMLResponse)
-def home() -> HTMLResponse:
-    return HTMLResponse((STATIC_DIR / "index.html").read_text(encoding="utf-8"))
+@app.get("/")
+def home() -> RedirectResponse:
+    return RedirectResponse("/run-center", status_code=302)
 
 
 @app.get("/review", response_class=HTMLResponse)
@@ -1276,9 +1276,9 @@ def review_page() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "review.html").read_text(encoding="utf-8"))
 
 
-@app.get("/workbench", response_class=HTMLResponse)
-def workbench_page() -> HTMLResponse:
-    return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
+@app.get("/workbench")
+def workbench_page() -> RedirectResponse:
+    return RedirectResponse("/run-center", status_code=302)
 
 
 @app.get("/run-center", response_class=HTMLResponse)

@@ -689,3 +689,82 @@ details.research-section>summary{
   .compact-filters{align-items:stretch}
   .compact-filters input,.compact-filters select{width:100%}
 }
+
+/* 2026-09-26 compact primary navigation + opportunity head */
+.compact-topbar{
+  align-items:center;
+  padding:12px 0 8px;
+  border-bottom:1px solid var(--line);
+}
+.compact-topbar h1{font-size:20px}
+.opportunity-section{padding-top:16px}
+.opportunity-page-head{
+  display:flex;
+  align-items:baseline;
+  gap:16px;
+  margin-bottom:4px;
+}
+.opportunity-page-head h2{font-size:20px}
+.opportunity-page-head .opportunity-summary-line{
+  margin:0;
+  font-size:12.5px;
+  white-space:nowrap;
+}
+.opportunity-section .compact-filters{
+  flex-wrap:nowrap;
+  gap:6px;
+  padding:5px 0 8px;
+  overflow-x:auto;
+}
+.opportunity-section .compact-filters input{
+  min-width:160px;
+  width:180px;
+}
+.opportunity-section .compact-filters select{
+  min-width:118px;
+  width:auto;
+}
+.opportunity-section .compact-filters .table-toggle{
+  font-size:12px;
+  margin-left:2px;
+}
+.opportunity-section .compact-filters button{
+  white-space:nowrap;
+}
+@media(max-width:760px){
+  .compact-topbar{display:block}
+  .compact-topbar .nav{justify-content:flex-start;margin-top:8px}
+  .opportunity-page-head{display:block}
+  .opportunity-page-head .opportunity-summary-line{white-space:normal;margin-top:3px}
+  .opportunity-section .compact-filters{flex-wrap:wrap;overflow:visible}
+  .opportunity-section .compact-filters input,
+  .opportunity-section .compact-filters select{width:100%}
+}
+
+/* Compact detail navigation */
+#detailMeta{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex-wrap:wrap;
+  margin:4px 0 0;
+  font-size:12.5px;
+}
+.detail-path-link{
+  color:var(--accent);
+  text-decoration:none;
+  font-weight:700;
+}
+.detail-path-link:hover{text-decoration:underline}
+.meta-sep{color:#98a2b3}
+.preview-inline{
+  color:#9a6700;
+  font-weight:700;
+}
+.detail-path{scroll-margin-top:14px}
+
+.nav a.active{
+  color:var(--accent);
+  background:var(--accent-soft);
+  border-color:#ced8ff;
+}

@@ -50,9 +50,23 @@ function draw(){
   for(let y=Math.ceil(ymin/ystep)*ystep;y<=ymax;y+=ystep){const py=sy(y);svg+='<line x1="'+m.l+'" y1="'+py+'" x2="'+(W-m.r)+'" y2="'+py+'" class="grid-line"/><text x="'+(m.l-10)+'" y="'+(py+4)+'" class="axis-text" text-anchor="end">'+y+'</text>';}
   svg+='<line x1="'+m.l+'" y1="'+(H-m.b)+'" x2="'+(W-m.r)+'" y2="'+(H-m.b)+'" class="axis-line"/><line x1="'+m.l+'" y1="'+m.t+'" x2="'+m.l+'" y2="'+(H-m.b)+'" class="axis-line"/>';
   svg+='<text x="'+(m.l+pw/2)+'" y="'+(H-10)+'" class="axis-label" text-anchor="middle">转股价值</text><text x="18" y="'+(m.t+ph/2)+'" class="axis-label" text-anchor="middle" transform="rotate(-90 18 '+(m.t+ph/2)+')">实际转债价格</text>';
-  const zone=((mapData.zones||{}).support)||[50,130],start=Math.max(xmin,Number(zone[0])),end=Math.min(xmax,Number(zone[1]));
-  const pts=[]; if(end>start){for(let i=0;i<=120;i++){const x=start+(end-start)*i/120,y=baseAnchor(x);if(Number.isFinite(y))pts.push(sx(x).toFixed(1)+','+sy(y).toFixed(1));}}
-  if(pts.length>1)svg+='<polyline points="'+pts.join(" ")+'" class="base-line"/>';
+  const zone=((mapData.zones||{}).support)||[50,130];
+  const supportMin=Number(zone[0]),supportMax=Number(zone[1]);
+  function linePoints(start,end){
+    const pts=[];
+    if(!(end>start))return pts;
+    for(let i=0;i<=120;i++){
+      const x=start+(end-start)*i/120,y=baseAnchor(x);
+      if(Number.isFinite(y)&&y>=ymin&&y<=ymax)pts.push(sx(x).toFixed(1)+','+sy(y).toFixed(1));
+    }
+    return pts;
+  }
+  const leftPts=linePoints(xmin,Math.min(xmax,supportMin));
+  if(leftPts.length>1)svg+='<polyline points="'+leftPts.join(" ")+'" class="base-line extrapolated"/>';
+  const corePts=linePoints(Math.max(xmin,supportMin),Math.min(xmax,supportMax));
+  if(corePts.length>1)svg+='<polyline points="'+corePts.join(" ")+'" class="base-line"/>';
+  const rightPts=linePoints(Math.max(xmin,supportMax),xmax);
+  if(rightPts.length>1)svg+='<polyline points="'+rightPts.join(" ")+'" class="base-line extrapolated"/>';
   rs.forEach(r=>{const x=Number(r.trusted_CV),y=Number(r.P),sel=String(r.bond_code)===String(fixedCode);svg+='<g class="bond-point" data-code="'+esc(r.bond_code)+'"><circle cx="'+sx(x).toFixed(1)+'" cy="'+sy(y).toFixed(1)+'" r="'+(sel?6:4)+'" class="'+(sel?"point selected":"point")+'"><title>'+esc(nameOf(r.bond_name))+'｜'+n(r.P)+'｜参考 '+n(r.discovery_reference)+'</title></circle><text x="'+(sx(x)+6).toFixed(1)+'" y="'+(sy(y)-5).toFixed(1)+'" class="point-label">'+esc(nameOf(r.bond_name))+'</text></g>';});
   svg+='</svg>';$("#mapChart").innerHTML=svg;
   $("#mapChart").querySelectorAll(".bond-point").forEach(g=>{const code=g.dataset.code,r=(mapData.rows||[]).find(x=>String(x.bond_code)===String(code));g.onmouseenter=()=>selected(r);g.onmouseleave=()=>selected((mapData.rows||[]).find(x=>String(x.bond_code)===String(fixedCode))||null);g.onclick=()=>{fixedCode=code;selected(r);draw();};});
