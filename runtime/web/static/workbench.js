@@ -333,13 +333,12 @@ function renderMetrics(metrics){
 function renderResearchSummary(obj){
   if(!obj||typeof obj!=="object")return "";
   const why=Array.isArray(obj["为什么"])?obj["为什么"]:[];
-  const risks=Array.isArray(obj["主要风险"])?obj["主要风险"]:[];
   return '<section class="research-summary">'
     +'<div class="research-summary-label">先看结论</div>'
     +'<h4>'+esc(obj["核心结论"]||"当前判断")+'</h4>'
     +(obj["经济结果"]?'<div class="summary-economic"><b>经济结果：</b>'+esc(obj["经济结果"])+'</div>':"")
     +(why.length?'<div class="summary-why"><b>为什么：</b><ul>'+why.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>':"")
-    +(risks.length?'<div class="summary-risk"><b>主要风险：</b><ul>'+risks.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>':"")
+    +(obj["首要风险提醒"]?'<div class="summary-risk"><b>最重要的风险：</b>'+esc(obj["首要风险提醒"])+'</div>':"")
     +(obj["下一步关注"]?'<div class="summary-next"><b>下一步关注：</b>'+esc(obj["下一步关注"])+'</div>':"")
     +'</section>';
 }
@@ -384,6 +383,25 @@ function renderListSection(title,items){
   return '<section class="research-section"><h4>'+esc(title)+'</h4><ul>'
     +items.map(x=>'<li>'+esc(valueText(x))+'</li>').join("")
     +'</ul></section>';
+}
+
+function renderRiskMatrix(obj){
+  if(!obj||typeof obj!=="object")return "";
+  const groups=[
+    ["当前风险","这些因素已经存在，会影响路径兑现。"],
+    ["失效条件","出现这些情况时，这条路径需要下调或重新判断。"],
+    ["未来天然不确定","这些是未来事件，本来就无法在今天确定。"],
+    ["当前仍待查证","这些是今天原则上可以查清、但证据尚未闭合的事项。"]
+  ];
+  const visible=groups.filter(([key])=>Array.isArray(obj[key])&&obj[key].length);
+  if(!visible.length)return "";
+  return '<section class="research-section risk-section">'
+    +'<div class="logic-heading"><div><p class="eyebrow">风险与未决事项</p><h4>哪些东西可能让结论改变</h4></div></div>'
+    +'<div class="risk-grid">'+visible.map(([key,desc])=>
+      '<div class="risk-box"><h4>'+esc(key)+'</h4><p>'+esc(desc)+'</p><ul>'
+      +obj[key].map(x=>'<li>'+esc(valueText(x))+'</li>').join("")
+      +'</ul></div>'
+    ).join("")+'</div></section>';
 }
 function renderUpdates(items){
   if(!Array.isArray(items)||!items.length)return "";
@@ -436,10 +454,7 @@ function renderResearch(path){
     ?'<details class="research-section"><summary>展开补充研究判断</summary>'+renderJudgments(r["研究判断"])+'</details>'
     :"";
   return main
-    +renderListSection("关键风险",r["关键风险"])
-    +renderListSection("失效条件",r["失效条件"])
-    +renderListSection("未来天然不确定事项",r["未来天然不确定事项"])
-    +renderListSection("当前仍待查证事项",r["当前仍待查证事项"])
+    +renderRiskMatrix(r["风险与未决事项"])
     +renderUpdates(r["下一更新节点"])
     +renderEvidence(r["关键证据"])
     +secondary

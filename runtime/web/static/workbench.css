@@ -502,3 +502,30 @@ body.detail-page .close-btn{display:none}
   border-radius:10px;
 }
 .preview-banner b{display:block;margin-bottom:3px}
+
+.risk-section{margin-top:22px}
+.risk-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.risk-box{
+  border:1px solid var(--line);
+  border-radius:11px;
+  padding:13px 14px;
+  background:#fcfdff;
+}
+.risk-box h4{margin:0 0 3px}
+.risk-box p{margin:0 0 8px;color:var(--muted);font-size:12px}
+.risk-box ul{margin:0;padding-left:19px}
+.risk-box li{margin:5px 0}
+.logic-facts li{margin:5px 0;line-height:1.62}
+.summary-risk{
+  margin-top:10px;
+  padding:9px 11px;
+  background:#fff8e8;
+  border-radius:8px;
+}
+@media(max-width:760px){
+  .risk-grid{grid-template-columns:1fr}
+}

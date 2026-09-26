@@ -189,7 +189,12 @@ def path_research_spec(root: Path) -> AITaskSpec:
                         "core_conclusion": {"type": "string"},
                         "why": {"type": "array", "items": {"type": "string"}},
                         "economic_result": {"type": "string"},
-                        "main_risks": {"type": "array", "items": {"type": "string"}},
+                        "main_risks": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 2,
+                            "items": {"type": "string"},
+                        },
                         "next_focus": {"type": "string"},
                     },
                 },

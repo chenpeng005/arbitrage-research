@@ -211,7 +211,7 @@ engineering_anchor_reference = {
 - `core_conclusion`：这条 Path 当前到底是什么；
 - `why`：3—6条真正改变结论的核心原因；
 - `economic_result`：相对当前价格，这条 Path 的经济结果如何理解；
-- `main_risks`：最重要的风险；
+- `main_risks`：只保留 1—2 个最重要风险提醒，用于顶部总判断；完整风险清单放 `key_risks`，不要在 summary 中重复整份风险列表；
 - `next_focus`：下一现实更新节点。
 
 summary 是完整研究的入口，不得代替后面的逻辑链。
@@ -233,7 +233,7 @@ summary 是完整研究的入口，不得代替后面的逻辑链。
 - `question`：这一层到底在问什么；
 - `state`：KNOWN / DERIVED / MIXED / NOT_MATERIAL / UNKNOWN_A / UNKNOWN_B；
 - `answer`：先给一句直接回答；
-- `facts`：具体事实、数字、日期、事件；禁止只写“评级报告已考虑”；
+- `facts`：具体事实、数字、日期、事件；禁止只写“评级报告已考虑”。默认使用自然中文事实句，不要把程序字段名原样写成 `current_bond_price=...`、`path_availability.status=READY` 这类键值串；结构化原字段属于 Engineering / Audit，不属于用户研究正文；
 - `reasoning`：为什么这些事实能支持本步判断；
 - `conclusion`：本步结论；
 - `evidence_ids`：本步实际使用的证据 ID。
