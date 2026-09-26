@@ -57,6 +57,63 @@ def _judgment_signature(result: dict[str, Any]) -> str:
     )
 
 
+def _current_state_identity(
+    economic_path: dict[str, Any],
+    trigger_row: dict[str, Any],
+) -> dict[str, Any]:
+    """State identity excludes ordinary market metrics but includes opportunity state."""
+    return {
+        "economic_status": economic_path.get("economic_status"),
+        "economic_reason": economic_path.get("reason"),
+        "current_event_state": trigger_row.get("current_event_state"),
+        "research_status": trigger_row.get("research_status"),
+        "last_trigger_key": trigger_row.get("last_trigger_key"),
+        "last_path_result_id": trigger_row.get("last_path_result_id"),
+    }
+
+
+def _research_state_identity(
+    path_id: str,
+    economic_path: dict[str, Any],
+    trigger_row: dict[str, Any],
+) -> dict[str, Any]:
+    """Path-research-relevant state; deliberately excludes ordinary P/S/CV moves."""
+    if path_id == "MATURITY_CASH":
+        return {
+            "path_id": path_id,
+            "current_event_state": trigger_row.get("current_event_state"),
+            "maturity_date": trigger_row.get("maturity_date"),
+        }
+    if path_id == "PUT":
+        return {
+            "path_id": path_id,
+            "current_event_state": trigger_row.get("current_event_state"),
+            "current_conversion_price": trigger_row.get(
+                "current_conversion_price"
+            ),
+            "put_contract_reason": trigger_row.get("put_contract_reason"),
+            "put_value_date": trigger_row.get("put_value_date"),
+            "put_contract_maturity_date": trigger_row.get(
+                "put_contract_maturity_date"
+            ),
+        }
+    if path_id == "DOWNWARD_REVISION":
+        return {
+            "path_id": path_id,
+            "current_event_state": trigger_row.get("current_event_state"),
+            "current_conversion_price": trigger_row.get(
+                "current_conversion_price"
+            ),
+            "revision_count": trigger_row.get("revision_count"),
+            "minimum_days_needed": trigger_row.get("minimum_days_needed"),
+            "reset_start": trigger_row.get("reset_start"),
+        }
+    return {
+        "path_id": path_id,
+        "current_event_state": trigger_row.get("current_event_state"),
+    }
+
+
 def bootstrap_current_runtime(
     *,
     data_root: Path,
@@ -192,6 +249,18 @@ def bootstrap_current_runtime(
             if state_code is None:
                 state_code = economic_path.get("reason")
 
+            research_state_identity = _research_state_identity(
+                path_id,
+                economic_path,
+                trigger_row,
+            )
+            current_state_identity = {
+                **_current_state_identity(
+                    economic_path,
+                    trigger_row,
+                ),
+                "path_state": research_state_identity,
+            }
             state_rows.append(
                 (
                     code,
@@ -200,10 +269,18 @@ def bootstrap_current_runtime(
                     economic_path.get("economic_status"),
                     state_code,
                     1,
-                    _stable_hash(payload),
+                    _stable_hash(current_state_identity),
+                    1,
+                    _stable_hash(research_state_identity),
                     registry["market_snapshot_id"],
                     None,
-                    json_text(payload),
+                    json_text(
+                        {
+                            **payload,
+                            "current_state_identity": current_state_identity,
+                            "research_state_identity": research_state_identity,
+                        }
+                    ),
                     trigger_row.get("updated_at")
                     or str(registry["market_cutoff"]),
                 )
@@ -212,9 +289,9 @@ def bootstrap_current_runtime(
         conn.executemany(
             """INSERT INTO scope_state_current
                (bond_code,scope_type,scope_id,economic_status,state_code,
-                state_version,state_hash,source_snapshot_id,source_event_update_id,
-                payload_json,updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                state_version,state_hash,research_state_version,research_state_hash,
+                source_snapshot_id,source_event_update_id,payload_json,updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             state_rows,
         )
 
@@ -280,6 +357,7 @@ def bootstrap_current_runtime(
                     None,
                     None,
                     1,
+                    1,
                     json_text(
                         {
                             "bootstrap_version": BOOTSTRAP_VERSION,
@@ -316,8 +394,9 @@ def bootstrap_current_runtime(
                (binding_id,bond_code,path_id,result_id,binding_type,validity_status,
                 reuse_reason,checked_event_watermark_hash,
                 checked_candidate_watermark_hash,checked_state_version,
-                validity_basis_json,bound_at,superseded_at,is_current)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                checked_research_state_version,validity_basis_json,bound_at,
+                superseded_at,is_current)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             binding_rows,
         )
 

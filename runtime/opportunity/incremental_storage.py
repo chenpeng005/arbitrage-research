@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = "incremental-runtime-sqlite-schema-v1"
+SCHEMA_VERSION = "incremental-runtime-sqlite-schema-v1.1"
 
 
 def _now() -> str:
@@ -69,6 +69,8 @@ CREATE TABLE IF NOT EXISTS scope_state_current (
     state_code TEXT,
     state_version INTEGER NOT NULL CHECK (state_version >= 1),
     state_hash TEXT NOT NULL,
+    research_state_version INTEGER NOT NULL CHECK (research_state_version >= 1),
+    research_state_hash TEXT NOT NULL,
     source_snapshot_id TEXT,
     source_event_update_id TEXT,
     payload_json TEXT NOT NULL DEFAULT '{}',
@@ -190,6 +192,7 @@ CREATE TABLE IF NOT EXISTS research_binding (
     checked_event_watermark_hash TEXT,
     checked_candidate_watermark_hash TEXT,
     checked_state_version INTEGER,
+    checked_research_state_version INTEGER,
     validity_basis_json TEXT NOT NULL DEFAULT '{}',
     bound_at TEXT NOT NULL,
     superseded_at TEXT,
@@ -353,7 +356,7 @@ def table_manifest() -> list[dict[str, str]]:
         {"table": "bond_master", "role": "稳定身份"},
         {"table": "market_snapshot", "role": "市场截面身份"},
         {"table": "market_observation", "role": "每日价格/市场覆盖层"},
-        {"table": "scope_state_current", "role": "Path/Risk 当前状态"},
+        {"table": "scope_state_current", "role": "Path/Risk 当前状态 + 独立 Research-validity state"},
         {"table": "evidence_document", "role": "不可变证据元数据"},
         {"table": "event_family", "role": "业务事件族与双 watermark"},
         {"table": "event_update", "role": "已确认 Event / 语义候选版本"},
