@@ -45,6 +45,7 @@ def run_incremental_storage_shadow(*, data_root: Path) -> dict[str, Any]:
     storage_status = _read_json(status_path)
     previous_snapshot = storage_status.get("last_parity_market_snapshot_id")
     previous_streak = int(storage_status.get("parity_consecutive_passes") or 0)
+    previous_changed_passes = int(storage_status.get("parity_passes_with_state_change") or 0)
 
     try:
         sync = shadow_sync_current_runtime(data_root=data_root, target_db=db_path)
@@ -62,9 +63,12 @@ def run_incremental_storage_shadow(*, data_root: Path) -> dict[str, Any]:
         )
 
         current_snapshot = parity.get("market_snapshot_id")
+        changed_passes = previous_changed_passes
         if status == "PASS":
             if current_snapshot and current_snapshot != previous_snapshot:
                 streak = previous_streak + 1
+                if int((sync.get("stats") or {}).get("state_version_increments") or 0) > 0:
+                    changed_passes += 1
             else:
                 streak = previous_streak
         else:
@@ -87,9 +91,14 @@ def run_incremental_storage_shadow(*, data_root: Path) -> dict[str, Any]:
                 "last_sync_status": status,
                 "last_sync_at": result["completed_at"],
                 "last_parity_market_snapshot_id": current_snapshot,
+                "last_state_parity_status": parity.get("status"),
+                "last_state_mismatch_count": parity.get("mismatch_count"),
                 "last_projection_parity_status": projection_parity.get("status"),
                 "last_projection_mismatch_count": projection_parity.get("mismatch_count"),
+                "last_state_version_increments": (sync.get("stats") or {}).get("state_version_increments"),
+                "last_research_state_version_increments": (sync.get("stats") or {}).get("research_state_version_increments"),
                 "parity_consecutive_passes": streak,
+                "parity_passes_with_state_change": changed_passes,
                 "next_gate": "CONTROLLED_CUTOVER_REVIEW",
             }
         )
