@@ -47,18 +47,11 @@ def infer_availability(
     if status == "已公告强赎" and "临近到期" in counter:
         return True, "NORMAL_MATURITY_PROCESS"
 
-    # Some aggregators label maturity repayment as redemption. If the source
-    # maturity date and original contract maturity agree, keep the normal path.
-    contract_date = pd.to_datetime(contract_maturity_date, errors="coerce")
-    source_date = pd.to_datetime(source_maturity_date, errors="coerce")
-    if (
-        status == "已公告强赎"
-        and pd.notna(contract_date)
-        and pd.notna(source_date)
-        and abs((source_date - contract_date).days) <= 2
-    ):
-        return True, "REDEMPTION_DATE_MATCHES_CONTRACT_MATURITY"
-
+    # Aggregated "到期日" is the original contract maturity date and cannot
+    # prove that an "已公告强赎" status is merely the normal maturity process.
+    # Unless the source explicitly marks the event as near-maturity above,
+    # require official-announcement audit rather than silently keeping the
+    # normal maturity path.
     if status in {"已公告强赎", "公告要强赎"}:
         return None, "EARLY_REDEMPTION_SIGNAL_REQUIRES_OFFICIAL_AUDIT"
 
