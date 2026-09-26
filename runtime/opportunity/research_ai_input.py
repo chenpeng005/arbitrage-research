@@ -8,14 +8,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-AI_INPUT_VERSION = "path-research-ai-input-v1"
+AI_INPUT_VERSION = "path-research-ai-input-v2"
 TASK_CONTRACT_PATH = (
     "05 套利研究/AI-Engineering-Runtime/03_节点设计/"
-    "Path-Research/Path-Research-Task-Contract-V1.md"
+    "Path-Research/Path-Research-Task-Contract-V2.md"
 )
 EVIDENCE_CONTRACT_PATH = (
     "05 套利研究/AI-Engineering-Runtime/03_节点设计/"
-    "Path-Research/Path-Research-Evidence-Pack-V1.md"
+    "Path-Research/Path-Research-Evidence-Pack-V2.md"
 )
 
 
@@ -77,21 +77,6 @@ def prepare_path_research_ai_input(
 
     if task.get("task_id") != task_id or evidence.get("task_id") != task_id:
         raise RuntimeError("task/evidence identity mismatch")
-
-    deployment_path = data_root / "deployment_manifest.json"
-    if not deployment_path.exists():
-        raise FileNotFoundError("deployment_manifest.json is required")
-    deployment = _read_json(deployment_path)
-    current_app_sha = deployment.get("application_commit_sha")
-    current_knowledge_sha = deployment.get("knowledge_commit_sha")
-    if task.get("application_commit_sha") != current_app_sha:
-        raise RuntimeError("research task application_commit_sha is stale")
-    if evidence.get("application_commit_sha") != current_app_sha:
-        raise RuntimeError("evidence pack application_commit_sha is stale")
-    if task.get("knowledge_commit_sha") != current_knowledge_sha:
-        raise RuntimeError("research task knowledge_commit_sha is stale")
-    if evidence.get("knowledge_commit_sha") != current_knowledge_sha:
-        raise RuntimeError("evidence pack knowledge_commit_sha is stale")
     if task.get("trigger_key") != evidence.get("trigger_key"):
         raise RuntimeError("task/evidence trigger_key mismatch")
     if task.get("path_id") != evidence.get("path_id"):
