@@ -108,6 +108,21 @@ def _load_path_facts(
     }
 
 
+def _normalize_revision_contract_fact(
+    fact: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if fact is None:
+        return None
+    normalized = dict(fact)
+    raw = str(normalized.get("revision_count_raw") or normalized.get("revision_count") or "").strip()
+    if raw.startswith("还需"):
+        normalized["revision_count_raw"] = raw
+        normalized["revision_count"] = None
+    elif raw and normalized.get("revision_count_raw") in (None, ""):
+        normalized["revision_count_raw"] = raw
+    return normalized
+
+
 def _existing_path_facts(
     path_id: str,
     code: str,
@@ -124,7 +139,9 @@ def _existing_path_facts(
         }
     if path_id == "DOWNWARD_REVISION":
         return {
-            "contract_fact": path_facts[path_id]["contract"].get(code),
+            "contract_fact": _normalize_revision_contract_fact(
+                path_facts[path_id]["contract"].get(code)
+            ),
         }
     raise ValueError(f"unsupported path_id: {path_id}")
 
@@ -141,9 +158,10 @@ def _engineering_anchor_statement(
         fact = existing_path_facts.get("contract_fact") or {}
         return (
             f"截至市场截面 {market_cutoff}：当前下修事件状态={event_state or fact.get('revision_event_state') or 'UNKNOWN'}；"
-            f"触发计数={fact.get('revision_count') or 'UNKNOWN'}；"
+            f"当前累计触发计数={fact.get('revision_count') or 'UNKNOWN'}；"
             f"尚需={fact.get('minimum_days_needed') or 'UNKNOWN'}；"
             f"计数起点={fact.get('reset_start') or 'UNKNOWN'}。"
+            "若 revision_count_raw 形如“还需 N/15”，它只是原始剩余天数展示，不得解释为当前累计计数。"
             "更早公告中的较低计数只代表历史进度，不得覆盖本句当前状态。"
         )
     if path_id == "PUT":

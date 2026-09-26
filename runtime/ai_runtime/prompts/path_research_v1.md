@@ -176,10 +176,10 @@ AI 可以解释这些状态，但不能被更早日期的公告、历史行为�
 属于当前结构化状态锚。历史公告只能用于解释行为，不得替代当前计数。
 `R1_CURRENT_START` 与 summary 必须显式保留当前 event state 和 revision_count。若较早公告只披露 10/15、11/15 等历史计数，而 Engineering Anchor 已更新到 15/15，则主答案必须写当前 15/15；较早公告只能作为行为/时间序列证据，不能成为当前状态答案。具体地：
 
-- `summary.core_conclusion` 必须逐字包含当前 `trigger_context.current_event_state` 与当前 `revision_count`；
-- `R1_CURRENT_START.answer` 必须逐字包含同一个当前 event state 与 revision_count；
-- `R1_CURRENT_START.conclusion` **也必须逐字包含当前 event state token**（例如当前是“满足条件”，结论中就必须真的出现“满足条件”四个字），不能只改写成“已正式触发”“已达到触发标准”等同义句；
-- 如 R1 conclusion 再次写计数，也只能使用当前 revision_count。
+- 若 `revision_count` 有确定值：`summary.core_conclusion` 与 `R1_CURRENT_START.answer` 必须逐字包含当前 `trigger_context.current_event_state` 与当前 `revision_count`；
+- 若 `revision_count` 为 null / UNKNOWN：**不得从 `revision_count_raw="还需 N/15"` 反推出或冒充当前累计计数**；此时 summary / R1 只需逐字保留当前 event state，并使用 `minimum_days_needed` 表达“尚需 N 天”；
+- `R1_CURRENT_START.conclusion` **必须逐字包含当前 event state token**（例如当前是“满足条件”，结论中就必须真的出现“满足条件”四个字），不能只改写成“已正式触发”“已达到触发标准”等同义句；
+- 如 R1 conclusion 再次写当前累计计数，也只能使用非空的当前 revision_count；revision_count 为空时不要造一个 X/15。
 
 对 `PUT` 同样执行确定性时间锚：若 `engineering_anchor_statement` 已给出 `普通回售窗口起点=YYYY-MM-DD`，则 `summary.core_conclusion`、`P1_LEGAL_TIME.answer`、`P1_LEGAL_TIME.conclusion` 必须使用这个日期。并且：
 

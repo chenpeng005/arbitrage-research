@@ -22,6 +22,19 @@ def _text(value: Any) -> str:
     return str(value).strip()
 
 
+def _normalize_revision_count(value: Any) -> tuple[str | None, str | None]:
+    raw = _text(value)
+    if not raw or raw == "--":
+        return None, raw or None
+    if re.fullmatch(r"\d+/\d+", raw):
+        return raw, raw
+    if re.fullmatch(r"还需\s*\d+/\d+", raw):
+        # Source display means "minimum remaining days / threshold", not the
+        # current accumulated trigger count. Preserve it only as raw evidence.
+        return None, raw
+    return None, raw
+
+
 def fetch_revision_watch() -> pd.DataFrame:
     response = requests.get(
         KZZDATA_REVISION_URL,
@@ -121,6 +134,9 @@ def build_revision_contract_facts(
         source_k = pd.to_numeric(watch_row.get("转股价"), errors="coerce")
         trigger = _text(watch_row.get("触发价"))
         clause_available = bool(pd.notna(source_k) and trigger)
+        revision_count, revision_count_raw = _normalize_revision_count(
+            watch_row.get("下修天计数")
+        )
 
         latest_nav = (
             float(nav_row["每股净资产"])
@@ -140,7 +156,8 @@ def build_revision_contract_facts(
                 if permanent_blocker else "NO_PERMANENT_BLOCKER_OBSERVED"
             ),
             "revision_event_state": _text(watch_row.get("状态")),
-            "revision_count": _text(watch_row.get("下修天计数")),
+            "revision_count": revision_count,
+            "revision_count_raw": revision_count_raw,
             "minimum_days_needed": _text(watch_row.get("至少还需")),
             "reset_start": (
                 str(reset_date.date()) if pd.notna(reset_date) else None
