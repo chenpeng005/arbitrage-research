@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from runtime.opportunity.incremental_storage_parity import audit_json_sqlite_parity
+from runtime.opportunity.incremental_storage_projection import audit_projection_parity
 from runtime.opportunity.incremental_storage_sync import shadow_sync_current_runtime
 
 SHADOW_STAGE_VERSION = "incremental-storage-shadow-stage-v1"
@@ -48,7 +49,17 @@ def run_incremental_storage_shadow(*, data_root: Path) -> dict[str, Any]:
     try:
         sync = shadow_sync_current_runtime(data_root=data_root, target_db=db_path)
         parity = audit_json_sqlite_parity(data_root=data_root, target_db=db_path)
-        status = "PASS" if sync.get("status") == "PASS" and parity.get("status") == "PASS" else "FAIL"
+        projection_parity = audit_projection_parity(
+            data_root=data_root,
+            target_db=db_path,
+        )
+        status = (
+            "PASS"
+            if sync.get("status") == "PASS"
+            and parity.get("status") == "PASS"
+            and projection_parity.get("status") == "PASS"
+            else "FAIL"
+        )
 
         current_snapshot = parity.get("market_snapshot_id")
         if status == "PASS":
@@ -64,6 +75,7 @@ def run_incremental_storage_shadow(*, data_root: Path) -> dict[str, Any]:
             "status": status,
             "sync": sync,
             "parity": parity,
+            "projection_parity": projection_parity,
             "completed_at": _now(),
         }
 
@@ -75,6 +87,8 @@ def run_incremental_storage_shadow(*, data_root: Path) -> dict[str, Any]:
                 "last_sync_status": status,
                 "last_sync_at": result["completed_at"],
                 "last_parity_market_snapshot_id": current_snapshot,
+                "last_projection_parity_status": projection_parity.get("status"),
+                "last_projection_mismatch_count": projection_parity.get("mismatch_count"),
                 "parity_consecutive_passes": streak,
                 "next_gate": "CONTROLLED_CUTOVER_REVIEW",
             }
