@@ -25,8 +25,8 @@ def evaluate_cutover_readiness(*, data_root: Path) -> dict[str, Any]:
 
     if state.get("status") != "SHADOW_DUAL_WRITE":
         reasons.append("NOT_IN_SHADOW_DUAL_WRITE")
-    if state.get("schema_version") != "incremental-runtime-sqlite-schema-v1.2":
-        reasons.append("SCHEMA_VERSION_NOT_V1_2")
+    if state.get("schema_version") != "incremental-runtime-sqlite-schema-v1.3":
+        reasons.append("SCHEMA_VERSION_NOT_V1_3")
     if state.get("primary_read_source") != "JSON_RUNTIME":
         reasons.append("PRIMARY_READ_SOURCE_ALREADY_CHANGED")
     if state.get("last_sync_status") != "PASS":

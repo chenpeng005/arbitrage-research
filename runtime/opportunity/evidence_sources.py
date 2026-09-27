@@ -88,9 +88,17 @@ def fetch_structured_rating(bond_code: str) -> dict[str, Any]:
 def revision_notice_kind(title: str) -> str:
     if "不向下修正" in title or "不下修" in title:
         return "NO_REVISION"
-    if "预计触发" in title and ("修正" in title or "下修" in title):
+    if re.search(
+        r"预计(?:触发|满足).*?(?:修正|下修)|"
+        r"可能触发.*?(?:修正|下修)",
+        title,
+    ):
         return "EXPECTED_TRIGGER"
-    if "触发" in title and ("修正" in title or "下修" in title):
+    if re.search(
+        r"(?:已)?触发.*?(?:修正|下修)|"
+        r"(?<!预计)满足.*?(?:修正条件|下修条件)",
+        title,
+    ):
         return "TRIGGER"
     if "向下修正" in title or "下修" in title:
         return "REVISION_ACTION"
@@ -232,3 +240,5 @@ def extract_revision_contract_documents(
         )
     )
     return candidates[:max_items]
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

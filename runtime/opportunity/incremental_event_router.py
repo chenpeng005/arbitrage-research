@@ -67,6 +67,16 @@ def _hard_credit_family(title: str) -> str:
     return "CREDIT:HARD_OTHER"
 
 
+def _put_family(kind: str) -> str:
+    if kind == "PUT_EXPECTED_TRIGGER":
+        return "PUT:EXPECTED_TRIGGER"
+    if kind == "PUT_TRIGGER":
+        return "PUT:CONDITION_MET"
+    if kind == "PUT_RESULT":
+        return "PUT:RESULT"
+    return "PUT:OTHER"
+
+
 def _revision_family(kind: str, title: str) -> str:
     if kind == "NO_REVISION":
         return "REVISION:NO_REVISION_CYCLE"
@@ -118,6 +128,8 @@ def canonicalize_evidence_document(
         "CONVERSION_PRICE_EVENT",
     }:
         event_family = _revision_family(kind, title)
+    elif kind in {"PUT_EXPECTED_TRIGGER", "PUT_TRIGGER", "PUT_RESULT"}:
+        event_family = _put_family(kind)
     elif kind == "FINANCIAL_REPORT":
         # Full report and summary are Evidence Documents for the same reporting
         # event. Period identity can be refined later from metadata/content.
@@ -222,8 +234,9 @@ def canonicalize_document_set(
         for notice_date, supporting in sorted(by_date.items()):
             supporting.sort(key=lambda x: str(x.get("evidence_id") or ""))
             evidence_ids = [str(x["evidence_id"]) for x in supporting]
-            signature = notice_date + "|" + "|".join(evidence_ids)
-            update_id = _event_update_id(bond_code, family, signature)
+            # Business update identity is stable by family/date. Supporting
+            # Evidence may arrive later without creating a fake new Event.
+            update_id = _event_update_id(bond_code, family, notice_date)
             requires_semantic = any(
                 bool(x.get("requires_semantic_audit")) for x in supporting
             )
@@ -474,13 +487,45 @@ def route_event(event: dict[str, Any]) -> dict[str, Any]:
             "PUT_TRIGGER_LINE_AND_COUNT_CYCLE_CHANGED",
         )
 
-    elif family == "PUT:WINDOW_ENTERED":
+    elif family in {"PUT:WINDOW_ENTERED", "PUT:EXPECTED_TRIGGER"}:
         add(
             "PUT",
             "STATE_CHANGE",
             "FULL_V2_RESEARCH",
             "DAILY_DIGEST",
-            "PUT_RIGHT_FORMATION_WINDOW_BECAME_ACTIVE",
+            "PUT_RIGHT_FORMATION_MOVED_TO_REAL_EVENT_NODE",
+        )
+
+    elif family == "PUT:CONDITION_MET":
+        add(
+            "PUT",
+            "MATERIAL_CHANGE",
+            "FULL_V2_RESEARCH",
+            "IMMEDIATE",
+            "PUT_CONDITION_FORMALLY_MET",
+        )
+        add(
+            "DOWNWARD_REVISION",
+            "FACT_UPDATE",
+            "SEMANTIC_AUDIT",
+            "DAILY_DIGEST",
+            "PUT_PRESSURE_MAY_CHANGE_ISSUER_REVISION_OBJECTIVE",
+        )
+
+    elif family == "PUT:RESULT":
+        add(
+            "PUT",
+            "MATERIAL_CHANGE",
+            "FULL_V2_RESEARCH",
+            "IMMEDIATE",
+            "PUT_EXECUTION_RESULT_CHANGED_PATH_STATE",
+        )
+        add(
+            "MATURITY_CASH",
+            "FACT_UPDATE",
+            "SEMANTIC_AUDIT",
+            "DAILY_DIGEST",
+            "PUT_RESULT_MAY_CHANGE_REMAINING_MATURITY_OBLIGATION",
         )
 
     elif family == "FINANCIAL:PERIODIC_REPORT":

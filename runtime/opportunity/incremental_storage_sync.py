@@ -94,7 +94,7 @@ def shadow_sync_current_runtime(
         schema_version = conn.execute(
             "SELECT value FROM schema_meta WHERE key='schema_version'"
         ).fetchone()
-        if not schema_version or schema_version["value"] != "incremental-runtime-sqlite-schema-v1.2":
+        if not schema_version or schema_version["value"] != "incremental-runtime-sqlite-schema-v1.3":
             raise RuntimeError(f"unexpected schema_version={schema_version['value'] if schema_version else None}")
 
         # Bond + snapshot + observations.

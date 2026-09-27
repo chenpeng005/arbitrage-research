@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = "incremental-runtime-sqlite-schema-v1.2"
+SCHEMA_VERSION = "incremental-runtime-sqlite-schema-v1.3"
 
 
 def _now() -> str:
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS scope_state_current (
 
 CREATE TABLE IF NOT EXISTS evidence_document (
     evidence_id TEXT PRIMARY KEY,
-    bond_code TEXT NOT NULL,
+    issuer_stock_code TEXT,
     published_at TEXT,
     title TEXT NOT NULL,
     source_kind TEXT NOT NULL,
@@ -92,8 +92,7 @@ CREATE TABLE IF NOT EXISTS evidence_document (
     content_sha256 TEXT,
     artifact_path TEXT,
     metadata_json TEXT NOT NULL DEFAULT '{}',
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (bond_code) REFERENCES bond_master(bond_code)
+    created_at TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_evidence_url
@@ -101,8 +100,17 @@ ON evidence_document(url)
 WHERE url IS NOT NULL AND url <> '';
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_evidence_content_hash
-ON evidence_document(bond_code, content_sha256)
+ON evidence_document(content_sha256)
 WHERE content_sha256 IS NOT NULL AND content_sha256 <> '';
+
+CREATE TABLE IF NOT EXISTS evidence_bond_link (
+    evidence_id TEXT NOT NULL,
+    bond_code TEXT NOT NULL,
+    link_role TEXT NOT NULL DEFAULT 'AFFECTS',
+    PRIMARY KEY (evidence_id, bond_code),
+    FOREIGN KEY (evidence_id) REFERENCES evidence_document(evidence_id),
+    FOREIGN KEY (bond_code) REFERENCES bond_master(bond_code)
+);
 
 CREATE TABLE IF NOT EXISTS event_family (
     event_family_id TEXT PRIMARY KEY,
@@ -291,6 +299,7 @@ EXPECTED_TABLES = {
     "market_observation",
     "scope_state_current",
     "evidence_document",
+    "evidence_bond_link",
     "event_family",
     "event_update",
     "event_evidence_link",
@@ -359,7 +368,8 @@ def table_manifest() -> list[dict[str, str]]:
         {"table": "market_snapshot", "role": "市场截面身份"},
         {"table": "market_observation", "role": "每日价格/市场覆盖层"},
         {"table": "scope_state_current", "role": "Path/Risk 当前状态 + 独立 Research-validity state"},
-        {"table": "evidence_document", "role": "不可变证据元数据"},
+        {"table": "evidence_document", "role": "发行人级不可变证据文档"},
+        {"table": "evidence_bond_link", "role": "Evidence ↔ Bond 多对多影响关系"},
         {"table": "event_family", "role": "业务事件族与双 watermark"},
         {"table": "event_update", "role": "已确认 Event / 语义候选版本"},
         {"table": "event_evidence_link", "role": "Event 与 Evidence 多对多"},
