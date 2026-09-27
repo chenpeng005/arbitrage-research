@@ -17,6 +17,9 @@ from runtime.opportunity.candidate_pool import build_candidate_pool
 from runtime.opportunity.discovery_controller import run_opportunity_discovery
 from runtime.opportunity.ingress import build_market_ingress
 from runtime.opportunity.incremental_storage_shadow import run_incremental_storage_shadow
+from runtime.opportunity.incremental_research_reuse_runtime import (
+    apply_reuse_to_task_batch,
+)
 from runtime.opportunity.opportunity_record import build_opportunity_records
 from runtime.opportunity.path_research_batch import run_path_research_batch
 from runtime.opportunity.research_evidence import build_research_evidence
@@ -203,80 +206,149 @@ def run_opportunity_full_downstream(
                 task_packages=task_batch.get("task_packages_built", 0),
             )
 
-            mark("RESEARCH_EVIDENCE", "RUNNING")
-            evidence_batch = build_research_evidence(
-                task_batch_path, data_root, deployment
-            )
-            state["artifacts"]["research_evidence"] = str(
-                _result_path(
-                    data_root,
-                    evidence_batch["run_id"],
-                    "path_research_evidence_batch.json",
+            db_path = data_root / "state" / "incremental_runtime.sqlite"
+            if db_path.exists():
+                mark(
+                    "RESEARCH_REUSE",
+                    "RUNNING",
+                    pending_tasks=_pending_count(data_root),
                 )
-            )
-            mark(
-                "RESEARCH_EVIDENCE",
-                "PASS",
-                evidence_packs=evidence_batch.get("packs_built", 0),
-            )
-            if run_research:
-                mark("PATH_RESEARCH", "RUNNING", pending_tasks=_pending_count(data_root))
-                previous_pending = _pending_count(data_root)
-                for round_no in range(1, max_research_rounds + 1):
-                    if previous_pending <= 0:
-                        break
-                    batch = run_path_research_batch(
-                        root=data_root.parent,
-                        data_root=data_root,
-                        provider_name=provider_name,
-                        model=model,
-                        execution_mode=ai_execution_mode,
-                        full_runtime_run_id=run_id,
-                        limit=research_batch_limit,
-                        retry_once=False,
-                        wall_timeout_seconds=wall_timeout_seconds,
+                reuse = apply_reuse_to_task_batch(
+                    data_root=data_root,
+                    target_db=db_path,
+                    task_batch_path=task_batch_path,
+                )
+                reuse_path = run_dir / "research_reuse_result.json"
+                _write_json(reuse_path, reuse)
+                state["artifacts"]["research_reuse"] = str(reuse_path)
+                effective_task_batch_path = Path(
+                    str(reuse["effective_task_batch_path"])
+                )
+                state["artifacts"]["research_tasks_after_reuse"] = str(
+                    effective_task_batch_path
+                )
+                remaining_after_reuse = int(
+                    reuse.get("remaining_pending_count") or 0
+                )
+                mark(
+                    "RESEARCH_REUSE",
+                    "PASS",
+                    reused_tasks=int(reuse.get("reused_count") or 0),
+                    pending_tasks=remaining_after_reuse,
+                )
+            else:
+                effective_task_batch_path = task_batch_path
+                remaining_after_reuse = _pending_count(data_root)
+                mark(
+                    "RESEARCH_REUSE",
+                    "SKIPPED",
+                    pending_tasks=remaining_after_reuse,
+                    reason="INCREMENTAL_STORAGE_NOT_INITIALIZED",
+                )
+
+            if remaining_after_reuse > 0:
+                mark("RESEARCH_EVIDENCE", "RUNNING")
+                evidence_batch = build_research_evidence(
+                    effective_task_batch_path, data_root, deployment
+                )
+                state["artifacts"]["research_evidence"] = str(
+                    _result_path(
+                        data_root,
+                        evidence_batch["run_id"],
+                        "path_research_evidence_batch.json",
                     )
-                    research_rounds.append(batch)
-                    current_pending = int(batch.get("remaining_pending") or 0)
-                    selected = int(batch.get("selected") or 0)
-                    if current_pending <= 0:
-                        previous_pending = 0
-                        break
-                    if current_pending >= previous_pending and selected <= 0:
+                )
+                mark(
+                    "RESEARCH_EVIDENCE",
+                    "PASS",
+                    evidence_packs=evidence_batch.get("packs_built", 0),
+                )
+                if run_research:
+                    mark(
+                        "PATH_RESEARCH",
+                        "RUNNING",
+                        pending_tasks=_pending_count(data_root),
+                    )
+                    previous_pending = _pending_count(data_root)
+                    for round_no in range(1, max_research_rounds + 1):
+                        if previous_pending <= 0:
+                            break
+                        batch = run_path_research_batch(
+                            root=data_root.parent,
+                            data_root=data_root,
+                            provider_name=provider_name,
+                            model=model,
+                            execution_mode=ai_execution_mode,
+                            full_runtime_run_id=run_id,
+                            limit=research_batch_limit,
+                            retry_once=False,
+                            wall_timeout_seconds=wall_timeout_seconds,
+                        )
+                        research_rounds.append(batch)
+                        current_pending = int(batch.get("remaining_pending") or 0)
+                        selected = int(batch.get("selected") or 0)
+                        if current_pending <= 0:
+                            previous_pending = 0
+                            break
+                        if current_pending >= previous_pending and selected <= 0:
+                            previous_pending = current_pending
+                            break
                         previous_pending = current_pending
-                        break
-                    previous_pending = current_pending
-                path_research_stage_status = (
-                    "WAITING_FOR_CHAT"
-                    if ai_execution_mode == "INTERACTIVE_CHAT"
-                    and previous_pending > 0
-                    else ("PASS" if previous_pending == 0 else "PARTIAL")
+                    path_research_stage_status = (
+                        "WAITING_FOR_CHAT"
+                        if ai_execution_mode == "INTERACTIVE_CHAT"
+                        and previous_pending > 0
+                        else ("PASS" if previous_pending == 0 else "PARTIAL")
+                    )
+                    mark(
+                        "PATH_RESEARCH",
+                        path_research_stage_status,
+                        rounds=len(research_rounds),
+                        remaining_pending=previous_pending,
+                        ai_execution_mode=ai_execution_mode,
+                    )
+                    if ai_execution_mode == "INTERACTIVE_CHAT":
+                        waiting_chat_tasks = _waiting_chat_tasks_for_run(
+                            data_root, run_id
+                        )
+                        if waiting_chat_tasks:
+                            state["status"] = "WAITING_FOR_CHAT"
+                            state["current_stage"] = "PATH_RESEARCH"
+                            state["waiting_chat_tasks"] = waiting_chat_tasks
+                            state["summary"] = {
+                                "opportunity_bonds": discovery[
+                                    "bonds_with_any_keep"
+                                ],
+                                "remaining_pending_research": _pending_count(
+                                    data_root
+                                ),
+                                "waiting_chat_tasks": len(waiting_chat_tasks),
+                            }
+                            state["updated_at"] = _now()
+                            _write_json(status_path, state)
+                            return state
+                else:
+                    mark(
+                        "PATH_RESEARCH",
+                        "SKIPPED",
+                        pending_tasks=remaining_after_reuse,
+                    )
+            else:
+                mark(
+                    "RESEARCH_EVIDENCE",
+                    "SKIPPED",
+                    pending_tasks=0,
+                    reason="ALL_PENDING_TASKS_REUSED",
                 )
                 mark(
                     "PATH_RESEARCH",
-                    path_research_stage_status,
-                    rounds=len(research_rounds),
-                    remaining_pending=previous_pending,
-                    ai_execution_mode=ai_execution_mode,
+                    "SKIPPED",
+                    pending_tasks=0,
+                    reason="ALL_PENDING_TASKS_REUSED",
                 )
-                if ai_execution_mode == "INTERACTIVE_CHAT":
-                    waiting_chat_tasks = _waiting_chat_tasks_for_run(data_root, run_id)
-                    if waiting_chat_tasks:
-                        state["status"] = "WAITING_FOR_CHAT"
-                        state["current_stage"] = "PATH_RESEARCH"
-                        state["waiting_chat_tasks"] = waiting_chat_tasks
-                        state["summary"] = {
-                            "opportunity_bonds": discovery["bonds_with_any_keep"],
-                            "remaining_pending_research": _pending_count(data_root),
-                            "waiting_chat_tasks": len(waiting_chat_tasks),
-                        }
-                        state["updated_at"] = _now()
-                        _write_json(status_path, state)
-                        return state
-            else:
-                mark("PATH_RESEARCH", "SKIPPED", pending_tasks=pending)
         else:
             mark("RESEARCH_TASKS", "SKIPPED", pending_tasks=0)
+            mark("RESEARCH_REUSE", "SKIPPED", pending_tasks=0)
             mark("RESEARCH_EVIDENCE", "SKIPPED", pending_tasks=0)
             mark("PATH_RESEARCH", "SKIPPED", pending_tasks=0)
 
@@ -506,5 +578,3 @@ def resume_opportunity_full_after_chat(
         stage_callback("COMPLETE", "PASS", state["summary"])
     return state
 
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

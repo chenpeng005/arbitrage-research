@@ -6,6 +6,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+from runtime.opportunity.incremental_research_reuse_runtime import (
+    bond_event_watermarks,
+)
 from runtime.opportunity.incremental_storage import connect, json_text
 from runtime.opportunity.incremental_storage_bootstrap import (
     _current_state_identity,
@@ -254,8 +257,9 @@ def shadow_sync_current_runtime(
             stats["state_version_increments"] += 1 if state_changed else 0
             stats["research_state_version_increments"] += 1 if research_changed else 0
 
-        # Mirror immutable research results + current binding.
-        for trigger_key, ledger_row in sorted(research_ledger.get("results", {}).items()):
+        # Mirror every immutable Research Result into the index first.
+        ledger_results = research_ledger.get("results", {})
+        for trigger_key, ledger_row in sorted(ledger_results.items()):
             result_id = str(ledger_row["path_result_id"])
             result_path = Path(ledger_row["result_path"])
             result = _read_json(result_path)
@@ -287,18 +291,28 @@ def shadow_sync_current_runtime(
                 )
                 stats["research_result_inserts"] += 1
 
-            current = conn.execute(
-                """SELECT binding_id,result_id FROM research_binding
-                   WHERE bond_code=? AND path_id=? AND is_current=1""",
-                (code,path_id),
-            ).fetchone()
-            if current and current["result_id"] == result_id:
+        # Current Binding is determined only by current Trigger State.
+        # Historical trigger ordering must never decide which Result is current.
+        for state_key, trigger_row in sorted(
+            (trigger_state.get("paths") or {}).items()
+        ):
+            current_trigger_key = trigger_row.get("last_trigger_key")
+            if not current_trigger_key:
+                continue
+            ledger_row = ledger_results.get(current_trigger_key)
+            if ledger_row is None:
+                # PENDING / WAITING trigger may legitimately have no result yet.
                 continue
 
-            if current:
-                conn.execute(
-                    "UPDATE research_binding SET is_current=0,superseded_at=? WHERE binding_id=?",
-                    (registry["market_cutoff"],current["binding_id"]),
+            code = str(ledger_row["bond_code"]).zfill(6)
+            path_id = str(ledger_row["path_id"])
+            result_id = str(ledger_row["path_result_id"])
+            binding_type = str(
+                ledger_row.get("binding_type") or "ORIGINAL"
+            ).upper()
+            if binding_type not in {"ORIGINAL", "REUSED"}:
+                raise RuntimeError(
+                    f"invalid binding_type={binding_type!r}: {current_trigger_key}"
                 )
 
             state_row = conn.execute(
@@ -309,23 +323,95 @@ def shadow_sync_current_runtime(
             ).fetchone()
             validity = (
                 "VALID"
-                if ledger_row.get("review_ready") and ledger_row.get("research_status") == "COMPLETED"
+                if ledger_row.get("review_ready")
+                and ledger_row.get("research_status") == "COMPLETED"
                 else "UPDATE_PENDING"
             )
+            marks = bond_event_watermarks(conn, code)
+            checked_event = (
+                ledger_row.get("checked_event_watermark_hash")
+                or marks["confirmed"]
+            )
+            checked_candidate = (
+                ledger_row.get("checked_candidate_watermark_hash")
+                or marks["candidate"]
+            )
+            reuse_reason = (
+                ledger_row.get("reuse_reason")
+                if binding_type == "REUSED"
+                else None
+            )
+
+            current = conn.execute(
+                """SELECT binding_id,result_id,binding_type,validity_basis_json
+                   FROM research_binding
+                   WHERE bond_code=? AND path_id=? AND is_current=1""",
+                (code,path_id),
+            ).fetchone()
+            current_basis = (
+                json.loads(current["validity_basis_json"] or "{}")
+                if current else {}
+            )
+            if (
+                current
+                and current["result_id"] == result_id
+                and current["binding_type"] == binding_type
+                and current_basis.get("source_trigger_key")
+                == current_trigger_key
+            ):
+                continue
+
+            if current:
+                conn.execute(
+                    """UPDATE research_binding
+                       SET is_current=0,superseded_at=?
+                       WHERE binding_id=?""",
+                    (registry["market_cutoff"],current["binding_id"]),
+                )
+
+            binding_id = (
+                f"shadow:{code}:{path_id}:{binding_type.lower()}:"
+                f"{current_trigger_key}"
+            )
+            validity_basis = {
+                "sync_version": SYNC_VERSION,
+                "source_trigger_key": current_trigger_key,
+                "binding_type": binding_type,
+                "event_watermark_status": (
+                    "REUSED_GATE_VERIFIED"
+                    if binding_type == "REUSED"
+                    else "ESTABLISHED_AT_RESULT_BINDING"
+                ),
+            }
             conn.execute(
                 """INSERT INTO research_binding
                    (binding_id,bond_code,path_id,result_id,binding_type,validity_status,
-                    reuse_reason,checked_event_watermark_hash,checked_candidate_watermark_hash,
-                    checked_state_version,checked_research_state_version,validity_basis_json,
-                    bound_at,superseded_at,is_current)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    reuse_reason,checked_event_watermark_hash,
+                    checked_candidate_watermark_hash,checked_state_version,
+                    checked_research_state_version,validity_basis_json,bound_at,
+                    superseded_at,is_current)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                   ON CONFLICT(binding_id) DO UPDATE SET
+                     result_id=excluded.result_id,
+                     binding_type=excluded.binding_type,
+                     validity_status=excluded.validity_status,
+                     reuse_reason=excluded.reuse_reason,
+                     checked_event_watermark_hash=excluded.checked_event_watermark_hash,
+                     checked_candidate_watermark_hash=excluded.checked_candidate_watermark_hash,
+                     checked_state_version=excluded.checked_state_version,
+                     checked_research_state_version=excluded.checked_research_state_version,
+                     validity_basis_json=excluded.validity_basis_json,
+                     bound_at=excluded.bound_at,
+                     superseded_at=NULL,
+                     is_current=1""",
                 (
-                    f"shadow:{code}:{path_id}:{result_id}",code,path_id,result_id,"ORIGINAL",
-                    validity,None,None,None,
+                    binding_id,code,path_id,result_id,binding_type,validity,
+                    reuse_reason,checked_event,checked_candidate,
                     state_row["state_version"] if state_row else None,
                     state_row["research_state_version"] if state_row else None,
-                    json_text({"sync_version":SYNC_VERSION,"event_watermark_status":"UNKNOWN_PRE_EVENT_LEDGER"}),
-                    ledger_row.get("completed_at") or registry["market_cutoff"],None,1,
+                    json_text(validity_basis),
+                    ledger_row.get("completed_at") or registry["market_cutoff"],
+                    None,1,
                 ),
             )
             stats["research_binding_updates"] += 1
@@ -367,5 +453,3 @@ def shadow_sync_current_runtime(
         raise
     finally:
         conn.close()
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

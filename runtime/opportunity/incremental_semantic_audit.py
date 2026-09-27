@@ -25,6 +25,9 @@ from runtime.opportunity.incremental_notice_lane import (
 from runtime.opportunity.incremental_research_trigger import (
     plan_event_research_actions,
 )
+from runtime.opportunity.incremental_research_reuse_runtime import (
+    advance_current_binding_watermarks,
+)
 from runtime.opportunity.incremental_storage import connect, json_text
 
 SEMANTIC_AUDIT_VERSION = "event-semantic-audit-v1"
@@ -712,10 +715,21 @@ def _apply_scope_impact_result(
                WHERE trigger_key=?""",
             (now, task["trigger_key"]),
         )
+        watermark_update = None
+        if scope in OPPORTUNITY_PATH_SCOPES:
+            watermark_update = advance_current_binding_watermarks(
+                conn,
+                bond_code=str(task["bond_code"]).zfill(6),
+                path_id=scope,
+                reason="SEMANTIC_SCOPE_RESOLVED_NO_RESEARCH",
+                source_event_update_id=source_event_id,
+                updated_at=now,
+            )
         return {
             "target_scope_id": scope,
             "resolved_research_action": "NONE",
             "full_v2_trigger_key": None,
+            "binding_watermark_update": watermark_update,
             "status": "COMPLETED_SCOPE_NO_RESEARCH",
         }
 

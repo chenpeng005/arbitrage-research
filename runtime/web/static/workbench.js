@@ -57,6 +57,7 @@ const STAGES=[
   ["ECONOMIC_DISCOVERY","三条路径经济判断"],
   ["RESEARCH_TRIGGER","判断是否需要深研"],
   ["RESEARCH_TASKS","生成研究任务"],
+  ["RESEARCH_REUSE","检查旧研究是否仍有效"],
   ["RESEARCH_EVIDENCE","准备研究证据"],
   ["PATH_RESEARCH","AI 路径深研"],
   ["CANDIDATE_POOL","汇总真正机会"],
@@ -137,6 +138,7 @@ function renderRun(job){
     let meta="";
     if(e){
       if(e.opportunity_bonds!==undefined)meta="发现 "+e.opportunity_bonds+" 只机会债券";
+      else if(e.reused_tasks!==undefined)meta="沿用 "+e.reused_tasks+" 条 / 待研究 "+(e.pending_tasks??0)+" 条";
       else if(e.pending_tasks!==undefined)meta="待研究 "+e.pending_tasks+" 条";
       else if(e.evidence_packs!==undefined)meta="证据包 "+e.evidence_packs+" 个";
       else if(e.bond_count!==undefined)meta=e.bond_count+" 只 / "+(e.keep_path_count??"—")+" 条路径";
