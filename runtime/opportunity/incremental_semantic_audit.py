@@ -28,6 +28,11 @@ from runtime.opportunity.incremental_research_trigger import (
 from runtime.opportunity.incremental_storage import connect, json_text
 
 SEMANTIC_AUDIT_VERSION = "event-semantic-audit-v1"
+OPPORTUNITY_PATH_SCOPES = {
+    "MATURITY_CASH",
+    "PUT",
+    "DOWNWARD_REVISION",
+}
 INFORMATION_CANONICAL = (
     "05 套利研究/AI-Engineering-Runtime/04_数据与状态系统/"
     "Daily-Incremental-Information-Lane-V1.md"
@@ -58,6 +63,8 @@ DISPOSITIONS = {
     "CONFIRMED_EVENT_UPDATE",
     "NO_MATERIAL_CHANGE",
     "NEEDS_EVIDENCE",
+    "SCOPE_FULL_V2_RESEARCH",
+    "SCOPE_NO_RESEARCH",
 }
 
 
@@ -207,9 +214,13 @@ def build_event_semantic_audit_tasks(
     work_root.mkdir(parents=True, exist_ok=True)
 
     rows = list(conn.execute(
-        """SELECT rtl.trigger_key,rtl.bond_code,rtl.source_event_update_id,
-                  rtl.status,rtl.emitted_at,b.bond_name,b.stock_code,
-                  eu.occurred_at,ef.event_family
+        """SELECT rtl.trigger_key,rtl.bond_code,rtl.path_id,
+                  rtl.source_event_update_id,rtl.status,rtl.emitted_at,
+                  b.bond_name,b.stock_code,eu.occurred_at,
+                  eu.confirmation_status AS source_confirmation_status,
+                  eu.materiality_status AS source_materiality_status,
+                  eu.payload_json AS source_event_payload_json,
+                  ef.event_family
            FROM research_trigger_ledger rtl
            JOIN bond_master b ON b.bond_code=rtl.bond_code
            LEFT JOIN event_update eu
@@ -227,11 +238,16 @@ def build_event_semantic_audit_tasks(
             trigger_key = row["trigger_key"]
             task_id = _task_id(trigger_key)
             source_event_id = row["source_event_update_id"]
-            subject_type = (
-                "SEMANTIC_CANDIDATE"
-                if source_event_id
-                else "DOCUMENT_ONLY"
-            )
+            if source_event_id and row["source_confirmation_status"] == "SEMANTIC_CANDIDATE":
+                subject_type = "SEMANTIC_CANDIDATE"
+            elif source_event_id and row["path_id"]:
+                subject_type = "SCOPE_IMPACT"
+            elif source_event_id:
+                raise RuntimeError(
+                    f"confirmed Event semantic trigger has no target scope: {trigger_key}"
+                )
+            else:
+                subject_type = "DOCUMENT_ONLY"
             if source_event_id:
                 evidence_ids = [
                     x["evidence_id"]
@@ -299,7 +315,22 @@ def build_event_semantic_audit_tasks(
                 ).zfill(6),
                 "audit_subject_type": subject_type,
                 "source_event_update_id": source_event_id,
-                "candidate_event_family": row["event_family"],
+                "candidate_event_family": (
+                    row["event_family"]
+                    if subject_type == "SEMANTIC_CANDIDATE"
+                    else None
+                ),
+                "target_scope_id": (
+                    row["path_id"] if subject_type == "SCOPE_IMPACT" else None
+                ),
+                "source_event_family": row["event_family"],
+                "source_event_confirmation_status": row["source_confirmation_status"],
+                "source_event_materiality_status": row["source_materiality_status"],
+                "source_event_payload": (
+                    json.loads(row["source_event_payload_json"] or "{}")
+                    if row["source_event_payload_json"]
+                    else None
+                ),
                 "research_cutoff": research_cutoff,
                 "evidence_documents": evidence_documents,
                 "existing_event_context": _existing_event_context(
@@ -316,6 +347,8 @@ def build_event_semantic_audit_tasks(
                     "new_document_is_not_automatically_new_event": True,
                     "semantic_candidate_can_only_confirm_candidate_family": True,
                     "document_only_may_confirm_multiple_specific_events": True,
+                    "scope_impact_never_reconfirms_event": True,
+                    "scope_impact_only_decides_full_v2_or_no_research": True,
                     "no_economic_judgment": True,
                 },
             }
@@ -339,7 +372,14 @@ def build_event_semantic_audit_tasks(
                 "bond_code": row["bond_code"],
                 "bond_name": row["bond_name"],
                 "audit_subject_type": subject_type,
-                "candidate_event_family": row["event_family"],
+                "candidate_event_family": (
+                    row["event_family"]
+                    if subject_type == "SEMANTIC_CANDIDATE"
+                    else None
+                ),
+                "target_scope_id": (
+                    row["path_id"] if subject_type == "SCOPE_IMPACT" else None
+                ),
                 "research_cutoff": research_cutoff,
                 "task_path": str(task_path),
                 "work_dir": str(work_dir),
@@ -399,17 +439,49 @@ def validate_event_semantic_audit(
         errors.append("confirmed_events must be an array")
         confirmed = []
 
-    if disposition == "CONFIRMED_EVENT_UPDATE" and not confirmed:
-        errors.append(
-            "CONFIRMED_EVENT_UPDATE requires confirmed_events"
-        )
-    if disposition in {"NO_MATERIAL_CHANGE", "NEEDS_EVIDENCE"} and confirmed:
-        errors.append(
-            f"{disposition} requires confirmed_events=[]"
-        )
+    subject_type = task["audit_subject_type"]
+    if subject_type == "SCOPE_IMPACT":
+        if disposition not in {
+            "SCOPE_FULL_V2_RESEARCH",
+            "SCOPE_NO_RESEARCH",
+            "NEEDS_EVIDENCE",
+        }:
+            errors.append(
+                "SCOPE_IMPACT requires SCOPE_FULL_V2_RESEARCH, "
+                "SCOPE_NO_RESEARCH, or NEEDS_EVIDENCE"
+            )
+        if confirmed:
+            errors.append(
+                "SCOPE_IMPACT must not reconfirm Event; confirmed_events=[]"
+            )
+        if (
+            disposition == "SCOPE_FULL_V2_RESEARCH"
+            and task.get("target_scope_id") not in OPPORTUNITY_PATH_SCOPES
+        ):
+            errors.append(
+                "SCOPE_FULL_V2_RESEARCH is only valid for opportunity Path scopes"
+            )
+    else:
+        if disposition not in {
+            "CONFIRMED_EVENT_UPDATE",
+            "NO_MATERIAL_CHANGE",
+            "NEEDS_EVIDENCE",
+        }:
+            errors.append(
+                "Event audit requires CONFIRMED_EVENT_UPDATE, "
+                "NO_MATERIAL_CHANGE, or NEEDS_EVIDENCE"
+            )
+        if disposition == "CONFIRMED_EVENT_UPDATE" and not confirmed:
+            errors.append(
+                "CONFIRMED_EVENT_UPDATE requires confirmed_events"
+            )
+        if disposition in {"NO_MATERIAL_CHANGE", "NEEDS_EVIDENCE"} and confirmed:
+            errors.append(
+                f"{disposition} requires confirmed_events=[]"
+            )
 
     if (
-        task["audit_subject_type"] == "SEMANTIC_CANDIDATE"
+        subject_type == "SEMANTIC_CANDIDATE"
         and disposition == "CONFIRMED_EVENT_UPDATE"
         and len(confirmed) != 1
     ):
@@ -599,6 +671,115 @@ def _route_confirmed_event(
     }
 
 
+def _apply_scope_impact_result(
+    *,
+    conn,
+    task: dict[str, Any],
+    result: dict[str, Any],
+    now: str,
+) -> dict[str, Any]:
+    scope = str(task.get("target_scope_id") or "")
+    source_event_id = str(task.get("source_event_update_id") or "")
+    disposition = str(result.get("disposition") or "")
+    if not scope or not source_event_id:
+        raise RuntimeError("SCOPE_IMPACT task missing scope/event identity")
+
+    if disposition == "NEEDS_EVIDENCE":
+        conn.execute(
+            """UPDATE research_trigger_ledger
+               SET status='NEEDS_EVIDENCE',updated_at=?
+               WHERE trigger_key=?""",
+            (now, task["trigger_key"]),
+        )
+        return {
+            "target_scope_id": scope,
+            "resolved_research_action": "SEMANTIC_AUDIT",
+            "full_v2_trigger_key": None,
+            "status": "NEEDS_EVIDENCE",
+        }
+
+    if disposition == "SCOPE_NO_RESEARCH":
+        conn.execute(
+            """UPDATE event_scope_impact
+               SET research_action='NONE',
+                   reason='SEMANTIC_SCOPE_RESOLVED_NO_RESEARCH'
+               WHERE event_update_id=? AND scope_id=?""",
+            (source_event_id, scope),
+        )
+        conn.execute(
+            """UPDATE research_trigger_ledger
+               SET status='COMPLETED_SCOPE_NO_RESEARCH',updated_at=?
+               WHERE trigger_key=?""",
+            (now, task["trigger_key"]),
+        )
+        return {
+            "target_scope_id": scope,
+            "resolved_research_action": "NONE",
+            "full_v2_trigger_key": None,
+            "status": "COMPLETED_SCOPE_NO_RESEARCH",
+        }
+
+    if disposition != "SCOPE_FULL_V2_RESEARCH":
+        raise RuntimeError(f"unsupported SCOPE_IMPACT disposition={disposition!r}")
+    if scope not in OPPORTUNITY_PATH_SCOPES:
+        raise RuntimeError(
+            f"FULL_V2 scope must be opportunity Path, got {scope!r}"
+        )
+
+    state = conn.execute(
+        """SELECT economic_status FROM scope_state_current
+           WHERE bond_code=? AND scope_type='PATH' AND scope_id=?""",
+        (task["bond_code"], scope),
+    ).fetchone()
+    economic_status = state["economic_status"] if state else None
+    trigger_key = (
+        f"EVENT:{source_event_id}:{scope}:FULL_V2_RESEARCH"
+    )
+    trigger_status = (
+        "PENDING" if economic_status == "KEEP"
+        else "SUPPRESSED_ECONOMIC_DROP"
+    )
+    conn.execute(
+        """INSERT OR IGNORE INTO research_trigger_ledger
+           (trigger_key,bond_code,path_id,source_event_update_id,
+            research_action,task_kind,status,task_id,emitted_at,updated_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?)""",
+        (
+            trigger_key,
+            task["bond_code"],
+            scope,
+            source_event_id,
+            "FULL_V2_RESEARCH",
+            "PATH_RESEARCH",
+            trigger_status,
+            None,
+            now,
+            now,
+        ),
+    )
+    conn.execute(
+        """UPDATE event_scope_impact
+           SET research_action='FULL_V2_RESEARCH',
+               reason='SEMANTIC_SCOPE_RESOLVED_FULL_V2'
+           WHERE event_update_id=? AND scope_id=?""",
+        (source_event_id, scope),
+    )
+    conn.execute(
+        """UPDATE research_trigger_ledger
+           SET status='COMPLETED_SCOPE_FULL_V2',updated_at=?
+           WHERE trigger_key=?""",
+        (now, task["trigger_key"]),
+    )
+    return {
+        "target_scope_id": scope,
+        "resolved_research_action": "FULL_V2_RESEARCH",
+        "full_v2_trigger_key": trigger_key,
+        "full_v2_trigger_status": trigger_status,
+        "economic_status": economic_status,
+        "status": "COMPLETED_SCOPE_FULL_V2",
+    }
+
+
 def apply_event_semantic_audit_result(
     *,
     result_path: Path,
@@ -621,6 +802,7 @@ def apply_event_semantic_audit_result(
     conn = connect(target_db)
     now = _now()
     confirmed_outputs: list[dict[str, Any]] = []
+    scope_impact_output: dict[str, Any] | None = None
     try:
         trigger = conn.execute(
             """SELECT status,source_event_update_id
@@ -633,7 +815,14 @@ def apply_event_semantic_audit_result(
 
         disposition = result["disposition"]
         source_event_id = task.get("source_event_update_id")
-        if disposition == "NEEDS_EVIDENCE":
+        if task["audit_subject_type"] == "SCOPE_IMPACT":
+            scope_impact_output = _apply_scope_impact_result(
+                conn=conn,
+                task=task,
+                result=result,
+                now=now,
+            )
+        elif disposition == "NEEDS_EVIDENCE":
             conn.execute(
                 """UPDATE research_trigger_ledger
                    SET status='NEEDS_EVIDENCE',updated_at=?
@@ -826,6 +1015,7 @@ def apply_event_semantic_audit_result(
         "status": "PASS",
         **pointer,
         "confirmed_outputs": confirmed_outputs,
+        "scope_impact_output": scope_impact_output,
     }
 
 [executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

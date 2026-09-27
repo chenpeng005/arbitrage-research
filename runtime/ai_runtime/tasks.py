@@ -393,6 +393,8 @@ def event_semantic_audit_spec(root: Path) -> AITaskSpec:
                         "CONFIRMED_EVENT_UPDATE",
                         "NO_MATERIAL_CHANGE",
                         "NEEDS_EVIDENCE",
+                        "SCOPE_FULL_V2_RESEARCH",
+                        "SCOPE_NO_RESEARCH",
                     ],
                 },
                 "reason_short": {"type": "string"},

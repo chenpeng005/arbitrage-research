@@ -18,7 +18,14 @@
 7. 若 audit_subject_type=DOCUMENT_ONLY：
    - 只有正文明确披露新增事实时才可提出 confirmed_events；
    - 可以提出多个彼此不同的具体 Event Family。
-8. supporting_evidence_ids 必须来自 frozen evidence_documents。
+8. 若 audit_subject_type=SCOPE_IMPACT：
+   - Event 已经确认，不得再次生成 Event；
+   - 只判断 target_scope_id 是否需要重新运行完整 V2；
+   - 需要重研：disposition=SCOPE_FULL_V2_RESEARCH；
+   - 只更新事实、不需完整 V2：disposition=SCOPE_NO_RESEARCH；
+   - 证据不足：disposition=NEEDS_EVIDENCE；
+   - confirmed_events 必须为空数组。
+9. supporting_evidence_ids 必须来自 frozen evidence_documents。
 9. occurred_at 必须是 Evidence 中可支持的事实日期；无法确定时不要猜。
 10. 信息不足时必须返回 NEEDS_EVIDENCE。
 
