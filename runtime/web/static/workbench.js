@@ -39,6 +39,9 @@ function configurePage(){
       ||(mode==="opportunities"&&href==="/opportunities");
     a.classList.toggle("active",active);
   });
+  document.querySelectorAll(".admin-only").forEach(el=>{
+    el.classList.toggle("hidden",!["run","audit","landing"].includes(mode));
+  });
   const ids={landing:"#landing",run:"#runCenter",notifications:"#notifications",opportunities:"#opportunities",audit:"#audit"};
   Object.entries(ids).forEach(([key,sel])=>{
     const el=$(sel);
@@ -326,15 +329,14 @@ async function loadNotificationFeed(){
   const box=$("#notificationFeed"),badge=$("#notificationBadge");
   if(!box||!badge)return;
   try{
-    const r=await fetch("/api/opportunity/notifications?limit=20");
+    const r=await fetch("/api/opportunity/notifications?include_sent=true&limit=20");
     if(!r.ok)throw new Error(await r.text());
     const x=await r.json();
     const items=x.items||[];
-    const pending=x.pending_count||0;
-    badge.textContent=pending?pending+" 条未读":"暂无未读";
-    badge.className="badge "+(pending?"warn":"pass");
+    badge.textContent=items.length?"最近 "+items.length+" 条":"暂无提醒";
+    badge.className="badge "+(items.length?"idle":"pass");
     if(!items.length){
-      box.innerHTML='<div class="muted">当前没有待处理提醒。新机会、退出机会和重要信息变化会出现在这里。</div>';
+      box.innerHTML='<div class="muted">当前没有近期机会变化。新进入、退出机会和重要信息更新会出现在这里。</div>';
       return;
     }
     box.innerHTML=items.map(item=>{
@@ -353,14 +355,8 @@ async function loadNotificationFeed(){
         +'<div class="notification-detail">'+details
         +' · '+esc(notificationTimeText(item.created_at))+'</div>'
         +'</div>'
-        +'<button data-notification-id="'+esc(item.notification_group_id)+'">已读</button>'
         +'</div>';
     }).join("");
-    box.querySelectorAll("button[data-notification-id]").forEach(btn=>{
-      btn.addEventListener("click",()=>acknowledgeNotification(
-        btn.dataset.notificationId,btn
-      ));
-    });
   }catch(e){
     badge.textContent="读取失败";
     badge.className="badge fail";

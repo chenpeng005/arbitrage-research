@@ -11,10 +11,10 @@
     <header class="topbar compact-topbar">
       <div><h1>可转债机会发现</h1></div>
       <nav class="nav">
-        <a href="/notifications">机会提醒</a>
-        <a href="/market-map">藏宝图</a>
         <a href="/opportunities">机会中心</a>
-        <a href="/run-center">运行中心</a>
+        <a href="/market-map">藏宝图</a>
+        <a href="/notifications">机会提醒</a>
+        <a class="admin-only hidden" href="/run-center">运行中心</a>
       </nav>
     </header>
 
@@ -22,16 +22,16 @@
       <div class="section-head">
         <div>
           <p class="eyebrow">系统入口</p>
-          <h2>五个部分分开使用</h2>
-          <p class="section-note">机会提醒、藏宝图、机会结果、运行后台、工程审计分别进入独立页面。日常使用优先看机会提醒和机会中心。</p>
+          <h2>用户入口与后台分开</h2>
+          <p class="section-note">公开只读入口为机会中心、藏宝图、机会提醒；管理员另有运行中心和工程审计。</p>
         </div>
       </div>
       <div class="portal-grid">
-        <a class="portal-card" href="/notifications"><span>01</span><h3>机会提醒</h3><p>只看新进入、退出、重要事件与研究结论变化。</p></a>
+        <a class="portal-card" href="/opportunities"><span>01</span><h3>机会中心</h3><p>查看当前正向经济机会与完整个债研究。</p></a>
         <a class="portal-card" href="/market-map"><span>02</span><h3>藏宝图</h3><p>查看当前正式可转债藏宝图、筛选和单券位置。</p></a>
-        <a class="portal-card" href="/opportunities"><span>03</span><h3>机会中心</h3><p>查看当前正向经济机会与完整个债研究。</p></a>
-        <a class="portal-card" href="/run-center"><span>04</span><h3>运行中心</h3><p>后台启动正式运行、查看阶段状态与失败点。</p></a>
-        <a class="portal-card" href="/audit"><span>05</span><h3>工程审计</h3><p>查看旧 Review、原始 Runtime 字段与审计信息。</p></a>
+        <a class="portal-card" href="/notifications"><span>03</span><h3>机会提醒</h3><p>只看新进入、退出、重要事件与研究结论变化。</p></a>
+        <a class="portal-card" href="/run-center"><span>04</span><h3>运行中心</h3><p>管理员后台：启动正式运行、查看阶段状态与失败点。</p></a>
+        <a class="portal-card" href="/audit"><span>05</span><h3>工程审计</h3><p>管理员查看原始 Runtime 字段与审计信息。</p></a>
       </div>
       <div id="landingSummary" class="meta card">正在读取最新运行和机会结果。</div>
     </section>
@@ -69,8 +69,8 @@
       <div class="section-head">
         <div>
           <p class="eyebrow">机会提醒</p>
-          <h2>今天有哪些机会发生了变化</h2>
-          <p class="section-note">即时提醒优先；每日摘要统一收纳。已读只表示你看过，历史 Change 不删除。</p>
+          <h2>近期有哪些机会发生了变化</h2>
+          <p class="section-note">只读展示近期机会变化。每日 20:45 起进行正式日终更新，完成后机会中心、藏宝图与机会提醒同步刷新；03:00、12:50 为补充信息监听，正式日终状态以 20:45 后完成的更新为准。</p>
         </div>
         <span id="notificationBadge" class="badge idle">读取中</span>
       </div>

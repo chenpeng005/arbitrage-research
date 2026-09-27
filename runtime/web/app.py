@@ -137,10 +137,47 @@ class BondValuationResolverRequest(BaseModel):
 TERMINAL_JOB_STATUSES = {"PASS", "WARNING", "FAIL", "NEEDS_REVIEW"}
 
 
+PUBLIC_PROXY_HEADER = "caddy-public"
+ADMIN_PROXY_HEADER = "caddy-admin"
+PUBLIC_READ_PATHS = {
+    "/",
+    "/opportunities",
+    "/notifications",
+    "/market-map",
+    "/api/market-map/view",
+    "/api/opportunity/view/latest",
+    "/api/opportunity/notifications",
+    "/api/health",
+}
+PUBLIC_READ_PREFIXES = (
+    "/static/",
+    "/opportunities/",
+    "/api/opportunity/view/",
+)
+
+
+def _is_public_read_path(path: str) -> bool:
+    return path in PUBLIC_READ_PATHS or any(
+        path.startswith(prefix) for prefix in PUBLIC_READ_PREFIXES
+    )
+
+
 @app.middleware("http")
 async def runtime_basic_auth(request, call_next):
-    # The public listener is protected by Caddy Basic Auth. Only the local
-    # reverse proxy may skip the application's separate credentials.
+    # Caddy explicitly marks public viewer traffic. Viewer requests are
+    # GET/HEAD-only and restricted to the three public product surfaces.
+    proxy_role = request.headers.get("X-Runtime-Proxy", "")
+    if proxy_role == PUBLIC_PROXY_HEADER:
+        if request.method not in {"GET", "HEAD", "OPTIONS"}:
+            return Response("Read-only viewer access.", status_code=403)
+        if not _is_public_read_path(request.url.path):
+            return Response("Administrator access required.", status_code=403)
+        return await call_next(request)
+
+    # Authenticated Caddy admin traffic and trusted local automation can use
+    # the full runtime surface.
+    if proxy_role == ADMIN_PROXY_HEADER:
+        return await call_next(request)
     if (
         os.environ.get("RUNTIME_TRUST_LOCAL_PROXY_AUTH") == "1"
         and request.client is not None
@@ -1307,7 +1344,7 @@ def find_latest_acquisition_input() -> tuple[str, Path] | None:
 
 @app.get("/")
 def home() -> RedirectResponse:
-    return RedirectResponse("/run-center", status_code=302)
+    return RedirectResponse("/opportunities", status_code=302)
 
 
 @app.get("/review", response_class=HTMLResponse)
