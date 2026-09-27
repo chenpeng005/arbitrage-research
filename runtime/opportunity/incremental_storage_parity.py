@@ -145,8 +145,17 @@ def audit_json_sqlite_parity(
                    FROM research_binding WHERE is_current=1"""
             )
         }
-        for row in ledger.get("results", {}).values():
-            key = f"{str(row['bond_code']).zfill(6)}:{row['path_id']}"
+        ledger_results = ledger.get("results", {})
+        current_json_results = {}
+        for key, trigger_row in trigger.get("paths", {}).items():
+            current_trigger_key = trigger_row.get("last_trigger_key")
+            if not current_trigger_key:
+                continue
+            row = ledger_results.get(current_trigger_key)
+            if row is not None:
+                current_json_results[key] = row
+
+        for key, row in current_json_results.items():
             db = current_bindings.get(key)
             if db is None:
                 add(
@@ -169,7 +178,8 @@ def audit_json_sqlite_parity(
             "sqlite_market_rows": len(db_market),
             "json_path_states": len(trigger.get("paths", {})),
             "sqlite_path_states": len(db_states),
-            "json_research_results": len(ledger.get("results", {})),
+            "json_research_results": len(current_json_results),
+            "json_research_history_results": len(ledger_results),
             "sqlite_current_bindings": len(current_bindings),
             "json_opportunity_bonds": int(registry.get("bonds_with_any_keep", 0)),
             "sqlite_opportunity_bonds": conn.execute(
@@ -220,5 +230,3 @@ def audit_json_sqlite_parity(
         }
     finally:
         conn.close()
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
