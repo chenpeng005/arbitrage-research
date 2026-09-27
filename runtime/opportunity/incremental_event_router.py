@@ -552,102 +552,43 @@ def route_event(event: dict[str, Any]) -> dict[str, Any]:
         )
 
     elif family == "CREDIT:RATING_UPDATE":
-        materiality = str(event.get("materiality") or "")
-        if materiality == "FACT_UPDATE":
-            add(
-                "MATURITY_CASH",
-                "FACT_UPDATE",
-                "NONE",
-                "DAILY_DIGEST",
-                "SEMANTIC_AUDIT_CONFIRMED_NON_INVALIDATING_RATING_UPDATE",
-            )
-            add(
-                "PUT",
-                "FACT_UPDATE",
-                "NONE",
-                "DAILY_DIGEST",
-                "SEMANTIC_AUDIT_CONFIRMED_NON_INVALIDATING_RATING_UPDATE",
-            )
-            add(
-                "CREDIT_RISK",
-                "FACT_UPDATE",
-                "NONE",
-                "DAILY_DIGEST",
-                "SEMANTIC_AUDIT_CONFIRMED_NON_INVALIDATING_RATING_UPDATE",
-            )
-        elif materiality in {"MATERIAL_CHANGE", "RISK_CHANGE"}:
-            level = "IMMEDIATE" if materiality == "RISK_CHANGE" else "DAILY_DIGEST"
-            add(
-                "MATURITY_CASH",
-                "MATERIAL_CHANGE",
-                "FULL_V2_RESEARCH",
-                level,
-                "SEMANTIC_AUDIT_CONFIRMED_MATERIAL_RATING_CHANGE",
-            )
-            add(
-                "PUT",
-                "MATERIAL_CHANGE",
-                "FULL_V2_RESEARCH",
-                level,
-                "SEMANTIC_AUDIT_CONFIRMED_MATERIAL_RATING_CHANGE",
-            )
-            add(
-                "CREDIT_RISK",
-                "RISK_CHANGE" if materiality == "RISK_CHANGE" else "MATERIAL_CHANGE",
-                "NONE",
-                level,
-                "SEMANTIC_AUDIT_CONFIRMED_MATERIAL_RATING_CHANGE",
-            )
-        else:
-            return {
-                "event_update_id": event.get("event_update_id"),
-                "event_family": family,
-                "status": "SEMANTIC_AUDIT_REQUIRED",
-                "routes": [],
-                "reason": "CONFIRMED_RATING_EVENT_MISSING_MATERIALITY",
-            }
+        add(
+            "MATURITY_CASH",
+            "FACT_UPDATE",
+            "SEMANTIC_AUDIT",
+            "DAILY_DIGEST",
+            "RATING_DIRECTION_AND_MATERIALITY_REQUIRED",
+        )
+        add(
+            "PUT",
+            "FACT_UPDATE",
+            "SEMANTIC_AUDIT",
+            "DAILY_DIGEST",
+            "RATING_DIRECTION_AND_MATERIALITY_REQUIRED",
+        )
+        add(
+            "CREDIT_RISK",
+            "FACT_UPDATE",
+            "SEMANTIC_AUDIT",
+            "DAILY_DIGEST",
+            "RATING_DIRECTION_AND_MATERIALITY_REQUIRED",
+        )
 
     elif family in {"CREDIT:FINANCING_SUPPORT", "CREDIT:SUPPORT_OR_ASSET"}:
-        materiality = str(event.get("materiality") or "")
-        if materiality == "FACT_UPDATE":
-            add(
-                "MATURITY_CASH",
-                "FACT_UPDATE",
-                "NONE",
-                "DAILY_DIGEST",
-                "SEMANTIC_AUDIT_CONFIRMED_NON_INVALIDATING_SUPPORT_UPDATE",
-            )
-            add(
-                "PUT",
-                "FACT_UPDATE",
-                "NONE",
-                "DAILY_DIGEST",
-                "SEMANTIC_AUDIT_CONFIRMED_NON_INVALIDATING_SUPPORT_UPDATE",
-            )
-        elif materiality in {"MATERIAL_CHANGE", "RISK_CHANGE"}:
-            level = "IMMEDIATE" if materiality == "RISK_CHANGE" else "DAILY_DIGEST"
-            add(
-                "MATURITY_CASH",
-                "MATERIAL_CHANGE",
-                "FULL_V2_RESEARCH",
-                level,
-                "SEMANTIC_AUDIT_CONFIRMED_MATERIAL_SUPPORT_CHANGE",
-            )
-            add(
-                "PUT",
-                "MATERIAL_CHANGE",
-                "FULL_V2_RESEARCH",
-                level,
-                "SEMANTIC_AUDIT_CONFIRMED_MATERIAL_SUPPORT_CHANGE",
-            )
-        else:
-            return {
-                "event_update_id": event.get("event_update_id"),
-                "event_family": family,
-                "status": "SEMANTIC_AUDIT_REQUIRED",
-                "routes": [],
-                "reason": "CONFIRMED_SUPPORT_EVENT_MISSING_MATERIALITY",
-            }
+        add(
+            "MATURITY_CASH",
+            "FACT_UPDATE",
+            "SEMANTIC_AUDIT",
+            "DAILY_DIGEST",
+            "SUPPORT_REALIZATION_AND_MATERIALITY_REQUIRED",
+        )
+        add(
+            "PUT",
+            "FACT_UPDATE",
+            "SEMANTIC_AUDIT",
+            "DAILY_DIGEST",
+            "SUPPORT_REALIZATION_AND_MATERIALITY_REQUIRED",
+        )
 
     else:
         return {

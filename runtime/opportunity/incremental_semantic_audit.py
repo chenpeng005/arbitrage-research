@@ -589,13 +589,11 @@ def _route_confirmed_event(
     bond_name: str,
     event_update_id: str,
     event_family: str,
-    materiality: str,
     detected_at: str,
 ) -> dict[str, Any]:
     event = {
         "event_update_id": event_update_id,
         "event_family": event_family,
-        "materiality": materiality,
         "requires_semantic_audit": False,
     }
     routing = route_event(event)
@@ -972,7 +970,6 @@ def apply_event_semantic_audit_result(
                     bond_name=task["bond_name"],
                     event_update_id=event_id,
                     event_family=family,
-                    materiality=item["materiality"],
                     detected_at=now,
                 )
                 confirmed_outputs.append({
