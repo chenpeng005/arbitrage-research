@@ -10,7 +10,7 @@ import re
 from datetime import datetime
 from typing import Any
 
-VIEW_CONTRACT_VERSION = "opportunity-view-v2"
+VIEW_CONTRACT_VERSION = "opportunity-view-v3"
 
 PATH_LABELS = {
     "MATURITY_CASH": "到期现金",
@@ -31,8 +31,8 @@ EVENT_STATE_LABELS = {
     "T_LE_1M": "距到期 1 个月内",
     "T_LE_3M": "距到期 3 个月内",
     "T_LE_6M": "距到期 6 个月内",
-    "T_LE_12M": "距到期 1 年内",
-    "T_GT_12M": "距到期 1 年以上",
+    "T_LE_12M": "距到期 12 个月内",
+    "T_GT_12M": "距到期 12 个月以上",
     "BEFORE_PUT_WINDOW": "尚未进入普通回售期",
     "满足条件": "已满足下修触发条件",
     "临近触发": "接近下修触发条件",
@@ -438,6 +438,31 @@ def _event_state_text(path_id: str, event_state: Any) -> str:
     if raw in EVENT_STATE_LABELS:
         return EVENT_STATE_LABELS[raw]
     return _humanize_prose(raw)
+
+
+def _event_state_sort_key(path_id: str, event_state: Any) -> float | None:
+    raw = str(event_state or "").strip()
+    if path_id == "MATURITY_CASH":
+        return {
+            "T_LE_1M": 1.0,
+            "T_LE_3M": 3.0,
+            "T_LE_6M": 6.0,
+            "T_LE_12M": 12.0,
+            "T_GT_12M": 999.0,
+        }.get(raw)
+    if path_id == "PUT":
+        return {
+            "PUT_RIGHT_FORMED": 0.0,
+            "IN_PUT_WINDOW": 1.0,
+            "BEFORE_PUT_WINDOW": 999.0,
+        }.get(raw, 500.0 if raw else None)
+    if path_id == "DOWNWARD_REVISION":
+        return {
+            "满足条件": 0.0,
+            "临近触发": 1.0,
+            "未进入": 2.0,
+        }.get(raw, 500.0 if raw else None)
+    return None
 
 
 def _payment_stability_text(path: dict[str, Any]) -> str:
@@ -861,6 +886,7 @@ def build_opportunity_card(
             market_cutoff=record.get("market_cutoff"),
             maturity_contract_fact=maturity_contract_fact,
         )
+        is_floor = _path_is_floor(path)
         paths.append({
             "path_id": path_id,
             "path_name": PATH_LABELS.get(path_id, path_id),
@@ -870,10 +896,14 @@ def build_opportunity_card(
             "current_event_state_text": _event_state_text(
                 path_id, path.get("current_event_state")
             ),
+            "current_event_state_sort_key": _event_state_sort_key(
+                path_id, path.get("current_event_state")
+            ),
             "opportunity_time": opportunity_time,
             "ytm_pct": ytm_pct,
             "metrics": _metrics(path_id, path.get("economic_judgment") or {}),
             "quick_judgment": _quick_judgment(path),
+            "floor_class": "保底型" if is_floor else "非保底型",
         })
     floor_class, floor_reason = _bond_floor_class(record)
     return {
@@ -898,8 +928,6 @@ def build_opportunity_list(
         "view_contract_version": VIEW_CONTRACT_VERSION,
         "market_snapshot_id": payload.get("market_snapshot_id"),
         "market_cutoff": payload.get("market_cutoff"),
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
         "bond_count": payload.get("bond_count", len(records)),
         "keep_path_count": payload.get("keep_path_count"),
         "record_state_summary": payload.get("record_state_summary", {}),
@@ -913,5 +941,3 @@ def build_opportunity_list(
             for record in records
         ],
     }
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

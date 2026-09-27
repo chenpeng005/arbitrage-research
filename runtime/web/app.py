@@ -1325,6 +1325,11 @@ def run_center_page() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
 
 
+@app.get("/notifications", response_class=HTMLResponse)
+def notifications_page() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
+
+
 @app.get("/market-map", response_class=HTMLResponse)
 def market_map_page() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "market_map.html").read_text(encoding="utf-8"))

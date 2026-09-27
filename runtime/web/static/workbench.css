@@ -121,6 +121,8 @@ h4{font-size:16px}
 }
 .meta{padding:13px 16px;margin-top:12px;color:var(--muted)}
 .notification-card{margin-top:12px;padding:16px}
+.standalone-notification-card{margin-top:0}
+.notification-section .section-head{margin-bottom:12px}
 .notification-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .notification-head h3{margin:0 0 4px}
 .notification-head p{margin:0}
@@ -432,6 +434,7 @@ body.detail-page .close-btn{display:none}
 .research-summary h4{font-size:18px;margin-bottom:12px}
 .research-summary ul{margin:5px 0 10px}
 .summary-economic,.summary-next{margin:8px 0}
+.summary-overall{margin:10px 0 12px;padding:10px 12px;border-left:3px solid var(--accent);background:#f4f7ff;border-radius:7px;line-height:1.65}
 .summary-risk{margin-top:10px}
 .logic-heading{
   display:flex;

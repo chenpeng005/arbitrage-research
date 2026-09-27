@@ -9,6 +9,7 @@ function pageMode(){
   const p=window.location.pathname.replace(/\/+$/,"")||"/";
   if(p==="/workbench")return "landing";
   if(p==="/run-center")return "run";
+  if(p==="/notifications")return "notifications";
   if(p==="/opportunities")return "opportunities";
   if(/^\/opportunities\/\d{6}$/.test(p))return "detail";
   if(/^\/opportunities-v2-preview\/\d{6}$/.test(p))return "detail";
@@ -34,10 +35,11 @@ function configurePage(){
   document.querySelectorAll(".nav a").forEach(a=>{
     const href=a.getAttribute("href");
     const active=(mode==="run"&&href==="/run-center")
+      ||(mode==="notifications"&&href==="/notifications")
       ||(mode==="opportunities"&&href==="/opportunities");
     a.classList.toggle("active",active);
   });
-  const ids={landing:"#landing",run:"#runCenter",opportunities:"#opportunities",audit:"#audit"};
+  const ids={landing:"#landing",run:"#runCenter",notifications:"#notifications",opportunities:"#opportunities",audit:"#audit"};
   Object.entries(ids).forEach(([key,sel])=>{
     const el=$(sel);
     if(el)el.classList.toggle("hidden",key!==mode);
@@ -444,16 +446,35 @@ function researchStateCounts(data){
 }
 
 function renderOpportunitySummary(data){
-  const active=(data.opportunities||[]).filter(bondInActiveResearch);
-  const watch=(data.opportunities||[]).length-active.length;
-  const floor=active.filter(b=>b.floor_class==="保底型").length;
-  const nonFloor=active.length-floor;
+  const bonds=data.opportunities||[];
+  const active=bonds.filter(bondInActiveResearch);
+  const watch=bonds.length-active.length;
+  const activePaths=active.flatMap(b=>
+    (b.paths||[]).filter(p=>p.research_state!=="NOT_TRIGGERED")
+  );
+  const floorPaths=activePaths.filter(p=>p.floor_class==="保底型").length;
+  const nonFloorPaths=activePaths.length-floorPaths;
   $("#opportunitySummary").innerHTML=
     '<b>市场截面 '+esc(data.market_cutoff||"—")+'</b>'
-    +'　研究层 '+esc(active.length)+' 只'
-    +'　·　保底 '+esc(floor)+' 只'
-    +'　·　非保底 '+esc(nonFloor)+' 只'
+    +'　研究层 '+esc(active.length)+' 只 / '+esc(activePaths.length)+' 条路径'
+    +'　·　保底路径 '+esc(floorPaths)+' 条'
+    +'　·　非保底路径 '+esc(nonFloorPaths)+' 条'
     +'　·　长期监控 '+esc(watch)+' 只';
+}
+
+function filteredPathsForBond(b){
+  const f=state.filters;
+  let paths=(b.paths||[]).slice();
+  if(f.research==="ALL"){
+    // 全部研究状态：保留已进入研究层和长期监控路径。
+  }else if(f.research){
+    paths=paths.filter(p=>p.research_state===f.research);
+  }else{
+    // 默认只看已进入研究层。
+    paths=paths.filter(p=>p.research_state!=="NOT_TRIGGERED");
+  }
+  if(f.path)paths=paths.filter(p=>p.path_id===f.path);
+  return paths;
 }
 
 function bondMatches(b){
@@ -463,15 +484,7 @@ function bondMatches(b){
     const hay=(b.bond_code+" "+b.bond_name).toLowerCase();
     if(!hay.includes(q))return false;
   }
-  if(f.path||f.research){
-    const matched=(b.paths||[]).some(p=>{
-      if(!f.research&&p.research_state==="NOT_TRIGGERED")return false;
-      return (!f.path||p.path_id===f.path)
-        &&(!f.research||p.research_state===f.research);
-    });
-    if(!matched)return false;
-  }
-  return true;
+  return filteredPathsForBond(b).length>0;
 }
 
 function renderPathRow(p){
@@ -545,14 +558,8 @@ function pathLines(paths,fn){
 }
 
 function visiblePathsForBond(b){
-  let paths=(b.paths||[]).slice();
-  if(state.filters.research){
-    paths=paths.filter(p=>p.research_state===state.filters.research);
-  }else{
-    paths=paths.filter(p=>p.research_state!=="NOT_TRIGGERED");
-  }
-  if(state.filters.path)paths=paths.filter(p=>p.path_id===state.filters.path);
-  return paths;
+  if(Array.isArray(b.display_paths))return b.display_paths;
+  return filteredPathsForBond(b);
 }
 
 function firstVisibleText(b,fn){
@@ -579,7 +586,17 @@ function opportunitySortValue(b,key){
   if(key==="name")return String(b.bond_name||"").replace(/转债$/,"");
   if(key==="price")return Number(bondCurrentPrice(b));
   if(key==="path")return firstVisibleText(b,p=>p.path_name);
-  if(key==="status")return firstVisibleText(b,p=>p.current_event_state_text);
+  if(key==="status"){
+    const rank={MATURITY_CASH:0,PUT:1000,DOWNWARD_REVISION:2000};
+    const vals=visiblePathsForBond(b).map(p=>{
+      const rawKey=p.current_event_state_sort_key;
+      if(rawKey===null||rawKey===undefined||rawKey==="")return null;
+      const stateKey=Number(rawKey);
+      const base=rank[p.path_id]??3000;
+      return Number.isFinite(stateKey)?base+stateKey:null;
+    }).filter(x=>x!==null);
+    return vals.length?Math.min(...vals):null;
+  }
   if(key==="time")return earliestOpportunityTime(b);
   if(key==="space"){
     const vals=visiblePathsForBond(b).map(p=>pathSpaceSortValue(p,b)).filter(x=>x!==null&&Number.isFinite(x));
@@ -646,10 +663,17 @@ function renderOpportunityList(){
   const data=state.opportunities;
   if(!data)return;
   const filtered=(data.opportunities||[]).filter(bondMatches);
-  const showWaiting=state.filters.research==="NOT_TRIGGERED";
-  const rows=showWaiting?filtered:filtered.filter(bondInActiveResearch);
-  const floor=sortOpportunityRows(rows.filter(b=>b.floor_class==="保底型"));
-  const nonFloor=sortOpportunityRows(rows.filter(b=>b.floor_class!=="保底型"));
+  const floorRows=[];
+  const nonFloorRows=[];
+  for(const b of filtered){
+    const visible=filteredPathsForBond(b);
+    const floorPaths=visible.filter(p=>p.floor_class==="保底型");
+    const nonFloorPaths=visible.filter(p=>p.floor_class!=="保底型");
+    if(floorPaths.length)floorRows.push({...b,display_paths:floorPaths});
+    if(nonFloorPaths.length)nonFloorRows.push({...b,display_paths:nonFloorPaths});
+  }
+  const floor=sortOpportunityRows(floorRows);
+  const nonFloor=sortOpportunityRows(nonFloorRows);
 
   $("#floorVisibleCount").textContent=floor.length+" 只";
   $("#nonFloorVisibleCount").textContent=nonFloor.length+" 只";
@@ -691,9 +715,17 @@ function renderMetrics(metrics){
 function renderResearchSummary(obj){
   if(!obj||typeof obj!=="object")return "";
   const why=Array.isArray(obj["为什么"])?obj["为什么"]:[];
+  const core=String(obj["核心结论"]||"当前判断");
+  const marker="综合判断：";
+  const markerAt=core.indexOf(marker);
+  const coreHtml=markerAt>=0
+    ?'<h4>'+esc(core.slice(0,markerAt).trim())+'</h4>'
+      +'<div class="summary-overall"><b>综合判断：</b>'
+      +esc(core.slice(markerAt+marker.length).trim())+'</div>'
+    :'<h4>'+esc(core)+'</h4>';
   return '<section class="research-summary">'
     +'<div class="research-summary-label">先看结论</div>'
-    +'<h4>'+esc(obj["核心结论"]||"当前判断")+'</h4>'
+    +coreHtml
     +(obj["经济结果"]?'<div class="summary-economic"><b>经济结果：</b>'+esc(obj["经济结果"])+'</div>':"")
     +(why.length?'<div class="summary-why"><b>为什么：</b><ul>'+why.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul></div>':"")
     +(obj["首要风险提醒"]?'<div class="summary-risk"><b>最重要的风险：</b>'+esc(obj["首要风险提醒"])+'</div>':"")
@@ -938,7 +970,10 @@ async function init(){
     await loadLandingSummary();
   }else if(mode==="run"){
     document.title="运行中心｜机会发现";
-    await Promise.all([loadLatestRun(),loadRunPolicy(),loadStorageStatus(),loadInformationStatus(),loadNotificationFeed()]);
+    await Promise.all([loadLatestRun(),loadRunPolicy(),loadStorageStatus(),loadInformationStatus()]);
+  }else if(mode==="notifications"){
+    document.title="机会提醒｜机会发现";
+    await loadNotificationFeed();
   }else if(mode==="opportunities"){
     document.title="机会结果｜机会发现";
     await loadOpportunities();
