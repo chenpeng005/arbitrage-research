@@ -15,6 +15,7 @@ from .tasks import get_task_spec
 from .tools.evidence import (
     ToolContext,
     execute_tool,
+    prefetch_event_semantic_evidence,
     prefetch_path_research_evidence,
 )
 from .validation import run_validator
@@ -127,6 +128,13 @@ def run_ai_job(
                 tool_ctx,
                 max_docs=3,
             )
+        elif task_type == "EVENT_SEMANTIC_AUDIT":
+            prefetched_evidence = prefetch_event_semantic_evidence(
+                tool_ctx,
+                max_docs=3,
+            )
+
+        if task_type in {"PATH_RESEARCH", "EVENT_SEMANTIC_AUDIT"}:
             write_json(
                 job_dir / "engineering_prefetched_evidence.json",
                 {"evidence": prefetched_evidence},
@@ -139,8 +147,9 @@ def run_ai_job(
                             "engineering_prefetched_evidence": prefetched_evidence,
                             "instruction": (
                                 "这些证据已由 Engineering 在模型首次回答前读取。"
-                                "请把它们作为正式证据使用；只有仍存在未闭合的重大"
-                                " UNKNOWN-B 时才继续调用工具。"
+                                "请把它们作为正式证据使用；EVENT_SEMANTIC_AUDIT "
+                                "不得扩展到冻结 Evidence 之外，PATH_RESEARCH 只有"
+                                "仍存在未闭合的重大 UNKNOWN-B 时才继续调用工具。"
                             ),
                         },
                         ensure_ascii=False,
@@ -308,3 +317,5 @@ def run_ai_job(
         metadata["completed_at"] = now_utc()
         write_json(job_dir / "ai_job_metadata.json", metadata)
         return metadata
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

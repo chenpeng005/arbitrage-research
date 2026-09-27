@@ -361,9 +361,105 @@ def path_research_spec(root: Path) -> AITaskSpec:
     )
 
 
+def event_semantic_audit_spec(root: Path) -> AITaskSpec:
+    return AITaskSpec(
+        task_type="EVENT_SEMANTIC_AUDIT",
+        prompt_path=(
+            root / "runtime" / "ai_runtime" / "prompts"
+            / "event_semantic_audit_v1.md"
+        ),
+        output_schema={
+            "type": "object",
+            "required": [
+                "audit_result_id",
+                "task_id",
+                "trigger_key",
+                "bond_code",
+                "research_cutoff",
+                "disposition",
+                "reason_short",
+                "confirmed_events",
+                "confidence",
+            ],
+            "properties": {
+                "audit_result_id": {"type": "string"},
+                "task_id": {"type": "string"},
+                "trigger_key": {"type": "string"},
+                "bond_code": {"type": "string"},
+                "research_cutoff": {"type": "string"},
+                "disposition": {
+                    "type": "string",
+                    "enum": [
+                        "CONFIRMED_EVENT_UPDATE",
+                        "NO_MATERIAL_CHANGE",
+                        "NEEDS_EVIDENCE",
+                    ],
+                },
+                "reason_short": {"type": "string"},
+                "confirmed_events": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "event_family",
+                            "occurred_at",
+                            "materiality",
+                            "fact_summary",
+                            "supporting_evidence_ids",
+                        ],
+                        "properties": {
+                            "event_family": {"type": "string"},
+                            "occurred_at": {"type": "string"},
+                            "materiality": {
+                                "type": "string",
+                                "enum": ["FACT_UPDATE", "MATERIAL_CHANGE", "RISK_CHANGE"],
+                            },
+                            "fact_summary": {"type": "string"},
+                            "supporting_evidence_ids": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                },
+                "confidence": {
+                    "type": "string",
+                    "enum": ["HIGH", "MEDIUM", "LOW"],
+                },
+            },
+        },
+        allowed_tools=[
+            {
+                "name": "event_evidence_fetch",
+                "description": (
+                    "读取本 EVENT_SEMANTIC_AUDIT task 已冻结的 Evidence Document 正文。"
+                    "只能传入 input.evidence_documents 中已有的 evidence_id。"
+                ),
+                "input_schema": {
+                    "type": "object",
+                    "required": ["evidence_id"],
+                    "properties": {
+                        "evidence_id": {"type": "string"},
+                    },
+                },
+            }
+        ],
+        validator=(
+            "runtime.opportunity.incremental_semantic_audit."
+            "validate_event_semantic_audit"
+        ),
+        max_tool_rounds=1,
+        timeout_seconds=90,
+    )
+
+
 def get_task_spec(task_type: str, root: Path) -> AITaskSpec:
     if task_type == "MARKET_MAP_SEMANTIC_AUDIT":
         return market_map_semantic_audit_spec(root)
     if task_type == "PATH_RESEARCH":
         return path_research_spec(root)
+    if task_type == "EVENT_SEMANTIC_AUDIT":
+        return event_semantic_audit_spec(root)
     raise ValueError(f"Unsupported AI task_type: {task_type}")
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

@@ -831,11 +831,101 @@ def prefetch_path_research_evidence(
     return results
 
 
+def event_evidence_fetch(
+    ctx: ToolContext,
+    args: dict[str, Any],
+) -> dict[str, Any]:
+    """Fetch only an Evidence Document frozen into EVENT_SEMANTIC_AUDIT input."""
+    evidence_id = str(args.get("evidence_id") or "")
+    documents = ctx.input_payload.get("evidence_documents") or []
+    item = next(
+        (
+            row for row in documents
+            if isinstance(row, dict)
+            and str(row.get("evidence_id") or "") == evidence_id
+        ),
+        None,
+    )
+    if item is None:
+        raise ValueError("evidence_id is not frozen into this semantic-audit task")
+
+    announcement_id = _eastmoney_announcement_id(
+        str(item.get("url") or item.get("detail_url") or "")
+    )
+    if not announcement_id or announcement_id != evidence_id:
+        raise ValueError("semantic-audit evidence is not a valid Eastmoney announcement")
+
+    catalog_path = ctx.ai_job_dir / "evidence_catalog.json"
+    catalog = {}
+    if catalog_path.exists():
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    catalog[evidence_id] = {
+        "evidence_id": evidence_id,
+        "source_type": "eastmoney_announcement",
+        "stock_code": str(item.get("issuer_stock_code") or "").zfill(6),
+        "bond_code": str(ctx.input_payload.get("bond_code") or "").zfill(6),
+        "bond_name": str(ctx.input_payload.get("bond_name") or ""),
+        "title": str(item.get("title") or ""),
+        "published_at": str(item.get("published_at") or ""),
+        "detail_url": str(item.get("url") or item.get("detail_url") or ""),
+        "content_api_url": "https://np-cnotice-stock.eastmoney.com/api/content/ann",
+        "event_kind": item.get("source_kind"),
+        "keyword": "FROZEN_EVENT_EVIDENCE",
+        "preloaded_candidate": True,
+        "engineering_prefetch": True,
+    }
+    catalog_path.write_text(
+        json.dumps(catalog, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return path_evidence_fetch(ctx, {"evidence_id": evidence_id})
+
+
+def prefetch_event_semantic_evidence(
+    ctx: ToolContext,
+    *,
+    max_docs: int = 3,
+) -> list[dict[str, Any]]:
+    documents = [
+        row for row in (ctx.input_payload.get("evidence_documents") or [])
+        if isinstance(row, dict)
+    ][:max_docs]
+    results: list[dict[str, Any]] = []
+    for item in documents:
+        evidence_id = str(item.get("evidence_id") or "")
+        if not evidence_id:
+            continue
+        try:
+            fetched = event_evidence_fetch(ctx, {"evidence_id": evidence_id})
+            results.append({
+                "evidence_id": evidence_id,
+                "title": fetched.get("title"),
+                "published_at": fetched.get("published_at"),
+                "source_kind": item.get("source_kind"),
+                "detail_url": fetched.get("detail_url"),
+                "text_source": fetched.get("text_source"),
+                "text_chars": fetched.get("text_chars"),
+                "text": fetched.get("text"),
+                "text_truncated": fetched.get("text_truncated"),
+            })
+        except Exception as exc:
+            results.append({
+                "evidence_id": evidence_id,
+                "title": item.get("title"),
+                "published_at": item.get("published_at"),
+                "source_kind": item.get("source_kind"),
+                "error": f"{type(exc).__name__}: {exc}",
+                "text": "",
+            })
+    return results
+
+
 TOOL_HANDLERS = {
     "evidence_search": evidence_search,
     "evidence_fetch": evidence_fetch,
     "path_evidence_search": path_evidence_search,
     "path_evidence_fetch": path_evidence_fetch,
+    "event_evidence_fetch": event_evidence_fetch,
 }
 
 
@@ -848,3 +938,5 @@ def execute_tool(
     if handler is None:
         raise ValueError(f"Tool is not allowed: {name}")
     return handler(ctx, arguments)
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

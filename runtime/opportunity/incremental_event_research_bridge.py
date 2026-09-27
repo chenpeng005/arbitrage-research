@@ -150,6 +150,23 @@ def promote_event_path_research(
                 "UPDATE research_trigger_ledger SET status=?,updated_at=? WHERE trigger_key=?",
                 ("PROMOTED_TO_PENDING_QUEUE",now,row["trigger_key"]),
             )
+            conn.execute(
+                """UPDATE research_binding
+                   SET validity_status='UPDATE_PENDING',
+                       reuse_reason='EVENT_FULL_V2_PENDING',
+                       validity_basis_json=?
+                   WHERE bond_code=? AND path_id=? AND is_current=1""",
+                (
+                    json.dumps({
+                        "bridge_version": BRIDGE_VERSION,
+                        "trigger_key": row["trigger_key"],
+                        "source_event_update_id": row["source_event_update_id"],
+                        "event_family": family,
+                    }, ensure_ascii=False, sort_keys=True),
+                    bond_code,
+                    path_id,
+                ),
+            )
             promoted.append(item)
 
         registry_path=_current_registry_path(data_root)

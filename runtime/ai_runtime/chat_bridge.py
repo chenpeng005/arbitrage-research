@@ -16,6 +16,10 @@ from runtime.market_map.semantic_resolution import validate_resolution
 from runtime.opportunity.candidate_pool import build_candidate_pool
 from runtime.opportunity.opportunity_record import build_opportunity_records
 from runtime.opportunity.path_research_validation import validate_path_research_result
+from runtime.opportunity.incremental_semantic_audit import (
+    apply_event_semantic_audit_result,
+    validate_event_semantic_audit,
+)
 from runtime.opportunity.research_ledger import record_path_research_result
 
 
@@ -49,6 +53,8 @@ def task_path(data_root: Path, task_id: str) -> Path:
 def _validation_path(task: dict[str, Any], business_run_dir: Path) -> Path:
     if task.get("task_type") == "PATH_RESEARCH":
         return business_run_dir / "path_research_validation.json"
+    if task.get("task_type") == "EVENT_SEMANTIC_AUDIT":
+        return business_run_dir / "semantic_audit_validation.json"
     return business_run_dir / "semantic_resolution_validation.json"
 
 
@@ -59,6 +65,11 @@ def _validate_submission(
 ) -> dict[str, Any]:
     if task.get("task_type") == "PATH_RESEARCH":
         return validate_path_research_result(
+            business_run_dir,
+            structured_output_path,
+        )
+    if task.get("task_type") == "EVENT_SEMANTIC_AUDIT":
+        return validate_event_semantic_audit(
             business_run_dir,
             structured_output_path,
         )
@@ -383,6 +394,14 @@ def build_evidence_manifest(
 
 
 def resume_pipeline(task: dict[str, Any]) -> dict[str, Any]:
+    if task.get("task_type") == "EVENT_SEMANTIC_AUDIT":
+        return {
+            "status": "SKIPPED",
+            "reason": (
+                "EVENT_SEMANTIC_AUDIT writeback is asynchronous; "
+                "new Event triggers remain in the incremental queue"
+            ),
+        }
     if task.get("task_type") == "PATH_RESEARCH":
         full_runtime_run_id = task.get("full_runtime_run_id")
         if not full_runtime_run_id:
@@ -521,6 +540,29 @@ def submit_resolution(
                     task["downstream_refresh_error"] = (
                         f"{type(refresh_exc).__name__}: {refresh_exc}"
                     )
+        except Exception as exc:
+            writeback_ok = False
+            task["writeback_status"] = "FAIL"
+            task["writeback_error"] = f"{type(exc).__name__}: {exc}"
+
+    if (
+        validation.get("status") == "PASS"
+        and task.get("task_type") == "EVENT_SEMANTIC_AUDIT"
+        and task.get("writeback_mode", "VALIDATE_ONLY") == "FORMAL"
+    ):
+        try:
+            database_path = Path(str(task.get("database_path") or ""))
+            if not database_path:
+                raise RuntimeError(
+                    "EVENT_SEMANTIC_AUDIT chat task has no database_path"
+                )
+            writeback_result = apply_event_semantic_audit_result(
+                result_path=tdir / "structured_output.json",
+                data_root=data_root,
+                target_db=database_path,
+            )
+            task["writeback_status"] = "PASS"
+            task["writeback_result"] = writeback_result
         except Exception as exc:
             writeback_ok = False
             task["writeback_status"] = "FAIL"
