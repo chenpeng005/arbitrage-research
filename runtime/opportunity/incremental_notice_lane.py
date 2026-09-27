@@ -94,8 +94,35 @@ def fetch_relevant_daily_notices(
             "bond_name":row["bond_name"],
         })
 
-    frame=ak.stock_notice_report(symbol="全部",date=date_compact)
+    try:
+        frame=ak.stock_notice_report(symbol="全部",date=date_compact)
+    except KeyError as exc:
+        # AKShare currently raises KeyError('代码') internally when a requested
+        # date has zero notice rows. Treat only this exact boundary as an empty
+        # official-notice day; all other source failures remain fail-closed.
+        if exc.args == ("代码",):
+            return {
+                "notice_lane_version":NOTICE_LANE_VERSION,
+                "notice_date":notice_date,
+                "all_notice_count":0,
+                "active_bond_count":len(bond_rows),
+                "active_issuer_count":len(by_stock),
+                "relevant_notice_count":0,
+                "relevant_notices":[],
+                "source_empty_day_fallback":True,
+            }
+        raise
     relevant=[]
+    if frame.empty or "代码" not in frame.columns:
+        return {
+            "notice_lane_version":NOTICE_LANE_VERSION,
+            "notice_date":notice_date,
+            "all_notice_count":0,
+            "active_bond_count":len(bond_rows),
+            "active_issuer_count":len(by_stock),
+            "relevant_notice_count":0,
+            "relevant_notices":[],
+        }
     for _,row in frame.iterrows():
         stock=str(row.get("代码") or "").zfill(6)
         bonds=by_stock.get(stock)
