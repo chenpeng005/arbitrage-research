@@ -361,6 +361,41 @@ def shadow_sync_current_runtime(
             ):
                 continue
 
+            bootstrap_status = current_basis.get(
+                "watermark_bootstrap_status"
+            )
+            if (
+                current
+                and current["result_id"] == result_id
+                and current["binding_type"] == binding_type
+                and bootstrap_status in {
+                    "ESTABLISHED_NO_RELEVANT_EVIDENCE",
+                    "UNRESOLVED_RELEVANT_EVIDENCE",
+                }
+            ):
+                current_basis.update(
+                    {
+                        "source_trigger_key": current_trigger_key,
+                        "sync_version": SYNC_VERSION,
+                        "binding_type": binding_type,
+                    }
+                )
+                conn.execute(
+                    """UPDATE research_binding
+                       SET checked_state_version=?,
+                           checked_research_state_version=?,
+                           validity_basis_json=?
+                       WHERE binding_id=?""",
+                    (
+                        state_row["state_version"] if state_row else None,
+                        state_row["research_state_version"] if state_row else None,
+                        json_text(current_basis),
+                        current["binding_id"],
+                    ),
+                )
+                stats["research_binding_updates"] += 1
+                continue
+
             if current:
                 conn.execute(
                     """UPDATE research_binding

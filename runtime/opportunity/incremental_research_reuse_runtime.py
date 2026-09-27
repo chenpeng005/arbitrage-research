@@ -229,7 +229,10 @@ def bootstrap_pre_event_binding_watermarks(
                     "watermark_bootstrap_checked_at":now,
                 })
                 conn.execute(
-                    "UPDATE research_binding SET validity_basis_json=? WHERE binding_id=?",
+                    """UPDATE research_binding
+                       SET validity_status='UPDATE_PENDING',
+                           validity_basis_json=?
+                       WHERE binding_id=?""",
                     (json_text(basis),row["binding_id"]),
                 )
                 unresolved.append({
