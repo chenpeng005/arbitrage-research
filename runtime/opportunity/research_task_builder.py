@@ -244,6 +244,11 @@ def build_path_research_tasks(
             raise RuntimeError(f"pending task {trigger_key} is no longer Economic KEEP")
 
         task_id = _task_id(trigger_key)
+        research_cutoff = str(
+            pending.get("research_cutoff") or registry["market_cutoff"]
+        )[:10]
+        if research_cutoff < str(registry["market_cutoff"]):
+            research_cutoff = str(registry["market_cutoff"])
         market_state = {
             key: market_row.get(key)
             for key in (
@@ -274,6 +279,8 @@ def build_path_research_tasks(
             "task_status": "READY_FOR_AI_RESEARCH",
             "created_at": _now(),
             "trigger_key": trigger_key,
+            "trigger_source": pending.get("trigger_source") or "STATE_TRIGGER",
+            "source_event_update_id": pending.get("source_event_update_id"),
             "keep_episode_id": pending.get("keep_episode_id"),
             "bond_code": code,
             "bond_name": bond["bond_name"],
@@ -282,6 +289,7 @@ def build_path_research_tasks(
             "economic_snapshot_id": registry["market_snapshot_id"],
             "market_snapshot_id": registry["market_snapshot_id"],
             "market_cutoff": registry["market_cutoff"],
+            "research_cutoff": research_cutoff,
             "application_commit_sha": deployment.get("application_commit_sha"),
             "knowledge_commit_sha": deployment.get("knowledge_commit_sha"),
             "path_research_canonical_path": CANONICAL_BY_PATH[path_id],
@@ -292,6 +300,8 @@ def build_path_research_tasks(
                 "current_event_state": pending.get("current_event_state"),
                 "trigger_reason": pending.get("trigger_reason"),
                 "trigger_key": trigger_key,
+                "trigger_source": pending.get("trigger_source") or "STATE_TRIGGER",
+                "source_event_update_id": pending.get("source_event_update_id"),
                 "last_triggered_at": pending.get("last_triggered_at"),
             },
             "existing_path_facts": existing_path_facts,
@@ -339,6 +349,7 @@ def build_path_research_tasks(
             "path_id": path_id,
             "task_path": str(task_path),
             "task_status": "READY_FOR_AI_RESEARCH",
+            "research_cutoff": research_cutoff,
         })
 
     result = {
@@ -350,6 +361,10 @@ def build_path_research_tasks(
         "economic_registry_run_id": registry["run_id"],
         "market_snapshot_id": registry["market_snapshot_id"],
         "market_cutoff": registry["market_cutoff"],
+        "research_cutoff_max": max(
+            (x.get("research_cutoff") or registry["market_cutoff"] for x in packages),
+            default=registry["market_cutoff"],
+        ),
         "application_commit_sha": deployment.get("application_commit_sha"),
         "knowledge_commit_sha": deployment.get("knowledge_commit_sha"),
         "pending_queue_count": len(pending_queue.get("pending_tasks", [])),
@@ -385,3 +400,5 @@ def build_path_research_tasks(
         "task_store": str(task_store),
     })
     return result
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

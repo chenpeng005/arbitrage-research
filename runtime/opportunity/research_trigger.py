@@ -167,6 +167,8 @@ def run_research_trigger(
                     "current_conversion_price": float(market_row["current_conversion_price"]),
                     "last_trigger_key": prev.get("last_trigger_key") if prev else None,
                     "last_triggered_at": prev.get("last_triggered_at") if prev else None,
+                    "last_trigger_source": prev.get("last_trigger_source") if prev else None,
+                    "source_event_update_id": prev.get("source_event_update_id") if prev else None,
                     "research_status": (
                         "CANCELLED_ECONOMIC_DROP"
                         if prev and prev.get("research_status") == "PENDING"
@@ -271,11 +273,15 @@ def run_research_trigger(
                 last_trigger_key = trigger_key
                 last_trigger_reason = trigger_reason
                 last_triggered_at = _now()
+                last_trigger_source = "STATE_TRIGGER"
+                source_event_update_id = None
                 research_status = "PENDING"
                 trigger_status = "EMITTED_NEW"
             else:
                 last_trigger_reason = prev.get("last_trigger_reason") if prev else None
                 last_triggered_at = prev.get("last_triggered_at") if prev else None
+                last_trigger_source = prev.get("last_trigger_source") if prev else None
+                source_event_update_id = prev.get("source_event_update_id") if prev else None
                 research_status = prev.get("research_status") if prev else None
                 trigger_status = (
                     "ALREADY_EMITTED"
@@ -296,6 +302,8 @@ def run_research_trigger(
                 "last_trigger_key": last_trigger_key,
                 "last_trigger_reason": last_trigger_reason,
                 "last_triggered_at": last_triggered_at,
+                "last_trigger_source": last_trigger_source,
+                "source_event_update_id": source_event_update_id,
                 "research_status": research_status,
                 "last_path_result_id": prev.get("last_path_result_id") if prev else None,
                 "updated_at": _now(),
@@ -345,6 +353,8 @@ def run_research_trigger(
                 "current_event_state": state_row.get("current_event_state"),
                 "trigger_key": state_row.get("last_trigger_key"),
                 "trigger_reason": state_row.get("last_trigger_reason"),
+                "trigger_source": state_row.get("last_trigger_source") or "STATE_TRIGGER",
+                "source_event_update_id": state_row.get("source_event_update_id"),
                 "last_triggered_at": state_row.get("last_triggered_at"),
                 "research_status": "PENDING",
             })
@@ -424,3 +434,5 @@ def run_research_trigger(
         "pending_tasks_path": str(pending_queue_path),
     })
     return result
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

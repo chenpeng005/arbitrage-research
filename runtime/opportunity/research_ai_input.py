@@ -83,6 +83,14 @@ def prepare_path_research_ai_input(
         raise RuntimeError("task/evidence path_id mismatch")
     if task.get("market_cutoff") != evidence.get("market_cutoff"):
         raise RuntimeError("task/evidence market_cutoff mismatch")
+    task_research_cutoff = str(
+        task.get("research_cutoff") or task.get("market_cutoff") or ""
+    )
+    evidence_research_cutoff = str(
+        evidence.get("research_cutoff") or evidence.get("market_cutoff") or ""
+    )
+    if task_research_cutoff != evidence_research_cutoff:
+        raise RuntimeError("task/evidence research_cutoff mismatch")
 
     knowledge_sha = str(task.get("knowledge_commit_sha") or "")
     if not knowledge_sha:
@@ -127,7 +135,7 @@ def prepare_path_research_ai_input(
         "ai_input_version": AI_INPUT_VERSION,
         "created_at": _now(),
         "expected_path_result_id": expected_result_id,
-        "research_cutoff": task["market_cutoff"],
+        "research_cutoff": task_research_cutoff,
         "path_research_task": task,
         "evidence_pack": evidence,
         "canonical_context": {
@@ -169,3 +177,5 @@ def prepare_path_research_ai_input(
     }
     _write_json(work_dir / "input_build_result.json", descriptor)
     return descriptor
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

@@ -213,7 +213,9 @@ def build_research_evidence(
             index=False,
         )
 
-    statement_date = statement_date_for_cutoff(batch["market_cutoff"])
+    statement_date = statement_date_for_cutoff(
+        str(batch.get("research_cutoff_max") or batch["market_cutoff"])
+    )
     balance = pd.DataFrame()
     cashflow = pd.DataFrame()
     balance_index: dict[str, dict[str, Any]] = {}
@@ -244,6 +246,9 @@ def build_research_evidence(
         market_row = market_rows[code]
         stock_code = str(market_row["stock_code"]).zfill(6)
         path_id = task["path_id"]
+        research_cutoff = str(
+            task.get("research_cutoff") or batch["market_cutoff"]
+        )[:10]
         facts: dict[str, Any] = {}
         sources: list[dict[str, Any]] = []
         missing_or_deferred: list[str] = []
@@ -266,8 +271,8 @@ def build_research_evidence(
 
             notice_frame, notice_candidates = fetch_maturity_notice_index(
                 stock_code,
-                _begin_date(batch["market_cutoff"]),
-                batch["market_cutoff"].replace("-", ""),
+                _begin_date(research_cutoff),
+                research_cutoff.replace("-", ""),
             )
             notice_frame.to_csv(
                 raw_dir / f"maturity_notices_{code}.csv",
@@ -308,8 +313,8 @@ def build_research_evidence(
                 {
                     "source_id": "MATURITY_NOTICE_INDEX",
                     "source": "AKShare/Eastmoney official-announcement index",
-                    "begin_date": _begin_date(batch["market_cutoff"]),
-                    "end_date": batch["market_cutoff"],
+                    "begin_date": _begin_date(research_cutoff),
+                    "end_date": research_cutoff,
                     "stock_code": stock_code,
                     "scope": "NOTICE_CANDIDATES_ONLY",
                 },
@@ -351,8 +356,8 @@ def build_research_evidence(
 
             payment_frame, payment_candidates = fetch_maturity_notice_index(
                 stock_code,
-                _begin_date(batch["market_cutoff"]),
-                batch["market_cutoff"].replace("-", ""),
+                _begin_date(research_cutoff),
+                research_cutoff.replace("-", ""),
             )
             payment_frame.to_csv(
                 raw_dir / f"put_payment_notices_{code}.csv",
@@ -362,8 +367,8 @@ def build_research_evidence(
 
             revision_frame, revision_notices = fetch_revision_notice_index(
                 stock_code,
-                _begin_date(batch["market_cutoff"]),
-                batch["market_cutoff"].replace("-", ""),
+                _begin_date(research_cutoff),
+                research_cutoff.replace("-", ""),
             )
             revision_frame.to_csv(
                 raw_dir / f"put_revision_notices_{code}.csv",
@@ -459,16 +464,16 @@ def build_research_evidence(
                 {
                     "source_id": "PUT_PAYMENT_NOTICE_INDEX",
                     "source": "AKShare/Eastmoney official-announcement index",
-                    "begin_date": _begin_date(batch["market_cutoff"]),
-                    "end_date": batch["market_cutoff"],
+                    "begin_date": _begin_date(research_cutoff),
+                    "end_date": research_cutoff,
                     "stock_code": stock_code,
                     "scope": "PAYMENT_AND_CREDIT_CANDIDATES",
                 },
                 {
                     "source_id": "PUT_REVISION_NOTICE_INDEX",
                     "source": "AKShare/Eastmoney official-announcement index",
-                    "begin_date": _begin_date(batch["market_cutoff"]),
-                    "end_date": batch["market_cutoff"],
+                    "begin_date": _begin_date(research_cutoff),
+                    "end_date": research_cutoff,
                     "stock_code": stock_code,
                     "scope": "REVISION_BEHAVIOR_CANDIDATES",
                 },
@@ -521,7 +526,7 @@ def build_research_evidence(
             if cross_put_contract is None:
                 cross_put_contract = _put_fact_from_contract_source(
                     revision_put_source_rows.get(code),
-                    batch["market_cutoff"],
+                    research_cutoff,
                     code,
                     task["bond_name"],
                 )
@@ -532,13 +537,13 @@ def build_research_evidence(
                 )
             cross_put_state = _ordinary_put_window_state(
                 cross_put_contract,
-                batch["market_cutoff"],
+                research_cutoff,
             )
 
             frame, notices = fetch_revision_notice_index(
                 stock_code,
-                _begin_date(batch["market_cutoff"]),
-                batch["market_cutoff"].replace("-", ""),
+                _begin_date(research_cutoff),
+                research_cutoff.replace("-", ""),
             )
             safe_code = code.replace("/", "_")
             frame.to_csv(
@@ -588,7 +593,7 @@ def build_research_evidence(
                     "no_relevant_revision_notice_confirmed_as_of_cutoff": (
                         len(notices) == 0
                     ),
-                    "cutoff": batch["market_cutoff"],
+                    "cutoff": research_cutoff,
                 },
                 "cross_path_put": {
                     "contract_fact": cross_put_contract,
@@ -606,8 +611,8 @@ def build_research_evidence(
                 {
                     "source_id": "REVISION_NOTICE_INDEX",
                     "source": "AKShare/Eastmoney official-announcement index",
-                    "begin_date": _begin_date(batch["market_cutoff"]),
-                    "end_date": batch["market_cutoff"],
+                    "begin_date": _begin_date(research_cutoff),
+                    "end_date": research_cutoff,
                     "stock_code": stock_code,
                 },
                 {
@@ -676,6 +681,7 @@ def build_research_evidence(
             "stock_code": stock_code,
             "path_id": path_id,
             "market_cutoff": batch["market_cutoff"],
+            "research_cutoff": research_cutoff,
             "research_task_path": str(
                 data_root / "research_tasks" / f"{task['task_id']}.json"
             ),
@@ -727,6 +733,9 @@ def build_research_evidence(
         "economic_registry_run_id": batch["economic_registry_run_id"],
         "market_snapshot_id": batch["market_snapshot_id"],
         "market_cutoff": batch["market_cutoff"],
+        "research_cutoff_max": str(
+            batch.get("research_cutoff_max") or batch["market_cutoff"]
+        ),
         "application_commit_sha": deployment.get("application_commit_sha"),
         "knowledge_commit_sha": deployment.get("knowledge_commit_sha"),
         "tasks": len(task_packages),
@@ -775,3 +784,5 @@ def build_research_evidence(
         "evidence_store": str(evidence_store),
     })
     return result
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
