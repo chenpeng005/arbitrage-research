@@ -35,6 +35,11 @@ from runtime.opportunity.incremental_read_source import (
     load_candidate_pool as load_primary_candidate_pool,
     load_opportunity_records as load_primary_opportunity_records,
 )
+from runtime.opportunity.incremental_notification_delivery import (
+    acknowledge_notification,
+    build_notification_feed,
+)
+from runtime.opportunity.incremental_storage import connect as connect_incremental_storage
 from runtime.opportunity.incremental_storage_cutover import evaluate_cutover_readiness
 from runtime.opportunity.view_contract import build_opportunity_list, build_opportunity_view
 
@@ -898,8 +903,6 @@ def opportunity_full_worker(job_id: str, request: OpportunityFullRunRequest) -> 
 
 
 def create_interactive_chat_task(
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
     *,
     pipeline_job_id: str,
     acquisition_job_id: str,
@@ -1795,13 +1798,156 @@ def opportunity_storage_cutover_readiness() -> dict:
     return evaluate_cutover_readiness(data_root=DATA_ROOT)
 
 
+@app.get("/api/opportunity/information-status")
+def opportunity_information_status() -> dict:
+    registry = DATA_ROOT / "registry"
+    storage_path = registry / "incremental_storage_status.json"
+    db_path = DATA_ROOT / "state" / "incremental_runtime.sqlite"
+
+    def maybe_json(path: Path) -> dict | None:
+        if not path.exists():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    storage = maybe_json(storage_path) or {}
+    latest_controller = maybe_json(
+        registry / "latest_information_controller.json"
+    )
+    latest_lane = maybe_json(registry / "latest_information_lane.json")
+    latest_checkpoint = maybe_json(
+        registry / "latest_notice_checkpoint.json"
+    )
+
+    semantic_status: dict[str, int] = {}
+    event_path_status: dict[str, int] = {}
+    notifications = {
+        "IMMEDIATE": 0,
+        "DAILY_DIGEST": 0,
+    }
+    if db_path.exists():
+        conn = connect_incremental_storage(db_path)
+        try:
+            semantic_status = {
+                str(row["status"]): int(row["n"])
+                for row in conn.execute(
+                    """SELECT status,COUNT(*) n
+                       FROM research_trigger_ledger
+                       WHERE task_kind='EVENT_SEMANTIC_AUDIT'
+                       GROUP BY status"""
+                )
+            }
+            event_path_status = {
+                str(row["status"]): int(row["n"])
+                for row in conn.execute(
+                    """SELECT status,COUNT(*) n
+                       FROM research_trigger_ledger
+                       WHERE task_kind='PATH_RESEARCH'
+                         AND source_event_update_id IS NOT NULL
+                       GROUP BY status"""
+                )
+            }
+            notifications.update({
+                str(row["level"]): int(row["n"])
+                for row in conn.execute(
+                    """SELECT level,COUNT(*) n
+                       FROM notification_group
+                       WHERE status='PENDING'
+                       GROUP BY level"""
+                )
+            })
+        finally:
+            conn.close()
+
+    semantic_pending_statuses = {
+        "PENDING",
+        "IN_PROGRESS",
+        "WAITING_FOR_CHAT",
+        "NEEDS_EVIDENCE",
+        "NEEDS_REVIEW",
+        "FAIL",
+    }
+    path_pending_statuses = {
+        "PENDING",
+        "PROMOTED_TO_PENDING_QUEUE",
+        "READY_FOR_AI_RESEARCH",
+        "IN_PROGRESS",
+        "WAITING_FOR_CHAT",
+        "NEEDS_EVIDENCE",
+        "NEEDS_REVIEW",
+        "FAIL",
+    }
+
+    return {
+        "status": "PASS",
+        "activation_date": storage.get("notice_lane_activation_date"),
+        "last_successful_notice_scan_date": storage.get(
+            "last_successful_notice_scan_date"
+        ),
+        "last_checkpoint_status": storage.get(
+            "last_notice_checkpoint_status"
+        ),
+        "latest_controller": latest_controller,
+        "latest_information_lane": latest_lane,
+        "latest_notice_checkpoint": latest_checkpoint,
+        "semantic_audit": {
+            "by_status": semantic_status,
+            "pending_count": sum(
+                count
+                for status, count in semantic_status.items()
+                if status in semantic_pending_statuses
+            ),
+        },
+        "event_path_research": {
+            "by_status": event_path_status,
+            "pending_count": sum(
+                count
+                for status, count in event_path_status.items()
+                if status in path_pending_statuses
+            ),
+        },
+        "pending_notifications": notifications,
+        "schedule": {
+            "timezone": "Asia/Shanghai",
+            "cron": "15 9-23 * * *",
+            "description": "每日 09:15–23:15 每小时扫描一次",
+        },
+    }
+
+
+@app.get("/api/opportunity/notifications")
+def opportunity_notifications(
+    include_sent: bool = False,
+    limit: int = 100,
+) -> dict:
+    db_path = DATA_ROOT / "state" / "incremental_runtime.sqlite"
+    if not db_path.exists():
+        raise HTTPException(404, "incremental storage is not initialized")
+    return build_notification_feed(
+        target_db=db_path,
+        include_sent=include_sent,
+        limit=max(1, min(int(limit), 500)),
+    )
+
+
+@app.post("/api/opportunity/notifications/{notification_group_id}/ack")
+def acknowledge_opportunity_notification(notification_group_id: str) -> dict:
+    db_path = DATA_ROOT / "state" / "incremental_runtime.sqlite"
+    if not db_path.exists():
+        raise HTTPException(404, "incremental storage is not initialized")
+    try:
+        return acknowledge_notification(
+            target_db=db_path,
+            notification_group_id=notification_group_id,
+        )
+    except KeyError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
 @app.get("/api/opportunity/full-runs/latest")
 def latest_opportunity_full_run() -> dict:
     candidates = []
     with _lock:
         candidates.extend(
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
             dict(job) for job in _jobs.values()
             if job.get("unit") == "Opportunity Discovery / Full Runtime"
         )
@@ -2271,5 +2417,3 @@ def health() -> dict:
         "replay_fixture_exists": RAW_FIXTURE_DIR.exists(),
         "calculation_fixture_exists": CALC_FIXTURE_DIR.exists(),
     }
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

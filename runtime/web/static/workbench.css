@@ -120,6 +120,17 @@ h4{font-size:16px}
   color:var(--text);
 }
 .meta{padding:13px 16px;margin-top:12px;color:var(--muted)}
+.notification-card{margin-top:12px;padding:16px}
+.notification-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.notification-head h3{margin:0 0 4px}
+.notification-head p{margin:0}
+.notification-feed{display:grid;gap:8px;margin-top:12px}
+.notification-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border-top:1px solid var(--line);padding-top:10px}
+.notification-item:first-child{border-top:0;padding-top:0}
+.notification-title{font-weight:700}
+.notification-title .badge{margin-left:7px;padding:3px 7px;font-size:11px}
+.notification-detail{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.55}
+.notification-item button{padding:6px 10px;font-size:12px}
 .stage-grid{
   display:grid;
   grid-template-columns:repeat(5,minmax(0,1fr));
@@ -810,5 +821,3 @@ details.research-section>summary{
   content:" ↓";
   color:var(--accent);
 }
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

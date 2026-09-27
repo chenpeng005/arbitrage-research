@@ -232,6 +232,138 @@ async function loadStorageStatus(){
   }
 }
 
+async function loadInformationStatus(){
+  const box=$("#informationMeta");
+  if(!box)return;
+  try{
+    const r=await fetch("/api/opportunity/information-status");
+    if(!r.ok)throw new Error(await r.text());
+    const x=await r.json();
+    const ctl=x.latest_controller||{};
+    const sem=x.semantic_audit||{};
+    const path=x.event_path_research||{};
+    const nt=x.pending_notifications||{};
+    const sched=x.schedule||{};
+    const ctlStatus=ctl.status||x.last_checkpoint_status||"—";
+    box.innerHTML="<b>信息增量：</b> 最近扫描 "
+      +esc(x.last_successful_notice_scan_date||"—")
+      +"　·　Controller "+esc(ctlStatus)
+      +"　·　语义审计待处理 "+esc(sem.pending_count??0)
+      +"　·　Event重研待处理 "+esc(path.pending_count??0)
+      +"　·　待提醒 即时 "+esc(nt.IMMEDIATE??0)
+      +" / 日报 "+esc(nt.DAILY_DIGEST??0)
+      +"<br><span class=\"muted\">自动运行："
+      +esc(sched.description||"—")
+      +"（"+esc(sched.timezone||"—")+"）</span>";
+  }catch(e){
+    box.textContent="信息增量状态读取失败："+e.message;
+  }
+}
+
+function notificationScopeText(scope){
+  const map={
+    MATURITY_CASH:"到期现金",
+    PUT:"回售",
+    DOWNWARD_REVISION:"下修",
+    CREDIT_RISK:"信用风险",
+    EVENT_AUDIT:"事件审计"
+  };
+  return map[scope]||scope||"—";
+}
+
+function notificationChangeText(change){
+  const map={
+    ECONOMIC_ENTERED:"新进入机会",
+    ECONOMIC_EXITED:"退出机会",
+    FACT_UPDATED:"新事实更新",
+    PATH_STATE_CHANGED:"路径状态变化",
+    RISK_CHANGED:"风险变化",
+    NEW_EVIDENCE_PENDING_SEMANTIC_AUDIT:"新证据待语义审计"
+  };
+  return map[change]||change||"状态更新";
+}
+
+function notificationResearchText(action){
+  const map={
+    FULL_V2_RESEARCH:"需要完整重研",
+    SEMANTIC_AUDIT:"需要语义审计",
+    REUSE_PREVIOUS:"复用原研究",
+    NONE:"无需重研"
+  };
+  return map[action]||action||"";
+}
+
+function notificationTimeText(value){
+  if(!value)return "—";
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return value;
+  return new Intl.DateTimeFormat("zh-CN",{
+    timeZone:"Asia/Shanghai",month:"2-digit",day:"2-digit",
+    hour:"2-digit",minute:"2-digit",hour12:false
+  }).format(d);
+}
+
+async function acknowledgeNotification(groupId,button){
+  if(button){button.disabled=true;button.textContent="处理中…";}
+  try{
+    const r=await fetch(
+      "/api/opportunity/notifications/"+encodeURIComponent(groupId)+"/ack",
+      {method:"POST"}
+    );
+    if(!r.ok)throw new Error(await r.text());
+    await Promise.all([loadNotificationFeed(),loadInformationStatus()]);
+  }catch(e){
+    if(button){button.disabled=false;button.textContent="已读";}
+    alert("提醒状态更新失败："+e.message);
+  }
+}
+
+async function loadNotificationFeed(){
+  const box=$("#notificationFeed"),badge=$("#notificationBadge");
+  if(!box||!badge)return;
+  try{
+    const r=await fetch("/api/opportunity/notifications?limit=20");
+    if(!r.ok)throw new Error(await r.text());
+    const x=await r.json();
+    const items=x.items||[];
+    const pending=x.pending_count||0;
+    badge.textContent=pending?pending+" 条未读":"暂无未读";
+    badge.className="badge "+(pending?"warn":"pass");
+    if(!items.length){
+      box.innerHTML='<div class="muted">当前没有待处理提醒。新机会、退出机会和重要信息变化会出现在这里。</div>';
+      return;
+    }
+    box.innerHTML=items.map(item=>{
+      const level=item.level==="IMMEDIATE"?"即时":"日报";
+      const details=(item.changes||[]).map(c=>{
+        const research=notificationResearchText(c.research_action);
+        return esc(notificationScopeText(c.scope_id))+"："
+          +esc(notificationChangeText(c.change_type))
+          +(research?" · "+esc(research):"");
+      }).join("<br>");
+      return '<div class="notification-item">'
+        +'<div>'
+        +'<div class="notification-title"><a href="/opportunities/'+esc(item.bond_code)+'">'
+        +esc(item.bond_name)+' '+esc(item.bond_code)+'</a>'
+        +'<span class="badge '+(item.level==="IMMEDIATE"?"warn":"idle")+'">'+level+'</span></div>'
+        +'<div class="notification-detail">'+details
+        +' · '+esc(notificationTimeText(item.created_at))+'</div>'
+        +'</div>'
+        +'<button data-notification-id="'+esc(item.notification_group_id)+'">已读</button>'
+        +'</div>';
+    }).join("");
+    box.querySelectorAll("button[data-notification-id]").forEach(btn=>{
+      btn.addEventListener("click",()=>acknowledgeNotification(
+        btn.dataset.notificationId,btn
+      ));
+    });
+  }catch(e){
+    badge.textContent="读取失败";
+    badge.className="badge fail";
+    box.innerHTML='<div class="muted">提醒读取失败：'+esc(e.message)+'</div>';
+  }
+}
+
 async function startRun(sourceMode){
   const closeBtn=$("#runCloseBtn"), reuseBtn=$("#runReuseBtn");
   closeBtn.disabled=true; reuseBtn.disabled=true;
@@ -804,7 +936,7 @@ async function init(){
     await loadLandingSummary();
   }else if(mode==="run"){
     document.title="运行中心｜机会发现";
-    await Promise.all([loadLatestRun(),loadRunPolicy(),loadStorageStatus()]);
+    await Promise.all([loadLatestRun(),loadRunPolicy(),loadStorageStatus(),loadInformationStatus(),loadNotificationFeed()]);
   }else if(mode==="opportunities"){
     document.title="机会结果｜机会发现";
     await loadOpportunities();
@@ -816,5 +948,3 @@ async function init(){
   }
 }
 init();
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
