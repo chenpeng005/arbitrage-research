@@ -13,7 +13,7 @@ https://47.109.176.100:8443 {
 			reverse_proxy 127.0.0.1:8010
 		}
 
-		@admin_pages path /run-center /audit /review /workbench /opportunities-v2-preview/*
+		@admin_pages path /run-center /audit /review /workbench
 		handle @admin_pages {
 			basic_auth {
 				{$CADDY_ADMIN_USER} {$CADDY_ADMIN_HASH}
@@ -24,7 +24,7 @@ https://47.109.176.100:8443 {
 			}
 		}
 
-		@admin_get_api path /api/market-map/history /api/chat-tasks/* /api/opportunity/storage-status /api/opportunity/storage-cutover-readiness /api/opportunity/information-status /api/opportunity/full-runs/latest /api/runs/* /api/opportunity/market-ingress/latest /api/opportunity/candidate-pool/latest /api/opportunity/records/latest /api/opportunity/records/* /api/opportunity/preview-v2/* /api/market-status
+		@admin_get_api path /api/market-map/history /api/chat-tasks/* /api/opportunity/storage-status /api/opportunity/storage-cutover-readiness /api/opportunity/information-status /api/opportunity/full-runs/latest /api/runs/* /api/opportunity/market-ingress/latest /api/opportunity/candidate-pool/latest /api/opportunity/records/latest /api/opportunity/records/* /api/market-status
 		handle @admin_get_api {
 			basic_auth {
 				{$CADDY_ADMIN_USER} {$CADDY_ADMIN_HASH}

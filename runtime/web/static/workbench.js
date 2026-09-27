@@ -12,23 +12,15 @@ function pageMode(){
   if(p==="/notifications")return "notifications";
   if(p==="/opportunities")return "opportunities";
   if(/^\/opportunities\/\d{6}$/.test(p))return "detail";
-  if(/^\/opportunities-v2-preview\/\d{6}$/.test(p))return "detail";
   if(p==="/audit")return "audit";
   return "landing";
 }
 
 function detailCodeFromPath(){
-  const m=window.location.pathname.match(
-    /^\/(?:opportunities|opportunities-v2-preview)\/(\d{6})\/?$/
-  );
+  const m=window.location.pathname.match(/^\/opportunities\/(\d{6})\/?$/);
   return m?m[1]:null;
 }
 
-function isV2PreviewPage(){
-  return /^\/opportunities-v2-preview\/\d{6}\/?$/.test(
-    window.location.pathname
-  );
-}
 
 function configurePage(){
   const mode=pageMode();
@@ -639,16 +631,12 @@ function updateSortHeaders(){
 }
 
 function opportunityRowHtml(b,index){
-  const hasV2=["110092","127089"].includes(String(b.bond_code||""));
   const name=String(b.bond_name||"").replace(/转债$/,"");
-  const preview=hasV2
-    ?'<a class="v2-preview-link" href="/opportunities-v2-preview/'+esc(b.bond_code)+'">V2</a>'
-    :"";
   const paths=visiblePathsForBond(b);
   return '<tr class="opportunity-row" data-code="'+esc(b.bond_code)+'">'
     +'<td class="row-no">'+esc(index+1)+'</td>'
     +'<td class="code-cell">'+esc(b.bond_code)+'</td>'
-    +'<td><b>'+esc(name)+'</b>'+preview+'</td>'
+    +'<td><b>'+esc(name)+'</b></td>'
     +'<td class="num-cell">'+esc(num(bondCurrentPrice(b)))+'</td>'
     +'<td>'+pathLines(paths,p=>esc(p.path_name))+'</td>'
     +'<td>'+pathLines(paths,p=>esc(p.current_event_state_text||"—"))+'</td>'
@@ -688,9 +676,6 @@ function renderOpportunityList(){
   fillOpportunityGroup("#nonFloorOpportunityTableBody",nonFloor);
   updateSortHeaders();
 
-  document.querySelectorAll(".v2-preview-link").forEach(el=>{
-    el.addEventListener("click",e=>e.stopPropagation());
-  });
   document.querySelectorAll(".opportunity-row").forEach(el=>{
     el.addEventListener("click",()=>{
       window.location.href="/opportunities/"+encodeURIComponent(el.dataset.code);
@@ -894,10 +879,7 @@ async function openDetail(code){
   $("#detailBody").innerHTML='<div class="empty">正在读取完整个券研究……</div>';
   if(pageMode()!=="detail")document.body.style.overflow="hidden";
   try{
-    const endpoint=isV2PreviewPage()
-      ?"/api/opportunity/preview-v2/"+encodeURIComponent(code)
-      :"/api/opportunity/view/"+encodeURIComponent(code);
-    const r=await fetch(endpoint);
+    const r=await fetch("/api/opportunity/view/"+encodeURIComponent(code));
     if(!r.ok)throw new Error(await r.text());
     const data=await r.json();
     renderDetail(data);

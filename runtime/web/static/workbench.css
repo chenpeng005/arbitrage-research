@@ -511,17 +511,6 @@ body.detail-page .close-btn{display:none}
   flex-wrap:wrap;
   justify-content:flex-end;
 }
-.v2-preview-link{
-  text-decoration:none;
-  font-size:12px;
-  font-weight:700;
-  color:var(--accent);
-  border:1px solid #cfd8ee;
-  border-radius:999px;
-  padding:4px 8px;
-  background:#f8faff;
-}
-.v2-preview-link:hover{background:#eef3ff}
 .preview-banner{
   margin-bottom:16px;
   padding:12px 14px;
@@ -628,7 +617,6 @@ body.detail-page .close-btn{display:none}
   font-size:13px;
   white-space:nowrap;
 }
-.v2-preview-link{display:inline-block;margin-left:7px}
 @media(max-width:760px){
   .opportunity-table-head{display:block}
   .opportunity-table-head .badge{margin-top:8px}
@@ -683,15 +671,6 @@ body.detail-page .close-btn{display:none}
   border-bottom:1px dotted #edf0f4;
 }
 .path-subline:last-child{border-bottom:0}
-.v2-preview-link{
-  font-size:11px;
-  margin-left:6px;
-  padding:1px 4px;
-  border:1px solid #d6dce7;
-  border-radius:4px;
-  text-decoration:none;
-  color:#3157d5;
-}
 .risk-flow{margin-top:4px}
 .risk-flow-block{
   padding:11px 0;

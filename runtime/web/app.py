@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import copy
 import json
 import os
 import secrets
@@ -53,16 +52,6 @@ LATEST_MATURITY_DISCOVERY_PATH = DATA_ROOT / "registry" / "latest_maturity_disco
 LATEST_CANDIDATE_POOL_PATH = DATA_ROOT / "registry" / "latest_candidate_pool.json"
 LATEST_OPPORTUNITY_RECORDS_PATH = DATA_ROOT / "registry" / "latest_opportunity_records.json"
 LATEST_FULL_RUNTIME_PATH = DATA_ROOT / "registry" / "latest_full_runtime.json"
-GOLDEN_V2_ROOT = ROOT / "runtime" / "golden_samples" / "path_result_v2"
-GOLDEN_V2_PATH_RESULTS = {
-    "110092": {
-        "MATURITY_CASH": GOLDEN_V2_ROOT / "110092_MATURITY_CASH.json",
-        "PUT": GOLDEN_V2_ROOT / "110092_PUT.json",
-    },
-    "127089": {
-        "DOWNWARD_REVISION": GOLDEN_V2_ROOT / "127089_DOWNWARD_REVISION.json",
-    },
-}
 CHAT_TASK_ROOT = DATA_ROOT / "chat_tasks"
 
 ACQ_SCRIPT = ROOT / "runtime" / "market_map" / "acquisition.py"
@@ -152,6 +141,7 @@ PUBLIC_READ_PATHS = {
 PUBLIC_READ_PREFIXES = (
     "/static/",
     "/opportunities/",
+    "/opportunities-v2-preview/",
     "/api/opportunity/view/",
 )
 
@@ -1382,9 +1372,10 @@ def opportunity_detail_page(bond_code: str) -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
 
 
-@app.get("/opportunities-v2-preview/{bond_code}", response_class=HTMLResponse)
-def opportunity_v2_preview_page(bond_code: str) -> HTMLResponse:
-    return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
+@app.get("/opportunities-v2-preview/{bond_code}")
+def opportunity_v2_preview_page(bond_code: str) -> RedirectResponse:
+    code = str(bond_code).strip().zfill(6)
+    return RedirectResponse(f"/opportunities/{code}", status_code=302)
 
 
 @app.get("/audit", response_class=HTMLResponse)
@@ -2375,59 +2366,6 @@ def latest_opportunity_record_for_bond(bond_code: str) -> dict:
             "bond is not uniquely present in latest opportunity records",
         )
     return matches[0]
-
-
-@app.get("/api/opportunity/preview-v2/{bond_code}")
-def opportunity_v2_preview_for_bond(bond_code: str) -> dict:
-    code = str(bond_code).strip().zfill(6)
-    replacements = GOLDEN_V2_PATH_RESULTS.get(code)
-    if not replacements:
-        raise HTTPException(404, "no Path Result V2 golden preview for this bond")
-
-    record = copy.deepcopy(latest_opportunity_record_for_bond(code))
-    replaced_paths: list[str] = []
-    for path in record.get("paths", []):
-        path_id = str(path.get("path_id") or "")
-        result_path = replacements.get(path_id)
-        if result_path is None:
-            continue
-        if not result_path.exists():
-            raise HTTPException(
-                409,
-                f"golden V2 result is missing for {code}:{path_id}",
-            )
-        result = json.loads(result_path.read_text(encoding="utf-8"))
-        if (
-            str(result.get("bond_code") or "").zfill(6) != code
-            or result.get("path_id") != path_id
-            or result.get("review_ready") is not True
-        ):
-            raise HTTPException(
-                409,
-                f"golden V2 result failed identity/readiness check: {code}:{path_id}",
-            )
-        path["path_result"] = result
-        path["research_state"] = "COMPLETED"
-        path["research_status"] = result.get("research_status")
-        path["review_ready"] = True
-        path["latest_path_result_id"] = result.get("path_result_id")
-        path["latest_path_result_path"] = str(result_path)
-        replaced_paths.append(path_id)
-
-    view = build_opportunity_view(
-        record,
-        maturity_contract_fact=_load_latest_maturity_contracts().get(code),
-    )
-    view["preview"] = {
-        "type": "PATH_RESULT_V2_GOLDEN_SAMPLE",
-        "is_formal_ledger": False,
-        "message": (
-            "这是 Path Result V2 隔离 Golden Sample 预览；"
-            "未写入 Research Ledger，不覆盖当前正式研究结果。"
-        ),
-        "replaced_paths": replaced_paths,
-    }
-    return view
 
 
 @app.get("/api/market-status")
