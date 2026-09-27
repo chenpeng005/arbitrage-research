@@ -3,6 +3,7 @@ let fixedCode=null;
 const $=s=>document.querySelector(s);
 function esc(x){return String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 function n(x,d=2){const v=Number(x);return Number.isFinite(v)?v.toFixed(d):"—";}
+function chinaTimestampSeconds(value){if(!value)return "—";const d=new Date(value);if(Number.isNaN(d.getTime()))return value;return new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(d).replaceAll("/","-");}
 function nameOf(x){return String(x??"").replace(/转债$/,"");}
 function val(sel){const x=$(sel).value.trim();if(x==="")return null;const v=Number(x);return Number.isFinite(v)?v:null;}
 function rows(){
@@ -78,7 +79,7 @@ async function load(){
   try{
     const r=await fetch("/api/market-map/view"); if(!r.ok)throw new Error(await r.text());
     mapData=await r.json();
-    $("#mapMeta").innerHTML='<b>市场截面 '+esc(mapData.market_cutoff||"—")+'</b>　正式藏宝图';
+    $("#mapMeta").innerHTML='<b>市场截面 '+esc(mapData.market_cutoff||"—")+'</b>　·　更新时间 '+esc(chinaTimestampSeconds(mapData.updated_at))+'　·　正式藏宝图';
     draw();
   }catch(e){$("#mapMeta").textContent="藏宝图读取失败："+e.message;$("#mapChart").innerHTML='<div class="map-empty">暂时无法读取藏宝图。</div>';}
 }

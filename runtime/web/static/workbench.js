@@ -300,6 +300,16 @@ function notificationResearchText(action){
   return map[action]||action||"";
 }
 
+function chinaTimestampSeconds(value){
+  if(!value)return "—";
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return value;
+  return new Intl.DateTimeFormat("zh-CN",{
+    timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",
+    hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false
+  }).format(d).replaceAll("/","-");
+}
+
 function notificationTimeText(value){
   if(!value)return "—";
   const d=new Date(value);
@@ -452,7 +462,8 @@ function renderOpportunitySummary(data){
   const nonFloorPaths=activePaths.length-floorPaths;
   $("#opportunitySummary").innerHTML=
     '<b>市场截面 '+esc(data.market_cutoff||"—")+'</b>'
-    +'　研究层 '+esc(active.length)+' 只 / '+esc(activePaths.length)+' 条路径'
+    +'　·　更新时间 '+esc(chinaTimestampSeconds(data.updated_at))
+    +'　·　研究层 '+esc(active.length)+' 只 / '+esc(activePaths.length)+' 条路径'
     +'　·　保底路径 '+esc(floorPaths)+' 条'
     +'　·　非保底路径 '+esc(nonFloorPaths)+' 条'
     +'　·　长期监控 '+esc(watch)+' 只';

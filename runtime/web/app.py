@@ -2171,6 +2171,10 @@ def get_market_map_view(calculation_job_id: str | None = None) -> dict:
         ),
         "snapshot_class": snapshot.get("snapshot_class"),
         "market_cutoff": snapshot.get("market_cutoff"),
+        "updated_at": (
+            registry_entry.get("created_at")
+            or snapshot.get("created_at")
+        ),
         "model_version": snapshot.get("model_version"),
         "snapshot_id": snapshot.get("snapshot_id"),
         "registry_calculation_job_id": registry_entry.get("calculation_job_id"),
@@ -2336,10 +2340,12 @@ def latest_opportunity_records() -> dict:
 @app.get("/api/opportunity/view/latest")
 def latest_opportunity_view() -> dict:
     records = _load_primary_opportunity_artifact("opportunity_records")
-    return build_opportunity_list(
+    payload = build_opportunity_list(
         records,
         maturity_contracts=_load_latest_maturity_contracts(),
     )
+    payload["updated_at"] = records.get("created_at")
+    return payload
 
 
 @app.get("/api/opportunity/view/{bond_code}")
