@@ -214,6 +214,31 @@ def persist_information_scan(
                 bond_name=bucket["bond_name"],
                 documents=bucket["documents"],
             )
+
+            # Document-only evidence (for example trustee reports) may repeat
+            # old facts. Keep the document, but require a lightweight semantic
+            # audit before creating any business Event.
+            for doc in canonical_set.get("document_only", []):
+                if not doc.get("requires_semantic_audit"):
+                    continue
+                evidence_id=str(doc["evidence_id"])
+                trigger_key=(
+                    f"EVIDENCE:{evidence_id}:{bond_code}:SEMANTIC_AUDIT"
+                )
+                before=conn.total_changes
+                conn.execute(
+                    """INSERT OR IGNORE INTO research_trigger_ledger
+                       (trigger_key,bond_code,path_id,source_event_update_id,
+                        research_action,task_kind,status,task_id,emitted_at,updated_at)
+                       VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                    (
+                        trigger_key,bond_code,None,None,"SEMANTIC_AUDIT",
+                        "EVENT_SEMANTIC_AUDIT","PENDING",None,now,now,
+                    ),
+                )
+                stats["research_triggers_inserted"] += conn.total_changes-before
+                emitted.add(trigger_key)
+
             for family in canonical_set.get("event_families",[]):
                 family_id=str(family["event_family_id"])
                 family_name=str(family["event_family"])

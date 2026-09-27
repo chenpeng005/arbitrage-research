@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from runtime.opportunity.incremental_notice_lane import run_daily_notice_lane
+from runtime.opportunity.incremental_information_runtime import run_information_lane
 
 CHECKPOINT_VERSION = "incremental-notice-checkpoint-v1"
 
@@ -64,16 +64,20 @@ def run_notice_checkpoint(
     overall="PASS"
     for day in _days(start,target):
         try:
-            result=run_daily_notice_lane(
-                notice_date=day.isoformat(),
+            result=run_information_lane(
+                data_root=data_root,
+                scan_date=day.strftime("%Y%m%d"),
                 target_db=db_path,
             )
             results.append({
                 "notice_date":day.isoformat(),
                 "status":"PASS",
+                "information_run_id":result["run_id"],
                 "all_notice_count":result["scan"]["all_notice_count"],
-                "relevant_notice_count":result["scan"]["relevant_notice_count"],
-                "stats":result["persisted"]["stats"],
+                "relevant_notice_count":result["scan"][
+                    "relevant_document_count"
+                ],
+                "stats":result["ledger"],
             })
         except Exception as exc:
             results.append({
