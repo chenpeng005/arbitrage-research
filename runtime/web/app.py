@@ -291,6 +291,8 @@ def load_deployment_manifest() -> dict:
         return {
             "application_commit_sha": None,
             "knowledge_commit_sha": None,
+            "knowledge_snapshot_manifest_sha256": None,
+            "deployment_gate_version": None,
             "deployed_at": None,
             "deployment_method": None,
         }
@@ -299,6 +301,10 @@ def load_deployment_manifest() -> dict:
         return {
             "application_commit_sha": data.get("application_commit_sha"),
             "knowledge_commit_sha": data.get("knowledge_commit_sha"),
+            "knowledge_snapshot_manifest_sha256": data.get(
+                "knowledge_snapshot_manifest_sha256"
+            ),
+            "deployment_gate_version": data.get("deployment_gate_version"),
             "deployed_at": data.get("deployed_at"),
             "deployment_method": data.get("deployment_method"),
         }
@@ -306,6 +312,8 @@ def load_deployment_manifest() -> dict:
         return {
             "application_commit_sha": None,
             "knowledge_commit_sha": None,
+            "knowledge_snapshot_manifest_sha256": None,
+            "deployment_gate_version": None,
             "deployed_at": None,
             "deployment_method": "INVALID_MANIFEST",
         }
