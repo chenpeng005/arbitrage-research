@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-CHANGE_POLICY_VERSION = "incremental-change-notification-v1-experimental"
+CHANGE_POLICY_VERSION = "incremental-change-notification-v2"
 
 LEVEL_RANK = {"SILENT": 0, "DAILY_DIGEST": 1, "IMMEDIATE": 2}
 
@@ -31,6 +31,8 @@ def market_change(
     current_metrics: dict[str, Any],
     research_action: str,
     material_metric_signal: bool = False,
+    previous_research_status: str | None = None,
+    previous_research_attention: bool = False,
 ) -> dict[str, Any]:
     if previous_economic_status != current_economic_status:
         change_type = (
@@ -72,6 +74,7 @@ def market_change(
         "previous_value": {
             "economic_status": previous_economic_status,
             "metrics": previous_metrics,
+            "research_status": previous_research_status,
         },
         "current_value": {
             "economic_status": current_economic_status,
@@ -79,6 +82,8 @@ def market_change(
         },
         "research_action": research_action,
         "material_metric_signal": bool(material_metric_signal),
+        "previous_research_status": previous_research_status,
+        "previous_research_attention": bool(previous_research_attention),
         "route_notification_hint": None,
     }
 
@@ -137,6 +142,49 @@ def event_changes(
             }
         )
     return rows
+
+
+def deep_research_change(
+    *,
+    bond_code: str,
+    bond_name: str,
+    path_id: str,
+    event_update_id: str,
+    event_family: str | None,
+    reason: str | None = None,
+) -> dict[str, Any]:
+    """User-attention change: this Path has just entered a new Full V2 research task."""
+    return {
+        "change_policy_version": CHANGE_POLICY_VERSION,
+        "change_id": _id(
+            "CHG_",
+            bond_code,
+            event_update_id,
+            path_id,
+            "DEEP_RESEARCH_TRIGGERED",
+        ),
+        "change_source": "RESEARCH_TRIGGER",
+        "source_event_update_id": event_update_id,
+        "event_family": event_family,
+        "market_snapshot_id": None,
+        "bond_code": str(bond_code).zfill(6),
+        "bond_name": bond_name,
+        "scope_type": "PATH",
+        "scope_id": path_id,
+        "change_type": "DEEP_RESEARCH_TRIGGERED",
+        "impact": "ATTENTION_CHANGE",
+        "previous_value": None,
+        "current_value": {
+            "event_family": event_family,
+            "event_update_id": event_update_id,
+            "research_action": "FULL_V2_RESEARCH",
+        },
+        "research_action": "FULL_V2_RESEARCH",
+        "material_metric_signal": False,
+        "deep_research_triggered": True,
+        "route_notification_hint": "IMMEDIATE",
+        "route_reason": reason,
+    }
 
 
 def semantic_candidate_change(
@@ -234,38 +282,22 @@ def research_change(
 
 
 def notification_level(change: dict[str, Any]) -> str:
-    """Final user-notification policy, independent of research action."""
+    """Reminder Policy V2: discovery stays wide; user attention stays narrow."""
     change_type = str(change.get("change_type") or "")
-    impact = str(change.get("impact") or "")
-    hint = change.get("route_notification_hint")
 
-    if change_type in {
-        "ECONOMIC_ENTERED",
-        "ECONOMIC_EXITED",
-        "RISK_CHANGED",
-        "RESEARCH_JUDGMENT_CHANGED",
-        "RESEARCH_CONFIDENCE_CHANGED",
-    }:
+    if change_type == "DEEP_RESEARCH_TRIGGERED":
         return "IMMEDIATE"
 
-    if hint in LEVEL_RANK:
-        return str(hint)
+    if change_type == "ECONOMIC_EXITED":
+        return (
+            "IMMEDIATE"
+            if bool(change.get("previous_research_attention"))
+            else "SILENT"
+        )
 
-    if impact in {"MATERIAL_CHANGE", "RISK_CHANGE"}:
-        return "IMMEDIATE"
-
-    if change_type in {
-        "NEW_EVIDENCE_PENDING_SEMANTIC_AUDIT",
-        "RESEARCH_BASELINE_UPDATED",
-    }:
-        return "DAILY_DIGEST"
-
-    if change_type == "ECONOMIC_METRIC_CHANGED":
-        return "DAILY_DIGEST" if change.get("material_metric_signal") else "SILENT"
-
-    if change_type in {"PATH_STATE_CHANGED", "FACT_UPDATED"}:
-        return "DAILY_DIGEST"
-
+    # Economic entry, semantic candidates, ordinary event/fact updates and
+    # routine research metadata remain auditable in Change Ledger but do not
+    # interrupt the user. A later Full V2 trigger gets its own explicit change.
     return "SILENT"
 
 
