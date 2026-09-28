@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
+from runtime.deployment_gate import validate_deployment_gate
 from runtime.opportunity.candidate_pool import build_candidate_pool
 from runtime.opportunity.discovery_controller import run_opportunity_discovery
 from runtime.opportunity.ingress import build_market_ingress
@@ -96,6 +97,11 @@ def run_opportunity_full_downstream(
     run_research: bool = True,
     stage_callback: StageCallback | None = None,
 ) -> dict[str, Any]:
+    validate_deployment_gate(
+        data_root=data_root,
+        deployment=deployment,
+        write_audit=True,
+    )
     entry = _read_json(formal_entry_path)
     if entry.get("snapshot_class") != "FORMAL_CLOSE":
         raise RuntimeError("full runtime requires one FORMAL_CLOSE Market Map")
@@ -448,6 +454,11 @@ def resume_opportunity_full_after_chat(
     deployment: dict[str, Any],
     stage_callback: StageCallback | None = None,
 ) -> dict[str, Any]:
+    validate_deployment_gate(
+        data_root=data_root,
+        deployment=deployment,
+        write_audit=True,
+    )
     run_dir = data_root / "full_runtime_runs" / run_id
     status_path = run_dir / "status.json"
     if not status_path.exists():
