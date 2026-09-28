@@ -10,6 +10,7 @@ from typing import Any
 from runtime.opportunity.incremental_change_notification import (
     attach_notification_decision,
     coalesce_notification_groups,
+    deep_research_change,
     event_changes,
     semantic_candidate_change,
 )
@@ -362,6 +363,22 @@ def persist_information_scan(
                                 event=event_obj,routing=routing,
                             )
                         )
+                        for action in planned.get("new_actions", []):
+                            if (
+                                action.get("research_action") == "FULL_V2_RESEARCH"
+                                and action.get("task_kind") == "PATH_RESEARCH"
+                                and action.get("task_status") == "PENDING"
+                            ):
+                                all_changes.append(
+                                    deep_research_change(
+                                        bond_code=bond_code,
+                                        bond_name=bucket["bond_name"],
+                                        path_id=str(action.get("scope") or ""),
+                                        event_update_id=update_id,
+                                        event_family=family_name,
+                                        reason=action.get("route_reason"),
+                                    )
+                                )
 
                 _refresh_family_watermarks(conn,family_id,now)
 
