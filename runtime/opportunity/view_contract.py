@@ -13,7 +13,7 @@ from typing import Any
 VIEW_CONTRACT_VERSION = "opportunity-view-v3"
 
 PATH_LABELS = {
-    "MATURITY_CASH": "到期现金",
+    "MATURITY_CASH": "到期赎回",
     "PUT": "回售",
     "DOWNWARD_REVISION": "下修",
 }
@@ -159,7 +159,7 @@ FACT_KEY_LABELS = {
     "value_date": "条款基准日期",
     "source_conversion_price": "当前转股价基准",
     "historical_revision": "历史下修记录",
-    "cross_path_maturity.contract_fact": "同券到期现金事实",
+    "cross_path_maturity.contract_fact": "同券到期赎回事实",
     "cross_path_revision.contract_fact": "同券下修事实",
     "remaining_contract_cash_C": "剩余合同现金",
     "cash_pressure_yi": "集中现金压力",
@@ -338,7 +338,7 @@ def _humanize_machine_fact(fact: Any) -> str:
         ("economic_judgment：", "当前经济判断："),
         ("existing_path_facts.contract_fact：", "当前合同事实："),
         ("cross_path_revision.contract_fact：", "同券下修状态："),
-        ("cross_path_maturity.contract_fact：", "同券到期现金事实："),
+        ("cross_path_maturity.contract_fact：", "同券到期赎回事实："),
         ("put_exercise_pressure_scenarios：", "回售压力场景："),
         ("PRELOADED:PUT_PRESSURE_SCENARIOS：", "回售压力场景："),
     ):
@@ -516,6 +516,76 @@ def _parse_date(value: Any) -> datetime | None:
         return datetime.fromisoformat(text)
     except Exception:
         return None
+
+
+def _months_until(market_cutoff: Any, target_date: Any) -> float | None:
+    cutoff = _parse_date(market_cutoff)
+    target = _parse_date(target_date)
+    if not cutoff or not target:
+        return None
+    return round((target - cutoff).days / (365.2425 / 12.0), 1)
+
+
+def _put_window_start_date(
+    path: dict[str, Any],
+    maturity_contract_fact: dict[str, Any] | None,
+) -> datetime | None:
+    result = path.get("path_result") or {}
+    fact_spine = result.get("fact_spine") or {}
+    legal = fact_spine.get("legal_time") or {}
+    window = _parse_date(legal.get("put_window_start"))
+    if window:
+        return window
+
+    maturity = _parse_date(
+        (maturity_contract_fact or {}).get("contract_maturity_date")
+        if isinstance(maturity_contract_fact, dict)
+        else None
+    )
+    if not maturity:
+        return None
+    try:
+        return maturity.replace(year=maturity.year - 2)
+    except ValueError:
+        return maturity.replace(year=maturity.year - 2, day=28)
+
+
+def _current_status_text_and_sort(
+    path: dict[str, Any],
+    *,
+    market_cutoff: Any,
+    maturity_contract_fact: dict[str, Any] | None,
+) -> tuple[str, float | None]:
+    path_id = str(path.get("path_id") or "")
+    event_state = path.get("current_event_state")
+
+    if path_id == "MATURITY_CASH":
+        maturity_date = (
+            (maturity_contract_fact or {}).get("contract_maturity_date")
+            if isinstance(maturity_contract_fact, dict)
+            else None
+        )
+        months = _months_until(market_cutoff, maturity_date)
+        if months is not None:
+            if months >= 0:
+                return f"距到期赎回 {months:.1f}个月", months
+            return "已到到期赎回日", 0.0
+
+    if path_id == "PUT":
+        window = _put_window_start_date(path, maturity_contract_fact)
+        months = _months_until(market_cutoff, window)
+        if months is not None:
+            if months > 0:
+                return f"距普通回售期 {months:.1f}个月", months
+            raw = str(event_state or "").strip()
+            if raw == "PUT_RIGHT_FORMED":
+                return "回售权已形成", 0.0
+            return "已进入普通回售期", 0.0
+
+    return (
+        _event_state_text(path_id, event_state),
+        _event_state_sort_key(path_id, event_state),
+    )
 
 
 def _solve_ytm(
@@ -761,6 +831,11 @@ def build_path_view(
         market_cutoff=market_cutoff,
         maturity_contract_fact=maturity_contract_fact,
     )
+    current_status_text, current_status_sort_key = _current_status_text_and_sort(
+        path,
+        market_cutoff=market_cutoff,
+        maturity_contract_fact=maturity_contract_fact,
+    )
 
     return {
         "path_id": path_id,
@@ -769,9 +844,8 @@ def build_path_view(
         "research_state": state,
         "research_state_text": STATE_LABELS.get(state, state),
         "current_event_state": path.get("current_event_state"),
-        "current_event_state_text": _event_state_text(
-            path_id, path.get("current_event_state")
-        ),
+        "current_event_state_text": current_status_text,
+        "current_event_state_sort_key": current_status_sort_key,
         "opportunity_time": opportunity_time,
         "ytm_pct": ytm_pct,
         "status_explanation": _status_explanation(
@@ -886,6 +960,11 @@ def build_opportunity_card(
             market_cutoff=record.get("market_cutoff"),
             maturity_contract_fact=maturity_contract_fact,
         )
+        current_status_text, current_status_sort_key = _current_status_text_and_sort(
+            path,
+            market_cutoff=record.get("market_cutoff"),
+            maturity_contract_fact=maturity_contract_fact,
+        )
         is_floor = _path_is_floor(path)
         paths.append({
             "path_id": path_id,
@@ -893,12 +972,8 @@ def build_opportunity_card(
             "research_state": state,
             "research_state_text": STATE_LABELS.get(state, state),
             "current_event_state": path.get("current_event_state"),
-            "current_event_state_text": _event_state_text(
-                path_id, path.get("current_event_state")
-            ),
-            "current_event_state_sort_key": _event_state_sort_key(
-                path_id, path.get("current_event_state")
-            ),
+            "current_event_state_text": current_status_text,
+            "current_event_state_sort_key": current_status_sort_key,
             "opportunity_time": opportunity_time,
             "ytm_pct": ytm_pct,
             "metrics": _metrics(path_id, path.get("economic_judgment") or {}),
