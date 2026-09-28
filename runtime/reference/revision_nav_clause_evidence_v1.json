@@ -1,0 +1,55 @@
+{
+  "version": "revision-nav-clause-evidence-v1",
+  "updated_at": "2026-09-28",
+  "evidence": [
+    {
+      "bond_code": "127083",
+      "nav_floor_applicable": true,
+      "source": "https://paper.cnstock.com/html/2023-09/26/content_1824430.htm",
+      "source_type": "formal_announcement_republication",
+      "reason": "山路转债下修条款明确修正价不得低于最近一期经审计每股净资产及股票面值。"
+    },
+    {
+      "bond_code": "113048",
+      "nav_floor_applicable": true,
+      "source": "https://static.cninfo.com.cn/finalpage/2025-09-24/1224677186.PDF",
+      "source_type": "official_disclosure",
+      "reason": "晶科转债下修条款明确修正价不得低于最近一期经审计每股净资产及股票面值。"
+    },
+    {
+      "bond_code": "110086",
+      "nav_floor_applicable": false,
+      "source": "https://paper.cnstock.com/html/2025-09/27/content_2126664.htm",
+      "source_type": "formal_announcement_republication",
+      "reason": "精工转债下修条款的价格下限仅为股东大会前20日及前一交易日均价较高者，未设置最近一期经审计每股净资产下限。"
+    },
+    {
+      "bond_code": "113674",
+      "nav_floor_applicable": false,
+      "source": "https://paper.cnstock.com/html/2026-07/18/content_2245877.htm",
+      "source_type": "formal_announcement_republication",
+      "reason": "华设转债下修条款的价格下限仅为股东大会前20日及前一交易日均价较高者，未设置最近一期经审计每股净资产下限。"
+    },
+    {
+      "bond_code": "110081",
+      "nav_floor_applicable": false,
+      "source": "https://app.cnstock.com/zzb/zgzqb/html/2026-05/27/nw.D110000zgzqb_20260527_3-B056.htm",
+      "source_type": "formal_announcement_republication",
+      "reason": "闻泰转债2026年下修公告重述募集说明书，下修价下限仅为股东会前20日及前一交易日均价，未设置每股净资产下限。"
+    },
+    {
+      "bond_code": "127108",
+      "nav_floor_applicable": true,
+      "source": "https://paper.cnstock.com/html/2025-09/26/content_2126260.htm",
+      "source_type": "formal_announcement_republication",
+      "reason": "太能转债下修条款明确修正价不得低于最近一期经审计每股净资产及股票面值。"
+    },
+    {
+      "bond_code": "113640",
+      "nav_floor_applicable": true,
+      "source": "https://static.cninfo.com.cn/finalpage/2024-07-19/1220676352.PDF",
+      "source_type": "official_disclosure",
+      "reason": "苏利转债2024-07-19下修公告重述募集说明书：修正后的转股价格不得低于最近一期经审计每股净资产值和股票面值；当次公告并以13.12元/股最近一期经审计每股净资产作为下修底线。"
+    }
+  ]
+}
