@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from runtime.deployment_gate import validate_deployment_gate
 from runtime.opportunity.candidate_pool import build_candidate_pool
 from runtime.opportunity.incremental_event_research_bridge import promote_event_path_research
 from runtime.opportunity.incremental_notice_checkpoint import run_notice_checkpoint
@@ -152,6 +153,11 @@ def run_information_controller(
     semantic_max_waves: int = 3,
     path_limit: int = 10,
 ) -> dict[str,Any]:
+    validate_deployment_gate(
+        data_root=data_root,
+        deployment=deployment,
+        write_audit=True,
+    )
     if execution_mode not in {"AUTO_API","INTERACTIVE_CHAT"}:
         raise ValueError(f"unsupported execution_mode={execution_mode!r}")
     target_db=data_root/"state"/"incremental_runtime.sqlite"
