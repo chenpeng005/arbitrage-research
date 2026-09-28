@@ -368,6 +368,49 @@ def build_reminder_presentation(
     return _market_presentation(changes)
 
 
+def _legacy_reminder_eligible(conn: Any, change: dict[str, Any]) -> bool:
+    """Apply Reminder Policy V2 to both new and pre-V2 persisted changes."""
+    change_type = str(change.get("change_type") or "")
+    if change_type == "DEEP_RESEARCH_TRIGGERED":
+        return True
+
+    if change_type == "ECONOMIC_EXITED":
+        previous = change.get("previous")
+        previous = previous if isinstance(previous, dict) else {}
+        research_status = str(previous.get("research_status") or "")
+        if research_status and research_status != "NOT_TRIGGERED":
+            return True
+        row = conn.execute(
+            """SELECT 1 FROM research_binding
+               WHERE bond_code=? AND path_id=?
+               LIMIT 1""",
+            (change.get("bond_code"), change.get("scope_id")),
+        ).fetchone()
+        return row is not None
+
+    event_update_id = str(change.get("source_event_update_id") or "")
+    if (
+        event_update_id
+        and str(change.get("research_action") or "") == "FULL_V2_RESEARCH"
+    ):
+        row = conn.execute(
+            """SELECT 1 FROM research_trigger_ledger
+               WHERE source_event_update_id=?
+                 AND path_id=?
+                 AND task_kind='PATH_RESEARCH'
+                 AND status NOT IN (
+                     'SUPPRESSED',
+                     'SUPPRESSED_ECONOMIC_DROP',
+                     'NO_RESEARCH'
+                 )
+               LIMIT 1""",
+            (event_update_id, change.get("scope_id")),
+        ).fetchone()
+        return row is not None
+
+    return False
+
+
 def build_notification_feed(
     *,
     target_db: Path,
@@ -393,7 +436,11 @@ def build_notification_feed(
                     ORDER BY CASE ng.level WHEN 'IMMEDIATE' THEN 0 ELSE 1 END,
                              ng.created_at DESC, ng.notification_group_id
                     LIMIT ?""",
-                (IN_APP_CHANNEL, *statuses, max(1, int(limit))),
+                (
+                    IN_APP_CHANNEL,
+                    *statuses,
+                    max(100, min(2000, max(1, int(limit)) * 5)),
+                ),
             )
         )
         items: list[dict[str, Any]] = []
@@ -401,6 +448,7 @@ def build_notification_feed(
             changes = [
                 {
                     "change_id": x["change_id"],
+                    "bond_code": row["bond_code"],
                     "source_event_update_id": x["source_event_update_id"],
                     "scope_type": x["scope_type"],
                     "scope_id": x["scope_id"],
@@ -424,13 +472,21 @@ def build_notification_feed(
                     (row["notification_group_id"],),
                 )
             ]
+            eligible_changes = [
+                change
+                for change in changes
+                if _legacy_reminder_eligible(conn, change)
+            ]
+            if not eligible_changes:
+                continue
+
             items.append(
                 {
                     "notification_group_id": row["notification_group_id"],
                     "group_key": row["group_key"],
                     "bond_code": row["bond_code"],
                     "bond_name": row["bond_name"],
-                    "level": row["level"],
+                    "level": "IMMEDIATE",
                     "status": row["status"],
                     "created_at": row["created_at"],
                     "sent_at": row["sent_at"],
@@ -440,30 +496,29 @@ def build_notification_feed(
                         "status": row["delivery_status"] or "PENDING",
                         "sent_at": row["delivery_sent_at"],
                     },
-                    "change_count": len(changes),
-                    "changes": changes,
+                    "change_count": len(eligible_changes),
+                    "changes": eligible_changes,
                     "presentation": build_reminder_presentation(
                         conn=conn,
-                        changes=changes,
+                        changes=eligible_changes,
                     ),
                 }
             )
+            if len(items) >= max(1, int(limit)):
+                break
 
-        counts = {
-            str(row["level"]): int(row["n"])
-            for row in conn.execute(
-                """SELECT level,COUNT(*) n FROM notification_group
-                   WHERE status='PENDING' GROUP BY level"""
-            )
-        }
+        pending_count = sum(
+            1 for item in items if item.get("status") == "PENDING"
+        )
         return {
             "delivery_version": DELIVERY_VERSION,
             "status": "PASS",
             "channel": IN_APP_CHANNEL,
-            "pending_count": sum(counts.values()),
+            "policy_version": "reminder-policy-v2",
+            "pending_count": pending_count,
             "pending_by_level": {
-                "IMMEDIATE": counts.get("IMMEDIATE", 0),
-                "DAILY_DIGEST": counts.get("DAILY_DIGEST", 0),
+                "IMMEDIATE": pending_count,
+                "DAILY_DIGEST": 0,
             },
             "item_count": len(items),
             "items": items,
