@@ -91,7 +91,9 @@ PATH_NAME = {
 
 EVENT_TITLE = {
     "REVISION:EXPECTED_TRIGGER": "下修条件接近触发",
+    "REVISION:CONDITION_MET": "正式触发下修条件",
     "REVISION:TRIGGER": "正式触发下修条件",
+    "REVISION:NO_REVISION_CYCLE": "公司决定本轮暂不下修",
     "REVISION:BOARD_PROPOSAL": "董事会提议下修",
     "REVISION:FINAL_K_CHANGE": "最终转股价发生变化",
     "REVISION:REVISION_ACTION": "下修事项出现新进展",
@@ -125,7 +127,9 @@ PATH_NEXT = {
 
 EVENT_NEXT = {
     "REVISION:EXPECTED_TRIGGER": "关注是否正式触发下修条件，以及后续董事会是否提出下修。",
+    "REVISION:CONDITION_MET": "关注董事会是否提出下修，以及股东会和最终修正价。",
     "REVISION:TRIGGER": "关注董事会是否提出下修，以及股东会和最终修正价。",
+    "REVISION:NO_REVISION_CYCLE": "关注本轮不下修期限、重新触发时间，以及回售/到期压力是否推动下一轮重新下修。",
     "REVISION:BOARD_PROPOSAL": "关注股东会结果与最终修正后的转股价。",
     "REVISION:FINAL_K_CHANGE": "用新的转股价重新观察转股价值、回售和下修路径。",
     "PUT:EXPECTED_TRIGGER": "关注回售条件是否正式形成。",
