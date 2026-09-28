@@ -13,6 +13,7 @@ from typing import Any
 
 from runtime.opportunity.incremental_change_notification import (
     attach_notification_decision,
+    deep_research_change,
     event_changes,
 )
 from runtime.opportunity.incremental_event_router import route_event
@@ -664,6 +665,24 @@ def _route_confirmed_event(
             routing=routing,
         )
     ]
+    for action in plan.get("new_actions", []):
+        if (
+            action.get("research_action") == "FULL_V2_RESEARCH"
+            and action.get("task_kind") == "PATH_RESEARCH"
+            and action.get("task_status") == "PENDING"
+        ):
+            changes.append(
+                attach_notification_decision(
+                    deep_research_change(
+                        bond_code=bond_code,
+                        bond_name=bond_name,
+                        path_id=str(action.get("scope") or ""),
+                        event_update_id=event_update_id,
+                        event_family=event_family,
+                        reason=action.get("route_reason"),
+                    )
+                )
+            )
     change_counts = _persist_change_rows(
         conn, changes, detected_at
     )
@@ -784,12 +803,29 @@ def _apply_scope_impact_result(
            WHERE trigger_key=?""",
         (now, task["trigger_key"]),
     )
+    reminder_counts = None
+    if trigger_status == "PENDING":
+        reminder_change = attach_notification_decision(
+            deep_research_change(
+                bond_code=str(task["bond_code"]).zfill(6),
+                bond_name=str(task.get("bond_name") or ""),
+                path_id=scope,
+                event_update_id=source_event_id,
+                event_family=str(task.get("source_event_family") or ""),
+                reason="SEMANTIC_SCOPE_RESOLVED_FULL_V2",
+            )
+        )
+        reminder_counts = _persist_change_rows(
+            conn, [reminder_change], now
+        )
+
     return {
         "target_scope_id": scope,
         "resolved_research_action": "FULL_V2_RESEARCH",
         "full_v2_trigger_key": trigger_key,
         "full_v2_trigger_status": trigger_status,
         "economic_status": economic_status,
+        "notification_counts": reminder_counts,
         "status": "COMPLETED_SCOPE_FULL_V2",
     }
 
