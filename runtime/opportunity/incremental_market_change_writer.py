@@ -16,7 +16,7 @@ from runtime.opportunity.incremental_change_notification import (
 )
 from runtime.opportunity.incremental_storage import connect, json_text
 
-MARKET_CHANGE_WRITER_VERSION = "incremental-market-change-writer-v1"
+MARKET_CHANGE_WRITER_VERSION = "incremental-market-change-writer-v2"
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -34,12 +34,27 @@ def capture_market_path_state(*, target_db: Path) -> dict[str, dict[str, Any]]:
         out={}
         for row in rows:
             payload=json.loads(row["payload_json"] or "{}")
+            trigger_state=payload.get("trigger_state") or {}
+            current_identity=payload.get("current_state_identity") or {}
+            research_status=(
+                trigger_state.get("research_status")
+                or current_identity.get("research_status")
+            )
+            last_result_id=(
+                trigger_state.get("last_path_result_id")
+                or current_identity.get("last_path_result_id")
+            )
             out[f'{row["bond_code"]}:{row["scope_id"]}']={
                 "bond_code":row["bond_code"],
                 "bond_name":row["bond_name"],
                 "path_id":row["scope_id"],
                 "economic_status":row["economic_status"],
                 "economic_path":payload.get("economic_path") or {},
+                "research_status":research_status,
+                "research_attention":bool(
+                    (research_status and research_status!="NOT_TRIGGERED")
+                    or last_result_id
+                ),
                 "source_snapshot_id":row["source_snapshot_id"],
             }
         return out
@@ -56,12 +71,27 @@ def _current_market_path_state(conn) -> dict[str, dict[str, Any]]:
     out={}
     for row in rows:
         payload=json.loads(row["payload_json"] or "{}")
+        trigger_state=payload.get("trigger_state") or {}
+        current_identity=payload.get("current_state_identity") or {}
+        research_status=(
+            trigger_state.get("research_status")
+            or current_identity.get("research_status")
+        )
+        last_result_id=(
+            trigger_state.get("last_path_result_id")
+            or current_identity.get("last_path_result_id")
+        )
         out[f'{row["bond_code"]}:{row["scope_id"]}']={
             "bond_code":row["bond_code"],
             "bond_name":row["bond_name"],
             "path_id":row["scope_id"],
             "economic_status":row["economic_status"],
             "economic_path":payload.get("economic_path") or {},
+            "research_status":research_status,
+            "research_attention":bool(
+                (research_status and research_status!="NOT_TRIGGERED")
+                or last_result_id
+            ),
             "source_snapshot_id":row["source_snapshot_id"],
         }
     return out
@@ -97,6 +127,10 @@ def persist_market_transition_changes(
                     "REUSE_GATE" if current_status=="KEEP" else "NONE"
                 ),
                 material_metric_signal=False,
+                previous_research_status=(previous or {}).get("research_status"),
+                previous_research_attention=bool(
+                    (previous or {}).get("research_attention")
+                ),
             )
             raw_changes.append(attach_notification_decision(change))
         inserted_changes=0
@@ -117,6 +151,12 @@ def persist_market_transition_changes(
                     json_text({
                         "writer_version":MARKET_CHANGE_WRITER_VERSION,
                         "bond_name":change.get("bond_name"),
+                        "previous_research_status":change.get(
+                            "previous_research_status"
+                        ),
+                        "previous_research_attention":change.get(
+                            "previous_research_attention"
+                        ),
                     }),
                     detected_at,
                 ),
