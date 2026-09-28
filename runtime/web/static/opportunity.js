@@ -28,12 +28,12 @@ function renderIngress(result, focusResult = false) {
   overall.textContent = "第一步完成 · 等待合同数据";
   document.querySelector("#ingressMeta").textContent =
     `本次已完成：${result.audit.market_rows} 只转债的市场数据获取与审计（市场截面 ${result.market_cutoff}）。` +
-    "当前停在：到期现金、回售和下修合同事实尚未获取，因此还没有开始逐路径经济机会判断。" +
+    "当前停在：到期赎回、回售和下修合同事实尚未获取，因此还没有开始逐路径经济机会判断。" +
     "下一步：建设合同数据获取与审计。";
   document.querySelector("#ingressResult").classList.remove("hidden");
   document.querySelector("#ingressCounts").innerHTML = [
     ["市场数据已审计", result.audit.market_rows + " 只"],
-    ["到期现金合同", "待获取与审计"],
+    ["到期赎回条款", "待获取与审计"],
     ["普通回售条款", "待获取与审计"],
     ["下修条款与硬底价", "待获取与审计"]
   ].map(([label,value]) => `<article><small>${label}</small><strong>${value}</strong></article>`).join("");
