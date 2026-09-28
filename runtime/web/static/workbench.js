@@ -261,7 +261,7 @@ async function loadInformationStatus(){
 
 function notificationScopeText(scope){
   const map={
-    MATURITY_CASH:"到期现金",
+    MATURITY_CASH:"到期赎回",
     PUT:"回售",
     DOWNWARD_REVISION:"下修",
     CREDIT_RISK:"信用风险",
