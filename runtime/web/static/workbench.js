@@ -327,6 +327,64 @@ async function acknowledgeNotification(groupId,button){
   }
 }
 
+function reminderNumber(value,digits=2){
+  const n=Number(value);
+  if(!Number.isFinite(n))return null;
+  return n.toFixed(digits).replace(/\.?0+$/,"");
+}
+
+function renderReminderChangeLine(line){
+  const price=reminderNumber(line.current_price,3);
+  const cv=reminderNumber(line.current_cv,2);
+  const context=[
+    price!==null?"现价 "+price+"元":"",
+    cv!==null?"转股价值 "+cv:""
+  ].filter(Boolean).join(" · ");
+  return '<div class="reminder-change-line">'
+    +'<b>'+esc(line.path_name||notificationScopeText(line.scope_id))+'</b>'
+    +'<strong>'+esc(line.previous_space_text||"—")+' → '+esc(line.current_space_text||"—")+'</strong>'
+    +(context?'<span>'+esc(context)+'</span>':"")
+    +'</div>';
+}
+
+function renderReminderFallback(item){
+  return (item.changes||[]).map(c=>{
+    const research=notificationResearchText(c.research_action);
+    return esc(notificationScopeText(c.scope_id))+"："
+      +esc(notificationChangeText(c.change_type))
+      +(research?" · "+esc(research):"");
+  }).join("<br>");
+}
+
+function renderReminderItem(item){
+  const level=item.level==="IMMEDIATE"?"即时":"日报";
+  const p=item.presentation||{};
+  const lines=(p.change_lines||[]).map(renderReminderChangeLine).join("");
+  const eventSummary=p.kind==="EVENT_UPDATE"&&p.summary
+    ?'<div class="reminder-event-summary">'+esc(p.summary)+'</div>'
+    :"";
+  const body=p.version==="opportunity-reminder-v2"
+    ? eventSummary
+      + (lines?'<div class="reminder-change-grid">'+lines+'</div>':"")
+      + (p.why?'<div class="reminder-section"><b>为什么值得看</b><span>'+esc(p.why)+'</span></div>':"")
+      + (p.risk?'<div class="reminder-section reminder-risk"><b>最大限制 / 风险</b><span>'+esc(p.risk)+'</span></div>':"")
+      + (p.next_watch?'<div class="reminder-section"><b>下一步盯什么</b><span>'+esc(p.next_watch)+'</span></div>':"")
+    : '<div class="notification-detail">'+renderReminderFallback(item)+'</div>';
+  return '<div class="notification-item">'
+    +'<div class="notification-title-row">'
+    +'<div>'
+    +'<div class="notification-title"><a href="/opportunities/'+esc(item.bond_code)+'">'
+    +esc(item.bond_name)+' '+esc(item.bond_code)+'</a>'
+    +'<span class="badge '+(item.level==="IMMEDIATE"?"warn":"idle")+'">'+level+'</span></div>'
+    +(p.title?'<div class="reminder-headline">'+esc(p.title)+'</div>':"")
+    +'</div>'
+    +'<div class="notification-time">'+esc(notificationTimeText(item.created_at))+'</div>'
+    +'</div>'
+    +body
+    +'<div class="reminder-footer"><a href="/opportunities/'+esc(item.bond_code)+'">查看完整研究 →</a></div>'
+    +'</div>';
+}
+
 async function loadNotificationFeed(){
   const box=$("#notificationFeed"),badge=$("#notificationBadge");
   if(!box||!badge)return;
@@ -341,24 +399,7 @@ async function loadNotificationFeed(){
       box.innerHTML='<div class="muted">当前没有近期机会变化。新进入、退出机会和重要信息更新会出现在这里。</div>';
       return;
     }
-    box.innerHTML=items.map(item=>{
-      const level=item.level==="IMMEDIATE"?"即时":"日报";
-      const details=(item.changes||[]).map(c=>{
-        const research=notificationResearchText(c.research_action);
-        return esc(notificationScopeText(c.scope_id))+"："
-          +esc(notificationChangeText(c.change_type))
-          +(research?" · "+esc(research):"");
-      }).join("<br>");
-      return '<div class="notification-item">'
-        +'<div>'
-        +'<div class="notification-title"><a href="/opportunities/'+esc(item.bond_code)+'">'
-        +esc(item.bond_name)+' '+esc(item.bond_code)+'</a>'
-        +'<span class="badge '+(item.level==="IMMEDIATE"?"warn":"idle")+'">'+level+'</span></div>'
-        +'<div class="notification-detail">'+details
-        +' · '+esc(notificationTimeText(item.created_at))+'</div>'
-        +'</div>'
-        +'</div>';
-    }).join("");
+    box.innerHTML=items.map(renderReminderItem).join("");
   }catch(e){
     badge.textContent="读取失败";
     badge.className="badge fail";
