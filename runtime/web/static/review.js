@@ -5,7 +5,7 @@ const reviewState={
 };
 
 const PATH_LABELS={
-  MATURITY_CASH:"到期现金",
+  MATURITY_CASH:"到期赎回",
   PUT:"回售",
   DOWNWARD_REVISION:"下修"
 };
