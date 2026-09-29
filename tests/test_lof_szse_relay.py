@@ -9,7 +9,9 @@ from unittest.mock import patch
 from runtime.lof.nav import OfficialNavRecord, _szse_nav_from_relay
 from runtime.lof.source_preflight import evaluate_preflight
 from runtime.lof.szse_relay import (
+    DEFAULT_SZSE_RELAY_BASE_URL,
     SzseRelayBundle,
+    _fetch_relay_file,
     validate_szse_relay_freshness,
 )
 from runtime.lof.szse_relay_publish import build_relay_payloads
@@ -57,6 +59,27 @@ def _bundle(now: datetime, count: int = 200) -> SzseRelayBundle:
 
 
 class LofSzseRelayTest(unittest.TestCase):
+    @patch("runtime.lof.szse_relay._fetch_github_contents_bytes")
+    @patch("runtime.lof.szse_relay._fetch_bytes")
+    def test_default_relay_falls_back_to_github_api(
+        self,
+        raw_mock,
+        api_mock,
+    ) -> None:
+        raw_mock.side_effect = TimeoutError("raw slow")
+        api_mock.return_value = b'{"ok": true}'
+        data = _fetch_relay_file(
+            DEFAULT_SZSE_RELAY_BASE_URL,
+            "manifest.json",
+            timeout=20,
+        )
+        self.assertEqual(data, b'{"ok": true}')
+        raw_mock.assert_called_once()
+        api_mock.assert_called_once_with(
+            "manifest.json",
+            timeout=20,
+        )
+
     def test_stale_relay_fails_closed(self) -> None:
         now = datetime(2026, 9, 29, 8, tzinfo=timezone.utc)
         bundle = _bundle(now - timedelta(days=3))
