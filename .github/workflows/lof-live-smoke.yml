@@ -104,6 +104,61 @@ jobs:
           )
           PY
 
+      - name: Install web smoke dependencies
+        run: python -m pip install "fastapi>=0.115,<1" "uvicorn>=0.30,<1"
+
+      - name: Smoke FastAPI with generated snapshot
+        run: |
+          export LOF_RUNTIME_DATA_ROOT=/tmp/lof-live-smoke
+          python -m uvicorn runtime.lof.web_app:app --host 127.0.0.1 --port 8095 > /tmp/lof-web.log 2>&1 &
+          WEB_PID=$!
+          trap 'kill $WEB_PID 2>/dev/null || true' EXIT
+
+          python - <<'PY'
+          import json
+          import time
+          import urllib.request
+          from pathlib import Path
+
+          base = "http://127.0.0.1:8095"
+
+          last_error = None
+          for _ in range(30):
+              try:
+                  with urllib.request.urlopen(base + "/api/health", timeout=2) as r:
+                      health = json.loads(r.read().decode("utf-8"))
+                  break
+              except Exception as exc:
+                  last_error = exc
+                  time.sleep(0.5)
+          else:
+              raise RuntimeError(f"web app did not become ready: {last_error}")
+
+          assert health["status"] == "PASS", health
+          assert int(health["universe_count"]) >= 300, health
+
+          with urllib.request.urlopen(base + "/api/lof/snapshot", timeout=5) as r:
+              snapshot = json.loads(r.read().decode("utf-8"))
+          assert len(snapshot.get("rows") or []) == snapshot.get("universe_count")
+
+          with urllib.request.urlopen(base + "/", timeout=5) as r:
+              html = r.read().decode("utf-8")
+          assert "LOF 全市场监控" in html
+          assert "实时估值" in html
+          assert "申购限额" in html
+
+          result = {
+              "health": health,
+              "snapshot_rows": len(snapshot.get("rows") or []),
+              "homepage_ok": True,
+          }
+          print(json.dumps(result, ensure_ascii=False, indent=2))
+          Path("/tmp/lof-live-smoke/web_smoke.json").write_text(
+              json.dumps(result, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
       - name: Upload smoke snapshot
         if: always()
         uses: actions/upload-artifact@v4
@@ -112,5 +167,6 @@ jobs:
           path: |
             /tmp/lof-live-smoke/latest_market_snapshot.json
             /tmp/lof-live-smoke/summary.json
+            /tmp/lof-live-smoke/web_smoke.json
           if-no-files-found: ignore
           retention-days: 7
