@@ -18,9 +18,12 @@ DEFAULT_SZSE_RELAY_BASE_URL = (
     "chenpeng005/arbitrage-research/lof-data-relay/lof_relay"
 )
 DEFAULT_RELAY_MAX_AGE_SECONDS = 48 * 60 * 60
-DEFAULT_RELAY_GITHUB_API_BASE_URL = (
+DEFAULT_RELAY_GITHUB_REPO_API_BASE_URL = (
     "https://api.github.com/repos/"
-    "chenpeng005/arbitrage-research/contents/lof_relay"
+    "chenpeng005/arbitrage-research"
+)
+DEFAULT_RELAY_GITHUB_CONTENTS_BASE_URL = (
+    DEFAULT_RELAY_GITHUB_REPO_API_BASE_URL + "/contents/lof_relay"
 )
 DEFAULT_RELAY_GITHUB_REF = "lof-data-relay"
 
@@ -72,17 +75,39 @@ def _join(base_url: str, filename: str) -> str:
     return base_url.rstrip("/") + "/" + filename
 
 
+def _resolve_default_relay_commit(*, timeout: int) -> str:
+    url = (
+        DEFAULT_RELAY_GITHUB_REPO_API_BASE_URL
+        + "/git/ref/heads/"
+        + quote(DEFAULT_RELAY_GITHUB_REF)
+    )
+    request = Request(
+        url,
+        headers={
+            "User-Agent": "LOF-Runtime",
+            "Accept": "application/vnd.github+json",
+        },
+    )
+    with urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    commit_sha = str((payload.get("object") or {}).get("sha") or "").strip()
+    if len(commit_sha) != 40:
+        raise ValueError("GitHub relay branch head is not a commit SHA")
+    return commit_sha
+
+
 def _fetch_github_contents_bytes(
     filename: str,
     *,
     timeout: int,
+    ref: str,
 ) -> bytes:
     url = (
-        DEFAULT_RELAY_GITHUB_API_BASE_URL.rstrip("/")
+        DEFAULT_RELAY_GITHUB_CONTENTS_BASE_URL.rstrip("/")
         + "/"
         + quote(filename)
         + "?ref="
-        + quote(DEFAULT_RELAY_GITHUB_REF)
+        + quote(ref)
     )
     request = Request(
         url,
@@ -106,19 +131,35 @@ def _fetch_relay_file(
     filename: str,
     *,
     timeout: int,
+    pinned_ref: str | None = None,
 ) -> bytes:
-    try:
+    if base_url.rstrip("/") != DEFAULT_SZSE_RELAY_BASE_URL.rstrip("/"):
         return _fetch_bytes(
             _join(base_url, filename),
-            timeout=min(timeout, 8),
-            attempts=1,
+            timeout=timeout,
         )
-    except Exception:
-        if base_url.rstrip("/") != DEFAULT_SZSE_RELAY_BASE_URL.rstrip("/"):
-            raise
+
+    ref = pinned_ref or _resolve_default_relay_commit(
+        timeout=max(timeout, 20),
+    )
+    try:
         return _fetch_github_contents_bytes(
             filename,
             timeout=max(timeout, 20),
+            ref=ref,
+        )
+    except Exception:
+        immutable_raw_url = (
+            "https://raw.githubusercontent.com/"
+            "chenpeng005/arbitrage-research/"
+            + ref
+            + "/lof_relay/"
+            + filename
+        )
+        return _fetch_bytes(
+            immutable_raw_url,
+            timeout=max(timeout, 20),
+            attempts=2,
         )
 
 
@@ -138,10 +179,16 @@ def fetch_szse_relay_bundle(
     *,
     timeout: int = 20,
 ) -> SzseRelayBundle:
+    pinned_ref = (
+        _resolve_default_relay_commit(timeout=max(timeout, 20))
+        if base_url.rstrip("/") == DEFAULT_SZSE_RELAY_BASE_URL.rstrip("/")
+        else None
+    )
     manifest_bytes = _fetch_relay_file(
         base_url,
         "manifest.json",
         timeout=timeout,
+        pinned_ref=pinned_ref,
     )
     manifest = _json_bytes(manifest_bytes, label="relay manifest")
 
@@ -160,11 +207,13 @@ def fetch_szse_relay_bundle(
         base_url,
         universe_name,
         timeout=timeout,
+        pinned_ref=pinned_ref,
     )
     nav_bytes = _fetch_relay_file(
         base_url,
         nav_name,
         timeout=timeout,
+        pinned_ref=pinned_ref,
     )
 
     universe_hash = hashlib.sha256(universe_bytes).hexdigest()
