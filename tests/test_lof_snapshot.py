@@ -13,6 +13,7 @@ from runtime.lof.snapshot import (
     build_market_snapshot,
     validate_market_snapshot,
 )
+from runtime.lof.state import FundTradeStateRecord
 from runtime.lof.universe import LofIdentity
 
 
@@ -109,6 +110,68 @@ class LofMarketSnapshotTest(unittest.TestCase):
         self.assertIsNone(by_code["161128"]["static_premium_rate"])
         self.assertEqual(by_code["161128"]["estimated_nav_status"], "UNAVAILABLE")
         self.assertIsNone(by_code["161128"]["estimated_premium_rate"])
+
+    def test_official_nav_fallback_and_suspended_limit_projection(self) -> None:
+        quote = QuoteRecord(
+            code="501001",
+            exchange="SSE",
+            name="财通精选混合LOF",
+            price=Decimal("1.500"),
+            quote_time=datetime(2026, 9, 29, 11, 29, 50, tzinfo=TZ),
+            pct_change=Decimal("1.00"),
+            volume=Decimal("100"),
+            amount=Decimal("100000"),
+            source="TENCENT_QUOTE",
+        )
+        nav = OfficialNavRecord(
+            code="501001",
+            exchange="SSE",
+            nav=Decimal("1.400"),
+            nav_date=date(2026, 9, 25),
+            fetched_at=self.cutoff,
+            source="SSE_OFFICIAL",
+        )
+        trade_state = FundTradeStateRecord(
+            code="501001",
+            subscription_status="SUSPENDED",
+            subscription_status_raw="暂停申购",
+            redemption_status="OPEN",
+            redemption_status_raw="开放赎回",
+            daily_subscription_limit=Decimal("100"),
+            minimum_subscription_amount=Decimal("10"),
+            limit_scope="UNKNOWN",
+            subscription_confirmation_days=1,
+            subscription_to_sell_days=None,
+            subscription_fee_schedule=(),
+            redemption_fee_schedule=(),
+            fee_source="TEST",
+            state_source="TEST",
+            fetched_at=self.cutoff,
+            error=None,
+        )
+
+        snapshot = build_market_snapshot(
+            universe=[self.universe[0]],
+            quotes=[quote],
+            official_navs=[nav],
+            trade_states=[trade_state],
+            generated_at=self.cutoff,
+            market_cutoff=self.cutoff,
+            max_quote_age_seconds=30,
+            previous_trading_day=date(2026, 9, 28),
+            second_previous_trading_day=date(2026, 9, 25),
+            snapshot_id="fallback-snapshot",
+        )
+
+        row = snapshot["rows"][0]
+        self.assertIsNone(row["estimated_premium_rate"])
+        self.assertEqual(
+            row["display_premium_rate"],
+            row["static_premium_rate"],
+        )
+        self.assertEqual(row["display_premium_basis"], "OFFICIAL_NAV")
+        self.assertEqual(row["official_nav_lag_label"], "T-2")
+        self.assertIsNone(row["daily_subscription_limit"])
 
     def test_old_quote_is_stale_not_fresh(self) -> None:
         quotes = [
