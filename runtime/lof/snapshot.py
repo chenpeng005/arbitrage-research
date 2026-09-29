@@ -4,6 +4,7 @@ from datetime import date, datetime
 from typing import Iterable
 from uuid import uuid4
 
+from .classification import FundTypeRecord
 from .nav import OfficialNavRecord, nav_age_days
 from .premium import premium_rate
 from .quote import QuoteRecord, is_quote_stale, quote_age_seconds
@@ -27,14 +28,14 @@ def build_market_snapshot(
     generated_at: datetime,
     market_cutoff: datetime,
     max_quote_age_seconds: int,
-    lof_types: dict[tuple[str, str], str] | None = None,
+    type_records: dict[tuple[str, str], FundTypeRecord] | None = None,
     snapshot_id: str | None = None,
 ) -> dict:
     universe_rows = list(universe)
     quote_map = {_key(x.exchange, x.code): x for x in quotes}
     nav_map = {_key(x.exchange, x.code): x for x in official_navs}
     state_map = {x.code: x for x in trade_states}
-    lof_types = lof_types or {}
+    type_records = type_records or {}
 
     rows: list[dict] = []
     quote_fresh_count = 0
@@ -52,6 +53,7 @@ def build_market_snapshot(
         quote = quote_map.get(key)
         nav = nav_map.get(key)
         state = state_map.get(identity.code)
+        type_record = type_records.get(key)
 
         if quote is None or not quote.available:
             quote_status = "UNAVAILABLE"
@@ -111,7 +113,18 @@ def build_market_snapshot(
             "code": identity.code,
             "name": identity.name,
             "exchange": identity.exchange,
-            "lof_type": lof_types.get(key, "UNKNOWN"),
+            "lof_type": (
+                type_record.lof_type if type_record is not None else "UNKNOWN"
+            ),
+            "fund_type_raw": (
+                type_record.fund_type_raw if type_record is not None else None
+            ),
+            "type_source": (
+                type_record.source if type_record is not None else None
+            ),
+            "type_error": (
+                type_record.error if type_record is not None else "UNAVAILABLE"
+            ),
             "price": price,
             "quote_time": quote_time,
             "pct_change": pct_change,
