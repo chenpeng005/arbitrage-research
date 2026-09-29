@@ -358,26 +358,9 @@ def run_acquisition(
         "market_cutoff": market_cutoff,
     }
 
-    if snapshot_mode == "CLOSE":
+    if snapshot_mode in {"CLOSE", "PRE_TRADE_CLOSE"}:
         china_now = datetime.now(ZoneInfo("Asia/Shanghai"))
         s0.metrics["china_time"] = china_now.isoformat(timespec="minutes")
-
-        if market_cutoff != china_now.date().isoformat():
-            return fail(
-                result,
-                s0,
-                output_dir,
-                "正式收盘模式只允许生成中国市场当天收盘截面；"
-                "历史日期必须使用历史回放 / 历史数据模式，禁止用当前行情回填过去日期。",
-            )
-
-        if (china_now.hour, china_now.minute) < (15, 10):
-            return fail(
-                result,
-                s0,
-                output_dir,
-                "当前尚未超过 15:10（北京时间），正式收盘截面尚未冻结；请使用盘中测试模式。",
-            )
 
         try:
             trade_dates = fetch_and_freeze(
@@ -396,15 +379,65 @@ def run_acquisition(
             trade_dates["trade_date"] = pd.to_datetime(
                 trade_dates["trade_date"], errors="coerce"
             ).dt.date
-            if china_now.date() not in set(trade_dates["trade_date"].dropna()):
+            valid_trade_dates = sorted(
+                d for d in trade_dates["trade_date"].dropna()
+                if d <= china_now.date()
+            )
+            if not valid_trade_dates:
                 return fail(
                     result,
                     s0,
                     output_dir,
-                    "今天不是A股交易日，不能生成今天的正式收盘截面。",
+                    "交易日历中找不到当前日期之前的有效交易日。",
                 )
+            latest_trade_date = valid_trade_dates[-1]
+            s0.metrics["latest_completed_trade_date"] = latest_trade_date.isoformat()
+
+            if snapshot_mode == "CLOSE":
+                if market_cutoff != china_now.date().isoformat():
+                    return fail(
+                        result,
+                        s0,
+                        output_dir,
+                        "正式收盘模式只允许生成中国市场当天收盘截面；"
+                        "历史日期必须使用历史回放 / 历史数据模式。",
+                    )
+                if china_now.date() not in set(trade_dates["trade_date"].dropna()):
+                    return fail(
+                        result,
+                        s0,
+                        output_dir,
+                        "今天不是A股交易日，不能生成今天的正式收盘截面。",
+                    )
+            else:
+                if market_cutoff != latest_trade_date.isoformat():
+                    return fail(
+                        result,
+                        s0,
+                        output_dir,
+                        "交易日前夜模式的 market_cutoff 必须等于最近一个已完成交易日。",
+                    )
+
+            if latest_trade_date == china_now.date() and (
+                china_now.hour,
+                china_now.minute,
+            ) < (15, 10):
+                return fail(
+                    result,
+                    s0,
+                    output_dir,
+                    "最近交易日就是今天，但当前尚未超过15:10，不能冻结正式收盘截面。",
+                )
+
             s0.metrics["trade_day_check"] = "PASS"
         except Exception as exc:
+            if snapshot_mode == "PRE_TRADE_CLOSE":
+                return fail(
+                    result,
+                    s0,
+                    output_dir,
+                    f"交易日前夜模式必须通过交易日历校验：{type(exc).__name__}",
+                )
             s0.status = "WARNING"
             s0.warnings = [
                 f"交易日历校验暂时不可用：{type(exc).__name__}；继续运行但保留时间审计警告。"
