@@ -5,6 +5,7 @@ import html
 import json
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any
 
@@ -50,6 +51,34 @@ def _get_json(
         attempts=retries,
         base_delay_seconds=base_delay_seconds,
     )
+
+
+def _get_json_with_retry(
+    url: str,
+    params: dict[str, Any],
+    *,
+    referer: str,
+    timeout: int,
+    attempts: int = 3,
+    base_backoff_seconds: float = 0.5,
+) -> Any:
+    last_error: Exception | None = None
+    for attempt in range(1, max(1, attempts) + 1):
+        try:
+            return _get_json(
+                url,
+                params,
+                referer=referer,
+                timeout=timeout,
+            )
+        except Exception as exc:
+            last_error = exc
+            if attempt >= max(1, attempts):
+                raise
+            time.sleep(base_backoff_seconds * attempt)
+
+    assert last_error is not None
+    raise last_error
 
 
 def parse_sse_universe(payload: dict[str, Any]) -> list[LofIdentity]:
@@ -180,11 +209,12 @@ def fetch_szse_universe(
         page_count = int(metadata.get("pagecount") or 1)
 
     for page_no in range(2, page_count + 1):
-        payload = _get_json(
+        payload = _get_json_with_retry(
             SZSE_UNIVERSE_URL,
             {**base_params, "PAGENO": page_no},
             referer="https://fund.szse.cn/marketdata/lof/",
             timeout=timeout,
+            attempts=3,
         )
         result.extend(parse_szse_universe_page(payload))
 
