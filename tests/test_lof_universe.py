@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from http.client import RemoteDisconnected
 import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from runtime.lof.universe import (
+    _get_json,
     fetch_all_lof_universe,
     load_sse_universe_fixture,
     load_szse_universe_fixture,
@@ -112,6 +115,34 @@ class LofUniverseParserTest(unittest.TestCase):
         self.assertEqual(rows[0].code, "161128")
         self.assertEqual(rows[0].exchange, "SZSE")
         self.assertEqual(rows[0].source, "SZSE_OFFICIAL_FIXTURE")
+
+    def test_get_json_retries_transient_disconnect(self) -> None:
+        class FakeResponse:
+            def __enter__(self):
+                return self
+            def __exit__(self, exc_type, exc, tb):
+                return False
+            def read(self):
+                return b'{"ok": true}'
+
+        with patch(
+            "runtime.lof.universe.urlopen",
+            side_effect=[
+                RemoteDisconnected("first attempt"),
+                FakeResponse(),
+            ],
+        ) as mocked:
+            payload = _get_json(
+                "https://unit.test/data",
+                {"x": 1},
+                referer="https://unit.test/",
+                timeout=1,
+                retries=2,
+                backoff_seconds=0,
+            )
+
+        self.assertEqual(payload, {"ok": True})
+        self.assertEqual(mocked.call_count, 2)
 
     def test_fetch_all_is_not_unit_tested_against_live_network(self) -> None:
         # Keep CI deterministic. Live-source smoke tests belong to deployment /
