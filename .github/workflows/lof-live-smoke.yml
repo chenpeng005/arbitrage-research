@@ -28,7 +28,8 @@ jobs:
             --timeout 20 \
             --max-quote-age-seconds 180 \
             --snapshot-id github-live-smoke \
-            --sse-universe-fixture tests/fixtures/lof_sse_universe_2026-09-29.json
+            --sse-universe-fixture tests/fixtures/lof_sse_universe_2026-09-29.json \
+            --szse-universe-fixture tests/fixtures/lof_szse_universe_2026-09-29.json
 
       - name: Validate all-market snapshot
         run: |
