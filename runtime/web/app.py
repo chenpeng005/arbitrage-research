@@ -1522,6 +1522,7 @@ def create_market_map_pipeline(
     if request.snapshot_mode not in {
         "LIVE_TEST",
         "CLOSE",
+        "PRE_TRADE_CLOSE",
         "REPLAY_TEST",
         "HISTORICAL_REPLAY",
     }:
