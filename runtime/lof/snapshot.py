@@ -8,6 +8,7 @@ from .classification import FundTypeRecord
 from .nav import OfficialNavRecord, nav_age_days
 from .premium import premium_rate
 from .quote import QuoteRecord, is_quote_stale, quote_age_seconds
+from .resolver import EstimatedNavResult
 from .state import FundTradeStateRecord
 from .universe import LofIdentity
 
@@ -24,6 +25,7 @@ def build_market_snapshot(
     universe: Iterable[LofIdentity],
     quotes: Iterable[QuoteRecord],
     official_navs: Iterable[OfficialNavRecord],
+    estimated_navs: Iterable[EstimatedNavResult] = (),
     trade_states: Iterable[FundTradeStateRecord] = (),
     generated_at: datetime,
     market_cutoff: datetime,
@@ -34,6 +36,7 @@ def build_market_snapshot(
     universe_rows = list(universe)
     quote_map = {_key(x.exchange, x.code): x for x in quotes}
     nav_map = {_key(x.exchange, x.code): x for x in official_navs}
+    estimated_nav_map = {x.fund_code: x for x in estimated_navs}
     state_map = {x.code: x for x in trade_states}
     type_records = type_records or {}
 
@@ -43,6 +46,9 @@ def build_market_snapshot(
     quote_unavailable_count = 0
     official_nav_available_count = 0
     official_nav_unavailable_count = 0
+    estimated_nav_available_count = 0
+    estimated_nav_stale_count = 0
+    estimated_nav_unavailable_count = 0
     state_available_count = 0
     state_unavailable_count = 0
 
@@ -52,6 +58,7 @@ def build_market_snapshot(
         key = _key(identity.exchange, identity.code)
         quote = quote_map.get(key)
         nav = nav_map.get(key)
+        estimated = estimated_nav_map.get(identity.code)
         state = state_map.get(identity.code)
         type_record = type_records.get(key)
 
@@ -102,6 +109,42 @@ def build_market_snapshot(
             official_nav_source = nav.source
             official_nav_available_count += 1
 
+        if estimated is None:
+            estimated_nav = None
+            estimated_nav_time = None
+            estimated_nav_source = None
+            estimated_nav_method = None
+            estimated_nav_quality = "UNKNOWN"
+            estimated_nav_status = "UNAVAILABLE"
+            estimated_nav_age = None
+            estimated_nav_proxy = None
+            estimated_premium = None
+            estimated_nav_unavailable_count += 1
+        else:
+            estimated_nav = estimated.estimated_nav
+            estimated_nav_time = estimated.estimated_nav_time
+            estimated_nav_source = "LOF_RESOLVER"
+            estimated_nav_method = estimated.resolver_method
+            estimated_nav_quality = estimated.estimated_nav_quality
+            estimated_nav_status = estimated.estimated_nav_status
+            estimated_nav_proxy = estimated.proxy_id
+            if estimated_nav_time is None:
+                estimated_nav_age = None
+            else:
+                estimated_nav_age = max(
+                    0,
+                    int((market_cutoff - estimated_nav_time).total_seconds()),
+                )
+            if estimated_nav_status == "AVAILABLE":
+                estimated_nav_available_count += 1
+                estimated_premium = premium_rate(price, estimated_nav)
+            elif estimated_nav_status == "STALE":
+                estimated_nav_stale_count += 1
+                estimated_premium = None
+            else:
+                estimated_nav_unavailable_count += 1
+                estimated_premium = None
+
         if state is None or state.error is not None:
             state_available = False
             state_unavailable_count += 1
@@ -138,12 +181,16 @@ def build_market_snapshot(
             "official_nav_source": official_nav_source,
             "official_nav_status": official_nav_status,
             "official_nav_age_days": official_nav_age,
-            "estimated_nav": None,
-            "estimated_nav_time": None,
-            "estimated_nav_source": None,
-            "estimated_nav_status": "UNAVAILABLE",
+            "estimated_nav": estimated_nav,
+            "estimated_nav_time": estimated_nav_time,
+            "estimated_nav_source": estimated_nav_source,
+            "estimated_nav_method": estimated_nav_method,
+            "estimated_nav_quality": estimated_nav_quality,
+            "estimated_nav_status": estimated_nav_status,
+            "estimated_nav_age_seconds": estimated_nav_age,
+            "estimated_nav_proxy": estimated_nav_proxy,
             "static_premium_rate": premium_rate(price, official_nav),
-            "estimated_premium_rate": None,
+            "estimated_premium_rate": estimated_premium,
             "subscription_status": (
                 state.subscription_status if state_available else "UNKNOWN"
             ),
@@ -195,7 +242,9 @@ def build_market_snapshot(
         "quote_unavailable_count": quote_unavailable_count,
         "official_nav_available_count": official_nav_available_count,
         "official_nav_unavailable_count": official_nav_unavailable_count,
-        "estimated_nav_available_count": 0,
+        "estimated_nav_available_count": estimated_nav_available_count,
+        "estimated_nav_stale_count": estimated_nav_stale_count,
+        "estimated_nav_unavailable_count": estimated_nav_unavailable_count,
         "state_available_count": state_available_count,
         "state_unavailable_count": state_unavailable_count,
         "row_count": len(rows),
@@ -263,10 +312,20 @@ def validate_market_snapshot(
 
         estimated_premium = row.get("estimated_premium_rate")
         estimated_nav = row.get("estimated_nav")
+        estimated_status = row.get("estimated_nav_status")
         if estimated_premium is not None and (
-            price is None or estimated_nav is None
+            price is None
+            or estimated_nav is None
+            or estimated_status != "AVAILABLE"
         ):
-            raise ValueError(f"estimated premium lacks inputs: {key}")
+            raise ValueError(f"estimated premium lacks valid inputs: {key}")
+        if estimated_status == "AVAILABLE":
+            if row.get("estimated_nav_time") is None:
+                raise ValueError(f"available estimated nav lacks time: {key}")
+            if row.get("estimated_nav_method") is None:
+                raise ValueError(f"available estimated nav lacks method: {key}")
+            if row.get("estimated_nav_source") is None:
+                raise ValueError(f"available estimated nav lacks source: {key}")
 
     summary = snapshot.get("quality_summary") or {}
     if summary.get("row_count") != len(rows):
