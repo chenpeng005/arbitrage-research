@@ -11,6 +11,7 @@ from .context_builder import (
 )
 from .controller import collect_market_snapshot
 from .estimated_nav_lane import EstimatedNavContext
+from .nav import OfficialNavRecord
 from .snapshot_store import LofSnapshotStore
 from .trading_calendar import fetch_previous_trading_day
 from .universe import LofIdentity, fetch_all_lof_universe
@@ -71,6 +72,7 @@ class LofRuntimeSession:
         max_quote_age_seconds: int = 60,
         timeout: int = 15,
         snapshot_id: str | None = None,
+        official_nav_override: list[OfficialNavRecord] | None = None,
     ) -> dict:
         return collect_market_snapshot(
             generated_at=generated_at,
@@ -80,6 +82,7 @@ class LofRuntimeSession:
             estimated_nav_context=self.estimated_nav_context,
             universe_override=self.universe,
             type_records_override=self.type_records,
+            official_nav_override=official_nav_override,
             snapshot_id=snapshot_id,
         )
 
@@ -92,6 +95,7 @@ class LofRuntimeSession:
         max_quote_age_seconds: int = 60,
         timeout: int = 15,
         snapshot_id: str | None = None,
+        official_nav_override: list[OfficialNavRecord] | None = None,
     ) -> Path:
         snapshot = self.collect(
             generated_at=generated_at,
@@ -99,5 +103,6 @@ class LofRuntimeSession:
             max_quote_age_seconds=max_quote_age_seconds,
             timeout=timeout,
             snapshot_id=snapshot_id,
+            official_nav_override=official_nav_override,
         )
         return store.persist(snapshot)
