@@ -10,6 +10,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from .runtime_session import LofRuntimeSession
+from .szse_relay import fetch_szse_relay_bundle
 
 
 PREFLIGHT_VERSION = "lof-production-source-preflight-v1"
@@ -59,6 +60,7 @@ def evaluate_preflight(
     expect_fresh_quotes: bool,
     application_commit_sha: str | None,
     checked_at: datetime,
+    source_transport: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     rows = snapshot.get("rows") or []
     universe_count = int(snapshot.get("universe_count") or 0)
@@ -81,6 +83,7 @@ def evaluate_preflight(
     )
 
     r1_total = r1_context_resolved + r1_context_unresolved
+    source_transport = dict(source_transport or {})
 
     checks: list[PreflightCheck] = [
         PreflightCheck(
@@ -171,6 +174,37 @@ def evaluate_preflight(
             )
         )
 
+    relay_fetched_at = source_transport.get("relay_fetched_at")
+    if relay_fetched_at:
+        try:
+            relay_time = datetime.fromisoformat(str(relay_fetched_at))
+            if relay_time.tzinfo is None:
+                relay_time = relay_time.replace(tzinfo=checked_at.tzinfo)
+            age_hours = max(
+                0.0,
+                (checked_at - relay_time.astimezone(checked_at.tzinfo)).total_seconds()
+                / 3600,
+            )
+            checks.append(
+                PreflightCheck(
+                    name="szse_relay_freshness",
+                    status="PASS" if age_hours <= 96 else "FAIL",
+                    hard=True,
+                    value=round(age_hours, 3),
+                    threshold="<=96h",
+                )
+            )
+        except Exception:
+            checks.append(
+                PreflightCheck(
+                    name="szse_relay_freshness",
+                    status="FAIL",
+                    hard=True,
+                    value=str(relay_fetched_at),
+                    threshold="valid ISO timestamp and <=96h",
+                )
+            )
+
     critical_lane_names = {"quote", "official_nav", "trade_state"}
     critical_lane_errors = {
         key: value
@@ -245,6 +279,7 @@ def evaluate_preflight(
         "warnings": warnings,
         "errors": hard_failures,
         "lane_errors": lane_errors,
+        "source_transport": source_transport,
     }
 
 
@@ -272,6 +307,38 @@ def run_production_source_preflight(
             timeout=timeout,
             snapshot_id="production-source-preflight",
         )
+        szse_codes = {
+            row.code for row in session.universe if row.exchange == "SZSE"
+        }
+        universe_relay = any(
+            row.exchange == "SZSE"
+            and row.source == "SZSE_OFFICIAL_RELAY"
+            for row in session.universe
+        )
+        nav_relay = any(
+            row.get("code") in szse_codes
+            and row.get("official_nav_source") == "SZSE_OFFICIAL_RELAY"
+            for row in (snapshot.get("rows") or [])
+        )
+        source_transport: dict[str, Any] = {
+            "szse_universe_transport": (
+                "OFFICIAL_RELAY" if universe_relay else "DIRECT_OFFICIAL"
+            ),
+            "szse_nav_transport": (
+                "OFFICIAL_RELAY" if nav_relay else "DIRECT_OFFICIAL"
+            ),
+        }
+        relay_url = os.environ.get("LOF_SZSE_RELAY_BASE_URL")
+        if relay_url and (universe_relay or nav_relay):
+            bundle = fetch_szse_relay_bundle(relay_url, timeout=timeout)
+            source_transport.update(
+                {
+                    "relay_base_url": relay_url,
+                    "relay_fetched_at": bundle.fetched_at,
+                    "relay_manifest_sha256": bundle.manifest_sha256,
+                }
+            )
+
         return evaluate_preflight(
             snapshot=snapshot,
             r1_context_resolved=session.context_build.r1_resolved_count,
@@ -279,6 +346,7 @@ def run_production_source_preflight(
             expect_fresh_quotes=expect_fresh_quotes,
             application_commit_sha=application_commit_sha,
             checked_at=now,
+            source_transport=source_transport,
         )
     except Exception as exc:
         return {
@@ -301,6 +369,7 @@ def run_production_source_preflight(
                 }
             ],
             "lane_errors": {},
+            "source_transport": {},
         }
 
 
