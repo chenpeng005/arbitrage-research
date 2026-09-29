@@ -13,6 +13,13 @@ from .controller import collect_market_snapshot
 from .estimated_nav_lane import EstimatedNavContext
 from .nav import OfficialNavRecord
 from .snapshot_store import LofSnapshotStore
+from .szse_relay import (
+    DEFAULT_RELAY_MAX_AGE_SECONDS,
+    DEFAULT_SZSE_RELAY_BASE_URL,
+    SzseRelayBundle,
+    fetch_szse_relay_bundle,
+    validate_szse_relay_freshness,
+)
 from .trading_calendar import fetch_previous_trading_day
 from .tracking_index import load_tracking_index_fixture
 from .universe import LofIdentity, fetch_all_lof_universe
@@ -27,6 +34,8 @@ class LofRuntimeSession:
     estimated_nav_context: EstimatedNavContext
     context_build: EstimatedNavContextBuildResult
     context_built_at: datetime
+    szse_transport: str = "DIRECT_OFFICIAL"
+    szse_relay_bundle: SzseRelayBundle | None = None
 
     @classmethod
     def build(
@@ -37,12 +46,36 @@ class LofRuntimeSession:
         sse_universe_fixture_path: str | Path | None = None,
         szse_universe_fixture_path: str | Path | None = None,
         tracking_index_fixture_path: str | Path | None = None,
+        szse_relay_base_url: str | None = DEFAULT_SZSE_RELAY_BASE_URL,
+        szse_relay_max_age_seconds: int = DEFAULT_RELAY_MAX_AGE_SECONDS,
     ) -> "LofRuntimeSession":
         universe = fetch_all_lof_universe(
             timeout=timeout,
             sse_fixture_path=sse_universe_fixture_path,
             szse_fixture_path=szse_universe_fixture_path,
+            szse_relay_base_url=szse_relay_base_url,
+            as_of=as_of,
+            szse_relay_max_age_seconds=szse_relay_max_age_seconds,
         )
+        uses_szse_relay = any(
+            row.exchange == "SZSE"
+            and row.source == "SZSE_OFFICIAL_RELAY"
+            for row in universe
+        )
+        relay_bundle: SzseRelayBundle | None = None
+        if uses_szse_relay:
+            if not szse_relay_base_url:
+                raise ValueError("SZSE relay transport selected without base URL")
+            relay_bundle = fetch_szse_relay_bundle(
+                szse_relay_base_url,
+                timeout=max(timeout, 20),
+            )
+            validate_szse_relay_freshness(
+                relay_bundle,
+                as_of=as_of,
+                max_age_seconds=szse_relay_max_age_seconds,
+            )
+
         raw_type_map = fetch_fund_type_map(timeout=max(timeout, 20))
         type_records = classify_universe(
             universe,
@@ -70,6 +103,12 @@ class LofRuntimeSession:
             estimated_nav_context=context_build.context,
             context_build=context_build,
             context_built_at=as_of,
+            szse_transport=(
+                "OFFICIAL_RELAY"
+                if uses_szse_relay
+                else "DIRECT_OFFICIAL"
+            ),
+            szse_relay_bundle=relay_bundle,
         )
 
     def collect(
@@ -91,6 +130,7 @@ class LofRuntimeSession:
             universe_override=self.universe,
             type_records_override=self.type_records,
             official_nav_override=official_nav_override,
+            szse_relay_bundle=self.szse_relay_bundle,
             snapshot_id=snapshot_id,
         )
 
