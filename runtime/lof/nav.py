@@ -64,14 +64,16 @@ def _get_json(
     *,
     referer: str,
     timeout: int,
+    retries: int = 3,
+    base_delay_seconds: float = 0.25,
 ) -> Any:
     return fetch_json_with_retry(
         url,
         params,
         referer=referer,
         timeout=timeout,
-        attempts=3,
-        base_delay_seconds=0.25,
+        attempts=retries,
+        base_delay_seconds=base_delay_seconds,
     )
 
 
