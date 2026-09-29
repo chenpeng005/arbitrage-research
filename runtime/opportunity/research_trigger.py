@@ -15,10 +15,10 @@ from typing import Any
 
 import pandas as pd
 
-TRIGGER_VERSION = "engineering-research-trigger-v1"
+TRIGGER_VERSION = "engineering-research-trigger-v1.1-light-daily"
 ACTIVE_PATHS = ("MATURITY_CASH", "PUT", "DOWNWARD_REVISION")
 REVISION_TRIGGER_STATES = {
-    "临近触发": "REVISION_EVENT_NEAR_TRIGGER",
+    # “临近触发”只属于监控/其他增量，不再生成 Full V2 研究任务。
     "满足条件": "REVISION_EVENT_CONDITION_MET",
     "待股东会": "REVISION_EVENT_SHAREHOLDER_MEETING_PENDING",
 }
