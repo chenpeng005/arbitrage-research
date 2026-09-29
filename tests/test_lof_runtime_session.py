@@ -45,7 +45,10 @@ class LofRuntimeSessionTest(unittest.TestCase):
                 source="TEST",
             )
         }
-        previous_day_mock.return_value = date(2026, 9, 28)
+        previous_day_mock.side_effect = [
+            date(2026, 9, 28),
+            date(2026, 9, 25),
+        ]
         empty_context = EstimatedNavContext(
             resolver_classes={},
             mapping_candidates={},
@@ -80,7 +83,11 @@ class LofRuntimeSessionTest(unittest.TestCase):
             as_of=now,
             szse_relay_max_age_seconds=unittest.mock.ANY,
         )
-        previous_day_mock.assert_called_once()
+        self.assertEqual(
+            session.second_previous_trading_day,
+            date(2026, 9, 25),
+        )
+        self.assertEqual(previous_day_mock.call_count, 2)
 
     @patch("runtime.lof.runtime_session.collect_market_snapshot")
     def test_collect_reuses_cached_universe_and_type_records(
