@@ -251,16 +251,28 @@ def fetch_all_official_nav(
     sse_codes = {row.code for row in rows if row.exchange == "SSE"}
     szse_codes = [row.code for row in rows if row.exchange == "SZSE"]
 
-    sse_rows = [
-        row
-        for row in fetch_sse_official_nav(timeout=timeout)
-        if row.code in sse_codes
-    ]
-    szse_rows = fetch_szse_official_nav(
-        szse_codes,
-        timeout=timeout,
-        max_workers=szse_max_workers,
-    )
+    sse_error: str | None = None
+    szse_error: str | None = None
+
+    try:
+        sse_rows = [
+            row
+            for row in fetch_sse_official_nav(timeout=timeout)
+            if row.code in sse_codes
+        ]
+    except Exception as exc:
+        sse_rows = []
+        sse_error = f"FETCH_ERROR:{type(exc).__name__}"
+
+    try:
+        szse_rows = fetch_szse_official_nav(
+            szse_codes,
+            timeout=timeout,
+            max_workers=szse_max_workers,
+        )
+    except Exception as exc:
+        szse_rows = []
+        szse_error = f"FETCH_ERROR:{type(exc).__name__}"
 
     by_key: dict[tuple[str, str], OfficialNavRecord] = {
         (row.exchange, row.code): row for row in [*sse_rows, *szse_rows]
@@ -283,7 +295,13 @@ def fetch_all_official_nav(
                     if item.exchange == "SSE"
                     else "SZSE_OFFICIAL"
                 ),
-                error="MISSING_FROM_OFFICIAL_NAV_SOURCE",
+                error=(
+                    sse_error
+                    if item.exchange == "SSE" and sse_error
+                    else szse_error
+                    if item.exchange == "SZSE" and szse_error
+                    else "MISSING_FROM_OFFICIAL_NAV_SOURCE"
+                ),
             )
         result.append(record)
 
