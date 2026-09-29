@@ -280,11 +280,52 @@ Cloud Smoke 对 Universe / NAV / tracking-index 等低频元数据允许使用�
 
 单元测试不应依赖实时网络；live-source smoke 属于后续 integration / deployment preflight。
 
+### Release Preparation
+
+当前已实现并通过测试：
+
+- `source_preflight.py`
+  - 目标服务器 live-source Production Source Preflight；
+  - Universe / quote / NAV / state / R1 mapping coverage；
+  - PASS / WARN / FAIL；
+  - 可选 `--expect-fresh-quotes`。
+
+- `knowledge_snapshot.py`
+  - exact Knowledge checkout；
+  - 校验 `git HEAD == knowledge_commit_sha`；
+  - 冻结 LOF release profile required canonical；
+  - 文件 sha256 / byte_size；
+  - 生成 Snapshot manifest hash。
+
+- `release_manifest.py`
+  - `deployment_manifest.candidate.json`；
+  - Preflight 后原子 promotion；
+  - Candidate application SHA 必须与 Preflight application SHA 完全一致。
+
+- `deployment_gate.py`
+  - release profile：`lof-opportunity-runtime-v1`；
+  - 使用 LOF 自己的 required canonical；
+  - 不改变现有可转债 Deployment Gate 默认行为。
+
+共享 `runtime/deployment_gate.py` 已支持可选 release profile / required canonical 注入，原默认 Canonical 集合保持不变，并有回归测试。
+
+当前发布链：
+
+```text
+App / Knowledge freeze
+→ Knowledge Snapshot
+→ deployment candidate
+→ Production Source Preflight
+→ manifest promotion
+→ LOF Deployment Gate
+→ Production Runtime
+```
+
 ## 7. 部署纪律
 
 当前仍然：
 
-> NOT DEPLOYED
+> **RELEASE TOOLING READY / NOT DEPLOYED**
 
 未创建生产 LOF Runtime、未启动8095、未改 nginx。
 
