@@ -140,6 +140,35 @@ class LofSzseRelayTest(unittest.TestCase):
         self.assertEqual(len(nav_payload["rows"]), 200)
         self.assertEqual(nav_payload["source"], "SZSE_OFFICIAL")
 
+    def test_publisher_rejects_nav_coverage_below_90_percent(self) -> None:
+        now = datetime(2026, 9, 29, 8, tzinfo=timezone.utc)
+        universe = [
+            LofIdentity(
+                code=f"16{i:04d}",
+                name=f"LOF{i}",
+                exchange="SZSE",
+                source="SZSE_OFFICIAL",
+            )
+            for i in range(200)
+        ]
+        nav_rows = [
+            OfficialNavRecord(
+                code=f"16{i:04d}",
+                exchange="SZSE",
+                nav=Decimal("1.1"),
+                nav_date=date(2026, 9, 29),
+                fetched_at=now,
+                source="SZSE_OFFICIAL",
+            )
+            for i in range(179)
+        ]
+        with self.assertRaises(ValueError):
+            build_relay_payloads(
+                universe=universe,
+                nav_rows=nav_rows,
+                fetched_at=now,
+            )
+
     def test_preflight_reports_relay_transport_without_downgrading(self) -> None:
         now = datetime(2026, 9, 29, 15, 30, tzinfo=timezone.utc)
         snapshot = {
