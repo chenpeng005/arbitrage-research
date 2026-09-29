@@ -7,6 +7,7 @@ from uuid import uuid4
 from .nav import OfficialNavRecord, nav_age_days
 from .premium import premium_rate
 from .quote import QuoteRecord, is_quote_stale, quote_age_seconds
+from .state import FundTradeStateRecord
 from .universe import LofIdentity
 
 
@@ -22,6 +23,7 @@ def build_market_snapshot(
     universe: Iterable[LofIdentity],
     quotes: Iterable[QuoteRecord],
     official_navs: Iterable[OfficialNavRecord],
+    trade_states: Iterable[FundTradeStateRecord] = (),
     generated_at: datetime,
     market_cutoff: datetime,
     max_quote_age_seconds: int,
@@ -31,6 +33,7 @@ def build_market_snapshot(
     universe_rows = list(universe)
     quote_map = {_key(x.exchange, x.code): x for x in quotes}
     nav_map = {_key(x.exchange, x.code): x for x in official_navs}
+    state_map = {x.code: x for x in trade_states}
     lof_types = lof_types or {}
 
     rows: list[dict] = []
@@ -39,6 +42,8 @@ def build_market_snapshot(
     quote_unavailable_count = 0
     official_nav_available_count = 0
     official_nav_unavailable_count = 0
+    state_available_count = 0
+    state_unavailable_count = 0
 
     as_of_date: date = market_cutoff.date()
 
@@ -46,6 +51,7 @@ def build_market_snapshot(
         key = _key(identity.exchange, identity.code)
         quote = quote_map.get(key)
         nav = nav_map.get(key)
+        state = state_map.get(identity.code)
 
         if quote is None or not quote.available:
             quote_status = "UNAVAILABLE"
@@ -94,6 +100,13 @@ def build_market_snapshot(
             official_nav_source = nav.source
             official_nav_available_count += 1
 
+        if state is None or state.error is not None:
+            state_available = False
+            state_unavailable_count += 1
+        else:
+            state_available = True
+            state_available_count += 1
+
         row = {
             "code": identity.code,
             "name": identity.name,
@@ -118,15 +131,42 @@ def build_market_snapshot(
             "estimated_nav_status": "UNAVAILABLE",
             "static_premium_rate": premium_rate(price, official_nav),
             "estimated_premium_rate": None,
-            "subscription_status": "UNKNOWN",
-            "redemption_status": "UNKNOWN",
-            "daily_subscription_limit": None,
-            "limit_scope": None,
-            "subscription_to_sell_days": None,
-            "subscription_fee_rate": None,
-            "redemption_fee_rate": None,
-            "state_source": None,
-            "state_time": None,
+            "subscription_status": (
+                state.subscription_status if state_available else "UNKNOWN"
+            ),
+            "redemption_status": (
+                state.redemption_status if state_available else "UNKNOWN"
+            ),
+            "daily_subscription_limit": (
+                state.daily_subscription_limit if state_available else None
+            ),
+            "minimum_subscription_amount": (
+                state.minimum_subscription_amount if state_available else None
+            ),
+            "limit_scope": (
+                state.limit_scope if state_available else "UNKNOWN"
+            ),
+            "subscription_confirmation_days": (
+                state.subscription_confirmation_days if state_available else None
+            ),
+            "subscription_to_sell_days": (
+                state.subscription_to_sell_days if state_available else None
+            ),
+            "subscription_fee_reference": (
+                list(state.subscription_fee_schedule) if state_available else None
+            ),
+            "subscription_fee_source": (
+                state.fee_source if state_available else None
+            ),
+            "redemption_fee_reference": (
+                list(state.redemption_fee_schedule) if state_available else None
+            ),
+            "state_source": (
+                state.state_source if state_available else None
+            ),
+            "state_time": (
+                state.fetched_at if state_available else None
+            ),
             "opportunity_path": None,
             "opportunity_state": None,
             "estimated_net_profit": None,
@@ -143,6 +183,8 @@ def build_market_snapshot(
         "official_nav_available_count": official_nav_available_count,
         "official_nav_unavailable_count": official_nav_unavailable_count,
         "estimated_nav_available_count": 0,
+        "state_available_count": state_available_count,
+        "state_unavailable_count": state_unavailable_count,
         "row_count": len(rows),
     }
 
@@ -231,3 +273,10 @@ def validate_market_snapshot(
     )
     if nav_total != len(rows):
         raise ValueError("official NAV quality counts do not cover universe")
+
+    state_total = (
+        int(summary.get("state_available_count") or 0)
+        + int(summary.get("state_unavailable_count") or 0)
+    )
+    if state_total != len(rows):
+        raise ValueError("trade state quality counts do not cover universe")
