@@ -52,7 +52,7 @@ jobs:
       - name: Upload application bundle
         uses: actions/upload-artifact@v4
         with:
-          name: lof-app-release-\${{ github.sha }}
+          name: lof-app-release-${{ github.sha }}
           path: |
             lof-app-source.tar.gz
             lof-app-source.tar.gz.sha256
