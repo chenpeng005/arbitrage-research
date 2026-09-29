@@ -61,6 +61,8 @@ class LofSnapshotJobTest(unittest.TestCase):
                 data_root=tmp,
                 as_of=now,
                 snapshot_id="test-once",
+                sse_universe_fixture_path="sse.json",
+                szse_universe_fixture_path="szse.json",
             )
             self.assertEqual(snapshot["snapshot_id"], "test-once")
             self.assertTrue(path.exists())
@@ -68,6 +70,12 @@ class LofSnapshotJobTest(unittest.TestCase):
                 (Path(tmp) / "latest_market_snapshot.json").exists()
             )
             self.assertIs(returned_session, session)
+            build_mock.assert_called_once_with(
+                as_of=now,
+                timeout=15,
+                sse_universe_fixture_path="sse.json",
+                szse_universe_fixture_path="szse.json",
+            )
 
 
 if __name__ == "__main__":
