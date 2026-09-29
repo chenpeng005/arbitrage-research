@@ -237,10 +237,10 @@ F10 / name search 只做补充。
 
 第一优先级：
 
-1. 生成真实全市场 Snapshot 做 end-to-end smoke；
-2. 审计 Web 对真实 Snapshot 的显示 / 排序 / 筛选；
-3. 提升 R1 exposure / quality；
-4. 扩大 R3 / R5 proxy coverage。
+1. Production Source Preflight 设计与实现；
+2. 提升 R1 exposure / quality；
+3. 扩大 R3 / R5 proxy coverage；
+4. Knowledge Snapshot + Deployment Manifest 准备。
 
 第二优先级：
 
@@ -263,6 +263,20 @@ GitHub Actions：
 - `.github/workflows/lof-runtime-tests.yml`
 
 当前 LOF Runtime Tests：SUCCESS。
+
+Cloud Integration Smoke：
+
+- 全市场 Snapshot E2E：PASS；
+- Web / API Smoke：PASS；
+- FastAPI health：PASS；
+- snapshot rows = 404；
+- monitor homepage：PASS。
+
+详细证据已持久化至 Knowledge GitHub：
+- `LOF-End-to-End-Smoke-2026-09-29.md`
+- `LOF-Web-API-Smoke-2026-09-29.md`
+
+Cloud Smoke 对 Universe / NAV / tracking-index 等低频元数据允许使用官方/验证快照 fixture；Production Runtime 仍必须使用 live source 并通过 Production Source Preflight。
 
 单元测试不应依赖实时网络；live-source smoke 属于后续 integration / deployment preflight。
 
