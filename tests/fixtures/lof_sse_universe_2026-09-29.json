@@ -1,0 +1,958 @@
+{
+  "as_of": "2026-09-29",
+  "count": 119,
+  "rows": [
+    {
+      "code": "501001",
+      "name": "财通精选混合LOF",
+      "exchange": "SSE",
+      "manager": "财通基金管理有限公司",
+      "listing_date": "20150925",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501005",
+      "name": "精准医疗LOF",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20160321",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501006",
+      "name": "精准医C",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20160321",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501007",
+      "name": "互联网医疗LOF",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20170220",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501008",
+      "name": "互联网医疗LOFC",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20170220",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501009",
+      "name": "生物科技LOF",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20170220",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501010",
+      "name": "生物科技LOFC",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20170220",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501011",
+      "name": "中药基金LOF",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20170220",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501012",
+      "name": "中药基金LOFC",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20170220",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501015",
+      "name": "财通升级混合LOF",
+      "exchange": "SSE",
+      "manager": "财通基金管理有限公司",
+      "listing_date": "20160606",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501016",
+      "name": "券商基金LOF",
+      "exchange": "SSE",
+      "manager": "国泰基金管理有限公司",
+      "listing_date": "20170519",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501017",
+      "name": "国泰融丰LOF",
+      "exchange": "SSE",
+      "manager": "国泰基金管理有限公司",
+      "listing_date": "20160826",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501018",
+      "name": "南方原油LOF",
+      "exchange": "SSE",
+      "manager": "南方基金管理股份有限公司",
+      "listing_date": "20160628",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501019",
+      "name": "军工基金LOF",
+      "exchange": "SSE",
+      "manager": "国泰基金管理有限公司",
+      "listing_date": "20170421",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501021",
+      "name": "香港中小LOF",
+      "exchange": "SSE",
+      "manager": "华宝基金管理有限公司",
+      "listing_date": "20160706",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501022",
+      "name": "银华鑫盛LOF",
+      "exchange": "SSE",
+      "manager": "银华基金管理股份有限公司",
+      "listing_date": "20161110",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501023",
+      "name": "港中小企LOF",
+      "exchange": "SSE",
+      "manager": "鹏华基金管理有限公司",
+      "listing_date": "20161024",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501025",
+      "name": "香港银行LOF",
+      "exchange": "SSE",
+      "manager": "鹏华基金管理有限公司",
+      "listing_date": "20161124",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501026",
+      "name": "财通福享混合LOF",
+      "exchange": "SSE",
+      "manager": "财通基金管理有限公司",
+      "listing_date": "20161215",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501028",
+      "name": "财通福瑞混合LOF",
+      "exchange": "SSE",
+      "manager": "财通基金管理有限公司",
+      "listing_date": "20170220",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501029",
+      "name": "红利基金LOF",
+      "exchange": "SSE",
+      "manager": "华宝基金管理有限公司",
+      "listing_date": "20170213",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501030",
+      "name": "环境治理LOF",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20170220",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501031",
+      "name": "环境治理LOFC",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20170220",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501032",
+      "name": "财通福盛混合LOF",
+      "exchange": "SSE",
+      "manager": "财通基金管理有限公司",
+      "listing_date": "20170421",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501036",
+      "name": "中证500LOF",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20171009",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501037",
+      "name": "中证500LOFC",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20171009",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501038",
+      "name": "银华明择",
+      "exchange": "SSE",
+      "manager": "银华基金管理股份有限公司",
+      "listing_date": "20171124",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501043",
+      "name": "沪深300LOF",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20171009",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501045",
+      "name": "沪深300LOFC",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20171009",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501046",
+      "name": "财通福鑫定开混合",
+      "exchange": "SSE",
+      "manager": "财通基金管理有限公司",
+      "listing_date": "20171201",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501047",
+      "name": "证券公司LOF",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20180118",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501048",
+      "name": "证券公司LOFC",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20180118",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501050",
+      "name": "50AHLOF",
+      "exchange": "SSE",
+      "manager": "华夏基金管理有限公司",
+      "listing_date": "20161128",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501051",
+      "name": "圆信永丰汇利LOF",
+      "exchange": "SSE",
+      "manager": "圆信永丰基金管理有限公司",
+      "listing_date": "20180131",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501053",
+      "name": "东方红目标优选",
+      "exchange": "SSE",
+      "manager": "上海东方证券资产管理有限公司",
+      "listing_date": "20180824",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501057",
+      "name": "新能源车LOF",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20180620",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501058",
+      "name": "新能源车LOFC",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20180620",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501059",
+      "name": "国企红利LOF",
+      "exchange": "SSE",
+      "manager": "西部利得基金管理有限公司",
+      "listing_date": "20180726",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501060",
+      "name": "金选300A类LOF",
+      "exchange": "SSE",
+      "manager": "中金基金管理有限公司",
+      "listing_date": "20180925",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501061",
+      "name": "金选300C类LOF",
+      "exchange": "SSE",
+      "manager": "中金基金管理有限公司",
+      "listing_date": "20180925",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501062",
+      "name": "南方瑞合LOF",
+      "exchange": "SSE",
+      "manager": "南方基金管理股份有限公司",
+      "listing_date": "20181205",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501064",
+      "name": "国泰价值LOF",
+      "exchange": "SSE",
+      "manager": "国泰基金管理有限公司",
+      "listing_date": "20190516",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501065",
+      "name": "经典成长",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20190508",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501070",
+      "name": "广发睿阳",
+      "exchange": "SSE",
+      "manager": "广发基金管理有限公司",
+      "listing_date": "20190731",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501071",
+      "name": "泓德丰泽LOF",
+      "exchange": "SSE",
+      "manager": "泓德基金管理有限公司",
+      "listing_date": "20190919",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501073",
+      "name": "华安智联LOF",
+      "exchange": "SSE",
+      "manager": "华安基金管理有限公司",
+      "listing_date": "20191220",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501075",
+      "name": "科创主题LOF",
+      "exchange": "SSE",
+      "manager": "万家基金管理有限公司",
+      "listing_date": "20190912",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501076",
+      "name": "鹏华创新动力LOF",
+      "exchange": "SSE",
+      "manager": "鹏华基金管理有限公司",
+      "listing_date": "20191209",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501077",
+      "name": "富国创新企业LOF",
+      "exchange": "SSE",
+      "manager": "富国基金管理有限公司",
+      "listing_date": "20191028",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501078",
+      "name": "科创配置LOF",
+      "exchange": "SSE",
+      "manager": "广发基金管理有限公司",
+      "listing_date": "20191118",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501079",
+      "name": "科创大成LOF",
+      "exchange": "SSE",
+      "manager": "大成基金管理有限公司",
+      "listing_date": "20200120",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501080",
+      "name": "科创主题投资基金LOF",
+      "exchange": "SSE",
+      "manager": "中金基金管理有限公司",
+      "listing_date": "20191225",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501081",
+      "name": "科创中欧LOF",
+      "exchange": "SSE",
+      "manager": "中欧基金管理有限公司",
+      "listing_date": "20190906",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501082",
+      "name": "科创投资LOF",
+      "exchange": "SSE",
+      "manager": "博时基金管理有限公司",
+      "listing_date": "20191226",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501083",
+      "name": "科创银华LOF",
+      "exchange": "SSE",
+      "manager": "银华基金管理股份有限公司",
+      "listing_date": "20200107",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501085",
+      "name": "财通科创LOF",
+      "exchange": "SSE",
+      "manager": "财通基金管理有限公司",
+      "listing_date": "20200207",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501087",
+      "name": "交银瑞丰LOF",
+      "exchange": "SSE",
+      "manager": "交银施罗德基金管理有限公司",
+      "listing_date": "20200309",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501088",
+      "name": "嘉实瑞虹",
+      "exchange": "SSE",
+      "manager": "嘉实基金管理有限公司",
+      "listing_date": "20200309",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501089",
+      "name": "消费红利增强LOF",
+      "exchange": "SSE",
+      "manager": "方正富邦基金管理有限公司",
+      "listing_date": "20191231",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501090",
+      "name": "消费龙头LOF",
+      "exchange": "SSE",
+      "manager": "华宝基金管理有限公司",
+      "listing_date": "20200106",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501091",
+      "name": "嘉实欣荣LOF",
+      "exchange": "SSE",
+      "manager": "嘉实基金管理有限公司",
+      "listing_date": "20200722",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501092",
+      "name": "交银瑞思LOF",
+      "exchange": "SSE",
+      "manager": "交银施罗德基金管理有限公司",
+      "listing_date": "20200805",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501093",
+      "name": "华夏翔阳LOF",
+      "exchange": "SSE",
+      "manager": "华夏基金管理有限公司",
+      "listing_date": "20210108",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501095",
+      "name": "中银证券科技创新LOF",
+      "exchange": "SSE",
+      "manager": "中银国际证券股份有限公司",
+      "listing_date": "20200708",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501096",
+      "name": "国联安科创LOF",
+      "exchange": "SSE",
+      "manager": "国联安基金管理有限公司",
+      "listing_date": "20200722",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501097",
+      "name": "科创国寿LOF",
+      "exchange": "SSE",
+      "manager": "国寿安保基金管理有限公司",
+      "listing_date": "20200828",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501098",
+      "name": "科创建信LOF",
+      "exchange": "SSE",
+      "manager": "建信基金管理有限责任公司",
+      "listing_date": "20200427",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501099",
+      "name": "平安新兴产业LOF",
+      "exchange": "SSE",
+      "manager": "平安基金管理有限公司",
+      "listing_date": "20200701",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501186",
+      "name": "华夏兴融LOF",
+      "exchange": "SSE",
+      "manager": "华夏基金管理有限公司",
+      "listing_date": "20190329",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501188",
+      "name": "添富核心精选LOF",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20190329",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501189",
+      "name": "嘉实产业优选LOF",
+      "exchange": "SSE",
+      "manager": "嘉实基金管理有限公司",
+      "listing_date": "20190329",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501200",
+      "name": "科创加银LOF",
+      "exchange": "SSE",
+      "manager": "民生加银基金管理有限公司",
+      "listing_date": "20201221",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501201",
+      "name": "科创红土LOF",
+      "exchange": "SSE",
+      "manager": "红土创新基金管理有限公司",
+      "listing_date": "20210305",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501202",
+      "name": "华泰创新先锋LOF",
+      "exchange": "SSE",
+      "manager": "华泰证券（上海）资产管理有限公司",
+      "listing_date": "20201116",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501203",
+      "name": "易基创新未来LOF",
+      "exchange": "SSE",
+      "manager": "易方达基金管理有限公司",
+      "listing_date": "20210121",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501205",
+      "name": "鹏华创新未来LOF",
+      "exchange": "SSE",
+      "manager": "鹏华基金管理有限公司",
+      "listing_date": "20210121",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501206",
+      "name": "添富创新未来LOF",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20210121",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501207",
+      "name": "华夏创新未来LOF",
+      "exchange": "SSE",
+      "manager": "华夏基金管理有限公司",
+      "listing_date": "20210121",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501208",
+      "name": "中欧创新未来LOF",
+      "exchange": "SSE",
+      "manager": "中欧基金管理有限公司",
+      "listing_date": "20210121",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501209",
+      "name": "富久食品饮料LOF",
+      "exchange": "SSE",
+      "manager": "银华基金管理股份有限公司",
+      "listing_date": "20211202",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501210",
+      "name": "交银智选星光FOF",
+      "exchange": "SSE",
+      "manager": "交银施罗德基金管理有限公司",
+      "listing_date": "20211119",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501211",
+      "name": "民生加银优享FOF",
+      "exchange": "SSE",
+      "manager": "民生加银基金管理有限公司",
+      "listing_date": "20211222",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501212",
+      "name": "广发优选配置FOF",
+      "exchange": "SSE",
+      "manager": "广发基金管理有限公司",
+      "listing_date": "20211119",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501213",
+      "name": "中欧汇选FOF",
+      "exchange": "SSE",
+      "manager": "中欧基金管理有限公司",
+      "listing_date": "20211119",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501215",
+      "name": "积极配置FOF",
+      "exchange": "SSE",
+      "manager": "兴证全球基金管理有限公司",
+      "listing_date": "20211119",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501216",
+      "name": "富国行业精选FOF",
+      "exchange": "SSE",
+      "manager": "富国基金管理有限公司",
+      "listing_date": "20220118",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501217",
+      "name": "行业配置FOF",
+      "exchange": "SSE",
+      "manager": "华夏基金管理有限公司",
+      "listing_date": "20220425",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501218",
+      "name": "工银睿智进取FOF",
+      "exchange": "SSE",
+      "manager": "工银瑞信基金管理有限公司",
+      "listing_date": "20211217",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501219",
+      "name": "智胜先锋LOF",
+      "exchange": "SSE",
+      "manager": "华夏基金管理有限公司",
+      "listing_date": "20220209",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501220",
+      "name": "行业轮动FOF",
+      "exchange": "SSE",
+      "manager": "国泰基金管理有限公司",
+      "listing_date": "20220815",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501222",
+      "name": "如意招享FOF",
+      "exchange": "SSE",
+      "manager": "易方达基金管理有限公司",
+      "listing_date": "20230201",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501225",
+      "name": "全球芯片LOF",
+      "exchange": "SSE",
+      "manager": "景顺长城基金管理有限公司",
+      "listing_date": "20230414",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501227",
+      "name": "泓德红利优选LOF",
+      "exchange": "SSE",
+      "manager": "泓德基金管理有限公司",
+      "listing_date": "20250625",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501300",
+      "name": "美元债LOF",
+      "exchange": "SSE",
+      "manager": "海富通基金管理有限公司",
+      "listing_date": "20170216",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501301",
+      "name": "香港大盘LOF",
+      "exchange": "SSE",
+      "manager": "华宝基金管理有限公司",
+      "listing_date": "20170508",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501302",
+      "name": "恒生指数基金LOF",
+      "exchange": "SSE",
+      "manager": "南方基金管理股份有限公司",
+      "listing_date": "20170815",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501303",
+      "name": "恒生中型股LOF",
+      "exchange": "SSE",
+      "manager": "广发基金管理有限公司",
+      "listing_date": "20171025",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501305",
+      "name": "港股高股息LOF",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20180118",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501306",
+      "name": "港股高股息LOFC",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20180118",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501307",
+      "name": "沪港深红利LOF",
+      "exchange": "SSE",
+      "manager": "银河基金管理有限公司",
+      "listing_date": "20180425",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501310",
+      "name": "价值基金LOF",
+      "exchange": "SSE",
+      "manager": "华宝基金管理有限公司",
+      "listing_date": "20181122",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501311",
+      "name": "港股通新经济LOF",
+      "exchange": "SSE",
+      "manager": "嘉实基金管理有限公司",
+      "listing_date": "20190214",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501312",
+      "name": "海外科技LOF",
+      "exchange": "SSE",
+      "manager": "华宝基金管理有限公司",
+      "listing_date": "20230425",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "502000",
+      "name": "500增强LOF",
+      "exchange": "SSE",
+      "manager": "西部利得基金管理有限公司",
+      "listing_date": "20150427",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "502003",
+      "name": "军工LOF",
+      "exchange": "SSE",
+      "manager": "易方达基金管理有限公司",
+      "listing_date": "20150715",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "502006",
+      "name": "国企改革LOF",
+      "exchange": "SSE",
+      "manager": "易方达基金管理有限公司",
+      "listing_date": "20150625",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "502010",
+      "name": "证券LOF",
+      "exchange": "SSE",
+      "manager": "易方达基金管理有限公司",
+      "listing_date": "20150715",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "502013",
+      "name": "一带一路LOF",
+      "exchange": "SSE",
+      "manager": "长盛基金管理有限公司",
+      "listing_date": "20150609",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "502023",
+      "name": "钢铁LOF",
+      "exchange": "SSE",
+      "manager": "鹏华基金管理有限公司",
+      "listing_date": "20150824",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "502048",
+      "name": "上证50LOF",
+      "exchange": "SSE",
+      "manager": "易方达基金管理有限公司",
+      "listing_date": "20150427",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "502053",
+      "name": "券商LOF",
+      "exchange": "SSE",
+      "manager": "长盛基金管理有限公司",
+      "listing_date": "20150824",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "502056",
+      "name": "医疗基金LOF",
+      "exchange": "SSE",
+      "manager": "广发基金管理有限公司",
+      "listing_date": "20150731",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "506000",
+      "name": "科创板基金",
+      "exchange": "SSE",
+      "manager": "南方基金管理股份有限公司",
+      "listing_date": "20210128",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "506001",
+      "name": "万家科创板",
+      "exchange": "SSE",
+      "manager": "万家基金管理有限公司",
+      "listing_date": "20210203",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "506002",
+      "name": "易方达科创板",
+      "exchange": "SSE",
+      "manager": "易方达基金管理有限公司",
+      "listing_date": "20210128",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "506003",
+      "name": "富国科创板",
+      "exchange": "SSE",
+      "manager": "富国基金管理有限公司",
+      "listing_date": "20210129",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "506005",
+      "name": "科创板博时",
+      "exchange": "SSE",
+      "manager": "博时基金管理有限公司",
+      "listing_date": "20210129",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "506006",
+      "name": "汇添富科创板",
+      "exchange": "SSE",
+      "manager": "汇添富基金管理股份有限公司",
+      "listing_date": "20210128",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "506008",
+      "name": "科创板长城",
+      "exchange": "SSE",
+      "manager": "长城基金管理有限公司",
+      "listing_date": "20220328",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    }
+  ]
+}
