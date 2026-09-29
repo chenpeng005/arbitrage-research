@@ -126,7 +126,7 @@ class LofUniverseParserTest(unittest.TestCase):
                 return b'{"ok": true}'
 
         with patch(
-            "runtime.lof.universe.urlopen",
+            "runtime.lof.http_json.urlopen",
             side_effect=[
                 RemoteDisconnected("first attempt"),
                 FakeResponse(),
