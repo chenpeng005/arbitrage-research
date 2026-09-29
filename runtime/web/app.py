@@ -1949,8 +1949,8 @@ def opportunity_information_status() -> dict:
         "pending_notifications": notifications,
         "schedule": {
             "timezone": "Asia/Shanghai",
-            "cron": "0 3 * * * + 45 20 * * *",
-            "description": "每日 03:00 信息语义审计 + 独立研究队列；20:45 轻量收盘更新（不跑 Full V2）",
+            "cron": "0 21 * * *",
+            "description": "每日21:00检查下一自然日交易日历；仅下一日为A股交易日时运行一次统一更新",
         },
     }
 
