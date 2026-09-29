@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 import json
+from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -305,6 +306,47 @@ def fetch_all_official_nav(
             )
         result.append(record)
 
+    return sorted(result, key=lambda item: (item.exchange, item.code))
+
+
+def load_official_nav_fixture(
+    path: str | Path,
+) -> list[OfficialNavRecord]:
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    fetched_at_raw = payload.get("fetched_at")
+    fetched_at = (
+        datetime.fromisoformat(str(fetched_at_raw))
+        if fetched_at_raw
+        else datetime.now(timezone.utc)
+    )
+    if fetched_at.tzinfo is None:
+        fetched_at = fetched_at.replace(tzinfo=timezone.utc)
+
+    result: list[OfficialNavRecord] = []
+    for row in payload.get("rows") or []:
+        code = str(row.get("code") or "").strip()
+        exchange = str(row.get("exchange") or "").strip()
+        if not code or exchange not in {"SSE", "SZSE"}:
+            continue
+        nav = _decimal_or_none(row.get("nav"))
+        nav_date = _date_or_none(row.get("nav_date"))
+        error = None
+        if nav is None or nav_date is None:
+            error = "INVALID_OR_MISSING_NAV_FIXTURE"
+        result.append(
+            OfficialNavRecord(
+                code=code,
+                exchange=exchange,
+                nav=nav,
+                nav_date=nav_date,
+                fetched_at=fetched_at,
+                source=str(row.get("source") or "OFFICIAL_NAV_FIXTURE"),
+                error=error,
+            )
+        )
+
+    if not result:
+        raise ValueError("official NAV fixture is empty")
     return sorted(result, key=lambda item: (item.exchange, item.code))
 
 
