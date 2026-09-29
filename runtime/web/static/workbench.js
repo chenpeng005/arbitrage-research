@@ -367,8 +367,7 @@ function renderReminderItem(item){
     ? eventSummary
       + (lines?'<div class="reminder-change-grid">'+lines+'</div>':"")
       + (p.why?'<div class="reminder-section"><b>为什么值得看</b><span>'+esc(p.why)+'</span></div>':"")
-      + (p.risk?'<div class="reminder-section reminder-risk"><b>最大限制 / 风险</b><span>'+esc(p.risk)+'</span></div>':"")
-      + (p.next_watch?'<div class="reminder-section"><b>下一步盯什么</b><span>'+esc(p.next_watch)+'</span></div>':"")
+      + (p.next_watch?'<div class="reminder-section"><b>下一步</b><span>'+esc(p.next_watch)+'</span></div>':"")
     : '<div class="notification-detail">'+renderReminderFallback(item)+'</div>';
   return '<div class="notification-item">'
     +'<div class="notification-title-row">'
