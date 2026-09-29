@@ -1,0 +1,132 @@
+{
+  "version": "QDII_INDEX_PROXY_REGISTRY_V0.1",
+  "as_of": "2026-09-29",
+  "entries": [
+    {
+      "fund_code": "160140",
+      "tracking_target": "道琼斯美国精选REIT指数",
+      "proxy_type": "ETF_HIGH_CORR",
+      "proxy_symbol": "usRWR",
+      "history_symbol": "RWR.AM",
+      "currency": "USD",
+      "quality": "MEDIUM"
+    },
+    {
+      "fund_code": "160717",
+      "tracking_target": "恒生中国企业指数",
+      "proxy_type": "DIRECT_INDEX",
+      "proxy_symbol": "hkHSCEI",
+      "history_symbol": "hkHSCEI",
+      "currency": "HKD",
+      "quality": "HIGH"
+    },
+    {
+      "fund_code": "160924",
+      "tracking_target": "恒生指数",
+      "proxy_type": "DIRECT_INDEX",
+      "proxy_symbol": "hkHSI",
+      "history_symbol": "hkHSI",
+      "currency": "HKD",
+      "quality": "HIGH"
+    },
+    {
+      "fund_code": "161124",
+      "tracking_target": "恒生综合小型股指数",
+      "proxy_type": "UNRESOLVED",
+      "proxy_symbol": null,
+      "history_symbol": null,
+      "currency": "HKD",
+      "quality": "UNKNOWN"
+    },
+    {
+      "fund_code": "161125",
+      "tracking_target": "标准普尔500指数",
+      "proxy_type": "ETF_SAME_INDEX",
+      "proxy_symbol": "usSPY",
+      "history_symbol": "SPY.AM",
+      "currency": "USD",
+      "quality": "MEDIUM"
+    },
+    {
+      "fund_code": "161126",
+      "tracking_target": "标普500医疗保健等权重指数",
+      "proxy_type": "ETF_SAME_INDEX",
+      "proxy_symbol": "usRSPH",
+      "history_symbol": "RSPH.AM",
+      "currency": "USD",
+      "quality": "MEDIUM"
+    },
+    {
+      "fund_code": "161127",
+      "tracking_target": "标普生物科技精选行业指数",
+      "proxy_type": "ETF_SAME_INDEX",
+      "proxy_symbol": "usXBI",
+      "history_symbol": "XBI.AM",
+      "currency": "USD",
+      "quality": "MEDIUM"
+    },
+    {
+      "fund_code": "161128",
+      "tracking_target": "标普500信息科技指数",
+      "proxy_type": "ETF_HIGH_CORR",
+      "proxy_symbol": "usXLK",
+      "history_symbol": "XLK.AM",
+      "currency": "USD",
+      "quality": "MEDIUM"
+    },
+    {
+      "fund_code": "161130",
+      "tracking_target": "纳斯达克100指数",
+      "proxy_type": "DIRECT_INDEX",
+      "proxy_symbol": "usNDX",
+      "history_symbol": "usNDX",
+      "currency": "USD",
+      "quality": "HIGH"
+    },
+    {
+      "fund_code": "161831",
+      "tracking_target": "恒生中国企业指数",
+      "proxy_type": "DIRECT_INDEX",
+      "proxy_symbol": "hkHSCEI",
+      "history_symbol": "hkHSCEI",
+      "currency": "HKD",
+      "quality": "HIGH"
+    },
+    {
+      "fund_code": "162411",
+      "tracking_target": "S&P Oil & Gas Exploration & Production Select Industry",
+      "proxy_type": "ETF_SAME_INDEX",
+      "proxy_symbol": "usXOP",
+      "history_symbol": "XOP.AM",
+      "currency": "USD",
+      "quality": "MEDIUM"
+    },
+    {
+      "fund_code": "162415",
+      "tracking_target": "标普美国品质消费股票指数",
+      "proxy_type": "UNRESOLVED",
+      "proxy_symbol": null,
+      "history_symbol": null,
+      "currency": "USD",
+      "quality": "UNKNOWN"
+    },
+    {
+      "fund_code": "164705",
+      "tracking_target": "恒生指数",
+      "proxy_type": "DIRECT_INDEX",
+      "proxy_symbol": "hkHSI",
+      "history_symbol": "hkHSI",
+      "currency": "HKD",
+      "quality": "HIGH"
+    },
+    {
+      "fund_code": "164906",
+      "tracking_target": "中证海外中国互联网指数",
+      "proxy_type": "ETF_SAME_INDEX",
+      "proxy_symbol": "usKWEB",
+      "history_symbol": "KWEB.AM",
+      "currency": "USD",
+      "quality": "MEDIUM"
+    }
+  ]
+}
