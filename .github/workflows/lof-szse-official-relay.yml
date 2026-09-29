@@ -8,21 +8,22 @@ on:
       - "runtime/lof/universe.py"
       - "runtime/lof/nav.py"
       - "runtime/lof/szse_relay.py"
+      - "runtime/lof/szse_relay_publish.py"
   workflow_dispatch:
   schedule:
-    - cron: "50 12 * * 1-5"
+    - cron: "20 13 * * *"
 
 permissions:
   contents: write
 
 concurrency:
   group: lof-szse-official-relay
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   relay:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout application source
         uses: actions/checkout@v4
@@ -33,9 +34,8 @@ jobs:
           python-version: "3.11"
 
       - name: Fetch and validate official SZSE LOF data
-        env:
-          LOF_SZSE_RELAY_BASE_URL: ""
         run: |
+          rm -rf /tmp/lof-relay
           python -m runtime.lof.szse_relay_publish \
             --output-dir /tmp/lof-relay/lof_relay \
             --timeout 20 \
