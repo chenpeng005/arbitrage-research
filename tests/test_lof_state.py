@@ -86,6 +86,10 @@ class LofTradeStateTest(unittest.TestCase):
     def test_normalizers_are_conservative(self) -> None:
         self.assertEqual(normalize_subscription_status("开放申购"), "OPEN")
         self.assertEqual(normalize_subscription_status("限大额"), "LIMITED")
+        self.assertEqual(
+            normalize_subscription_status("暂停大额申购"),
+            "LIMITED",
+        )
         self.assertEqual(normalize_subscription_status("暂停申购"), "SUSPENDED")
         self.assertEqual(normalize_subscription_status("其他"), "UNKNOWN")
 
