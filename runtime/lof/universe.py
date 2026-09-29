@@ -6,8 +6,8 @@ import json
 import re
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+
+from .http_json import fetch_json_with_retry
 
 
 SSE_UNIVERSE_URL = "https://query.sse.com.cn/commonSoaQuery.do"
@@ -38,17 +38,14 @@ def _get_json(
     referer: str,
     timeout: int = 15,
 ) -> Any:
-    query = urlencode(params)
-    request = Request(
-        f"{url}?{query}",
-        headers={
-            "User-Agent": "Mozilla/5.0",
-            "Referer": referer,
-            "Accept": "application/json,text/plain,*/*",
-        },
+    return fetch_json_with_retry(
+        url,
+        params,
+        referer=referer,
+        timeout=timeout,
+        attempts=3,
+        base_delay_seconds=0.25,
     )
-    with urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
 
 
 def parse_sse_universe(payload: dict[str, Any]) -> list[LofIdentity]:
