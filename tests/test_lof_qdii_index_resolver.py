@@ -111,3 +111,38 @@ class LofR3QdiiIndexTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+    def test_intraday_adjustment_changes_bridge(self) -> None:
+        base = resolve_r3_qdii_index_bridge(
+            fund_code="161130",
+            official_nav=Decimal("4.5696"),
+            official_nav_date=date(2026, 9, 24),
+            proxy_anchor_close=Decimal("30478.86"),
+            proxy_latest_close=Decimal("30276.81"),
+            proxy_latest_date=date(2026, 9, 28),
+            proxy_id="NDX",
+            fx_anchor=Decimal("6.7114"),
+            fx_current=Decimal("6.7053"),
+            as_of=datetime(2026, 9, 29, 13, 0, tzinfo=TZ),
+            exposure_ratio=Decimal("0.95"),
+            proxy_exactness="EXACT_INDEX",
+            timing_quality="MEDIUM",
+        )
+        adjusted = resolve_r3_qdii_index_bridge(
+            fund_code="161130",
+            official_nav=Decimal("4.5696"),
+            official_nav_date=date(2026, 9, 24),
+            proxy_anchor_close=Decimal("30478.86"),
+            proxy_latest_close=Decimal("30276.81"),
+            proxy_latest_date=date(2026, 9, 28),
+            proxy_id="NDX",
+            fx_anchor=Decimal("6.7114"),
+            fx_current=Decimal("6.7053"),
+            as_of=datetime(2026, 9, 29, 13, 0, tzinfo=TZ),
+            exposure_ratio=Decimal("0.95"),
+            proxy_exactness="EXACT_INDEX",
+            timing_quality="MEDIUM",
+            intraday_adjustment_return=Decimal("-0.0046"),
+        )
+        self.assertLess(adjusted.estimated_nav, base.estimated_nav)
+
+
