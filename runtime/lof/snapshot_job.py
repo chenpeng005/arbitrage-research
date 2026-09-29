@@ -23,6 +23,7 @@ def run_snapshot_once(
     sse_universe_fixture_path: str | Path | None = None,
     szse_universe_fixture_path: str | Path | None = None,
     official_nav_fixture_path: str | Path | None = None,
+    tracking_index_fixture_path: str | Path | None = None,
 ) -> tuple[dict, Path, LofRuntimeSession]:
     now = as_of or datetime.now(SHANGHAI_TZ)
     if now.tzinfo is None:
@@ -33,6 +34,7 @@ def run_snapshot_once(
         timeout=timeout,
         sse_universe_fixture_path=sse_universe_fixture_path,
         szse_universe_fixture_path=szse_universe_fixture_path,
+        tracking_index_fixture_path=tracking_index_fixture_path,
     )
     official_nav_override = (
         load_official_nav_fixture(official_nav_fixture_path)
@@ -99,6 +101,14 @@ def _build_parser() -> argparse.ArgumentParser:
             "Production should omit this argument."
         ),
     )
+    parser.add_argument(
+        "--tracking-index-fixture",
+        default=None,
+        help=(
+            "Optional fund-to-index mapping fixture for cloud integration "
+            "smoke only. Production should omit this argument."
+        ),
+    )
     return parser
 
 
@@ -112,6 +122,7 @@ def main() -> int:
         sse_universe_fixture_path=args.sse_universe_fixture,
         szse_universe_fixture_path=args.szse_universe_fixture,
         official_nav_fixture_path=args.official_nav_fixture,
+        tracking_index_fixture_path=args.tracking_index_fixture,
     )
 
     quality = snapshot.get("quality_summary") or {}
