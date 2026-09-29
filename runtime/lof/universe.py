@@ -3,11 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 import html
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any
 
 from .http_json import fetch_json_with_retry
+from .szse_relay import fetch_szse_relay_bundle
 
 
 SSE_UNIVERSE_URL = "https://query.sse.com.cn/commonSoaQuery.do"
@@ -119,17 +121,57 @@ def fetch_sse_universe(*, timeout: int = 15) -> list[LofIdentity]:
     return parse_sse_universe(payload)
 
 
-def fetch_szse_universe(*, timeout: int = 15) -> list[LofIdentity]:
+def _parse_szse_relay_universe(payload: dict[str, Any]) -> list[LofIdentity]:
+    result: list[LofIdentity] = []
+    for row in payload.get("rows") or []:
+        code = str(row.get("code") or "").strip()
+        name = str(row.get("name") or "").strip()
+        if not code or not name:
+            continue
+        result.append(
+            LofIdentity(
+                code=code,
+                name=name,
+                exchange="SZSE",
+                manager=(str(row.get("manager") or "").strip() or None),
+                listing_date=(
+                    str(row.get("listing_date") or "").strip() or None
+                ),
+                source="SZSE_OFFICIAL_RELAY",
+            )
+        )
+    if not result:
+        raise ValueError("SZSE relay universe is empty")
+    return result
+
+
+def fetch_szse_universe(
+    *,
+    timeout: int = 15,
+    relay_base_url: str | None = None,
+) -> list[LofIdentity]:
     base_params = {
         "SHOWTYPE": "JSON",
         "CATALOGID": "fund_lof",
     }
-    first_payload = _get_json(
-        SZSE_UNIVERSE_URL,
-        {**base_params, "PAGENO": 1},
-        referer="https://fund.szse.cn/marketdata/lof/",
-        timeout=timeout,
+    relay_url = (
+        relay_base_url
+        if relay_base_url is not None
+        else os.environ.get("LOF_SZSE_RELAY_BASE_URL")
     )
+
+    try:
+        first_payload = _get_json(
+            SZSE_UNIVERSE_URL,
+            {**base_params, "PAGENO": 1},
+            referer="https://fund.szse.cn/marketdata/lof/",
+            timeout=timeout,
+        )
+    except Exception:
+        if not relay_url:
+            raise
+        bundle = fetch_szse_relay_bundle(relay_url, timeout=timeout)
+        return _parse_szse_relay_universe(bundle.universe)
 
     result = parse_szse_universe_page(first_payload)
     page_count = 1
