@@ -71,8 +71,8 @@ def build_relay_payloads(
 
     if len(valid_nav) < 200:
         raise ValueError("SZSE official NAV sanity floor failed")
-    if len(valid_nav) / len(normalized_universe) < 0.80:
-        raise ValueError("SZSE official NAV coverage below 80%")
+    if len(valid_nav) / len(normalized_universe) < 0.90:
+        raise ValueError("SZSE official NAV coverage below 90%")
 
     timestamp = fetched_at.astimezone(timezone.utc).isoformat()
     return (
