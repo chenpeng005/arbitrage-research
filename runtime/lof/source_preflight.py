@@ -218,25 +218,41 @@ def evaluate_preflight(
         if key not in critical_lane_names
     }
 
-    checks.append(
-        PreflightCheck(
-            name="szse_transport",
-            status=(
-                "PASS"
-                if szse_transport in {"DIRECT_OFFICIAL", "OFFICIAL_RELAY"}
-                else "FAIL"
-            ),
-            hard=True,
-            value=szse_transport,
-            threshold="DIRECT_OFFICIAL|OFFICIAL_RELAY",
-            detail=(
-                f"fetched_at={szse_relay_fetched_at};"
-                f"manifest_sha256={szse_relay_manifest_sha256}"
-                if szse_transport == "OFFICIAL_RELAY"
-                else None
-            ),
+    if source_transport:
+        universe_transport = source_transport.get(
+            "szse_universe_transport"
         )
-    )
+        nav_transport = source_transport.get("szse_nav_transport")
+        allowed = {"DIRECT_OFFICIAL", "OFFICIAL_RELAY"}
+        checks.append(
+            PreflightCheck(
+                name="szse_transport",
+                status=(
+                    "PASS"
+                    if universe_transport in allowed
+                    and nav_transport in allowed
+                    else "FAIL"
+                ),
+                hard=True,
+                value=(
+                    f"universe={universe_transport};"
+                    f"nav={nav_transport}"
+                ),
+                threshold=(
+                    "each in DIRECT_OFFICIAL|OFFICIAL_RELAY"
+                ),
+                detail=(
+                    f"fetched_at={source_transport.get('relay_fetched_at')};"
+                    f"manifest_sha256="
+                    f"{source_transport.get('relay_manifest_sha256')}"
+                    if (
+                        universe_transport == "OFFICIAL_RELAY"
+                        or nav_transport == "OFFICIAL_RELAY"
+                    )
+                    else None
+                ),
+            )
+        )
 
     checks.append(
         PreflightCheck(
@@ -281,11 +297,6 @@ def evaluate_preflight(
         "checked_at": checked_at.isoformat(),
         "application_commit_sha": application_commit_sha,
         "collector_status": snapshot.get("collector_status"),
-        "source_transport": {
-            "szse_transport": szse_transport,
-            "szse_relay_fetched_at": szse_relay_fetched_at,
-            "szse_relay_manifest_sha256": szse_relay_manifest_sha256,
-        },
         "metrics": {
             "universe_count": universe_count,
             "row_count": len(rows),
@@ -356,12 +367,11 @@ def run_production_source_preflight(
                 "OFFICIAL_RELAY" if nav_relay else "DIRECT_OFFICIAL"
             ),
         }
-        relay_url = os.environ.get("LOF_SZSE_RELAY_BASE_URL")
-        if relay_url and (universe_relay or nav_relay):
-            bundle = fetch_szse_relay_bundle(relay_url, timeout=timeout)
+        bundle = session.szse_relay_bundle
+        if bundle is not None and (universe_relay or nav_relay):
             source_transport.update(
                 {
-                    "relay_base_url": relay_url,
+                    "relay_base_url": bundle.base_url,
                     "relay_fetched_at": bundle.fetched_at,
                     "relay_manifest_sha256": bundle.manifest_sha256,
                 }
