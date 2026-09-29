@@ -62,9 +62,9 @@ def normalize_subscription_status(raw: str | None) -> str:
     text = (raw or "").strip()
     if text == "开放申购":
         return "OPEN"
-    if text == "限大额":
+    if text in {"限大额", "暂停大额申购"}:
         return "LIMITED"
-    if text in {"暂停申购", "封闭期", "暂停大额申购"}:
+    if text in {"暂停申购", "封闭期"}:
         return "SUSPENDED"
     return "UNKNOWN"
 
