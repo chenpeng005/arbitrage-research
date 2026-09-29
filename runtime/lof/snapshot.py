@@ -111,6 +111,7 @@ def build_market_snapshot(
 
         if estimated is None:
             estimated_nav = None
+            resolver_class = None
             estimated_nav_time = None
             estimated_nav_source = None
             estimated_nav_method = None
@@ -122,6 +123,7 @@ def build_market_snapshot(
             estimated_nav_unavailable_count += 1
         else:
             estimated_nav = estimated.estimated_nav
+            resolver_class = estimated.resolver_class
             estimated_nav_time = estimated.estimated_nav_time
             estimated_nav_source = "LOF_RESOLVER"
             estimated_nav_method = estimated.resolver_method
@@ -181,6 +183,7 @@ def build_market_snapshot(
             "official_nav_source": official_nav_source,
             "official_nav_status": official_nav_status,
             "official_nav_age_days": official_nav_age,
+            "resolver_class": resolver_class,
             "estimated_nav": estimated_nav,
             "estimated_nav_time": estimated_nav_time,
             "estimated_nav_source": estimated_nav_source,
