@@ -398,7 +398,7 @@ def persist_daily_notice_scan(
                                 (
                                     event_id,scope_type,scope,route["impact"],
                                     route["research_action"],route["notification"],
-                                    route["reason"],"incremental-event-router-v1",
+                                    route["reason"],"incremental-event-router-v2-token-gate",
                                 ),
                             )
                             stats["event_scope_impacts_inserted"] += conn.total_changes-before
