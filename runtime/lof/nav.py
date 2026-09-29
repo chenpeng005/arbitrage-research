@@ -5,10 +5,12 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 import json
+import os
 from pathlib import Path
 from typing import Any, Iterable
 
 from .http_json import fetch_json_with_retry
+from .szse_relay import fetch_szse_relay_bundle
 from .universe import LofIdentity
 
 
@@ -241,6 +243,66 @@ def fetch_szse_official_nav(
     return [results[code] for code in code_list]
 
 
+
+def fetch_szse_official_nav_from_relay(
+    codes: Iterable[str],
+    *,
+    relay_base_url: str,
+    timeout: int = 20,
+) -> list[OfficialNavRecord]:
+    bundle = fetch_szse_relay_bundle(
+        relay_base_url,
+        timeout=timeout,
+    )
+    wanted = {str(code).strip() for code in codes if str(code).strip()}
+    fetched_at_raw = bundle.nav.get("fetched_at") or bundle.manifest.get("fetched_at")
+    fetched_at = (
+        datetime.fromisoformat(str(fetched_at_raw))
+        if fetched_at_raw
+        else datetime.now(timezone.utc)
+    )
+    if fetched_at.tzinfo is None:
+        fetched_at = fetched_at.replace(tzinfo=timezone.utc)
+
+    result: list[OfficialNavRecord] = []
+    seen: set[str] = set()
+    for row in bundle.nav.get("rows") or []:
+        code = str(row.get("code") or "").strip()
+        if code not in wanted:
+            continue
+        seen.add(code)
+        nav = _decimal_or_none(row.get("nav"))
+        nav_date = _date_or_none(row.get("nav_date"))
+        error = None
+        if nav is None or nav_date is None:
+            error = "INVALID_OR_MISSING_RELAY_NAV"
+        result.append(
+            OfficialNavRecord(
+                code=code,
+                exchange="SZSE",
+                nav=nav,
+                nav_date=nav_date,
+                fetched_at=fetched_at,
+                source="SZSE_OFFICIAL_RELAY",
+                error=error,
+            )
+        )
+
+    for code in sorted(wanted - seen):
+        result.append(
+            OfficialNavRecord(
+                code=code,
+                exchange="SZSE",
+                nav=None,
+                nav_date=None,
+                fetched_at=fetched_at,
+                source="SZSE_OFFICIAL_RELAY",
+                error="MISSING_FROM_SZSE_RELAY",
+            )
+        )
+    return sorted(result, key=lambda item: item.code)
+
+
 def fetch_all_official_nav(
     universe: Iterable[LofIdentity],
     *,
@@ -264,15 +326,40 @@ def fetch_all_official_nav(
         sse_rows = []
         sse_error = f"FETCH_ERROR:{type(exc).__name__}"
 
-    try:
-        szse_rows = fetch_szse_official_nav(
-            szse_codes,
-            timeout=timeout,
-            max_workers=szse_max_workers,
-        )
-    except Exception as exc:
-        szse_rows = []
-        szse_error = f"FETCH_ERROR:{type(exc).__name__}"
+    relay_url = os.environ.get("LOF_SZSE_RELAY_BASE_URL")
+    if relay_url:
+        try:
+            szse_rows = fetch_szse_official_nav_from_relay(
+                szse_codes,
+                relay_base_url=relay_url,
+                timeout=timeout,
+            )
+        except Exception as relay_exc:
+            try:
+                szse_rows = fetch_szse_official_nav(
+                    szse_codes,
+                    timeout=timeout,
+                    max_workers=szse_max_workers,
+                )
+                szse_error = (
+                    f"RELAY_ERROR:{type(relay_exc).__name__}"
+                )
+            except Exception as direct_exc:
+                szse_rows = []
+                szse_error = (
+                    f"RELAY_ERROR:{type(relay_exc).__name__};"
+                    f"DIRECT_ERROR:{type(direct_exc).__name__}"
+                )
+    else:
+        try:
+            szse_rows = fetch_szse_official_nav(
+                szse_codes,
+                timeout=timeout,
+                max_workers=szse_max_workers,
+            )
+        except Exception as exc:
+            szse_rows = []
+            szse_error = f"FETCH_ERROR:{type(exc).__name__}"
 
     by_key: dict[tuple[str, str], OfficialNavRecord] = {
         (row.exchange, row.code): row for row in [*sse_rows, *szse_rows]
