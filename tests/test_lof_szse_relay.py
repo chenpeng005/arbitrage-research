@@ -174,7 +174,11 @@ class LofSzseRelayTest(unittest.TestCase):
         )
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(
-            result["source_transport"]["szse_transport"],
+            result["source_transport"]["szse_universe_transport"],
+            "OFFICIAL_RELAY",
+        )
+        self.assertEqual(
+            result["source_transport"]["szse_nav_transport"],
             "OFFICIAL_RELAY",
         )
 
