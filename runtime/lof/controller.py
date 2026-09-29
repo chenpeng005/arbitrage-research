@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .classification import (
     FundTypeRecord,
@@ -15,6 +15,9 @@ from .quote import fetch_quotes
 from .snapshot import build_market_snapshot
 from .state import fetch_all_trade_states
 from .universe import LofIdentity, fetch_all_lof_universe
+
+if TYPE_CHECKING:
+    from .szse_relay import SzseRelayBundle
 
 
 def _error_name(exc: Exception) -> str:
@@ -34,6 +37,7 @@ def collect_market_snapshot(
     universe_override: list[LofIdentity] | None = None,
     type_records_override: dict[tuple[str, str], FundTypeRecord] | None = None,
     official_nav_override: list[OfficialNavRecord] | None = None,
+    szse_relay_bundle: "SzseRelayBundle | None" = None,
     snapshot_id: str | None = None,
 ) -> dict[str, Any]:
     """Collect one all-market LOF snapshot.
@@ -70,6 +74,7 @@ def collect_market_snapshot(
                         universe,
                         timeout=timeout,
                         szse_max_workers=nav_max_workers,
+                        szse_relay_bundle=szse_relay_bundle,
                     )
                 }
             ),
