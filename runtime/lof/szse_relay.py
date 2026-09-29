@@ -3,10 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from functools import lru_cache
+import base64
 import hashlib
 import json
 import time
 from typing import Any
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 
@@ -16,6 +18,11 @@ DEFAULT_SZSE_RELAY_BASE_URL = (
     "chenpeng005/arbitrage-research/lof-data-relay/lof_relay"
 )
 DEFAULT_RELAY_MAX_AGE_SECONDS = 48 * 60 * 60
+DEFAULT_RELAY_GITHUB_API_BASE_URL = (
+    "https://api.github.com/repos/"
+    "chenpeng005/arbitrage-research/contents/lof_relay"
+)
+DEFAULT_RELAY_GITHUB_REF = "lof-data-relay"
 
 
 @dataclass(frozen=True)
@@ -65,6 +72,56 @@ def _join(base_url: str, filename: str) -> str:
     return base_url.rstrip("/") + "/" + filename
 
 
+def _fetch_github_contents_bytes(
+    filename: str,
+    *,
+    timeout: int,
+) -> bytes:
+    url = (
+        DEFAULT_RELAY_GITHUB_API_BASE_URL.rstrip("/")
+        + "/"
+        + quote(filename)
+        + "?ref="
+        + quote(DEFAULT_RELAY_GITHUB_REF)
+    )
+    request = Request(
+        url,
+        headers={
+            "User-Agent": "LOF-Runtime",
+            "Accept": "application/vnd.github+json",
+        },
+    )
+    with urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    if payload.get("encoding") != "base64":
+        raise ValueError("GitHub relay contents encoding is not base64")
+    content = str(payload.get("content") or "").replace("\n", "")
+    if not content:
+        raise ValueError("GitHub relay contents payload is empty")
+    return base64.b64decode(content)
+
+
+def _fetch_relay_file(
+    base_url: str,
+    filename: str,
+    *,
+    timeout: int,
+) -> bytes:
+    try:
+        return _fetch_bytes(
+            _join(base_url, filename),
+            timeout=min(timeout, 8),
+            attempts=1,
+        )
+    except Exception:
+        if base_url.rstrip("/") != DEFAULT_SZSE_RELAY_BASE_URL.rstrip("/"):
+            raise
+        return _fetch_github_contents_bytes(
+            filename,
+            timeout=max(timeout, 20),
+        )
+
+
 def _json_bytes(data: bytes, *, label: str) -> dict[str, Any]:
     try:
         payload = json.loads(data.decode("utf-8"))
@@ -81,8 +138,9 @@ def fetch_szse_relay_bundle(
     *,
     timeout: int = 20,
 ) -> SzseRelayBundle:
-    manifest_bytes = _fetch_bytes(
-        _join(base_url, "manifest.json"),
+    manifest_bytes = _fetch_relay_file(
+        base_url,
+        "manifest.json",
         timeout=timeout,
     )
     manifest = _json_bytes(manifest_bytes, label="relay manifest")
@@ -98,12 +156,14 @@ def fetch_szse_relay_bundle(
     universe_name = str(universe_meta.get("filename") or "szse_universe.json")
     nav_name = str(nav_meta.get("filename") or "szse_nav.json")
 
-    universe_bytes = _fetch_bytes(
-        _join(base_url, universe_name),
+    universe_bytes = _fetch_relay_file(
+        base_url,
+        universe_name,
         timeout=timeout,
     )
-    nav_bytes = _fetch_bytes(
-        _join(base_url, nav_name),
+    nav_bytes = _fetch_relay_file(
+        base_url,
+        nav_name,
         timeout=timeout,
     )
 
