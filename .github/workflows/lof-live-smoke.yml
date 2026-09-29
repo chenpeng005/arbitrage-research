@@ -47,6 +47,37 @@ jobs:
           assert len(rows) == universe, (len(rows), universe)
           assert estimated > 0, "estimated NAV lane produced zero live values"
 
+          required_row_fields = {
+              "code",
+              "name",
+              "resolver_class",
+              "price",
+              "volume",
+              "amount",
+              "estimated_nav",
+              "estimated_premium_rate",
+              "estimated_nav_quality",
+              "estimated_nav_status",
+              "official_nav",
+              "official_nav_date",
+              "subscription_status",
+              "daily_subscription_limit",
+              "quote_time",
+          }
+          assert rows, "snapshot rows empty"
+          missing = sorted(required_row_fields - set(rows[0]))
+          assert not missing, f"snapshot row missing web fields: {missing}"
+
+          available_rows = [
+              row for row in rows
+              if row.get("estimated_nav_status") == "AVAILABLE"
+          ]
+          assert available_rows, "no AVAILABLE estimated NAV row"
+          for row in available_rows[:20]:
+              assert row.get("estimated_nav") is not None, row.get("code")
+              assert row.get("estimated_premium_rate") is not None, row.get("code")
+              assert row.get("estimated_nav_quality") is not None, row.get("code")
+
           summary = {
               "collector_status": snapshot.get("collector_status"),
               "universe_count": universe,
@@ -61,6 +92,8 @@ jobs:
               "estimated_nav_unavailable_count": quality.get("estimated_nav_unavailable_count"),
               "state_available_count": quality.get("state_available_count"),
               "lane_errors": snapshot.get("lane_errors"),
+              "web_required_fields_checked": sorted(required_row_fields),
+              "available_estimate_sample_count": min(20, len(available_rows)),
           }
           print(json.dumps(summary, ensure_ascii=False, indent=2))
           Path("/tmp/lof-live-smoke/summary.json").write_text(
