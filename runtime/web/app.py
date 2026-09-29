@@ -1950,7 +1950,7 @@ def opportunity_information_status() -> dict:
         "schedule": {
             "timezone": "Asia/Shanghai",
             "cron": "0 3 * * * + 45 20 * * *",
-            "description": "每日 03:00 信息更新；20:45 信息更新 + 正式收盘全流程",
+            "description": "每日 03:00 信息语义审计 + 独立研究队列；20:45 轻量收盘更新（不跑 Full V2）",
         },
     }
 
