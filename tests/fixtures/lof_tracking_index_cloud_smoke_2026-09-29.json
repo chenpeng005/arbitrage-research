@@ -1,0 +1,29 @@
+{
+  "fetched_at": "2026-09-29T13:35:00+08:00",
+  "rows": [
+    {
+      "fund_code": "501047",
+      "fund_name": "汇添富中证全指证券公司ETF联接(LOF)A",
+      "tracking_index_code": "399975",
+      "tracking_index_name": "证券公司",
+      "market_bucket": "zs:lof",
+      "source": "EASTMONEY_FUND_BASEINFO_FIXTURE"
+    },
+    {
+      "fund_code": "501057",
+      "fund_name": "汇添富中证新能源汽车产业指数(LOF)A",
+      "tracking_index_code": "930997",
+      "tracking_index_name": "新能源车产业",
+      "market_bucket": "zs:lof",
+      "source": "EASTMONEY_FUND_BASEINFO_FIXTURE"
+    },
+    {
+      "fund_code": "502048",
+      "fund_name": "易方达上证50指数(LOF)A",
+      "tracking_index_code": "000016",
+      "tracking_index_name": "上证50",
+      "market_bucket": "zs:lof",
+      "source": "EASTMONEY_FUND_BASEINFO_FIXTURE"
+    }
+  ]
+}
