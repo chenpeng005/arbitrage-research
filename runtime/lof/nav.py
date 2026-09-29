@@ -7,9 +7,8 @@ from decimal import Decimal, InvalidOperation
 import json
 from pathlib import Path
 from typing import Any, Iterable
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
 
+from .http_json import fetch_json_with_retry
 from .universe import LofIdentity
 
 
@@ -66,16 +65,14 @@ def _get_json(
     referer: str,
     timeout: int,
 ) -> Any:
-    request = Request(
-        f"{url}?{urlencode(params)}",
-        headers={
-            "User-Agent": "Mozilla/5.0",
-            "Referer": referer,
-            "Accept": "application/json,text/plain,*/*",
-        },
+    return fetch_json_with_retry(
+        url,
+        params,
+        referer=referer,
+        timeout=timeout,
+        attempts=3,
+        base_delay_seconds=0.25,
     )
-    with urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
 
 
 def parse_sse_nav_payload(
