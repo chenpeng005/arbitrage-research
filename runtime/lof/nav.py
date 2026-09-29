@@ -303,11 +303,73 @@ def fetch_szse_official_nav_from_relay(
     return sorted(result, key=lambda item: item.code)
 
 
+def _szse_nav_from_relay(
+    bundle: "SzseRelayBundle",
+    *,
+    codes: Iterable[str],
+) -> list[OfficialNavRecord]:
+    payload = bundle.nav
+    if payload.get("source") != "SZSE_OFFICIAL":
+        raise ValueError("SZSE relay NAV provenance mismatch")
+
+    wanted = {str(code).strip() for code in codes if str(code).strip()}
+    fetched_at_raw = payload.get("fetched_at") or bundle.fetched_at
+    fetched_at = (
+        datetime.fromisoformat(str(fetched_at_raw).replace("Z", "+00:00"))
+        if fetched_at_raw
+        else datetime.now(timezone.utc)
+    )
+    if fetched_at.tzinfo is None:
+        fetched_at = fetched_at.replace(tzinfo=timezone.utc)
+
+    result: dict[str, OfficialNavRecord] = {}
+    for row in payload.get("rows") or []:
+        code = str(row.get("code") or "").strip()
+        if code not in wanted:
+            continue
+        nav = _decimal_or_none(row.get("nav"))
+        nav_date = _date_or_none(row.get("nav_date"))
+        if code in result:
+            raise ValueError(f"duplicate SZSE relay NAV code: {code}")
+        result[code] = OfficialNavRecord(
+            code=code,
+            exchange="SZSE",
+            nav=nav,
+            nav_date=nav_date,
+            fetched_at=fetched_at,
+            source="SZSE_OFFICIAL_RELAY",
+            error=(
+                None
+                if nav is not None and nav_date is not None
+                else "INVALID_OR_MISSING_RELAY_NAV"
+            ),
+        )
+
+    rows: list[OfficialNavRecord] = []
+    for code in sorted(wanted):
+        rows.append(
+            result.get(
+                code,
+                OfficialNavRecord(
+                    code=code,
+                    exchange="SZSE",
+                    nav=None,
+                    nav_date=None,
+                    fetched_at=fetched_at,
+                    source="SZSE_OFFICIAL_RELAY",
+                    error="MISSING_FROM_RELAY_NAV_SOURCE",
+                ),
+            )
+        )
+    return rows
+
+
 def fetch_all_official_nav(
     universe: Iterable[LofIdentity],
     *,
     timeout: int = 15,
     szse_max_workers: int = 8,
+    szse_relay_bundle: "SzseRelayBundle | None" = None,
 ) -> list[OfficialNavRecord]:
     rows = list(universe)
     sse_codes = {row.code for row in rows if row.exchange == "SSE"}
@@ -380,6 +442,8 @@ def fetch_all_official_nav(
                 source=(
                     "SSE_OFFICIAL"
                     if item.exchange == "SSE"
+                    else "SZSE_OFFICIAL_RELAY"
+                    if szse_relay_bundle is not None
                     else "SZSE_OFFICIAL"
                 ),
                 error=(
