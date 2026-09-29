@@ -686,7 +686,7 @@ def run_calculation(
         )
     )
     formal_snapshot = (
-        acquisition_mode == "CLOSE"
+        acquisition_mode in {"CLOSE", "PRE_TRADE_CLOSE"}
         and input_contract == "TRUSTED_MARKET_INPUT"
         and model_audit["status"] == "PASS"
         and resolution_gate_ok
@@ -728,7 +728,7 @@ def run_calculation(
                     else "TEST_ONLY"
                 )
             ),
-            "rule": "CLOSE + TRUSTED_MARKET_INPUT + MODEL_AUDIT_PASS + RESOLUTION_GATE_OK",
+            "rule": "CLOSE/PRE_TRADE_CLOSE + TRUSTED_MARKET_INPUT + MODEL_AUDIT_PASS + RESOLUTION_GATE_OK",
         },
         "model_audit_ref": "model_audit.json",
         "calculated_table_ref": "market_map_calculated.csv",
