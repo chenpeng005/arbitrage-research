@@ -141,6 +141,8 @@ AI 仅在公告语义复杂、限额口径歧义、新 Path 研究等节点介�
 
 ## 5. 下一实现顺序
 
+当前切换为 Display First：
+
 ```text
 Universe
 → NAV
@@ -149,13 +151,18 @@ Universe
 → Classification
 → Market Snapshot Contract
 → Controller
-→ P1 Case Validation
-→ State Delta / Announcement Audit
-→ P1 Runtime Gate
 → Web/API
+→ Sort / Filter / Auto Refresh
+→ Share / Index Enhancements
+→ State Delta
+→ Estimated NAV
+→ Simple P1 Projection
+→ Execution Detail
 ```
 
-P1 Gate 必须等历史案例研究把阈值和执行约束 Canonical 化后再写。
+第一版 Web 不等待完整 P1 Runtime Gate。
+
+策略层先做轻量派生列，复杂 Execution Layer 放到详情增强。
 
 ## 6. 部署纪律
 
