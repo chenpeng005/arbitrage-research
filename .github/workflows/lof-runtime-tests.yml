@@ -1,0 +1,29 @@
+name: LOF Runtime Tests
+
+on:
+  push:
+    paths:
+      - "runtime/lof/**"
+      - "tests/test_lof_*.py"
+      - ".github/workflows/lof-runtime-tests.yml"
+  pull_request:
+    paths:
+      - "runtime/lof/**"
+      - "tests/test_lof_*.py"
+      - ".github/workflows/lof-runtime-tests.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run LOF unit tests
+        run: python -m unittest discover -s tests -p "test_lof_*.py" -v
