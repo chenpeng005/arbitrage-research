@@ -129,6 +129,8 @@ def fetch_szse_relay_bundle(
         raise ValueError("SZSE relay universe sanity floor failed")
     if len(nav_rows) < 200:
         raise ValueError("SZSE relay NAV sanity floor failed")
+    if len(nav_rows) / len(universe_rows) < 0.90:
+        raise ValueError("SZSE relay NAV coverage below 90%")
 
     return SzseRelayBundle(
         base_url=base_url,
