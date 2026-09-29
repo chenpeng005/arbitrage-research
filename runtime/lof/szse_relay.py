@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 RELAY_VERSION = "lof-szse-official-relay-v1"
 DEFAULT_SZSE_RELAY_BASE_URL = (
     "https://raw.githubusercontent.com/"
-    "chenpeng005/arbitrage-research/lof-data-relay"
+    "chenpeng005/arbitrage-research/lof-data-relay/lof_relay"
 )
 DEFAULT_RELAY_MAX_AGE_SECONDS = 48 * 60 * 60
 
