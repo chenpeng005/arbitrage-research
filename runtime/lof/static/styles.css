@@ -67,6 +67,7 @@ tr:hover td { background: #fbfcfd; }
 .primary-col { background: #fbfcff; }
 .positive { color: #b42318; }
 .negative { color: #087443; }
+.premium-basis { margin-top: 2px; font-size: 11px; font-weight: 400; color: #667085; }
 .quality { text-align: center; }
 .q-high { color: #067647; font-weight: 650; }
 .q-medium { color: #b54708; }
