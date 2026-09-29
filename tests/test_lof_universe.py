@@ -137,8 +137,6 @@ class LofUniverseParserTest(unittest.TestCase):
                 {"x": 1},
                 referer="https://unit.test/",
                 timeout=1,
-                retries=2,
-                backoff_seconds=0,
             )
 
         self.assertEqual(payload, {"ok": True})
