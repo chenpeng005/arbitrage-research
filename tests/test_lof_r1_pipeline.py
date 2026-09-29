@@ -93,7 +93,20 @@ class LofR1PipelineTest(unittest.TestCase):
         self.assertTrue(all(x.estimated_nav_status == "AVAILABLE" for x in rows))
         self.assertEqual(fetch_mock.call_count, 1)
 
-    def test_missing_mapping_fails_closed(self) -> None:
+    @patch("runtime.lof.r1_pipeline.fetch_index_quote_with_fallback")
+    def test_missing_f10_mapping_still_resolves_at_medium_quality(
+        self,
+        fetch_mock,
+    ) -> None:
+        fetch_mock.return_value = IndexQuote(
+            symbol="sh000300",
+            code="000300",
+            name="沪深300",
+            current=Decimal("4342.07"),
+            previous_close=Decimal("4340.76"),
+            quote_time=self.now,
+            source="TENCENT_QUOTE",
+        )
         rows = resolve_r1_batch(
             fund_codes=["163407"],
             official_navs={"163407": self.nav},
@@ -102,8 +115,9 @@ class LofR1PipelineTest(unittest.TestCase):
             expected_anchor_date=date(2026, 9, 28),
             as_of=self.now,
         )
-        self.assertEqual(rows[0].estimated_nav_status, "UNAVAILABLE")
-        self.assertEqual(rows[0].error, "MISSING_TRACKING_TARGET")
+        self.assertEqual(rows[0].estimated_nav_status, "AVAILABLE")
+        self.assertEqual(rows[0].estimated_nav_quality, "MEDIUM")
+        self.assertEqual(rows[0].exposure_ratio_used, Decimal("1"))
 
 
 if __name__ == "__main__":
