@@ -344,3 +344,25 @@ Deployment manifest
 ```
 
 禁止先在服务器现场开发再回补 GitHub。
+
+
+## 8. Production Refresh Loop
+
+Production uses `runtime.lof.runtime_loop` rather than repeatedly rebuilding the full one-shot job.
+
+Default cadence:
+
+- market window quote + estimated NAV snapshot: 30 seconds;
+- off-hours snapshot: 300 seconds;
+- subscription / redemption state refresh: 600 seconds;
+- official NAV refresh: 1800 seconds;
+- Universe / type / resolver context rebuild: 3600 seconds.
+
+The fast loop reuses cached slow-lane data. It does not issue 404 subscription-state requests every 30 seconds.
+
+Example:
+
+```bash
+python -m runtime.lof.runtime_loop \
+  --data-root /path/to/runtime_data
+```

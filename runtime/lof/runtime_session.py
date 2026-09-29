@@ -13,6 +13,7 @@ from .controller import collect_market_snapshot
 from .estimated_nav_lane import EstimatedNavContext
 from .nav import OfficialNavRecord
 from .snapshot_store import LofSnapshotStore
+from .state import FundTradeStateRecord
 from .szse_relay import (
     DEFAULT_RELAY_MAX_AGE_SECONDS,
     DEFAULT_SZSE_RELAY_BASE_URL,
@@ -120,6 +121,7 @@ class LofRuntimeSession:
         timeout: int = 15,
         snapshot_id: str | None = None,
         official_nav_override: list[OfficialNavRecord] | None = None,
+        trade_states_override: list[FundTradeStateRecord] | None = None,
     ) -> dict:
         return collect_market_snapshot(
             generated_at=generated_at,
@@ -130,6 +132,7 @@ class LofRuntimeSession:
             universe_override=self.universe,
             type_records_override=self.type_records,
             official_nav_override=official_nav_override,
+            trade_states_override=trade_states_override,
             szse_relay_bundle=self.szse_relay_bundle,
             snapshot_id=snapshot_id,
         )
@@ -144,6 +147,7 @@ class LofRuntimeSession:
         timeout: int = 15,
         snapshot_id: str | None = None,
         official_nav_override: list[OfficialNavRecord] | None = None,
+        trade_states_override: list[FundTradeStateRecord] | None = None,
     ) -> Path:
         snapshot = self.collect(
             generated_at=generated_at,
@@ -152,5 +156,6 @@ class LofRuntimeSession:
             timeout=timeout,
             snapshot_id=snapshot_id,
             official_nav_override=official_nav_override,
+            trade_states_override=trade_states_override,
         )
         return store.persist(snapshot)

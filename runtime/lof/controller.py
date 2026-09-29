@@ -13,7 +13,7 @@ from .estimated_nav_lane import EstimatedNavContext, resolve_estimated_nav_lane
 from .nav import OfficialNavRecord, fetch_all_official_nav
 from .quote import fetch_quotes
 from .snapshot import build_market_snapshot
-from .state import fetch_all_trade_states
+from .state import FundTradeStateRecord, fetch_all_trade_states
 from .universe import LofIdentity, fetch_all_lof_universe
 
 if TYPE_CHECKING:
@@ -37,6 +37,7 @@ def collect_market_snapshot(
     universe_override: list[LofIdentity] | None = None,
     type_records_override: dict[tuple[str, str], FundTypeRecord] | None = None,
     official_nav_override: list[OfficialNavRecord] | None = None,
+    trade_states_override: list[FundTradeStateRecord] | None = None,
     szse_relay_bundle: "SzseRelayBundle | None" = None,
     snapshot_id: str | None = None,
 ) -> dict[str, Any]:
@@ -78,11 +79,17 @@ def collect_market_snapshot(
                     )
                 }
             ),
-            "trade_state": pool.submit(
-                fetch_all_trade_states,
-                universe,
-                timeout=timeout,
-                max_workers=state_max_workers,
+            **(
+                {}
+                if trade_states_override is not None
+                else {
+                    "trade_state": pool.submit(
+                        fetch_all_trade_states,
+                        universe,
+                        timeout=timeout,
+                        max_workers=state_max_workers,
+                    )
+                }
             ),
             **(
                 {}
@@ -106,6 +113,8 @@ def collect_market_snapshot(
 
     if official_nav_override is not None:
         lane_results["official_nav"] = list(official_nav_override)
+    if trade_states_override is not None:
+        lane_results["trade_state"] = list(trade_states_override)
 
     if type_records_override is not None:
         type_records = dict(type_records_override)
