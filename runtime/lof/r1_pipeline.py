@@ -75,16 +75,6 @@ def resolve_r1_batch(
             )
             continue
 
-        if mapping is None or not mapping.tracking_target_name:
-            results.append(
-                _unavailable(
-                    fund_code=code,
-                    proxy_id=(proxy.index_code if proxy else None),
-                    error="MISSING_TRACKING_TARGET",
-                )
-            )
-            continue
-
         if proxy is None or proxy.status != "RESOLVED" or not proxy.index_code:
             results.append(
                 _unavailable(
@@ -105,7 +95,14 @@ def resolve_r1_batch(
             )
             quote_cache[quote_key] = quote
 
-        exposure = mapping.exposure_ratio_candidate
+        # F10 benchmark exposure is an accuracy enhancement, not a hard
+        # prerequisite. Missing exposure falls back to 1.0 in the generic
+        # resolver and caps quality at MEDIUM.
+        exposure = (
+            mapping.exposure_ratio_candidate
+            if mapping is not None
+            else None
+        )
 
         results.append(
             resolve_r1_from_previous_close(
