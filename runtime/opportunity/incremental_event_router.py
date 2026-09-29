@@ -13,7 +13,7 @@ from collections import defaultdict
 from typing import Any
 from urllib.parse import urlparse
 
-EVENT_ROUTER_VERSION = "incremental-event-router-v1-experimental"
+EVENT_ROUTER_VERSION = "incremental-event-router-v2-token-gate"
 
 ACTIVE_SCOPES = (
     "MATURITY_CASH",
@@ -453,9 +453,9 @@ def route_event(event: dict[str, Any]) -> dict[str, Any]:
         add(
             "DOWNWARD_REVISION",
             "STATE_CHANGE",
-            "FULL_V2_RESEARCH",
-            "DAILY_DIGEST",
-            "REVISION_CHAIN_ENTERED_REAL_EVENT_NODE",
+            "NONE",
+            "SILENT",
+            "REVISION_EXPECTED_TRIGGER_MONITOR_ONLY",
         )
 
     elif family in {
@@ -552,43 +552,63 @@ def route_event(event: dict[str, Any]) -> dict[str, Any]:
         )
 
     elif family == "CREDIT:RATING_UPDATE":
-        add(
-            "MATURITY_CASH",
-            "FACT_UPDATE",
-            "SEMANTIC_AUDIT",
-            "DAILY_DIGEST",
-            "RATING_DIRECTION_AND_MATERIALITY_REQUIRED",
-        )
-        add(
-            "PUT",
-            "FACT_UPDATE",
-            "SEMANTIC_AUDIT",
-            "DAILY_DIGEST",
-            "RATING_DIRECTION_AND_MATERIALITY_REQUIRED",
-        )
-        add(
-            "CREDIT_RISK",
-            "FACT_UPDATE",
-            "SEMANTIC_AUDIT",
-            "DAILY_DIGEST",
-            "RATING_DIRECTION_AND_MATERIALITY_REQUIRED",
-        )
+        if str(event.get("materiality_status") or "") == "FACT_UPDATE":
+            for scope in ("MATURITY_CASH", "PUT", "CREDIT_RISK"):
+                add(
+                    scope,
+                    "FACT_UPDATE",
+                    "NONE",
+                    "SILENT",
+                    "EVENT_LEVEL_FACT_UPDATE_NO_SCOPE_AI",
+                )
+        else:
+            add(
+                "MATURITY_CASH",
+                "FACT_UPDATE",
+                "SEMANTIC_AUDIT",
+                "DAILY_DIGEST",
+                "RATING_DIRECTION_AND_MATERIALITY_REQUIRED",
+            )
+            add(
+                "PUT",
+                "FACT_UPDATE",
+                "SEMANTIC_AUDIT",
+                "DAILY_DIGEST",
+                "RATING_DIRECTION_AND_MATERIALITY_REQUIRED",
+            )
+            add(
+                "CREDIT_RISK",
+                "FACT_UPDATE",
+                "SEMANTIC_AUDIT",
+                "DAILY_DIGEST",
+                "RATING_DIRECTION_AND_MATERIALITY_REQUIRED",
+            )
 
     elif family in {"CREDIT:FINANCING_SUPPORT", "CREDIT:SUPPORT_OR_ASSET"}:
-        add(
-            "MATURITY_CASH",
-            "FACT_UPDATE",
-            "SEMANTIC_AUDIT",
-            "DAILY_DIGEST",
-            "SUPPORT_REALIZATION_AND_MATERIALITY_REQUIRED",
-        )
-        add(
-            "PUT",
-            "FACT_UPDATE",
-            "SEMANTIC_AUDIT",
-            "DAILY_DIGEST",
-            "SUPPORT_REALIZATION_AND_MATERIALITY_REQUIRED",
-        )
+        if str(event.get("materiality_status") or "") == "FACT_UPDATE":
+            for scope in ("MATURITY_CASH", "PUT"):
+                add(
+                    scope,
+                    "FACT_UPDATE",
+                    "NONE",
+                    "SILENT",
+                    "EVENT_LEVEL_FACT_UPDATE_NO_SCOPE_AI",
+                )
+        else:
+            add(
+                "MATURITY_CASH",
+                "FACT_UPDATE",
+                "SEMANTIC_AUDIT",
+                "DAILY_DIGEST",
+                "SUPPORT_REALIZATION_AND_MATERIALITY_REQUIRED",
+            )
+            add(
+                "PUT",
+                "FACT_UPDATE",
+                "SEMANTIC_AUDIT",
+                "DAILY_DIGEST",
+                "SUPPORT_REALIZATION_AND_MATERIALITY_REQUIRED",
+            )
 
     else:
         return {
