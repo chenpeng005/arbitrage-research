@@ -10,7 +10,7 @@ from .classification import (
     fetch_fund_type_map,
 )
 from .estimated_nav_lane import EstimatedNavContext, resolve_estimated_nav_lane
-from .nav import fetch_all_official_nav
+from .nav import OfficialNavRecord, fetch_all_official_nav
 from .quote import fetch_quotes
 from .snapshot import build_market_snapshot
 from .state import fetch_all_trade_states
@@ -33,6 +33,7 @@ def collect_market_snapshot(
     estimated_nav_context: EstimatedNavContext | None = None,
     universe_override: list[LofIdentity] | None = None,
     type_records_override: dict[tuple[str, str], FundTypeRecord] | None = None,
+    official_nav_override: list[OfficialNavRecord] | None = None,
     snapshot_id: str | None = None,
 ) -> dict[str, Any]:
     """Collect one all-market LOF snapshot.
@@ -60,11 +61,17 @@ def collect_market_snapshot(
                 timeout=timeout,
                 batch_size=quote_batch_size,
             ),
-            "official_nav": pool.submit(
-                fetch_all_official_nav,
-                universe,
-                timeout=timeout,
-                szse_max_workers=nav_max_workers,
+            **(
+                {}
+                if official_nav_override is not None
+                else {
+                    "official_nav": pool.submit(
+                        fetch_all_official_nav,
+                        universe,
+                        timeout=timeout,
+                        szse_max_workers=nav_max_workers,
+                    )
+                }
             ),
             "trade_state": pool.submit(
                 fetch_all_trade_states,
@@ -91,6 +98,9 @@ def collect_market_snapshot(
             except Exception as exc:
                 lane_errors[lane] = _error_name(exc)
                 lane_results[lane] = {} if lane == "type" else []
+
+    if official_nav_override is not None:
+        lane_results["official_nav"] = list(official_nav_override)
 
     if type_records_override is not None:
         type_records = dict(type_records_override)
