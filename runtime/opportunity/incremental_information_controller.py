@@ -28,8 +28,12 @@ from runtime.opportunity.incremental_semantic_audit_runner import (
 from runtime.opportunity.incremental_storage import connect
 from runtime.opportunity.path_research_batch import run_path_research_batch
 from runtime.opportunity.research_evidence import build_research_evidence
+from runtime.opportunity.research_task_builder import build_path_research_tasks
+from runtime.opportunity.incremental_research_reuse_runtime import (
+    apply_reuse_to_task_batch,
+)
 
-CONTROLLER_VERSION = "incremental-information-controller-v1"
+CONTROLLER_VERSION = "incremental-information-controller-v1.1-independent-research-lane"
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -277,50 +281,133 @@ def run_information_controller(
                 "deferred_count":bridge["deferred_count"],
             })
 
+            # Independent Research Lane:
+            # consume ALL current pending Path Research tasks (both Event and
+            # State triggers). The 20:45 light close only creates/updates this
+            # queue and never runs expensive research itself.
             path_batch=None
             evidence_batch=None
             path_waiting=0
-            if bridge["promoted_count"]>0:
-                task_batch=bridge.get("task_batch") or {}
+            pending_queue_path=data_root/"registry"/"pending_research_tasks.json"
+            pending_payload=(
+                json.loads(pending_queue_path.read_text(encoding="utf-8"))
+                if pending_queue_path.exists()
+                else {"pending_tasks":[]}
+            )
+            pending_total=len(pending_payload.get("pending_tasks",[]))
+            state["stages"].append({
+                "stage":"RESEARCH_QUEUE",
+                "status":"PASS",
+                "pending_count":pending_total,
+                "daily_path_limit":path_limit,
+            })
+
+            if pending_total>0:
+                ptr=json.loads(
+                    (data_root/"registry"/"latest_economic_path_registry.json")
+                    .read_text(encoding="utf-8")
+                )
+                registry_path=Path(str(ptr["result_path"]))
+                task_batch=build_path_research_tasks(
+                    economic_registry_path=registry_path,
+                    pending_queue_path=pending_queue_path,
+                    data_root=data_root,
+                    deployment=deployment,
+                )
                 task_batch_path=(
                     data_root/"runs"/str(task_batch["run_id"])
                     /"path_research_task_batch.json"
                 )
-                evidence_batch=build_research_evidence(
-                    task_batch_path=task_batch_path,
-                    data_root=data_root,
-                    deployment=deployment,
-                )
-                state["stages"].append({
-                    "stage":"PATH_RESEARCH_EVIDENCE",
-                    "status":evidence_batch.get("status"),
-                    "task_count":evidence_batch.get("packs_built"),
-                })
-                path_batch=run_path_research_batch(
-                    root=root,
-                    data_root=data_root,
-                    provider_name=provider_name,
-                    model=model,
-                    execution_mode=execution_mode,
-                    full_runtime_run_id=None,
-                    limit=path_limit,
-                    retry_once=False,
-                )
-                path_waiting=int(
-                    path_batch.get("status_counts",{}).get(
-                        "WAITING_FOR_CHAT",0
+
+                effective_task_batch_path=task_batch_path
+                reuse=None
+                if target_db.exists():
+                    reuse=apply_reuse_to_task_batch(
+                        data_root=data_root,
+                        target_db=target_db,
+                        task_batch_path=task_batch_path,
                     )
+                    effective_task_batch_path=Path(
+                        str(reuse["effective_task_batch_path"])
+                    )
+                state["stages"].append({
+                    "stage":"RESEARCH_REUSE",
+                    "status":"PASS" if reuse is not None else "SKIPPED",
+                    "reused_count":(
+                        int(reuse.get("reused_count") or 0)
+                        if reuse is not None else 0
+                    ),
+                    "remaining_pending":(
+                        int(reuse.get("remaining_pending_count") or 0)
+                        if reuse is not None else pending_total
+                    ),
+                })
+
+                remaining_after_reuse=(
+                    int(reuse.get("remaining_pending_count") or 0)
+                    if reuse is not None else pending_total
                 )
-            if bridge["promoted_count"]==0:
+                if remaining_after_reuse>0:
+                    evidence_batch=build_research_evidence(
+                        task_batch_path=effective_task_batch_path,
+                        data_root=data_root,
+                        deployment=deployment,
+                    )
+                    state["stages"].append({
+                        "stage":"PATH_RESEARCH_EVIDENCE",
+                        "status":evidence_batch.get("status"),
+                        "task_count":evidence_batch.get("packs_built"),
+                    })
+                    path_batch=run_path_research_batch(
+                        root=root,
+                        data_root=data_root,
+                        provider_name=provider_name,
+                        model=model,
+                        execution_mode=execution_mode,
+                        full_runtime_run_id=None,
+                        limit=min(max(1,int(path_limit)),5),
+                        retry_once=False,
+                    )
+                    path_waiting=int(
+                        path_batch.get("status_counts",{}).get(
+                            "WAITING_FOR_CHAT",0
+                        )
+                    )
+                else:
+                    state["stages"].append({
+                        "stage":"PATH_RESEARCH_EVIDENCE",
+                        "status":"SKIPPED",
+                        "task_count":0,
+                        "reason":"ALL_PENDING_TASKS_REUSED",
+                    })
+            else:
+                state["stages"].append({
+                    "stage":"RESEARCH_REUSE",
+                    "status":"SKIPPED",
+                    "reused_count":0,
+                    "remaining_pending":0,
+                })
                 state["stages"].append({
                     "stage":"PATH_RESEARCH_EVIDENCE",
                     "status":"SKIPPED",
                     "task_count":0,
                 })
+
+            remaining_queue=0
+            if pending_queue_path.exists():
+                try:
+                    remaining_queue=len(
+                        json.loads(
+                            pending_queue_path.read_text(encoding="utf-8")
+                        ).get("pending_tasks",[])
+                    )
+                except Exception:
+                    remaining_queue=0
             state["stages"].append({
                 "stage":"PATH_RESEARCH",
                 "status":"WAITING_FOR_CHAT" if path_waiting else "PASS",
                 "batch":path_batch,
+                "remaining_pending":remaining_queue,
             })
 
             if semantic_failed or bridge["status"]=="NEEDS_REVIEW":
