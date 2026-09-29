@@ -46,9 +46,10 @@ class LofR1PipelineTest(unittest.TestCase):
             status="RESOLVED",
         )
 
-    @patch("runtime.lof.r1_pipeline.fetch_index_quote_with_fallback")
+    @patch("runtime.lof.r1_pipeline.fetch_index_quotes_for_mappings")
     def test_batch_resolves_and_deduplicates_proxy_quote(self, fetch_mock) -> None:
-        fetch_mock.return_value = IndexQuote(
+        fetch_mock.return_value = {
+            ("sh000300", "SH000300"): IndexQuote(
             symbol="sh000300",
             code="000300",
             name="沪深300",
@@ -57,6 +58,7 @@ class LofR1PipelineTest(unittest.TestCase):
             quote_time=self.now,
             source="TENCENT_QUOTE",
         )
+        }
 
         second_mapping = ResolverMappingCandidate(
             fund_code="160615",
@@ -93,12 +95,13 @@ class LofR1PipelineTest(unittest.TestCase):
         self.assertTrue(all(x.estimated_nav_status == "AVAILABLE" for x in rows))
         self.assertEqual(fetch_mock.call_count, 1)
 
-    @patch("runtime.lof.r1_pipeline.fetch_index_quote_with_fallback")
+    @patch("runtime.lof.r1_pipeline.fetch_index_quotes_for_mappings")
     def test_missing_f10_mapping_still_resolves_at_medium_quality(
         self,
         fetch_mock,
     ) -> None:
-        fetch_mock.return_value = IndexQuote(
+        fetch_mock.return_value = {
+            ("sh000300", "SH000300"): IndexQuote(
             symbol="sh000300",
             code="000300",
             name="沪深300",
@@ -107,6 +110,7 @@ class LofR1PipelineTest(unittest.TestCase):
             quote_time=self.now,
             source="TENCENT_QUOTE",
         )
+        }
         rows = resolve_r1_batch(
             fund_codes=["163407"],
             official_navs={"163407": self.nav},
