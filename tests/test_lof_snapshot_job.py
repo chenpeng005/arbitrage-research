@@ -78,6 +78,7 @@ class LofSnapshotJobTest(unittest.TestCase):
                 sse_universe_fixture_path="sse.json",
                 szse_universe_fixture_path="szse.json",
                 tracking_index_fixture_path=None,
+                szse_relay_base_url=unittest.mock.ANY,
             )
 
 
