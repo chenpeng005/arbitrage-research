@@ -83,6 +83,7 @@ def build_estimated_nav_context(
     f10_mapping_candidates: dict[str, ResolverMappingCandidate] | None = None,
     qdii_proxy_registry: dict[str, QdiiProxyEntry] | None = None,
     commodity_proxy_registry: dict[str, CommodityProxyEntry] | None = None,
+    tracking_index_override: dict[str, TrackingIndexRecord] | None = None,
     timeout: int = 15,
     allow_name_search_fallback: bool = False,
 ) -> EstimatedNavContextBuildResult:
@@ -93,9 +94,13 @@ def build_estimated_nav_context(
     """
     f10_mapping_candidates = f10_mapping_candidates or {}
 
-    tracking_map = fetch_active_tracking_index_map(
-        universe,
-        timeout=timeout,
+    tracking_map = (
+        dict(tracking_index_override)
+        if tracking_index_override is not None
+        else fetch_active_tracking_index_map(
+            universe,
+            timeout=timeout,
+        )
     )
 
     mapping_candidates: dict[str, ResolverMappingCandidate] = {}
