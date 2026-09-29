@@ -56,8 +56,15 @@ def validate_deployment_gate(
     data_root: Path,
     deployment: dict[str, Any] | None = None,
     write_audit: bool = True,
+    required_canonical_paths: tuple[str, ...] | list[str] | None = None,
+    expected_release_profile: str | None = None,
 ) -> dict[str, Any]:
-    """Fail closed unless deployment manifest and Knowledge Snapshot are one release."""
+    """Fail closed unless deployment manifest and Knowledge Snapshot are one release.
+
+    The default canonical set remains the existing convertible-bond Runtime
+    profile. Other applications may inject their own required canonical paths
+    without changing the default production behavior.
+    """
 
     manifest_path = data_root / "deployment_manifest.json"
     if deployment is None:
@@ -67,6 +74,12 @@ def validate_deployment_gate(
 
     knowledge_sha = str(deployment.get("knowledge_commit_sha") or "").strip()
     application_sha = str(deployment.get("application_commit_sha") or "").strip()
+    release_profile = str(deployment.get("release_profile") or "").strip()
+    required_paths = tuple(
+        required_canonical_paths
+        if required_canonical_paths is not None
+        else REQUIRED_CANONICAL_PATHS
+    )
     expected_snapshot_hash = str(
         deployment.get("knowledge_snapshot_manifest_sha256") or ""
     ).strip()
@@ -80,6 +93,14 @@ def validate_deployment_gate(
             raise DeploymentGateError(
                 "deployment manifest has no knowledge_snapshot_manifest_sha256"
             )
+        if expected_release_profile is not None:
+            if release_profile != expected_release_profile:
+                raise DeploymentGateError(
+                    "deployment manifest release_profile does not match "
+                    f"expected profile: {expected_release_profile}"
+                )
+        if not required_paths:
+            raise DeploymentGateError("required canonical path set is empty")
 
         snapshot_dir = data_root / "knowledge_snapshots" / knowledge_sha
         snapshot_manifest_path = snapshot_dir / "manifest.json"
@@ -140,7 +161,7 @@ def validate_deployment_gate(
             by_canonical[canonical_path] = item
 
         missing = [
-            path for path in REQUIRED_CANONICAL_PATHS if path not in by_canonical
+            path for path in required_paths if path not in by_canonical
         ]
         if missing:
             raise DeploymentGateError(
@@ -156,7 +177,8 @@ def validate_deployment_gate(
             "knowledge_commit_sha": knowledge_sha,
             "knowledge_snapshot_manifest_sha256": actual_snapshot_hash,
             "snapshot_file_count": len(files),
-            "required_canonical_count": len(REQUIRED_CANONICAL_PATHS),
+            "required_canonical_count": len(required_paths),
+            "release_profile": release_profile or None,
         }
         if write_audit:
             _write_audit(data_root, result)
@@ -168,6 +190,7 @@ def validate_deployment_gate(
             "checked_at": _now(),
             "application_commit_sha": application_sha or None,
             "knowledge_commit_sha": knowledge_sha or None,
+            "release_profile": release_profile or None,
             "error": f"{type(exc).__name__}: {exc}",
         }
         if write_audit:
