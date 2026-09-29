@@ -34,6 +34,8 @@ def collect_market_snapshot(
     nav_max_workers: int = 8,
     quote_batch_size: int = 60,
     estimated_nav_context: EstimatedNavContext | None = None,
+    previous_trading_day=None,
+    second_previous_trading_day=None,
     universe_override: list[LofIdentity] | None = None,
     type_records_override: dict[tuple[str, str], FundTypeRecord] | None = None,
     official_nav_override: list[OfficialNavRecord] | None = None,
@@ -147,6 +149,8 @@ def collect_market_snapshot(
         generated_at=generated_at,
         market_cutoff=market_cutoff,
         max_quote_age_seconds=max_quote_age_seconds,
+        previous_trading_day=previous_trading_day,
+        second_previous_trading_day=second_previous_trading_day,
         snapshot_id=snapshot_id,
     )
 
