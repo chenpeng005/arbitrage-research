@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
 from .classification import (
@@ -34,8 +34,8 @@ def collect_market_snapshot(
     nav_max_workers: int = 8,
     quote_batch_size: int = 60,
     estimated_nav_context: EstimatedNavContext | None = None,
-    previous_trading_day=None,
-    second_previous_trading_day=None,
+    previous_trading_day: date | None = None,
+    second_previous_trading_day: date | None = None,
     universe_override: list[LofIdentity] | None = None,
     type_records_override: dict[tuple[str, str], FundTypeRecord] | None = None,
     official_nav_override: list[OfficialNavRecord] | None = None,
