@@ -15,16 +15,10 @@ if ! flock -n 9; then
   exit 0
 fi
 
-echo "[$(date '+%F %T %Z')] START daily close update"
+echo "[$(date '+%F %T %Z')] START light daily close update (no Full V2 research)"
 
-# First refresh the Information Lane so the close run sees the newest evidence.
-if /home/admin/bin/information-runtime-run.sh; then
-  echo "[$(date '+%F %T %Z')] information refresh PASS"
-else
-  info_rc=$?
-  echo "[$(date '+%F %T %Z')] WARNING: information refresh failed rc=$info_rc; continue with market close update"
-fi
-
+# 20:45 is deliberately the LIGHT daily close lane.
+# Information semantic audit + expensive research are isolated in the 03:00 lane.
 set -a
 source .runtime_env
 set +a
@@ -33,7 +27,7 @@ response_file=$(mktemp)
 http_code=$(curl -sS --retry 3 --retry-delay 2 -o "$response_file" -w '%{http_code}' \
   -X POST 'http://127.0.0.1:7080/api/opportunity/full-runs' \
   -H 'Content-Type: application/json' \
-  --data '{"source_mode":"CLOSE","run_research":true,"ai_execution_mode":"AUTO_API","research_batch_limit":5,"max_research_rounds":20}') || {
+  --data '{"source_mode":"CLOSE","run_research":false,"ai_execution_mode":"AUTO_API","research_batch_limit":5,"max_research_rounds":1}') || {
     rc=$?
     echo "[$(date '+%F %T %Z')] FAIL: cannot reach runtime API rc=$rc"
     rm -f "$response_file"
