@@ -21,6 +21,7 @@ class IndexProxyMapping:
     quote_id: str | None
     market_num: str | None
     tencent_symbol: str | None
+    xueqiu_symbol: str | None
     source: str
     status: str
     error: str | None = None
@@ -54,6 +55,16 @@ def _tencent_symbol(code: str, market_num: str | None) -> str | None:
     return None
 
 
+def _xueqiu_symbol(code: str, market_num: str | None) -> str | None:
+    if market_num == "1":
+        return f"SH{code}"
+    if market_num == "0":
+        return f"SZ{code}"
+    if market_num == "2":
+        return f"CSI{code}"
+    return None
+
+
 def parse_index_suggest_payload(
     payload: dict[str, Any],
     *,
@@ -79,6 +90,7 @@ def parse_index_suggest_payload(
             quote_id=None,
             market_num=None,
             tencent_symbol=None,
+            xueqiu_symbol=None,
             source="EASTMONEY_SUGGEST",
             status="UNRESOLVED",
             error="NO_EXACT_INDEX_MATCH",
@@ -103,6 +115,7 @@ def parse_index_suggest_payload(
         quote_id=str(row.get("QuoteID") or "").strip() or None,
         market_num=market_num,
         tencent_symbol=_tencent_symbol(code, market_num) if code else None,
+        xueqiu_symbol=_xueqiu_symbol(code, market_num) if code else None,
         source="EASTMONEY_SUGGEST",
         status="RESOLVED",
         error=None,
@@ -151,6 +164,7 @@ def fetch_index_proxy_mapping(
             quote_id=None,
             market_num=None,
             tencent_symbol=None,
+            xueqiu_symbol=None,
             source="EASTMONEY_SUGGEST",
             status="UNRESOLVED",
             error=f"FETCH_ERROR:{type(last_error).__name__}",
