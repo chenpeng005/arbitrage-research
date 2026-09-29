@@ -10,6 +10,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from .runtime_session import LofRuntimeSession
+from .szse_relay import DEFAULT_SZSE_RELAY_BASE_URL
 from .szse_relay import fetch_szse_relay_bundle
 
 
@@ -219,6 +220,26 @@ def evaluate_preflight(
 
     checks.append(
         PreflightCheck(
+            name="szse_transport",
+            status=(
+                "PASS"
+                if szse_transport in {"DIRECT_OFFICIAL", "OFFICIAL_RELAY"}
+                else "FAIL"
+            ),
+            hard=True,
+            value=szse_transport,
+            threshold="DIRECT_OFFICIAL|OFFICIAL_RELAY",
+            detail=(
+                f"fetched_at={szse_relay_fetched_at};"
+                f"manifest_sha256={szse_relay_manifest_sha256}"
+                if szse_transport == "OFFICIAL_RELAY"
+                else None
+            ),
+        )
+    )
+
+    checks.append(
+        PreflightCheck(
             name="critical_lane_errors",
             status="PASS" if not critical_lane_errors else "FAIL",
             hard=True,
@@ -260,6 +281,11 @@ def evaluate_preflight(
         "checked_at": checked_at.isoformat(),
         "application_commit_sha": application_commit_sha,
         "collector_status": snapshot.get("collector_status"),
+        "source_transport": {
+            "szse_transport": szse_transport,
+            "szse_relay_fetched_at": szse_relay_fetched_at,
+            "szse_relay_manifest_sha256": szse_relay_manifest_sha256,
+        },
         "metrics": {
             "universe_count": universe_count,
             "row_count": len(rows),
@@ -290,6 +316,7 @@ def run_production_source_preflight(
     max_quote_age_seconds: int = 180,
     expect_fresh_quotes: bool = False,
     application_commit_sha: str | None = None,
+    szse_relay_base_url: str | None = DEFAULT_SZSE_RELAY_BASE_URL,
 ) -> dict[str, Any]:
     now = as_of or datetime.now(SHANGHAI_TZ)
     if now.tzinfo is None:
@@ -299,6 +326,7 @@ def run_production_source_preflight(
         session = LofRuntimeSession.build(
             as_of=now,
             timeout=timeout,
+            szse_relay_base_url=szse_relay_base_url,
         )
         snapshot = session.collect(
             generated_at=now,
@@ -399,6 +427,13 @@ def main(argv: list[str] | None = None) -> int:
         default=os.environ.get("APPLICATION_COMMIT_SHA"),
     )
     parser.add_argument(
+        "--szse-relay-base-url",
+        default=os.environ.get(
+            "LOF_SZSE_RELAY_BASE_URL",
+            DEFAULT_SZSE_RELAY_BASE_URL,
+        ),
+    )
+    parser.add_argument(
         "--output",
         default=None,
         help="Optional JSON audit output path.",
@@ -410,6 +445,7 @@ def main(argv: list[str] | None = None) -> int:
         max_quote_age_seconds=args.max_quote_age_seconds,
         expect_fresh_quotes=args.expect_fresh_quotes,
         application_commit_sha=args.application_commit_sha,
+        szse_relay_base_url=args.szse_relay_base_url,
     )
 
     if args.output:
