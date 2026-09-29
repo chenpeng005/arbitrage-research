@@ -65,11 +65,48 @@ class LofR3QdiiIndexTest(unittest.TestCase):
             as_of=datetime(2026, 9, 29, 12, 55, tzinfo=TZ),
             exposure_ratio=Decimal("0.95"),
             proxy_exactness="ETF_PROXY",
+            timing_quality="MEDIUM",
         )
         self.assertEqual(row.estimated_nav_status, "AVAILABLE")
         self.assertEqual(row.estimated_nav_quality, "MEDIUM")
         self.assertIsNotNone(row.estimated_nav)
         self.assertLess(row.estimated_nav, Decimal("6.9792"))
+
+    def test_exact_index_last_close_is_capped_by_timing_quality(self) -> None:
+        row = resolve_r3_qdii_index_bridge(
+            fund_code="161130",
+            official_nav=Decimal("4.5696"),
+            official_nav_date=date(2026, 9, 24),
+            proxy_anchor_close=Decimal("30478.86"),
+            proxy_latest_close=Decimal("30276.81"),
+            proxy_latest_date=date(2026, 9, 28),
+            proxy_id="NDX",
+            fx_anchor=Decimal("6.7114"),
+            fx_current=Decimal("6.7053"),
+            as_of=datetime(2026, 9, 29, 13, 0, tzinfo=TZ),
+            exposure_ratio=Decimal("0.95"),
+            proxy_exactness="EXACT_INDEX",
+            timing_quality="MEDIUM",
+        )
+        self.assertEqual(row.estimated_nav_quality, "MEDIUM")
+
+    def test_live_exact_index_can_be_high_quality(self) -> None:
+        row = resolve_r3_qdii_index_bridge(
+            fund_code="160924",
+            official_nav=Decimal("0.9735"),
+            official_nav_date=date(2026, 9, 28),
+            proxy_anchor_close=Decimal("24642.510"),
+            proxy_latest_close=Decimal("24486.520"),
+            proxy_latest_date=date(2026, 9, 29),
+            proxy_id="HSI",
+            fx_anchor=Decimal("0.8553"),
+            fx_current=Decimal("0.8544"),
+            as_of=datetime(2026, 9, 29, 12, 0, tzinfo=TZ),
+            exposure_ratio=Decimal("0.95"),
+            proxy_exactness="EXACT_INDEX",
+            timing_quality="HIGH",
+        )
+        self.assertEqual(row.estimated_nav_quality, "HIGH")
 
 
 if __name__ == "__main__":
