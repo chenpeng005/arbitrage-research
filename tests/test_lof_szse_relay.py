@@ -165,9 +165,12 @@ class LofSzseRelayTest(unittest.TestCase):
             expect_fresh_quotes=False,
             application_commit_sha="b" * 40,
             checked_at=now,
-            szse_transport="OFFICIAL_RELAY",
-            szse_relay_fetched_at=now.isoformat(),
-            szse_relay_manifest_sha256="c" * 64,
+            source_transport={
+                "szse_universe_transport": "OFFICIAL_RELAY",
+                "szse_nav_transport": "OFFICIAL_RELAY",
+                "relay_fetched_at": now.isoformat(),
+                "relay_manifest_sha256": "c" * 64,
+            },
         )
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(
