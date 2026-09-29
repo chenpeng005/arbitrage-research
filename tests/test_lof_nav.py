@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
+from runtime.lof.universe import LofIdentity
+
 from runtime.lof.nav import (
     OfficialNavRecord,
+    fetch_all_official_nav,
     is_nav_stale,
     nav_age_days,
     parse_sse_nav_payload,
@@ -102,6 +106,50 @@ class LofOfficialNavTest(unittest.TestCase):
                 max_age_calendar_days=1,
             )
         )
+
+    @patch(
+        "runtime.lof.nav.fetch_sse_official_nav",
+        side_effect=RuntimeError("SSE blocked"),
+    )
+    @patch("runtime.lof.nav.fetch_szse_official_nav")
+    def test_sse_failure_does_not_delete_szse_nav(
+        self,
+        szse_mock,
+        sse_mock,
+    ) -> None:
+        szse_mock.return_value = [
+            OfficialNavRecord(
+                code="161128",
+                exchange="SZSE",
+                nav=Decimal("7.0123"),
+                nav_date=date(2026, 9, 28),
+                fetched_at=self.fetched_at,
+                source="SZSE_OFFICIAL",
+            )
+        ]
+        universe = [
+            LofIdentity(
+                code="501001",
+                name="沪市LOF",
+                exchange="SSE",
+            ),
+            LofIdentity(
+                code="161128",
+                name="深市LOF",
+                exchange="SZSE",
+            ),
+        ]
+
+        rows = fetch_all_official_nav(universe)
+        by_code = {row.code: row for row in rows}
+
+        self.assertFalse(by_code["501001"].available)
+        self.assertEqual(
+            by_code["501001"].error,
+            "FETCH_ERROR:RuntimeError",
+        )
+        self.assertTrue(by_code["161128"].available)
+        self.assertEqual(by_code["161128"].nav, Decimal("7.0123"))
 
     def test_missing_nav_is_stale(self) -> None:
         row = OfficialNavRecord(
