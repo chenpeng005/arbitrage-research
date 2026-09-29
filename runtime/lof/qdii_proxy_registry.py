@@ -23,6 +23,9 @@ class QdiiProxyEntry:
     history_symbol: str | None
     currency: str
     quality: str
+    futures_overlay_market: str | None = None
+    futures_overlay_code: str | None = None
+    futures_overlay_quality: str | None = None
 
 
 def load_qdii_proxy_registry(path: str | Path) -> dict[str, QdiiProxyEntry]:
@@ -37,6 +40,9 @@ def load_qdii_proxy_registry(path: str | Path) -> dict[str, QdiiProxyEntry]:
             history_symbol=row.get("history_symbol"),
             currency=str(row["currency"]),
             quality=str(row["quality"]),
+            futures_overlay_market=row.get("futures_overlay_market"),
+            futures_overlay_code=row.get("futures_overlay_code"),
+            futures_overlay_quality=row.get("futures_overlay_quality"),
         )
         result[entry.fund_code] = entry
     return result
