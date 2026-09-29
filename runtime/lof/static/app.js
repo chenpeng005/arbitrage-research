@@ -2,7 +2,7 @@
   const state = {
     rows: [],
     filtered: [],
-    sortKey: "estimated_premium_rate",
+    sortKey: "display_premium_rate",
     sortDir: "desc",
     snapshot: null,
     timer: null,
@@ -59,7 +59,8 @@
     return n.toFixed(0);
   };
 
-  const fmtLimit = (v) => {
+  const fmtLimit = (v, subscriptionStatus) => {
+    if (subscriptionStatus === "SUSPENDED") return "—";
     const n = num(v);
     if (n === null) return "—";
     if (n >= 10000) return `${(n / 10000).toFixed(n % 10000 === 0 ? 0 : 1)}万`;
@@ -86,6 +87,32 @@
     const n = num(value);
     if (n === null) return "";
     return n > 0 ? "positive" : n < 0 ? "negative" : "";
+  };
+
+  const premiumBasisText = (row) => {
+    if (row.display_premium_basis === "ESTIMATED_NAV") return "实时估算";
+    if (row.display_premium_basis === "OFFICIAL_NAV") {
+      const lag = row.official_nav_lag_label || "官方NAV";
+      return lag === "官方NAV" ? lag : `${lag}净值`;
+    }
+    return "";
+  };
+
+  const appendPremiumCell = (tr, row) => {
+    const value = row.display_premium_rate;
+    const td = cell(
+      tr,
+      fmtPct(value),
+      `num primary-col strong ${premiumClass(value)}`
+    );
+    const basisText = premiumBasisText(row);
+    if (basisText) {
+      const basis = document.createElement("div");
+      basis.className = "premium-basis";
+      basis.textContent = basisText;
+      td.appendChild(basis);
+    }
+    return td;
   };
 
   function rowSortValue(row, key) {
@@ -149,17 +176,13 @@
       cell(tr, fmtVolume(row.volume), "num");
       cell(tr, fmtAmount(row.amount), "num strong");
       cell(tr, fmt(row.estimated_nav, 4), "num primary-col");
-      cell(
-        tr,
-        fmtPct(row.estimated_premium_rate),
-        `num primary-col strong ${premiumClass(row.estimated_premium_rate)}`
-      );
+      appendPremiumCell(tr, row);
       cell(tr, qualityText(row), `quality q-${(row.estimated_nav_quality || "unknown").toLowerCase()}`);
       cell(tr, fmtPct(row.static_premium_rate), `num ${premiumClass(row.static_premium_rate)}`);
       cell(tr, fmt(row.official_nav, 4), "num");
       cell(tr, row.official_nav_date || "—");
       cell(tr, statusLabels[row.subscription_status] || row.subscription_status || "未知");
-      cell(tr, fmtLimit(row.daily_subscription_limit), "num");
+      cell(tr, fmtLimit(row.daily_subscription_limit, row.subscription_status), "num");
       cell(tr, statusLabels[row.redemption_status] || row.redemption_status || "未知");
       cell(tr, row.quote_time ? String(row.quote_time).replace("T", " ").slice(5, 19) : "—", "mono");
 
