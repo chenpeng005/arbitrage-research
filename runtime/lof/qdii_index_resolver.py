@@ -20,6 +20,8 @@ def resolve_r3_qdii_index_bridge(
     as_of: datetime,
     exposure_ratio: Decimal | None,
     proxy_exactness: str,
+    timing_quality: str = "MEDIUM",
+    intraday_adjustment_return: Decimal | None = None,
 ) -> EstimatedNavResult:
     """Bridge a stale QDII NAV to current China-market time.
 
@@ -55,6 +57,13 @@ def resolve_r3_qdii_index_bridge(
 
     exposure = exposure_ratio if exposure_ratio is not None else Decimal("1")
     proxy_return = proxy_latest_close / proxy_anchor_close - Decimal("1")
+    if intraday_adjustment_return is not None:
+        proxy_factor = (
+            (Decimal("1") + proxy_return)
+            * (Decimal("1") + intraday_adjustment_return)
+        )
+        proxy_return = proxy_factor - Decimal("1")
+
     fx_return = fx_current / fx_anchor - Decimal("1")
 
     estimated_nav = (
@@ -63,17 +72,24 @@ def resolve_r3_qdii_index_bridge(
         * (Decimal("1") + fx_return)
     )
 
+    quality_rank = {"UNKNOWN": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3}
     if proxy_exactness == "EXACT_INDEX" and exposure_ratio is not None:
-        quality = "HIGH"
-    elif proxy_exactness == "ETF_PROXY":
-        quality = "MEDIUM"
+        proxy_quality = "HIGH"
+    elif proxy_exactness in {"ETF_PROXY", "ETF_SAME_INDEX"}:
+        proxy_quality = "MEDIUM"
     else:
-        quality = "LOW"
+        proxy_quality = "LOW"
+
+    quality = (
+        proxy_quality
+        if quality_rank[proxy_quality] <= quality_rank.get(timing_quality, 0)
+        else timing_quality
+    )
 
     # The proxy may be the latest completed overseas session rather than a
-    # currently-trading instrument. We preserve that through proxy_latest_date
-    # and quality rather than marking a completed foreign close "stale" merely
-    # because China is several hours ahead.
+    # currently-trading instrument. timing_quality captures this cross-market
+    # alignment. U.S. last-close-only estimates during China hours should
+    # normally be MEDIUM until a futures / live overlay is applied.
     return EstimatedNavResult(
         fund_code=fund_code,
         estimated_nav=estimated_nav,
