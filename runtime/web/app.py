@@ -1396,6 +1396,7 @@ def create_run(request: RunRequest) -> dict:
     if request.snapshot_mode not in {
         "LIVE_TEST",
         "CLOSE",
+        "PRE_TRADE_CLOSE",
         "REPLAY_TEST",
         "HISTORICAL_REPLAY",
     }:
