@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import html
 import json
 import os
@@ -10,6 +11,12 @@ from pathlib import Path
 from typing import Any
 
 from .http_json import fetch_json_with_retry
+from .szse_relay import (
+    DEFAULT_RELAY_MAX_AGE_SECONDS,
+    DEFAULT_SZSE_RELAY_BASE_URL,
+    fetch_szse_relay_bundle,
+    validate_szse_relay_freshness,
+)
 from .szse_relay import fetch_szse_relay_bundle
 
 
@@ -274,22 +281,87 @@ def load_szse_universe_fixture(
     return _load_universe_fixture(path, exchange="SZSE")
 
 
+def load_szse_universe_relay(
+    *,
+    base_url: str,
+    as_of: datetime,
+    timeout: int,
+    max_age_seconds: int = DEFAULT_RELAY_MAX_AGE_SECONDS,
+) -> list[LofIdentity]:
+    bundle = fetch_szse_relay_bundle(base_url, timeout=timeout)
+    validate_szse_relay_freshness(
+        bundle,
+        as_of=as_of,
+        max_age_seconds=max_age_seconds,
+    )
+    payload = bundle.universe
+    if payload.get("source") != "SZSE_OFFICIAL":
+        raise ValueError("SZSE relay universe provenance mismatch")
+
+    result: list[LofIdentity] = []
+    seen: set[str] = set()
+    for row in payload.get("rows") or []:
+        code = str(row.get("code") or "").strip()
+        name = str(row.get("name") or "").strip()
+        if not code or not name:
+            continue
+        if code in seen:
+            raise ValueError(f"duplicate SZSE relay universe code: {code}")
+        seen.add(code)
+        result.append(
+            LofIdentity(
+                code=code,
+                name=name,
+                exchange="SZSE",
+                manager=(
+                    str(row.get("manager")).strip()
+                    if row.get("manager")
+                    else None
+                ),
+                listing_date=(
+                    str(row.get("listing_date")).strip()
+                    if row.get("listing_date")
+                    else None
+                ),
+                source="SZSE_OFFICIAL_RELAY",
+            )
+        )
+    if len(result) < 200:
+        raise ValueError("SZSE relay universe sanity floor failed")
+    return sorted(result, key=lambda item: item.code)
+
+
 def fetch_all_lof_universe(
     *,
     timeout: int = 15,
     sse_fixture_path: str | Path | None = None,
     szse_fixture_path: str | Path | None = None,
+    szse_relay_base_url: str | None = DEFAULT_SZSE_RELAY_BASE_URL,
+    as_of: datetime | None = None,
+    szse_relay_max_age_seconds: int = DEFAULT_RELAY_MAX_AGE_SECONDS,
 ) -> list[LofIdentity]:
     sse_rows = (
         load_sse_universe_fixture(sse_fixture_path)
         if sse_fixture_path is not None
         else fetch_sse_universe(timeout=timeout)
     )
-    szse_rows = (
-        load_szse_universe_fixture(szse_fixture_path)
-        if szse_fixture_path is not None
-        else fetch_szse_universe(timeout=timeout)
-    )
+    if szse_fixture_path is not None:
+        szse_rows = load_szse_universe_fixture(szse_fixture_path)
+    else:
+        try:
+            szse_rows = fetch_szse_universe(timeout=timeout)
+        except Exception:
+            if not szse_relay_base_url:
+                raise
+            resolved_as_of = as_of or datetime.now(timezone.utc)
+            if resolved_as_of.tzinfo is None:
+                resolved_as_of = resolved_as_of.replace(tzinfo=timezone.utc)
+            szse_rows = load_szse_universe_relay(
+                base_url=szse_relay_base_url,
+                as_of=resolved_as_of,
+                timeout=timeout,
+                max_age_seconds=szse_relay_max_age_seconds,
+            )
     rows = [
         *sse_rows,
         *szse_rows,
