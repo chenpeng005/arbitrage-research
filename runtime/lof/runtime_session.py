@@ -14,6 +14,7 @@ from .estimated_nav_lane import EstimatedNavContext
 from .nav import OfficialNavRecord
 from .snapshot_store import LofSnapshotStore
 from .trading_calendar import fetch_previous_trading_day
+from .tracking_index import load_tracking_index_fixture
 from .universe import LofIdentity, fetch_all_lof_universe
 
 
@@ -35,6 +36,7 @@ class LofRuntimeSession:
         timeout: int = 15,
         sse_universe_fixture_path: str | Path | None = None,
         szse_universe_fixture_path: str | Path | None = None,
+        tracking_index_fixture_path: str | Path | None = None,
     ) -> "LofRuntimeSession":
         universe = fetch_all_lof_universe(
             timeout=timeout,
@@ -50,10 +52,16 @@ class LofRuntimeSession:
             as_of=as_of.date(),
             timeout=timeout,
         )
+        tracking_index_override = (
+            load_tracking_index_fixture(tracking_index_fixture_path)
+            if tracking_index_fixture_path is not None
+            else None
+        )
         context_build = build_estimated_nav_context(
             universe=universe,
             type_records=type_records,
             previous_trading_day=previous_trading_day,
+            tracking_index_override=tracking_index_override,
             timeout=timeout,
         )
         return cls(
