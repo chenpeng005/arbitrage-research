@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import html
 import json
 import re
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -149,9 +150,56 @@ def fetch_szse_universe(*, timeout: int = 15) -> list[LofIdentity]:
     return result
 
 
-def fetch_all_lof_universe(*, timeout: int = 15) -> list[LofIdentity]:
+def load_sse_universe_fixture(
+    path: str | Path,
+) -> list[LofIdentity]:
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    rows = payload.get("rows") or []
+    result: list[LofIdentity] = []
+    for row in rows:
+        if str(row.get("exchange") or "") != "SSE":
+            continue
+        code = str(row.get("code") or "").strip()
+        name = str(row.get("name") or "").strip()
+        if not code or not name:
+            continue
+        result.append(
+            LofIdentity(
+                code=code,
+                name=name,
+                exchange="SSE",
+                manager=(
+                    str(row.get("manager")).strip()
+                    if row.get("manager")
+                    else None
+                ),
+                listing_date=(
+                    str(row.get("listing_date")).strip()
+                    if row.get("listing_date")
+                    else None
+                ),
+                source=str(
+                    row.get("source") or "SSE_OFFICIAL_FIXTURE"
+                ),
+            )
+        )
+    if not result:
+        raise ValueError("SSE universe fixture is empty")
+    return sorted(result, key=lambda item: item.code)
+
+
+def fetch_all_lof_universe(
+    *,
+    timeout: int = 15,
+    sse_fixture_path: str | Path | None = None,
+) -> list[LofIdentity]:
+    sse_rows = (
+        load_sse_universe_fixture(sse_fixture_path)
+        if sse_fixture_path is not None
+        else fetch_sse_universe(timeout=timeout)
+    )
     rows = [
-        *fetch_sse_universe(timeout=timeout),
+        *sse_rows,
         *fetch_szse_universe(timeout=timeout),
     ]
 
