@@ -65,6 +65,71 @@ def _xueqiu_symbol(code: str, market_num: str | None) -> str | None:
     return None
 
 
+def proxy_from_tracking_index_code(
+    *,
+    tracking_target_name: str,
+    index_code: str,
+    index_name: str | None = None,
+) -> IndexProxyMapping:
+    """Resolve common mainland index codes without a search request.
+
+    This is preferred over name search when the fund source already provides
+    StandarIndexCode.
+    """
+    code = (index_code or "").strip().upper()
+    if not code:
+        return IndexProxyMapping(
+            tracking_target_name=tracking_target_name,
+            index_code=None,
+            index_name=index_name,
+            quote_id=None,
+            market_num=None,
+            tencent_symbol=None,
+            xueqiu_symbol=None,
+            source="DIRECT_TRACKING_INDEX_CODE",
+            status="UNRESOLVED",
+            error="EMPTY_INDEX_CODE",
+        )
+
+    market_num: str | None = None
+    if re.fullmatch(r"000\d{3}", code):
+        market_num = "1"
+    elif re.fullmatch(r"399\d{3}", code):
+        market_num = "0"
+    elif re.fullmatch(r"9(?:30|31|32|33)\d{3}", code):
+        market_num = "2"
+    elif re.fullmatch(r"98\d{4}", code):
+        market_num = "0"
+
+    if market_num is None:
+        return IndexProxyMapping(
+            tracking_target_name=tracking_target_name,
+            index_code=code,
+            index_name=index_name,
+            quote_id=None,
+            market_num=None,
+            tencent_symbol=None,
+            xueqiu_symbol=None,
+            source="DIRECT_TRACKING_INDEX_CODE",
+            status="UNRESOLVED",
+            error="UNSUPPORTED_INDEX_CODE_PATTERN",
+        )
+
+    quote_id = f"{market_num}.{code}"
+    return IndexProxyMapping(
+        tracking_target_name=tracking_target_name,
+        index_code=code,
+        index_name=index_name or tracking_target_name,
+        quote_id=quote_id,
+        market_num=market_num,
+        tencent_symbol=_tencent_symbol(code, market_num),
+        xueqiu_symbol=_xueqiu_symbol(code, market_num),
+        source="DIRECT_TRACKING_INDEX_CODE",
+        status="RESOLVED",
+        error=None,
+    )
+
+
 def parse_index_suggest_payload(
     payload: dict[str, Any],
     *,
