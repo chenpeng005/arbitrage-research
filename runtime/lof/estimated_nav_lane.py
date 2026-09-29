@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 
+from .commodity_proxy_registry import CommodityProxyEntry
 from .index_proxy import IndexProxyMapping
 from .mapping import ResolverMappingCandidate
 from .nav import OfficialNavRecord
 from .qdii_proxy_registry import QdiiProxyEntry
 from .r1_pipeline import resolve_r1_batch
 from .r3_pipeline import resolve_r3_one
+from .r5_pipeline import resolve_r5_commodity_one
 from .resolver import EstimatedNavResult
 from .resolver_classification import ResolverClassDecision
 
@@ -20,6 +22,9 @@ class EstimatedNavContext:
     r1_proxy_mappings: dict[str, IndexProxyMapping]
     qdii_proxy_registry: dict[str, QdiiProxyEntry]
     previous_trading_day: date
+    commodity_proxy_registry: dict[str, CommodityProxyEntry] = field(
+        default_factory=dict
+    )
 
 
 def _unavailable(
@@ -99,6 +104,23 @@ def resolve_estimated_nav_lane(
             results[code] = resolve_r3_one(
                 nav=nav_map[code],
                 mapping=mapping,
+                proxy=proxy,
+                as_of=as_of,
+                timeout=timeout,
+            )
+            continue
+
+        if decision.resolver_class == "R5_SPECIAL":
+            proxy = context.commodity_proxy_registry.get(code)
+            if proxy is None:
+                results[code] = _unavailable(
+                    code=code,
+                    resolver_class=decision.resolver_class,
+                    error="MISSING_R5_PROXY_REGISTRY",
+                )
+                continue
+            results[code] = resolve_r5_commodity_one(
+                nav=nav_map[code],
                 proxy=proxy,
                 as_of=as_of,
                 timeout=timeout,
