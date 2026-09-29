@@ -1,0 +1,80 @@
+{
+  "version": "COMMODITY_PROXY_REGISTRY_V0.1",
+  "as_of": "2026-09-29",
+  "entries": [
+    {
+      "fund_code": "160719",
+      "benchmark": "经汇率调整后的伦敦金价格",
+      "commodity_history_symbol": "GC",
+      "commodity_live_market": "101",
+      "commodity_live_code": "GC00Y",
+      "currency": "USD",
+      "exposure_ratio": "1.0",
+      "proxy_quality": "MEDIUM",
+      "status": "RESOLVED"
+    },
+    {
+      "fund_code": "161116",
+      "benchmark": "伦敦黄金下午定盘价95%+存款5%",
+      "commodity_history_symbol": "GC",
+      "commodity_live_market": "101",
+      "commodity_live_code": "GC00Y",
+      "currency": "USD",
+      "exposure_ratio": "0.95",
+      "proxy_quality": "MEDIUM",
+      "status": "RESOLVED"
+    },
+    {
+      "fund_code": "160723",
+      "benchmark": "100% WTI原油价格收益率",
+      "commodity_history_symbol": "CL",
+      "commodity_live_market": "102",
+      "commodity_live_code": "CL00Y",
+      "currency": "USD",
+      "exposure_ratio": "1.0",
+      "proxy_quality": "MEDIUM",
+      "status": "RESOLVED"
+    },
+    {
+      "fund_code": "161129",
+      "benchmark": "标普高盛原油商品指数 ER",
+      "commodity_history_symbol": "CL",
+      "commodity_live_market": "102",
+      "commodity_live_code": "CL00Y",
+      "currency": "USD",
+      "exposure_ratio": "1.0",
+      "proxy_quality": "MEDIUM",
+      "status": "RESOLVED"
+    },
+    {
+      "fund_code": "160216",
+      "benchmark": "国泰大宗商品配置指数",
+      "status": "UNRESOLVED"
+    },
+    {
+      "fund_code": "161226",
+      "benchmark": "上期所白银期货主力合约",
+      "status": "UNRESOLVED"
+    },
+    {
+      "fund_code": "161815",
+      "benchmark": "S&P GSCI Commodity Total Return",
+      "status": "UNRESOLVED"
+    },
+    {
+      "fund_code": "164701",
+      "benchmark": "黄金及贵金属QDII-FOF",
+      "status": "UNRESOLVED"
+    },
+    {
+      "fund_code": "165513",
+      "benchmark": "全球商品QDII",
+      "status": "UNRESOLVED"
+    },
+    {
+      "fund_code": "501018",
+      "benchmark": "南方原油QDII-FOF",
+      "status": "UNRESOLVED"
+    }
+  ]
+}
