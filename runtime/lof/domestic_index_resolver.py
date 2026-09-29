@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 
 from .index_quote import IndexQuote
@@ -60,6 +60,13 @@ def resolve_r1_from_previous_close(
         )
 
     quality = "HIGH" if exposure_ratio is not None else "MEDIUM"
+    tz = index_quote.quote_time.tzinfo if index_quote.quote_time is not None else as_of.tzinfo
+    proxy_anchor_time = datetime.combine(
+        expected_anchor_date,
+        time(15, 0),
+        tzinfo=tz,
+    )
+
     return resolve_estimated_nav(
         ResolverInput(
             fund_code=fund_code,
@@ -69,7 +76,7 @@ def resolve_r1_from_previous_close(
             official_nav=official_nav,
             proxy_anchor_value=index_quote.previous_close,
             proxy_current_value=index_quote.current,
-            proxy_anchor_time=index_quote.quote_time,
+            proxy_anchor_time=proxy_anchor_time,
             proxy_current_time=index_quote.quote_time,
             as_of=as_of,
             max_proxy_age_seconds=max_proxy_age_seconds,
