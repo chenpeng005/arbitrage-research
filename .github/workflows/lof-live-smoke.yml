@@ -20,9 +20,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install runtime dependencies
-        run: pip install -r runtime/requirements.txt
-
       - name: Generate one live LOF snapshot
         run: |
           mkdir -p /tmp/lof-live-smoke
@@ -30,7 +27,8 @@ jobs:
             --data-root /tmp/lof-live-smoke \
             --timeout 20 \
             --max-quote-age-seconds 180 \
-            --snapshot-id github-live-smoke
+            --snapshot-id github-live-smoke \
+            --sse-universe-fixture tests/fixtures/lof_sse_universe_2026-09-29.json
 
       - name: Validate all-market snapshot
         run: |
@@ -43,9 +41,11 @@ jobs:
           rows = snapshot.get("rows") or []
           universe = int(snapshot.get("universe_count") or 0)
           quality = snapshot.get("quality_summary") or {}
+          estimated = int(quality.get("estimated_nav_available_count") or 0)
 
           assert universe >= 300, f"unexpected universe_count={universe}"
           assert len(rows) == universe, (len(rows), universe)
+          assert estimated > 0, "estimated NAV lane produced zero live values"
 
           summary = {
               "collector_status": snapshot.get("collector_status"),
@@ -55,8 +55,10 @@ jobs:
               "quote_stale_count": quality.get("quote_stale_count"),
               "quote_unavailable_count": quality.get("quote_unavailable_count"),
               "official_nav_available_count": quality.get("official_nav_available_count"),
-              "estimated_nav_available_count": quality.get("estimated_nav_available_count"),
+              "official_nav_unavailable_count": quality.get("official_nav_unavailable_count"),
+              "estimated_nav_available_count": estimated,
               "estimated_nav_stale_count": quality.get("estimated_nav_stale_count"),
+              "estimated_nav_unavailable_count": quality.get("estimated_nav_unavailable_count"),
               "state_available_count": quality.get("state_available_count"),
               "lane_errors": snapshot.get("lane_errors"),
           }
@@ -68,10 +70,12 @@ jobs:
           PY
 
       - name: Upload smoke snapshot
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lof-live-smoke
           path: |
             /tmp/lof-live-smoke/latest_market_snapshot.json
             /tmp/lof-live-smoke/summary.json
+          if-no-files-found: ignore
           retention-days: 7
