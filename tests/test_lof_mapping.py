@@ -41,6 +41,34 @@ class LofResolverMappingTest(unittest.TestCase):
         self.assertEqual(row.tracking_target_name, "标普500信息科技指数")
         self.assertEqual(row.exposure_ratio_candidate, Decimal("0.95"))
 
+    def test_benchmark_fallback_handles_abbreviated_index_name(self) -> None:
+        html = """
+        <table>
+          <tr>
+            <th>业绩比较基准</th>
+            <td>国证房地产行业指数收益率*95%+银行活期存款利率(税后)*5%</td>
+            <th>跟踪标的</th>
+            <td>国证地产</td>
+          </tr>
+        </table>
+        """
+        row = parse_f10_mapping(html, fund_code="160218")
+        self.assertEqual(row.exposure_ratio_candidate, Decimal("0.95"))
+
+    def test_benchmark_fallback_does_not_take_non_index_weight(self) -> None:
+        html = """
+        <table>
+          <tr>
+            <th>业绩比较基准</th>
+            <td>某指数收益率*80%+银行存款利率*20%</td>
+            <th>跟踪标的</th>
+            <td>简称不匹配</td>
+          </tr>
+        </table>
+        """
+        row = parse_f10_mapping(html, fund_code="160000")
+        self.assertEqual(row.exposure_ratio_candidate, Decimal("0.80"))
+
     def test_missing_mapping_is_explicit(self) -> None:
         row = parse_f10_mapping(
             "<html><body>普通主动基金</body></html>",
