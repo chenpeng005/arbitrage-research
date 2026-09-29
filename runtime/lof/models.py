@@ -34,8 +34,12 @@ class LofSubscriptionState:
     subscription_status: str
     redemption_status: str
     daily_subscription_limit: Decimal | None = None
+    minimum_subscription_amount: Decimal | None = None
     limit_scope: str | None = None
+    subscription_confirmation_days: int | None = None
     subscription_to_sell_days: int | None = None
-    subscription_fee_rate: Decimal = Decimal("0")
-    selling_fee_rate: Decimal = Decimal("0")
-    other_explicit_cost: Decimal = Decimal("0")
+    subscription_fee_reference: object | None = None
+    subscription_fee_source: str | None = None
+    redemption_fee_reference: object | None = None
+    state_source: str | None = None
+    state_time: datetime | None = None
