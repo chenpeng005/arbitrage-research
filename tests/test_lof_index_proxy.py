@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import unittest
 
-from runtime.lof.index_proxy import parse_index_suggest_payload
+from runtime.lof.index_proxy import (
+    parse_index_suggest_payload,
+    proxy_from_tracking_index_code,
+)
 
 
 class LofIndexProxyMappingTest(unittest.TestCase):
@@ -76,6 +79,33 @@ class LofIndexProxyMappingTest(unittest.TestCase):
         )
         self.assertEqual(row.status, "RESOLVED")
         self.assertEqual(row.index_code, "399006")
+
+    def test_direct_domestic_code_mapping(self) -> None:
+        cases = [
+            ("000300", "sh000300", "SH000300"),
+            ("399998", "sz399998", "SZ399998"),
+            ("930606", None, "CSI930606"),
+            ("980017", "sz980017", "SZ980017"),
+        ]
+        for code, tencent, xueqiu in cases:
+            with self.subTest(code=code):
+                row = proxy_from_tracking_index_code(
+                    tracking_target_name="示例指数",
+                    index_code=code,
+                    index_name="示例指数",
+                )
+                self.assertEqual(row.status, "RESOLVED")
+                self.assertEqual(row.tencent_symbol, tencent)
+                self.assertEqual(row.xueqiu_symbol, xueqiu)
+
+    def test_unsupported_direct_code_fails_closed(self) -> None:
+        row = proxy_from_tracking_index_code(
+            tracking_target_name="恒生指数",
+            index_code="HSI",
+            index_name="恒生指数",
+        )
+        self.assertEqual(row.status, "UNRESOLVED")
+        self.assertEqual(row.error, "UNSUPPORTED_INDEX_CODE_PATTERN")
 
     def test_no_exact_match_fails_closed(self) -> None:
         row = parse_index_suggest_payload(
