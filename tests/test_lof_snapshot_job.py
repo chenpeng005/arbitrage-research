@@ -63,6 +63,7 @@ class LofSnapshotJobTest(unittest.TestCase):
                 snapshot_id="test-once",
                 sse_universe_fixture_path="sse.json",
                 szse_universe_fixture_path="szse.json",
+                tracking_index_fixture_path=None,
             )
             self.assertEqual(snapshot["snapshot_id"], "test-once")
             self.assertTrue(path.exists())
