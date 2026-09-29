@@ -26,6 +26,32 @@ class LofResolverClassificationTest(unittest.TestCase):
             source="TEST",
         )
 
+    def test_cross_border_non_qdii_aliases_are_special(self) -> None:
+        for name, tracking in [
+            ("大成中华沪深港300指数(LOF)A", "中华沪深港300人民币"),
+            ("华夏上证50AH优选指数A", "50AH优选人民币"),
+        ]:
+            with self.subTest(name=name):
+                decision = classify_resolver(
+                    fund_code="TEST",
+                    fund_name=name,
+                    fund_type=FundTypeRecord(
+                        code="TEST",
+                        name_raw=name,
+                        fund_type_raw="指数型-股票",
+                        lof_type="EQUITY",
+                        source="TEST",
+                    ),
+                    mapping=ResolverMappingCandidate(
+                        fund_code="TEST",
+                        tracking_target_name=tracking,
+                        benchmark_text=None,
+                        exposure_ratio_candidate=None,
+                        source="TEST",
+                    ),
+                )
+                self.assertEqual(decision.resolver_class, "R5_SPECIAL")
+
     def test_domestic_index(self) -> None:
         row = classify_resolver(
             fund_code="163407",
