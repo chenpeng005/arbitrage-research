@@ -45,7 +45,10 @@
       "proxy_symbol": "usSPY",
       "history_symbol": "SPY.AM",
       "currency": "USD",
-      "quality": "MEDIUM"
+      "quality": "MEDIUM",
+      "futures_overlay_market": "103",
+      "futures_overlay_code": "ES00Y",
+      "futures_overlay_quality": "MEDIUM"
     },
     {
       "fund_code": "161126",
@@ -72,7 +75,10 @@
       "proxy_symbol": "usXLK",
       "history_symbol": "XLK.AM",
       "currency": "USD",
-      "quality": "MEDIUM"
+      "quality": "MEDIUM",
+      "futures_overlay_market": "103",
+      "futures_overlay_code": "NQ00Y",
+      "futures_overlay_quality": "MEDIUM"
     },
     {
       "fund_code": "161130",
@@ -81,7 +87,10 @@
       "proxy_symbol": "usNDX",
       "history_symbol": "usNDX",
       "currency": "USD",
-      "quality": "HIGH"
+      "quality": "HIGH",
+      "futures_overlay_market": "103",
+      "futures_overlay_code": "NQ00Y",
+      "futures_overlay_quality": "MEDIUM"
     },
     {
       "fund_code": "161831",
