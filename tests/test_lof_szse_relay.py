@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import unittest
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
@@ -11,7 +13,7 @@ from runtime.lof.source_preflight import evaluate_preflight
 from runtime.lof.szse_relay import (
     DEFAULT_SZSE_RELAY_BASE_URL,
     SzseRelayBundle,
-    _fetch_relay_file,
+    fetch_szse_relay_bundle,
     validate_szse_relay_freshness,
 )
 from runtime.lof.szse_relay_publish import build_relay_payloads
@@ -60,25 +62,79 @@ def _bundle(now: datetime, count: int = 200) -> SzseRelayBundle:
 
 class LofSzseRelayTest(unittest.TestCase):
     @patch("runtime.lof.szse_relay._fetch_github_contents_bytes")
-    @patch("runtime.lof.szse_relay._fetch_bytes")
-    def test_default_relay_falls_back_to_github_api(
+    @patch("runtime.lof.szse_relay._resolve_default_relay_commit")
+    def test_default_relay_pins_all_files_to_one_commit(
         self,
-        raw_mock,
-        api_mock,
+        ref_mock,
+        content_mock,
     ) -> None:
-        raw_mock.side_effect = TimeoutError("raw slow")
-        api_mock.return_value = b'{"ok": true}'
-        data = _fetch_relay_file(
+        commit = "a" * 40
+        ref_mock.return_value = commit
+        universe = {
+            "source": "SZSE_OFFICIAL",
+            "rows": [
+                {"code": f"16{i:04d}", "name": f"LOF{i}"}
+                for i in range(200)
+            ],
+        }
+        nav = {
+            "source": "SZSE_OFFICIAL",
+            "rows": [
+                {"code": f"16{i:04d}", "nav": "1.0", "nav_date": "2026-09-29"}
+                for i in range(200)
+            ],
+        }
+        universe_bytes = json.dumps(
+            universe,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        nav_bytes = json.dumps(
+            nav,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        manifest = {
+            "relay_version": "lof-szse-official-relay-v1",
+            "source": "SZSE_OFFICIAL",
+            "fetched_at": "2026-09-29T07:30:00+00:00",
+            "universe_count": 200,
+            "nav_count": 200,
+            "files": {
+                "universe": {
+                    "filename": "szse_universe.json",
+                    "sha256": hashlib.sha256(universe_bytes).hexdigest(),
+                },
+                "nav": {
+                    "filename": "szse_nav.json",
+                    "sha256": hashlib.sha256(nav_bytes).hexdigest(),
+                },
+            },
+        }
+        manifest_bytes = json.dumps(
+            manifest,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+        def get_bytes(filename, *, timeout, ref):
+            self.assertEqual(ref, commit)
+            return {
+                "manifest.json": manifest_bytes,
+                "szse_universe.json": universe_bytes,
+                "szse_nav.json": nav_bytes,
+            }[filename]
+
+        content_mock.side_effect = get_bytes
+        fetch_szse_relay_bundle.cache_clear()
+        bundle = fetch_szse_relay_bundle(
             DEFAULT_SZSE_RELAY_BASE_URL,
-            "manifest.json",
             timeout=20,
         )
-        self.assertEqual(data, b'{"ok": true}')
-        raw_mock.assert_called_once()
-        api_mock.assert_called_once_with(
-            "manifest.json",
-            timeout=20,
-        )
+        self.assertEqual(len(bundle.universe["rows"]), 200)
+        self.assertEqual(len(bundle.nav["rows"]), 200)
+        ref_mock.assert_called_once()
+        self.assertEqual(content_mock.call_count, 3)
 
     def test_stale_relay_fails_closed(self) -> None:
         now = datetime(2026, 9, 29, 8, tzinfo=timezone.utc)
