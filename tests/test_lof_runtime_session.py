@@ -76,6 +76,9 @@ class LofRuntimeSessionTest(unittest.TestCase):
             timeout=15,
             sse_fixture_path="sse.json",
             szse_fixture_path="szse.json",
+            szse_relay_base_url=unittest.mock.ANY,
+            as_of=now,
+            szse_relay_max_age_seconds=unittest.mock.ANY,
         )
         previous_day_mock.assert_called_once()
 
