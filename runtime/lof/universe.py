@@ -150,14 +150,16 @@ def fetch_szse_universe(*, timeout: int = 15) -> list[LofIdentity]:
     return result
 
 
-def load_sse_universe_fixture(
+def _load_universe_fixture(
     path: str | Path,
+    *,
+    exchange: str,
 ) -> list[LofIdentity]:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     rows = payload.get("rows") or []
     result: list[LofIdentity] = []
     for row in rows:
-        if str(row.get("exchange") or "") != "SSE":
+        if str(row.get("exchange") or "") != exchange:
             continue
         code = str(row.get("code") or "").strip()
         name = str(row.get("name") or "").strip()
@@ -167,7 +169,7 @@ def load_sse_universe_fixture(
             LofIdentity(
                 code=code,
                 name=name,
-                exchange="SSE",
+                exchange=exchange,
                 manager=(
                     str(row.get("manager")).strip()
                     if row.get("manager")
@@ -179,28 +181,47 @@ def load_sse_universe_fixture(
                     else None
                 ),
                 source=str(
-                    row.get("source") or "SSE_OFFICIAL_FIXTURE"
+                    row.get("source")
+                    or f"{exchange}_OFFICIAL_FIXTURE"
                 ),
             )
         )
     if not result:
-        raise ValueError("SSE universe fixture is empty")
+        raise ValueError(f"{exchange} universe fixture is empty")
     return sorted(result, key=lambda item: item.code)
+
+
+def load_sse_universe_fixture(
+    path: str | Path,
+) -> list[LofIdentity]:
+    return _load_universe_fixture(path, exchange="SSE")
+
+
+def load_szse_universe_fixture(
+    path: str | Path,
+) -> list[LofIdentity]:
+    return _load_universe_fixture(path, exchange="SZSE")
 
 
 def fetch_all_lof_universe(
     *,
     timeout: int = 15,
     sse_fixture_path: str | Path | None = None,
+    szse_fixture_path: str | Path | None = None,
 ) -> list[LofIdentity]:
     sse_rows = (
         load_sse_universe_fixture(sse_fixture_path)
         if sse_fixture_path is not None
         else fetch_sse_universe(timeout=timeout)
     )
+    szse_rows = (
+        load_szse_universe_fixture(szse_fixture_path)
+        if szse_fixture_path is not None
+        else fetch_szse_universe(timeout=timeout)
+    )
     rows = [
         *sse_rows,
-        *fetch_szse_universe(timeout=timeout),
+        *szse_rows,
     ]
 
     unique: dict[tuple[str, str], LofIdentity] = {}
