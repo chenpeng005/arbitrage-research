@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from .classification import FundTypeRecord, classify_universe, fetch_fund_type_map
@@ -35,6 +35,7 @@ class LofRuntimeSession:
     estimated_nav_context: EstimatedNavContext
     context_build: EstimatedNavContextBuildResult
     context_built_at: datetime
+    second_previous_trading_day: date | None = None
     szse_transport: str = "DIRECT_OFFICIAL"
     szse_relay_bundle: SzseRelayBundle | None = None
 
@@ -86,6 +87,10 @@ class LofRuntimeSession:
             as_of=as_of.date(),
             timeout=timeout,
         )
+        second_previous_trading_day = fetch_previous_trading_day(
+            as_of=previous_trading_day,
+            timeout=timeout,
+        )
         tracking_index_override = (
             load_tracking_index_fixture(tracking_index_fixture_path)
             if tracking_index_fixture_path is not None
@@ -104,6 +109,7 @@ class LofRuntimeSession:
             estimated_nav_context=context_build.context,
             context_build=context_build,
             context_built_at=as_of,
+            second_previous_trading_day=second_previous_trading_day,
             szse_transport=(
                 "OFFICIAL_RELAY"
                 if uses_szse_relay
@@ -129,6 +135,8 @@ class LofRuntimeSession:
             max_quote_age_seconds=max_quote_age_seconds,
             timeout=timeout,
             estimated_nav_context=self.estimated_nav_context,
+            previous_trading_day=self.estimated_nav_context.previous_trading_day,
+            second_previous_trading_day=self.second_previous_trading_day,
             universe_override=self.universe,
             type_records_override=self.type_records,
             official_nav_override=official_nav_override,
