@@ -388,40 +388,50 @@ def fetch_all_official_nav(
         sse_rows = []
         sse_error = f"FETCH_ERROR:{type(exc).__name__}"
 
-    relay_url = os.environ.get("LOF_SZSE_RELAY_BASE_URL")
-    if relay_url:
+    if szse_relay_bundle is not None:
         try:
-            szse_rows = fetch_szse_official_nav_from_relay(
-                szse_codes,
-                relay_base_url=relay_url,
-                timeout=timeout,
+            szse_rows = _szse_nav_from_relay(
+                szse_relay_bundle,
+                codes=szse_codes,
             )
-        except Exception as relay_exc:
+        except Exception as exc:
+            szse_rows = []
+            szse_error = f"RELAY_ERROR:{type(exc).__name__}"
+    else:
+        relay_url = os.environ.get("LOF_SZSE_RELAY_BASE_URL")
+        if relay_url:
+            try:
+                szse_rows = fetch_szse_official_nav_from_relay(
+                    szse_codes,
+                    relay_base_url=relay_url,
+                    timeout=timeout,
+                )
+            except Exception as relay_exc:
+                try:
+                    szse_rows = fetch_szse_official_nav(
+                        szse_codes,
+                        timeout=timeout,
+                        max_workers=szse_max_workers,
+                    )
+                    szse_error = (
+                        f"RELAY_ERROR:{type(relay_exc).__name__}"
+                    )
+                except Exception as direct_exc:
+                    szse_rows = []
+                    szse_error = (
+                        f"RELAY_ERROR:{type(relay_exc).__name__};"
+                        f"DIRECT_ERROR:{type(direct_exc).__name__}"
+                    )
+        else:
             try:
                 szse_rows = fetch_szse_official_nav(
                     szse_codes,
                     timeout=timeout,
                     max_workers=szse_max_workers,
                 )
-                szse_error = (
-                    f"RELAY_ERROR:{type(relay_exc).__name__}"
-                )
-            except Exception as direct_exc:
+            except Exception as exc:
                 szse_rows = []
-                szse_error = (
-                    f"RELAY_ERROR:{type(relay_exc).__name__};"
-                    f"DIRECT_ERROR:{type(direct_exc).__name__}"
-                )
-    else:
-        try:
-            szse_rows = fetch_szse_official_nav(
-                szse_codes,
-                timeout=timeout,
-                max_workers=szse_max_workers,
-            )
-        except Exception as exc:
-            szse_rows = []
-            szse_error = f"FETCH_ERROR:{type(exc).__name__}"
+                szse_error = f"FETCH_ERROR:{type(exc).__name__}"
 
     by_key: dict[tuple[str, str], OfficialNavRecord] = {
         (row.exchange, row.code): row for row in [*sse_rows, *szse_rows]
