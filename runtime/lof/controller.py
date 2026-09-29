@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from .classification import classify_universe, fetch_fund_type_map
+from .estimated_nav_lane import EstimatedNavContext, resolve_estimated_nav_lane
 from .nav import fetch_all_official_nav
 from .quote import fetch_quotes
 from .snapshot import build_market_snapshot
@@ -25,6 +26,7 @@ def collect_market_snapshot(
     state_max_workers: int = 8,
     nav_max_workers: int = 8,
     quote_batch_size: int = 60,
+    estimated_nav_context: EstimatedNavContext | None = None,
     snapshot_id: str | None = None,
 ) -> dict[str, Any]:
     """Collect one all-market LOF snapshot.
@@ -80,10 +82,24 @@ def collect_market_snapshot(
         type_map=lane_results["type"],
     )
 
+    estimated_navs = []
+    if estimated_nav_context is not None:
+        try:
+            estimated_navs = resolve_estimated_nav_lane(
+                official_navs=lane_results["official_nav"],
+                context=estimated_nav_context,
+                as_of=market_cutoff,
+                timeout=timeout,
+            )
+        except Exception as exc:
+            lane_errors["estimated_nav"] = _error_name(exc)
+            estimated_navs = []
+
     snapshot = build_market_snapshot(
         universe=universe,
         quotes=lane_results["quote"],
         official_navs=lane_results["official_nav"],
+        estimated_navs=estimated_navs,
         trade_states=lane_results["trade_state"],
         type_records=type_records,
         generated_at=generated_at,
