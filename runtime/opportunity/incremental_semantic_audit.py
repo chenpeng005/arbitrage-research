@@ -595,9 +595,17 @@ def _route_confirmed_event(
     event_family: str,
     detected_at: str,
 ) -> dict[str, Any]:
+    event_row = conn.execute(
+        """SELECT materiality_status FROM event_update
+           WHERE event_update_id=?""",
+        (event_update_id,),
+    ).fetchone()
     event = {
         "event_update_id": event_update_id,
         "event_family": event_family,
+        "materiality_status": (
+            event_row["materiality_status"] if event_row is not None else None
+        ),
         "requires_semantic_audit": False,
     }
     routing = route_event(event)
@@ -617,7 +625,7 @@ def _route_confirmed_event(
                 route["research_action"],
                 route["notification"],
                 route["reason"],
-                "incremental-event-router-v1",
+                "incremental-event-router-v2-token-gate",
             ),
         )
 
