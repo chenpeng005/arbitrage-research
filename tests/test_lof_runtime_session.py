@@ -60,7 +60,11 @@ class LofRuntimeSessionTest(unittest.TestCase):
             r1_unresolved_count=0,
         )
 
-        session = LofRuntimeSession.build(as_of=now)
+        session = LofRuntimeSession.build(
+            as_of=now,
+            sse_universe_fixture_path="sse.json",
+            szse_universe_fixture_path="szse.json",
+        )
 
         self.assertEqual(len(session.universe), 1)
         self.assertEqual(
@@ -68,7 +72,11 @@ class LofRuntimeSessionTest(unittest.TestCase):
             date(2026, 9, 28),
         )
         self.assertEqual(session.context_build.r1_resolved_count, 1)
-        universe_mock.assert_called_once()
+        universe_mock.assert_called_once_with(
+            timeout=15,
+            sse_fixture_path="sse.json",
+            szse_fixture_path="szse.json",
+        )
         previous_day_mock.assert_called_once()
 
     @patch("runtime.lof.runtime_session.collect_market_snapshot")
