@@ -1,6 +1,9 @@
 name: LOF Release Bundle
 
 on:
+  push:
+    paths:
+      - ".github/workflows/lof-release-bundle.yml"
   workflow_dispatch:
 
 jobs:
