@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from typing import Iterable
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
@@ -117,3 +118,83 @@ def fetch_tencent_index_quote(
         raw = response.read()
     text = raw.decode("gb18030", errors="replace")
     return parse_tencent_index_quote(text, symbol=symbol)
+
+
+def parse_tencent_index_quote_response(
+    text: str,
+    *,
+    requested_symbols: Iterable[str] | None = None,
+) -> dict[str, IndexQuote]:
+    requested = set(requested_symbols or [])
+    result: dict[str, IndexQuote] = {}
+
+    for raw in text.split(";"):
+        line = raw.strip()
+        if not line.startswith("v_") or '="' not in line:
+            continue
+        symbol = line[2:].split("=", 1)[0].strip()
+        if requested and symbol not in requested:
+            continue
+        result[symbol] = parse_tencent_index_quote(
+            line,
+            symbol=symbol,
+        )
+    return result
+
+
+def fetch_tencent_index_quotes(
+    symbols: Iterable[str],
+    *,
+    timeout: int = 10,
+    batch_size: int = 60,
+) -> dict[str, IndexQuote]:
+    symbol_list = sorted({str(x).strip() for x in symbols if str(x).strip()})
+    if batch_size <= 0:
+        raise ValueError("batch_size must be positive")
+
+    result: dict[str, IndexQuote] = {}
+    for start in range(0, len(symbol_list), batch_size):
+        batch = symbol_list[start : start + batch_size]
+        request = Request(
+            f"{TENCENT_QUOTE_URL}{','.join(batch)}",
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Referer": "https://gu.qq.com/",
+            },
+        )
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                raw = response.read()
+            text = raw.decode("gb18030", errors="replace")
+            parsed = parse_tencent_index_quote_response(
+                text,
+                requested_symbols=batch,
+            )
+            result.update(parsed)
+        except Exception as exc:
+            for symbol in batch:
+                result[symbol] = IndexQuote(
+                    symbol=symbol,
+                    code=None,
+                    name=None,
+                    current=None,
+                    previous_close=None,
+                    quote_time=None,
+                    source="TENCENT_QUOTE",
+                    error=f"FETCH_ERROR:{type(exc).__name__}",
+                )
+
+        for symbol in batch:
+            if symbol not in result:
+                result[symbol] = IndexQuote(
+                    symbol=symbol,
+                    code=None,
+                    name=None,
+                    current=None,
+                    previous_close=None,
+                    quote_time=None,
+                    source="TENCENT_QUOTE",
+                    error="MISSING_FROM_BATCH_QUOTE",
+                )
+
+    return result
