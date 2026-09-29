@@ -13,6 +13,17 @@ jobs:
       - name: Checkout exact application commit
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run LOF unit tests
+        run: python -m unittest discover -s tests -p "test_lof_*.py" -v
+
+      - name: Run shared deployment gate regression tests
+        run: python -m unittest tests.test_deployment_gate -v
+
       - name: Build LOF application bundle
         shell: bash
         run: |
