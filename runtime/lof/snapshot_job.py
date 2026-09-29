@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime
+import os
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .nav import load_official_nav_fixture
 from .runtime_session import LofRuntimeSession
 from .snapshot_store import LofSnapshotStore
+from .szse_relay import DEFAULT_SZSE_RELAY_BASE_URL
 
 
 SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
@@ -24,6 +26,7 @@ def run_snapshot_once(
     szse_universe_fixture_path: str | Path | None = None,
     official_nav_fixture_path: str | Path | None = None,
     tracking_index_fixture_path: str | Path | None = None,
+    szse_relay_base_url: str | None = DEFAULT_SZSE_RELAY_BASE_URL,
 ) -> tuple[dict, Path, LofRuntimeSession]:
     now = as_of or datetime.now(SHANGHAI_TZ)
     if now.tzinfo is None:
@@ -35,6 +38,7 @@ def run_snapshot_once(
         sse_universe_fixture_path=sse_universe_fixture_path,
         szse_universe_fixture_path=szse_universe_fixture_path,
         tracking_index_fixture_path=tracking_index_fixture_path,
+        szse_relay_base_url=szse_relay_base_url,
     )
     official_nav_override = (
         load_official_nav_fixture(official_nav_fixture_path)
@@ -109,6 +113,14 @@ def _build_parser() -> argparse.ArgumentParser:
             "smoke only. Production should omit this argument."
         ),
     )
+    parser.add_argument(
+        "--szse-relay-base-url",
+        default=os.environ.get(
+            "LOF_SZSE_RELAY_BASE_URL",
+            DEFAULT_SZSE_RELAY_BASE_URL,
+        ),
+        help="SZSE official relay base URL used only when direct official access fails.",
+    )
     return parser
 
 
@@ -123,6 +135,7 @@ def main() -> int:
         szse_universe_fixture_path=args.szse_universe_fixture,
         official_nav_fixture_path=args.official_nav_fixture,
         tracking_index_fixture_path=args.tracking_index_fixture,
+        szse_relay_base_url=args.szse_relay_base_url,
     )
 
     quality = snapshot.get("quality_summary") or {}
