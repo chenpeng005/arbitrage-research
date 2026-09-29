@@ -5,6 +5,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from .foreign_quote import fetch_tencent_foreign_quote
+from .futures_overlay import fetch_eastmoney_global_futures
 from .fx import (
     fetch_tencent_fx_daily,
     fetch_tencent_fx_quote,
@@ -124,8 +125,8 @@ def resolve_r3_one(
         latest = latest_close(history)
         current = latest.close if latest else None
         latest_date = latest.date if latest else None
-        # During China trading hours the U.S. cash market is closed. Without a
-        # futures overlay, last-close-only timing is not high quality.
+        # During China trading hours the U.S. cash market is closed. We may
+        # overlay current index futures to bridge from the latest cash close.
         timing_quality = "MEDIUM"
         exactness = (
             "EXACT_INDEX"
@@ -138,6 +139,27 @@ def resolve_r3_one(
             proxy_id=proxy.proxy_symbol,
             error="UNSUPPORTED_PROXY_MARKET",
         )
+
+    intraday_adjustment_return = None
+    if (
+        proxy.futures_overlay_market
+        and proxy.futures_overlay_code
+        and proxy.proxy_symbol.startswith("us")
+    ):
+        try:
+            futures_quote = fetch_eastmoney_global_futures(
+                market=proxy.futures_overlay_market,
+                code=proxy.futures_overlay_code,
+                timeout=timeout,
+            )
+            if futures_quote.error is None:
+                intraday_adjustment_return = futures_quote.adjustment_return
+                if proxy.futures_overlay_quality:
+                    timing_quality = proxy.futures_overlay_quality
+        except Exception:
+            # Fail open to the latest completed cash close. The estimate remains
+            # available but keeps its lower timing quality.
+            intraday_adjustment_return = None
 
     return resolve_r3_qdii_index_bridge(
         fund_code=nav.code,
@@ -153,4 +175,5 @@ def resolve_r3_one(
         exposure_ratio=exposure,
         proxy_exactness=exactness,
         timing_quality=timing_quality,
+        intraday_adjustment_return=intraday_adjustment_return,
     )
