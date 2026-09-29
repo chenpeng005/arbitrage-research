@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Iterable
 import json
 import time
@@ -134,6 +135,43 @@ def fetch_tracking_index_category(
         rows,
         market_bucket=f"{market}:{fund_type}",
     )
+
+
+def load_tracking_index_fixture(
+    path: str | Path,
+) -> dict[str, TrackingIndexRecord]:
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    fetched_at_raw = payload.get("fetched_at")
+    fetched_at = (
+        datetime.fromisoformat(str(fetched_at_raw))
+        if fetched_at_raw
+        else datetime.now(timezone.utc)
+    )
+    if fetched_at.tzinfo is None:
+        fetched_at = fetched_at.replace(tzinfo=timezone.utc)
+
+    result: dict[str, TrackingIndexRecord] = {}
+    for row in payload.get("rows") or []:
+        code = str(row.get("fund_code") or "").strip()
+        if not code:
+            continue
+        index_code = str(row.get("tracking_index_code") or "").strip() or None
+        index_name = str(row.get("tracking_index_name") or "").strip() or None
+        error = None if index_code and index_name else "MISSING_TRACKING_INDEX"
+        result[code] = TrackingIndexRecord(
+            fund_code=code,
+            fund_name=(str(row.get("fund_name") or "").strip() or None),
+            tracking_index_code=index_code,
+            tracking_index_name=index_name,
+            market_bucket=str(row.get("market_bucket") or "fixture"),
+            source=str(row.get("source") or "TRACKING_INDEX_FIXTURE"),
+            fetched_at=fetched_at,
+            error=error,
+        )
+
+    if not result:
+        raise ValueError("tracking-index fixture is empty")
+    return result
 
 
 def fetch_active_tracking_index_map(
