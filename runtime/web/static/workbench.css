@@ -148,6 +148,81 @@ h4{font-size:16px}
 .reminder-footer a{color:var(--accent);text-decoration:none;font-weight:700}
 .notification-detail{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.55}
 .notification-item button{padding:6px 10px;font-size:12px}
+.attention-summary{
+  margin:4px 0 18px;
+  padding:12px 14px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fff;
+  color:#475467;
+  font-size:13px;
+}
+.attention-block{margin-top:18px}
+.attention-block-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin:0 2px 8px;
+}
+.attention-block-head h3{margin:0;font-size:18px}
+.attention-block-head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.attention-block-head>b{
+  min-width:34px;
+  text-align:center;
+  font-size:20px;
+}
+.focus-feed{margin-top:8px}
+.compact-increment-block{margin-top:28px;padding-top:18px;border-top:1px solid var(--line)}
+.other-increment-feed{
+  display:grid;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+  overflow:hidden;
+}
+.other-increment-item{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:16px;
+  align-items:center;
+  padding:11px 13px;
+  color:var(--text);
+  text-decoration:none;
+  border-bottom:1px solid #edf0f5;
+}
+.other-increment-item:last-child{border-bottom:0}
+.other-increment-item:hover{background:#fafbfe}
+.other-increment-main{min-width:0}
+.other-increment-title{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  min-width:0;
+}
+.other-increment-title b{font-size:13px}
+.other-increment-title span{font-size:11px;color:var(--muted)}
+.other-increment-text{
+  display:flex;
+  gap:8px;
+  align-items:baseline;
+  margin-top:2px;
+  min-width:0;
+}
+.other-increment-text strong{font-size:13px;white-space:nowrap}
+.other-increment-text span{
+  font-size:12px;
+  color:var(--muted);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.other-increment-item time{
+  font-size:11px;
+  color:var(--muted);
+  white-space:nowrap;
+}
+.attention-empty{padding:14px}
 .stage-grid{
   display:grid;
   grid-template-columns:repeat(5,minmax(0,1fr));
@@ -383,6 +458,13 @@ pre.audit-json{
   .notification-time{margin-top:3px}
   .reminder-change-line{grid-template-columns:1fr}
   .reminder-section{grid-template-columns:1fr;gap:2px}
+  .attention-block-head{display:block}
+  .attention-block-head>b{display:block;text-align:left;margin-top:5px}
+  .other-increment-item{grid-template-columns:1fr;gap:4px}
+  .other-increment-text{display:block}
+  .other-increment-text strong{display:block;margin-bottom:2px}
+  .other-increment-text span{display:block;white-space:normal}
+  .other-increment-item time{justify-self:start}
 }
 
 .portal-grid{
