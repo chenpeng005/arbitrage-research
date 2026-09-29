@@ -1,0 +1,27 @@
+{
+  "as_of": "2026-09-29",
+  "fetched_at": "2026-09-29T13:35:00+08:00",
+  "rows": [
+    {
+      "code": "501047",
+      "exchange": "SSE",
+      "nav": "1.051",
+      "nav_date": "2026-09-28",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "501057",
+      "exchange": "SSE",
+      "nav": "1.920",
+      "nav_date": "2026-09-28",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    },
+    {
+      "code": "502048",
+      "exchange": "SSE",
+      "nav": "1.221",
+      "nav_date": "2026-09-28",
+      "source": "SSE_OFFICIAL_FIXTURE"
+    }
+  ]
+}
