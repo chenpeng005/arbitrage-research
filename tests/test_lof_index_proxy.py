@@ -56,6 +56,27 @@ class LofIndexProxyMappingTest(unittest.TestCase):
         self.assertEqual(row.index_code, "930606")
         self.assertIsNone(row.tencent_symbol)
 
+    def test_price_suffix_and_alias_normalization(self) -> None:
+        payload = {
+            "QuotationCodeTable": {
+                "Data": [
+                    {
+                        "Code": "399006",
+                        "Name": "创业板指",
+                        "SecurityTypeName": "指数",
+                        "MktNum": "0",
+                        "QuoteID": "0.399006",
+                    }
+                ]
+            }
+        }
+        row = parse_index_suggest_payload(
+            payload,
+            tracking_target_name="创业板指数(价格)",
+        )
+        self.assertEqual(row.status, "RESOLVED")
+        self.assertEqual(row.index_code, "399006")
+
     def test_no_exact_match_fails_closed(self) -> None:
         row = parse_index_suggest_payload(
             {"QuotationCodeTable": {"Data": []}},
