@@ -32,8 +32,12 @@ class LofRuntimeSession:
         *,
         as_of: datetime,
         timeout: int = 15,
+        sse_universe_fixture_path: str | Path | None = None,
     ) -> "LofRuntimeSession":
-        universe = fetch_all_lof_universe(timeout=timeout)
+        universe = fetch_all_lof_universe(
+            timeout=timeout,
+            sse_fixture_path=sse_universe_fixture_path,
+        )
         raw_type_map = fetch_fund_type_map(timeout=max(timeout, 20))
         type_records = classify_universe(
             universe,
