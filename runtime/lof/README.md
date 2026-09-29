@@ -43,6 +43,49 @@
   - 按 exchange + code 去重；
   - 不把某日 Universe 数量写死。
 
+### Official NAV
+
+- `nav.py`
+  - 上交所官方批量 NAV；
+  - 深交所官方按代码 NAV；
+  - nav_date / fetched_at / source；
+  - freshness 为显式参数，不硬编码所有基金同一 T+N。
+
+### Quote
+
+- `quote.py`
+  - 沪深批量行情；
+  - quote timestamp；
+  - FRESH / STALE / UNAVAILABLE；
+  - 数据源失败不沿用旧值伪装实时。
+
+### Subscription / Redemption State
+
+- `state.py`
+  - 申购 / 赎回状态；
+  - 单日限额；
+  - 最低申购额；
+  - 申购确认 T+N；
+  - 原始费率阶梯；
+  - limit_scope 与真实可卖日保持 UNKNOWN/null，等待官方规则审计。
+
+### Classification
+
+- `classification.py`
+  - 保留 raw fund type；
+  - 归一化 QDII_COMMODITY / QDII_EQUITY / COMMODITY / EQUITY / BOND / FOF / MIXED / OTHER。
+
+### Market Snapshot / Controller
+
+- `snapshot.py`
+  - 实现 LOF Market Snapshot Contract V1；
+  - 保证全量 Universe 行不因数据缺失消失。
+
+- `controller.py`
+  - Universe 为硬前提；
+  - Quote / NAV / State / Type lane 独立降级；
+  - PASS / DEGRADED + lane_errors。
+
 ### Tests
 
 - `tests/test_lof_runtime_baseline.py`
@@ -50,13 +93,19 @@
 
 单元测试不依赖实时网络；live source smoke test 应放在后续 Runtime / Deployment preflight。
 
-## 3. 尚未接入
+GitHub Actions：
 
-- 实时行情 Adapter；
-- 官方 NAV 全市场 Adapter；
-- 申购 / 赎回 / 限额 Adapter；
-- 公告增量；
-- Market Snapshot Contract；
+- `.github/workflows/lof-runtime-tests.yml`
+- 2026-09-29 首轮当前基线 CI：SUCCESS。
+
+## 3. 尚未接入 / 尚未完成
+
+- QDII / 重点 LOF estimated NAV Resolver；
+- 限额口径 authoritative audit；
+- 申购确认 → 转托管 → 真实可卖日；
+- 用户真实执行渠道费率；
+- 公告增量与 state delta；
+- P1 Runtime Gate；
 - Web/API；
 - Server Runtime Store；
 - Production Deployment。
@@ -96,9 +145,12 @@ AI 仅在公告语义复杂、限额口径歧义、新 Path 研究等节点介�
 Universe
 → NAV
 → Quote
-→ Market Snapshot Contract
 → Subscription / Redemption / Limit
-→ State Delta
+→ Classification
+→ Market Snapshot Contract
+→ Controller
+→ P1 Case Validation
+→ State Delta / Announcement Audit
 → P1 Runtime Gate
 → Web/API
 ```
