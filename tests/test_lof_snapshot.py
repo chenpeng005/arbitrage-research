@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from runtime.lof.nav import OfficialNavRecord
 from runtime.lof.quote import QuoteRecord
+from runtime.lof.resolver import EstimatedNavResult
 from runtime.lof.snapshot import (
     CONTRACT_VERSION,
     build_market_snapshot,
@@ -61,10 +62,29 @@ class LofMarketSnapshotTest(unittest.TestCase):
             )
         ]
 
+        estimated = [
+            EstimatedNavResult(
+                fund_code="501001",
+                estimated_nav=Decimal("1.440"),
+                estimated_nav_time=self.cutoff,
+                estimated_nav_status="AVAILABLE",
+                estimated_nav_quality="HIGH",
+                resolver_class="R1_DOMESTIC_INDEX",
+                resolver_method="INDEX_PROXY",
+                proxy_id="000300",
+                proxy_time=self.cutoff,
+                proxy_return=Decimal("0.01"),
+                fx_return=None,
+                exposure_ratio_used=Decimal("1"),
+                tracking_adjustment_used=Decimal("1"),
+            )
+        ]
+
         snapshot = build_market_snapshot(
             universe=self.universe,
             quotes=quotes,
             official_navs=navs,
+            estimated_navs=estimated,
             generated_at=self.cutoff,
             market_cutoff=self.cutoff,
             max_quote_age_seconds=30,
@@ -79,11 +99,16 @@ class LofMarketSnapshotTest(unittest.TestCase):
         self.assertEqual(by_code["501001"]["quote_status"], "FRESH")
         self.assertEqual(by_code["501001"]["official_nav_status"], "AVAILABLE")
         self.assertIsNotNone(by_code["501001"]["static_premium_rate"])
+        self.assertEqual(by_code["501001"]["estimated_nav_status"], "AVAILABLE")
+        self.assertEqual(by_code["501001"]["estimated_nav_quality"], "HIGH")
+        self.assertIsNotNone(by_code["501001"]["estimated_premium_rate"])
 
         # Missing source data must not delete the LOF from the all-market table.
         self.assertEqual(by_code["161128"]["quote_status"], "UNAVAILABLE")
         self.assertEqual(by_code["161128"]["official_nav_status"], "UNAVAILABLE")
         self.assertIsNone(by_code["161128"]["static_premium_rate"])
+        self.assertEqual(by_code["161128"]["estimated_nav_status"], "UNAVAILABLE")
+        self.assertIsNone(by_code["161128"]["estimated_premium_rate"])
 
     def test_old_quote_is_stale_not_fresh(self) -> None:
         quotes = [
