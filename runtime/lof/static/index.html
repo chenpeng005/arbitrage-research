@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LOF 全市场监控</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>LOF 全市场监控</h1>
+        <p class="subtitle">全量展示 · 实时估值 · 溢价申购</p>
+      </div>
+      <div class="top-actions">
+        <span id="updateText" class="muted">尚未加载</span>
+        <button id="refreshBtn" type="button">刷新</button>
+      </div>
+    </header>
+
+    <section class="summary" aria-label="市场概览">
+      <div class="card"><span>全市场</span><strong id="totalCount">—</strong></div>
+      <div class="card"><span>可实时估值</span><strong id="estimatedCount">—</strong></div>
+      <div class="card"><span>可申购/限额</span><strong id="subscribableCount">—</strong></div>
+      <div class="card"><span>采集状态</span><strong id="collectorStatus">—</strong></div>
+    </section>
+
+    <section class="filters">
+      <input id="searchInput" type="search" placeholder="搜索代码 / 名称">
+      <select id="resolverFilter" aria-label="估值分类">
+        <option value="">全部估值分类</option>
+        <option value="R1_DOMESTIC_INDEX">国内指数</option>
+        <option value="R2_DOMESTIC_OTHER">国内其他</option>
+        <option value="R3_QDII_INDEX">海外 QDII 指数</option>
+        <option value="R4_QDII_OTHER">海外 QDII 其他</option>
+        <option value="R5_SPECIAL">商品 / 跨境特殊</option>
+      </select>
+      <select id="subscriptionFilter" aria-label="申购状态">
+        <option value="">全部申购状态</option>
+        <option value="OPEN">开放申购</option>
+        <option value="LIMITED">限额申购</option>
+        <option value="SUSPENDED">暂停申购</option>
+        <option value="UNKNOWN">未知</option>
+      </select>
+      <select id="estimateFilter" aria-label="估值状态">
+        <option value="">全部估值状态</option>
+        <option value="AVAILABLE">有实时估值</option>
+        <option value="STALE">估值过期</option>
+        <option value="UNAVAILABLE">暂无实时估值</option>
+      </select>
+      <label class="auto-refresh">
+        <input id="autoRefresh" type="checkbox" checked>
+        30秒自动刷新
+      </label>
+    </section>
+
+    <section class="table-wrap">
+      <table id="lofTable">
+        <thead>
+          <tr>
+            <th data-key="_index">序号</th>
+            <th data-key="code">代码 / 名称</th>
+            <th data-key="resolver_class">估值分类</th>
+            <th data-key="price" class="num">现价</th>
+            <th data-key="pct_change" class="num">涨跌</th>
+            <th data-key="volume" class="num">成交量</th>
+            <th data-key="amount" class="num">成交额</th>
+            <th data-key="estimated_nav" class="num primary-col">实时估值</th>
+            <th data-key="estimated_premium_rate" class="num primary-col">实时溢价</th>
+            <th data-key="estimated_nav_quality">估值质量</th>
+            <th data-key="static_premium_rate" class="num">静态溢价</th>
+            <th data-key="official_nav" class="num">官方NAV</th>
+            <th data-key="official_nav_date">NAV日期</th>
+            <th data-key="subscription_status">申购状态</th>
+            <th data-key="daily_subscription_limit" class="num">申购限额</th>
+            <th data-key="redemption_status">赎回状态</th>
+            <th data-key="quote_time">行情时间</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="emptyState" class="empty hidden">没有符合筛选条件的 LOF。</div>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
