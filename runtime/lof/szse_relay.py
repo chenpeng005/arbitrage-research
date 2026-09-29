@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from functools import lru_cache
 import hashlib
 import json
@@ -10,6 +11,11 @@ from urllib.request import Request, urlopen
 
 
 RELAY_VERSION = "lof-szse-official-relay-v1"
+DEFAULT_SZSE_RELAY_BASE_URL = (
+    "https://raw.githubusercontent.com/"
+    "chenpeng005/arbitrage-research/lof-data-relay"
+)
+DEFAULT_RELAY_MAX_AGE_SECONDS = 48 * 60 * 60
 
 
 @dataclass(frozen=True)
@@ -131,3 +137,36 @@ def fetch_szse_relay_bundle(
         nav=nav,
         manifest_sha256=hashlib.sha256(manifest_bytes).hexdigest(),
     )
+
+
+def relay_fetched_at(bundle: SzseRelayBundle) -> datetime:
+    raw = bundle.fetched_at
+    if not raw:
+        raise ValueError("SZSE relay manifest missing fetched_at")
+    value = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    if value.tzinfo is None:
+        raise ValueError("SZSE relay fetched_at must include timezone")
+    return value
+
+
+def validate_szse_relay_freshness(
+    bundle: SzseRelayBundle,
+    *,
+    as_of: datetime,
+    max_age_seconds: int = DEFAULT_RELAY_MAX_AGE_SECONDS,
+) -> int:
+    if as_of.tzinfo is None:
+        raise ValueError("relay freshness as_of must include timezone")
+    fetched_at = relay_fetched_at(bundle)
+    age_seconds = int(
+        (as_of.astimezone(timezone.utc) - fetched_at.astimezone(timezone.utc))
+        .total_seconds()
+    )
+    if age_seconds < -300:
+        raise ValueError("SZSE relay fetched_at is unexpectedly in the future")
+    if age_seconds > max_age_seconds:
+        raise ValueError(
+            f"SZSE relay is stale: age_seconds={age_seconds} "
+            f"max={max_age_seconds}"
+        )
+    return max(0, age_seconds)
