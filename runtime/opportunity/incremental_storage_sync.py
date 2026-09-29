@@ -20,7 +20,7 @@ from runtime.opportunity.incremental_storage_bootstrap import (
 )
 
 
-SYNC_VERSION = "incremental-storage-shadow-sync-v1"
+SYNC_VERSION = "incremental-storage-shadow-sync-v1.1"
 
 ECONOMIC_ONLY_DROP_REASONS = {
     "MATURITY_CASH": {
@@ -91,6 +91,9 @@ def shadow_sync_current_runtime(
         "research_state_version_increments": 0,
         "research_result_inserts": 0,
         "research_binding_updates": 0,
+        "bond_deactivations": 0,
+        "stale_state_deletes": 0,
+        "stale_binding_deactivations": 0,
     }
 
     try:
@@ -101,6 +104,64 @@ def shadow_sync_current_runtime(
             raise RuntimeError(f"unexpected schema_version={schema_version['value'] if schema_version else None}")
 
         # Bond + snapshot + observations.
+        # bond_master.active and scope_state_current represent the CURRENT
+        # formal market universe. Historical Evidence / Event / Research rows
+        # remain immutable and are not deleted when a bond leaves the universe.
+        current_market_codes = {
+            str(row["bond_code"]).zfill(6)
+            for row in market_input.get("rows", [])
+        }
+        for row in conn.execute(
+            "SELECT bond_code FROM bond_master WHERE active=1"
+        ):
+            code = str(row["bond_code"]).zfill(6)
+            if code in current_market_codes:
+                continue
+            conn.execute(
+                """UPDATE bond_master
+                   SET active=0,updated_at=?
+                   WHERE bond_code=?""",
+                (registry["market_cutoff"], code),
+            )
+            stats["bond_deactivations"] += 1
+
+        current_path_keys = {
+            (
+                str(trigger_row["bond_code"]).zfill(6),
+                str(trigger_row["path_id"]),
+            )
+            for trigger_row in (trigger_state.get("paths") or {}).values()
+        }
+        stale_path_rows = list(
+            conn.execute(
+                """SELECT bond_code,scope_id FROM scope_state_current
+                   WHERE scope_type='PATH'"""
+            )
+        )
+        for row in stale_path_rows:
+            key = (
+                str(row["bond_code"]).zfill(6),
+                str(row["scope_id"]),
+            )
+            if key in current_path_keys:
+                continue
+            conn.execute(
+                """DELETE FROM scope_state_current
+                   WHERE bond_code=? AND scope_type='PATH' AND scope_id=?""",
+                key,
+            )
+            stats["stale_state_deletes"] += 1
+            before = conn.total_changes
+            conn.execute(
+                """UPDATE research_binding
+                   SET is_current=0,superseded_at=?
+                   WHERE bond_code=? AND path_id=? AND is_current=1""",
+                (registry["market_cutoff"], key[0], key[1]),
+            )
+            stats["stale_binding_deactivations"] += (
+                conn.total_changes - before
+            )
+
         for row in market_input.get("rows", []):
             code = str(row["bond_code"]).zfill(6)
             conn.execute(
