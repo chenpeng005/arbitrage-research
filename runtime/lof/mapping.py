@@ -75,7 +75,26 @@ def _exposure_from_benchmark(
             except (InvalidOperation, ValueError):
                 return None
 
-    return None
+    # Fallback for abbreviated IndexName vs full benchmark wording, e.g.
+    # "国证地产" vs "国证房地产行业指数收益率*95%+存款*5%".
+    # Select the largest explicitly weighted component whose text contains
+    # "指数"; do not simply take the largest percentage in the benchmark.
+    weighted_components = re.findall(
+        r"([^+，,;；]{1,120}?)[×*]\s*(\d+(?:\.\d+)?)%",
+        benchmark_text,
+    )
+    index_weights: list[Decimal] = []
+    for component, percentage in weighted_components:
+        if "指数" not in component:
+            continue
+        try:
+            weight = Decimal(percentage) / Decimal("100")
+        except (InvalidOperation, ValueError):
+            continue
+        if Decimal("0") < weight <= Decimal("1"):
+            index_weights.append(weight)
+
+    return max(index_weights) if index_weights else None
 
 
 def parse_f10_mapping(
