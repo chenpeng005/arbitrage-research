@@ -1,0 +1,48 @@
+name: LOF Release Bundle
+
+on:
+  push:
+    paths:
+      - ".github/workflows/lof-release-bundle.yml"
+  workflow_dispatch:
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact application commit
+        uses: actions/checkout@v4
+
+      - name: Build LOF application bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          mkdir -p /tmp/lof-app-bundle
+          cp -a runtime /tmp/lof-app-bundle/runtime
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          meta = {
+              "release_profile": "lof-opportunity-runtime-v1",
+              "application_commit_sha": os.environ["GITHUB_SHA"],
+              "source_repository": os.environ["GITHUB_REPOSITORY"],
+              "created_at": datetime.now(timezone.utc).isoformat(),
+          }
+          Path("/tmp/lof-app-bundle/release_metadata.json").write_text(
+              json.dumps(meta, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          tar -C /tmp/lof-app-bundle -czf lof-app-source.tar.gz runtime release_metadata.json
+          sha256sum lof-app-source.tar.gz > lof-app-source.tar.gz.sha256
+
+      - name: Upload application bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: lof-app-release-\${{ github.sha }}
+          path: |
+            lof-app-source.tar.gz
+            lof-app-source.tar.gz.sha256
+          retention-days: 7
