@@ -7,7 +7,7 @@ from typing import Iterable
 from .domestic_index_resolver import resolve_r1_from_previous_close
 from .index_proxy import IndexProxyMapping
 from .index_quote import IndexQuote
-from .index_quote_xueqiu import fetch_index_quote_with_fallback
+from .index_quote_xueqiu import fetch_index_quotes_for_mappings
 from .mapping import ResolverMappingCandidate
 from .nav import OfficialNavRecord
 from .resolver import EstimatedNavResult
@@ -56,8 +56,22 @@ def resolve_r1_batch(
     """
     codes = sorted({str(code).strip() for code in fund_codes if str(code).strip()})
 
-    # Deduplicate identical proxy quotes across funds.
-    quote_cache: dict[tuple[str | None, str | None], IndexQuote] = {}
+    # Fetch every unique proxy in batches. Tencent is primary; only missing
+    # or unsupported proxies fall back to a batched Xueqiu request.
+    unique_proxy_map: dict[
+        tuple[str | None, str | None],
+        IndexProxyMapping,
+    ] = {}
+    for code in codes:
+        proxy = proxy_mappings.get(code)
+        if proxy is None or proxy.status != "RESOLVED":
+            continue
+        unique_proxy_map[(proxy.tencent_symbol, proxy.xueqiu_symbol)] = proxy
+
+    quote_cache = fetch_index_quotes_for_mappings(
+        unique_proxy_map.values(),
+        timeout=timeout,
+    )
     results: list[EstimatedNavResult] = []
 
     for code in codes:
@@ -88,12 +102,14 @@ def resolve_r1_batch(
         quote_key = (proxy.tencent_symbol, proxy.xueqiu_symbol)
         quote = quote_cache.get(quote_key)
         if quote is None:
-            quote = fetch_index_quote_with_fallback(
-                tencent_symbol=proxy.tencent_symbol,
-                xueqiu_symbol=proxy.xueqiu_symbol,
-                timeout=timeout,
+            results.append(
+                _unavailable(
+                    fund_code=code,
+                    proxy_id=proxy.index_code,
+                    error="MISSING_BATCH_INDEX_QUOTE",
+                )
             )
-            quote_cache[quote_key] = quote
+            continue
 
         # F10 benchmark exposure is an accuracy enhancement, not a hard
         # prerequisite. Missing exposure falls back to 1.0 in the generic
