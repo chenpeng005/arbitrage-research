@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -415,6 +415,144 @@ def _legacy_reminder_eligible(conn: Any, change: dict[str, Any]) -> bool:
     return False
 
 
+
+LOW_ATTENTION_EVENT_FAMILIES = {
+    "REVISION:EXPECTED_TRIGGER",
+    "PUT:EXPECTED_TRIGGER",
+}
+
+OTHER_INCREMENT_CHANGE_TYPES = {
+    "ECONOMIC_ENTERED",
+    "ECONOMIC_EXITED",
+    "MATERIAL_EVENT",
+    "PATH_STATE_CHANGED",
+    "RISK_CHANGED",
+    "FACT_UPDATED",
+    "RESEARCH_JUDGMENT_CHANGED",
+    "RESEARCH_CONFIDENCE_CHANGED",
+}
+
+
+def _attention_tier(
+    *,
+    conn: Any,
+    changes: list[dict[str, Any]],
+) -> str:
+    """Presentation-only attention split. It never changes Runtime truth."""
+    event_update_id = next(
+        (
+            str(change.get("source_event_update_id"))
+            for change in changes
+            if change.get("source_event_update_id")
+        ),
+        None,
+    )
+    if event_update_id:
+        family = str(_event_context(conn, event_update_id).get("event_family") or "")
+        if family in LOW_ATTENTION_EVENT_FAMILIES:
+            return "OTHER"
+    return "FOCUS"
+
+
+def _raw_change_dict(row: Any, bond_name: str) -> dict[str, Any]:
+    return {
+        "change_id": row["change_id"],
+        "bond_code": row["bond_code"],
+        "bond_name": bond_name,
+        "source_event_update_id": row["source_event_update_id"],
+        "scope_type": row["scope_type"],
+        "scope_id": row["scope_id"],
+        "change_type": row["change_type"],
+        "impact": row["impact"],
+        "research_action": row["research_action"],
+        "notification_level": row["notification_level"],
+        "previous": _decode_json(row["previous_json"]),
+        "current": _decode_json(row["current_json"]),
+        "detected_at": row["detected_at"],
+        "market_snapshot_id": row["market_snapshot_id"],
+    }
+
+
+def _other_increment_items(
+    *,
+    conn: Any,
+    excluded_change_ids: set[str],
+    limit: int,
+    hours: int = 48,
+) -> list[dict[str, Any]]:
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    placeholders = ",".join("?" for _ in OTHER_INCREMENT_CHANGE_TYPES)
+    rows = list(
+        conn.execute(
+            f"""SELECT cl.change_id,cl.source_event_update_id,cl.market_snapshot_id,
+                       cl.bond_code,b.bond_name,cl.scope_type,cl.scope_id,
+                       cl.change_type,cl.impact,cl.research_action,
+                       cl.notification_level,cl.previous_json,cl.current_json,
+                       cl.detected_at
+                FROM change_ledger cl
+                JOIN bond_master b ON b.bond_code=cl.bond_code
+                WHERE cl.detected_at>=?
+                  AND cl.change_type IN ({placeholders})
+                ORDER BY cl.detected_at DESC,cl.change_id""",
+            (cutoff, *sorted(OTHER_INCREMENT_CHANGE_TYPES)),
+        )
+    )
+
+    groups: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        change_id = str(row["change_id"])
+        if change_id in excluded_change_ids:
+            continue
+        event_id = str(row["source_event_update_id"] or "")
+        market_id = str(row["market_snapshot_id"] or "")
+        if event_id:
+            key = f"EVENT:{row['bond_code']}:{event_id}"
+        elif market_id:
+            key = (
+                f"MARKET:{row['bond_code']}:{market_id}:"
+                f"{row['change_type']}"
+            )
+        else:
+            key = f"CHANGE:{row['bond_code']}:{change_id}"
+        group = groups.setdefault(
+            key,
+            {
+                "group_key": key,
+                "bond_code": row["bond_code"],
+                "bond_name": row["bond_name"],
+                "created_at": row["detected_at"],
+                "changes": [],
+            },
+        )
+        group["changes"].append(
+            _raw_change_dict(row, str(row["bond_name"] or ""))
+        )
+
+    output: list[dict[str, Any]] = []
+    for group in groups.values():
+        changes = group["changes"]
+        if not changes:
+            continue
+        presentation = build_reminder_presentation(
+            conn=conn,
+            changes=changes,
+        )
+        output.append(
+            {
+                "group_key": group["group_key"],
+                "bond_code": group["bond_code"],
+                "bond_name": group["bond_name"],
+                "created_at": group["created_at"],
+                "change_count": len(changes),
+                "changes": changes,
+                "presentation": presentation,
+            }
+        )
+        if len(output) >= max(1, int(limit)):
+            break
+    return output
+
+
 def build_notification_feed(
     *,
     target_db: Path,
@@ -483,6 +621,8 @@ def build_notification_feed(
             ]
             if not eligible_changes:
                 continue
+            if _attention_tier(conn=conn, changes=eligible_changes) != "FOCUS":
+                continue
 
             items.append(
                 {
@@ -511,6 +651,26 @@ def build_notification_feed(
             if len(items) >= max(1, int(limit)):
                 break
 
+        focus_change_ids = {
+            str(change.get("change_id"))
+            for item in items
+            for change in item.get("changes", [])
+            if change.get("change_id")
+        }
+        other_items = _other_increment_items(
+            conn=conn,
+            excluded_change_ids=focus_change_ids,
+            limit=max(20, max(1, int(limit)) * 2),
+            hours=48,
+        )
+        # If an Event is intentionally low-attention, it belongs in the compact
+        # increment list even when the Runtime also opened Full V2 research.
+        focus_group_keys = {str(item.get("group_key") or "") for item in items}
+        other_items = [
+            item for item in other_items
+            if str(item.get("group_key") or "") not in focus_group_keys
+        ]
+
         pending_count = sum(
             1 for item in items if item.get("status") == "PENDING"
         )
@@ -518,14 +678,18 @@ def build_notification_feed(
             "delivery_version": DELIVERY_VERSION,
             "status": "PASS",
             "channel": IN_APP_CHANNEL,
-            "policy_version": "reminder-policy-v2",
+            "policy_version": "attention-feed-v1",
             "pending_count": pending_count,
             "pending_by_level": {
                 "IMMEDIATE": pending_count,
                 "DAILY_DIGEST": 0,
             },
             "item_count": len(items),
+            "focus_count": len(items),
+            "other_count": len(other_items),
+            "increment_window_hours": 48,
             "items": items,
+            "other_items": other_items,
         }
     finally:
         conn.close()
