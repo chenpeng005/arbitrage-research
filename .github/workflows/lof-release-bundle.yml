@@ -1,14 +1,6 @@
 name: LOF Release Bundle
 
 on:
-  push:
-    paths:
-      - "runtime/lof/**"
-      - "runtime/deployment_gate.py"
-      - "runtime/requirements.txt"
-      - "tests/test_lof_*.py"
-      - "tests/test_deployment_gate.py"
-      - ".github/workflows/lof-release-bundle.yml"
   workflow_dispatch:
 
 jobs:
