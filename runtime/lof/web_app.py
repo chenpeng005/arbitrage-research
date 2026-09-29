@@ -1,0 +1,50 @@
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+from .snapshot_store import LofSnapshotStore
+
+
+MODULE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = MODULE_DIR / "static"
+DATA_ROOT = Path(
+    os.environ.get(
+        "LOF_RUNTIME_DATA_ROOT",
+        MODULE_DIR.parents[1] / "runtime_data" / "lof",
+    )
+)
+
+store = LofSnapshotStore(DATA_ROOT)
+app = FastAPI(title="LOF Opportunity Monitor")
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/")
+def index():
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/api/health")
+def health():
+    snapshot = store.load_latest()
+    return {
+        "status": "PASS" if snapshot is not None else "NO_SNAPSHOT",
+        "snapshot_id": snapshot.get("snapshot_id") if snapshot else None,
+        "generated_at": snapshot.get("generated_at") if snapshot else None,
+        "universe_count": snapshot.get("universe_count") if snapshot else None,
+        "collector_status": snapshot.get("collector_status") if snapshot else None,
+    }
+
+
+@app.get("/api/lof/snapshot")
+def latest_snapshot():
+    snapshot = store.load_latest()
+    if snapshot is None:
+        raise HTTPException(status_code=503, detail="LOF snapshot unavailable")
+    return snapshot
