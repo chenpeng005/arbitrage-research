@@ -4,12 +4,16 @@ on:
   push:
     paths:
       - "runtime/lof/**"
+      - "runtime/deployment_gate.py"
       - "tests/test_lof_*.py"
+      - "tests/test_deployment_gate.py"
       - ".github/workflows/lof-runtime-tests.yml"
   pull_request:
     paths:
       - "runtime/lof/**"
+      - "runtime/deployment_gate.py"
       - "tests/test_lof_*.py"
+      - "tests/test_deployment_gate.py"
       - ".github/workflows/lof-runtime-tests.yml"
   workflow_dispatch:
 
@@ -27,3 +31,6 @@ jobs:
 
       - name: Run LOF unit tests
         run: python -m unittest discover -s tests -p "test_lof_*.py" -v
+
+      - name: Run shared deployment gate regression tests
+        run: python -m unittest tests.test_deployment_gate -v
