@@ -1,0 +1,162 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+import html
+import json
+import re
+from typing import Any
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+
+
+SSE_UNIVERSE_URL = "https://query.sse.com.cn/commonSoaQuery.do"
+SZSE_UNIVERSE_URL = "https://www.szse.cn/api/report/ShowReport/data"
+
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+@dataclass(frozen=True)
+class LofIdentity:
+    code: str
+    name: str
+    exchange: str
+    manager: str | None = None
+    listing_date: str | None = None
+    source: str | None = None
+
+
+def _clean_html(value: Any) -> str:
+    text = "" if value is None else str(value)
+    return html.unescape(_TAG_RE.sub("", text)).strip()
+
+
+def _get_json(
+    url: str,
+    params: dict[str, Any],
+    *,
+    referer: str,
+    timeout: int = 15,
+) -> Any:
+    query = urlencode(params)
+    request = Request(
+        f"{url}?{query}",
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Referer": referer,
+            "Accept": "application/json,text/plain,*/*",
+        },
+    )
+    with urlopen(request, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def parse_sse_universe(payload: dict[str, Any]) -> list[LofIdentity]:
+    rows = payload.get("result") or []
+    result: list[LofIdentity] = []
+    for row in rows:
+        code = str(row.get("fundCode") or "").strip()
+        name = str(row.get("secNameFull") or row.get("fundAbbr") or "").strip()
+        if not code or not name:
+            continue
+        result.append(
+            LofIdentity(
+                code=code,
+                name=name,
+                exchange="SSE",
+                manager=(str(row.get("companyName")).strip() if row.get("companyName") else None),
+                listing_date=(
+                    str(row.get("listingDate")).strip()
+                    if row.get("listingDate")
+                    else None
+                ),
+                source="SSE_OFFICIAL",
+            )
+        )
+    return result
+
+
+def parse_szse_universe_page(payload: list[dict[str, Any]]) -> list[LofIdentity]:
+    if not payload:
+        return []
+    rows = payload[0].get("data") or []
+    result: list[LofIdentity] = []
+    for row in rows:
+        code = _clean_html(row.get("sys_key"))
+        name = _clean_html(row.get("kzjcurl"))
+        manager = _clean_html(row.get("glrmc")) or None
+        if not code or not name:
+            continue
+        result.append(
+            LofIdentity(
+                code=code,
+                name=name,
+                exchange="SZSE",
+                manager=manager,
+                source="SZSE_OFFICIAL",
+            )
+        )
+    return result
+
+
+def fetch_sse_universe(*, timeout: int = 15) -> list[LofIdentity]:
+    params = {
+        "isPagination": "true",
+        "pageHelp.pageSize": 500,
+        "pageHelp.pageNo": 1,
+        "pageHelp.beginPage": 1,
+        "pageHelp.cacheSize": 1,
+        "pageHelp.endPage": 1,
+        "sqlId": "FUND_LIST",
+        "fundType": "10",
+        "subClass": "11,14,15",
+    }
+    payload = _get_json(
+        SSE_UNIVERSE_URL,
+        params,
+        referer="https://www.sse.com.cn/assortment/fund/lof/home/",
+        timeout=timeout,
+    )
+    return parse_sse_universe(payload)
+
+
+def fetch_szse_universe(*, timeout: int = 15) -> list[LofIdentity]:
+    base_params = {
+        "SHOWTYPE": "JSON",
+        "CATALOGID": "fund_lof",
+    }
+    first_payload = _get_json(
+        SZSE_UNIVERSE_URL,
+        {**base_params, "PAGENO": 1},
+        referer="https://fund.szse.cn/marketdata/lof/",
+        timeout=timeout,
+    )
+
+    result = parse_szse_universe_page(first_payload)
+    page_count = 1
+    if first_payload:
+        metadata = first_payload[0].get("metadata") or {}
+        page_count = int(metadata.get("pagecount") or 1)
+
+    for page_no in range(2, page_count + 1):
+        payload = _get_json(
+            SZSE_UNIVERSE_URL,
+            {**base_params, "PAGENO": page_no},
+            referer="https://fund.szse.cn/marketdata/lof/",
+            timeout=timeout,
+        )
+        result.extend(parse_szse_universe_page(payload))
+
+    return result
+
+
+def fetch_all_lof_universe(*, timeout: int = 15) -> list[LofIdentity]:
+    rows = [
+        *fetch_sse_universe(timeout=timeout),
+        *fetch_szse_universe(timeout=timeout),
+    ]
+
+    unique: dict[tuple[str, str], LofIdentity] = {}
+    for row in rows:
+        unique[(row.exchange, row.code)] = row
+
+    return sorted(unique.values(), key=lambda item: (item.exchange, item.code))
