@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from .nav import load_official_nav_fixture
 from .runtime_session import LofRuntimeSession
 from .snapshot_store import LofSnapshotStore
 
@@ -21,6 +22,7 @@ def run_snapshot_once(
     snapshot_id: str | None = None,
     sse_universe_fixture_path: str | Path | None = None,
     szse_universe_fixture_path: str | Path | None = None,
+    official_nav_fixture_path: str | Path | None = None,
 ) -> tuple[dict, Path, LofRuntimeSession]:
     now = as_of or datetime.now(SHANGHAI_TZ)
     if now.tzinfo is None:
@@ -32,12 +34,18 @@ def run_snapshot_once(
         sse_universe_fixture_path=sse_universe_fixture_path,
         szse_universe_fixture_path=szse_universe_fixture_path,
     )
+    official_nav_override = (
+        load_official_nav_fixture(official_nav_fixture_path)
+        if official_nav_fixture_path is not None
+        else None
+    )
     snapshot = session.collect(
         generated_at=now,
         market_cutoff=now,
         max_quote_age_seconds=max_quote_age_seconds,
         timeout=timeout,
         snapshot_id=snapshot_id,
+        official_nav_override=official_nav_override,
     )
     store = LofSnapshotStore(data_root)
     path = store.persist(snapshot)
@@ -83,6 +91,14 @@ def _build_parser() -> argparse.ArgumentParser:
             "Production should omit this argument."
         ),
     )
+    parser.add_argument(
+        "--official-nav-fixture",
+        default=None,
+        help=(
+            "Optional official-NAV fixture for cloud integration smoke only. "
+            "Production should omit this argument."
+        ),
+    )
     return parser
 
 
@@ -95,6 +111,7 @@ def main() -> int:
         snapshot_id=args.snapshot_id,
         sse_universe_fixture_path=args.sse_universe_fixture,
         szse_universe_fixture_path=args.szse_universe_fixture,
+        official_nav_fixture_path=args.official_nav_fixture,
     )
 
     quality = snapshot.get("quality_summary") or {}
