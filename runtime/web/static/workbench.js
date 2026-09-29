@@ -357,7 +357,7 @@ function renderReminderFallback(item){
 }
 
 function renderReminderItem(item){
-  const level=item.level==="IMMEDIATE"?"即时":"日报";
+  const level="重点";
   const p=item.presentation||{};
   const lines=(p.change_lines||[]).map(renderReminderChangeLine).join("");
   const eventSummary=p.kind==="EVENT_UPDATE"&&p.summary
@@ -385,25 +385,69 @@ function renderReminderItem(item){
     +'</div>';
 }
 
+
+function compactIncrementText(item){
+  const p=item.presentation||{};
+  if(p.kind==="MARKET_TRANSITION"&&p.summary)return p.summary;
+  const summary=String(p.summary||"").trim();
+  if(summary&&summary!==p.title){
+    return summary.length>72?summary.slice(0,72)+"…":summary;
+  }
+  return p.title||renderReminderFallback(item)||"出现新的增量变化";
+}
+
+function renderOtherIncrementItem(item){
+  const p=item.presentation||{};
+  const scopes=[...new Set((item.changes||[]).map(c=>notificationScopeText(c.scope_id)).filter(Boolean))];
+  return '<a class="other-increment-item" href="/opportunities/'+esc(item.bond_code)+'">'
+    +'<div class="other-increment-main">'
+    +'<div class="other-increment-title">'
+    +'<b>'+esc(item.bond_name)+' '+esc(item.bond_code)+'</b>'
+    +(scopes.length?'<span>'+esc(scopes.join(" / "))+'</span>':"")
+    +'</div>'
+    +'<div class="other-increment-text">'
+    +'<strong>'+esc(p.title||"增量变化")+'</strong>'
+    +'<span>'+esc(compactIncrementText(item))+'</span>'
+    +'</div>'
+    +'</div>'
+    +'<time>'+esc(notificationTimeText(item.created_at))+'</time>'
+    +'</a>';
+}
+
 async function loadNotificationFeed(){
-  const box=$("#notificationFeed"),badge=$("#notificationBadge");
-  if(!box||!badge)return;
+  const box=$("#notificationFeed"),other=$("#otherIncrementFeed"),badge=$("#notificationBadge");
+  if(!box||!other||!badge)return;
   try{
     const r=await fetch("/api/opportunity/notifications?include_sent=true&limit=20");
     if(!r.ok)throw new Error(await r.text());
     const x=await r.json();
     const items=x.items||[];
-    badge.textContent=items.length?"最近 "+items.length+" 条":"暂无提醒";
-    badge.className="badge "+(items.length?"idle":"pass");
-    if(!items.length){
-      box.innerHTML='<div class="muted">当前没有近期机会变化。新进入、退出机会和重要信息更新会出现在这里。</div>';
-      return;
+    const otherItems=x.other_items||[];
+    const total=items.length+otherItems.length;
+
+    badge.textContent=total?"近期增量 "+total+" 条":"暂无增量";
+    badge.className="badge "+(total?"idle":"pass");
+    if($("#focusCount"))$("#focusCount").textContent=items.length;
+    if($("#otherCount"))$("#otherCount").textContent=otherItems.length;
+    if($("#attentionSummary")){
+      $("#attentionSummary").innerHTML=
+        '<b>近期需要多看 '+esc(items.length)+' 条</b>'
+        +'　·　其他增量 '+esc(otherItems.length)+' 条'
+        +'　·　其余工程变化不占用你的注意力';
     }
-    box.innerHTML=items.map(renderReminderItem).join("");
+
+    box.innerHTML=items.length
+      ?items.map(renderReminderItem).join("")
+      :'<div class="muted attention-empty">当前没有需要展开阅读的重点变化。</div>';
+
+    other.innerHTML=otherItems.length
+      ?otherItems.map(renderOtherIncrementItem).join("")
+      :'<div class="muted attention-empty">最近48小时没有其他需要概略提示的增量。</div>';
   }catch(e){
     badge.textContent="读取失败";
     badge.className="badge fail";
-    box.innerHTML='<div class="muted">提醒读取失败：'+esc(e.message)+'</div>';
+    box.innerHTML='<div class="muted">重点变化读取失败：'+esc(e.message)+'</div>';
+    other.innerHTML='<div class="muted">其他增量读取失败。</div>';
   }
 }
 
