@@ -66,17 +66,40 @@
     </section>
 
     <section id="notifications" class="section notification-section">
-      <div class="section-head">
+      <div class="section-head attention-page-head">
         <div>
-          <p class="eyebrow">机会提醒</p>
-          <h2>近期有哪些机会发生了变化</h2>
-          <p class="section-note">只读展示近期机会变化。每天 03:00、12:50、20:45 均监听新信息；交易日 20:45 同时启动正式日终市场更新，完成后机会中心、藏宝图与机会提醒同步刷新。周末不生成新的收盘价格截面，但公告与研究状态仍会更新。</p>
+          <p class="eyebrow">每日增量 · 注意力入口</p>
+          <h2>今天哪些变化值得看</h2>
+          <p class="section-note">重点变化稍微展开；其他增量只做概略提示。感兴趣时再进入具体转债查看完整研究。</p>
         </div>
         <span id="notificationBadge" class="badge idle">读取中</span>
       </div>
-      <div class="card notification-card standalone-notification-card">
-        <div id="notificationFeed" class="notification-feed">
-          <div class="muted">正在读取待提醒。</div>
+
+      <div class="attention-summary" id="attentionSummary">正在读取近期增量。</div>
+
+      <div class="attention-block">
+        <div class="attention-block-head">
+          <div>
+            <h3>重点变化</h3>
+            <p>值得多看两眼的变化，保留核心解释和下一步关注点。</p>
+          </div>
+          <b id="focusCount">—</b>
+        </div>
+        <div id="notificationFeed" class="notification-feed focus-feed">
+          <div class="muted">正在读取重点变化。</div>
+        </div>
+      </div>
+
+      <div class="attention-block compact-increment-block">
+        <div class="attention-block-head">
+          <div>
+            <h3>其他增量</h3>
+            <p>最近48小时内值得知道、但暂时不需要展开阅读的变化。</p>
+          </div>
+          <b id="otherCount">—</b>
+        </div>
+        <div id="otherIncrementFeed" class="other-increment-feed">
+          <div class="muted">正在读取其他增量。</div>
         </div>
       </div>
     </section>
