@@ -27,7 +27,7 @@ from runtime.opportunity.research_evidence import build_research_evidence
 from runtime.opportunity.research_task_builder import build_path_research_tasks
 from runtime.opportunity.research_trigger import run_research_trigger
 
-FULL_RUNTIME_VERSION = "opportunity-full-runtime-v1"
+FULL_RUNTIME_VERSION = "opportunity-full-runtime-v1.1-light-daily"
 StageCallback = Callable[[str, str, dict[str, Any]], None]
 
 
@@ -194,7 +194,35 @@ def run_opportunity_full_downstream(
         task_batch = None
         evidence_batch = None
         research_rounds: list[dict[str, Any]] = []
-        if pending:
+        if pending and not run_research:
+            # Daily close light mode: persist the trigger queue, then project the
+            # market/economic state immediately. Task packaging, evidence
+            # collection and AI research belong to the independent research lane.
+            mark(
+                "RESEARCH_TASKS",
+                "SKIPPED",
+                pending_tasks=pending,
+                reason="LIGHT_DAILY_UPDATE_RESEARCH_DEFERRED",
+            )
+            mark(
+                "RESEARCH_REUSE",
+                "SKIPPED",
+                pending_tasks=pending,
+                reason="LIGHT_DAILY_UPDATE_RESEARCH_DEFERRED",
+            )
+            mark(
+                "RESEARCH_EVIDENCE",
+                "SKIPPED",
+                pending_tasks=pending,
+                reason="LIGHT_DAILY_UPDATE_RESEARCH_DEFERRED",
+            )
+            mark(
+                "PATH_RESEARCH",
+                "SKIPPED",
+                pending_tasks=pending,
+                reason="DEFERRED_TO_INDEPENDENT_RESEARCH_LANE",
+            )
+        elif pending:
             mark("RESEARCH_TASKS", "RUNNING", pending_tasks=pending)
             task_batch = build_path_research_tasks(
                 registry_path,
