@@ -568,5 +568,3 @@ def run_daily_notice_lane_job(
         encoding="utf-8",
     )
     return {**payload,"latest_pointer_path":str(latest_path.resolve())}
-
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
