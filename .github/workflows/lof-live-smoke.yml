@@ -1,0 +1,77 @@
+name: LOF Live Snapshot Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/lof-live-smoke.yml"
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install runtime dependencies
+        run: pip install -r runtime/requirements.txt
+
+      - name: Generate one live LOF snapshot
+        run: |
+          mkdir -p /tmp/lof-live-smoke
+          python -m runtime.lof.snapshot_job \
+            --data-root /tmp/lof-live-smoke \
+            --timeout 20 \
+            --max-quote-age-seconds 180 \
+            --snapshot-id github-live-smoke
+
+      - name: Validate all-market snapshot
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path("/tmp/lof-live-smoke/latest_market_snapshot.json")
+          snapshot = json.loads(p.read_text(encoding="utf-8"))
+          rows = snapshot.get("rows") or []
+          universe = int(snapshot.get("universe_count") or 0)
+          quality = snapshot.get("quality_summary") or {}
+
+          assert universe >= 300, f"unexpected universe_count={universe}"
+          assert len(rows) == universe, (len(rows), universe)
+
+          summary = {
+              "collector_status": snapshot.get("collector_status"),
+              "universe_count": universe,
+              "row_count": len(rows),
+              "quote_fresh_count": quality.get("quote_fresh_count"),
+              "quote_stale_count": quality.get("quote_stale_count"),
+              "quote_unavailable_count": quality.get("quote_unavailable_count"),
+              "official_nav_available_count": quality.get("official_nav_available_count"),
+              "estimated_nav_available_count": quality.get("estimated_nav_available_count"),
+              "estimated_nav_stale_count": quality.get("estimated_nav_stale_count"),
+              "state_available_count": quality.get("state_available_count"),
+              "lane_errors": snapshot.get("lane_errors"),
+          }
+          print(json.dumps(summary, ensure_ascii=False, indent=2))
+          Path("/tmp/lof-live-smoke/summary.json").write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload smoke snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: lof-live-smoke
+          path: |
+            /tmp/lof-live-smoke/latest_market_snapshot.json
+            /tmp/lof-live-smoke/summary.json
+          retention-days: 7
