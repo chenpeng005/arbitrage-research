@@ -19,6 +19,7 @@ def run_snapshot_once(
     timeout: int = 15,
     max_quote_age_seconds: int = 60,
     snapshot_id: str | None = None,
+    sse_universe_fixture_path: str | Path | None = None,
 ) -> tuple[dict, Path, LofRuntimeSession]:
     now = as_of or datetime.now(SHANGHAI_TZ)
     if now.tzinfo is None:
@@ -27,6 +28,7 @@ def run_snapshot_once(
     session = LofRuntimeSession.build(
         as_of=now,
         timeout=timeout,
+        sse_universe_fixture_path=sse_universe_fixture_path,
     )
     snapshot = session.collect(
         generated_at=now,
@@ -63,6 +65,14 @@ def _build_parser() -> argparse.ArgumentParser:
         "--snapshot-id",
         default=None,
     )
+    parser.add_argument(
+        "--sse-universe-fixture",
+        default=None,
+        help=(
+            "Optional SSE official-universe fixture for cloud smoke only. "
+            "Production should omit this argument."
+        ),
+    )
     return parser
 
 
@@ -73,6 +83,7 @@ def main() -> int:
         timeout=args.timeout,
         max_quote_age_seconds=args.max_quote_age_seconds,
         snapshot_id=args.snapshot_id,
+        sse_universe_fixture_path=args.sse_universe_fixture,
     )
 
     quality = snapshot.get("quality_summary") or {}
