@@ -20,6 +20,32 @@ def _key(exchange: str, code: str) -> tuple[str, str]:
     return exchange, code
 
 
+def _official_nav_lag_label(
+    *,
+    nav_date: date | None,
+    as_of_date: date,
+    previous_trading_day: date | None,
+    second_previous_trading_day: date | None,
+) -> str | None:
+    if nav_date is None:
+        return None
+    if nav_date == as_of_date:
+        return "T-0"
+    if previous_trading_day is not None and nav_date == previous_trading_day:
+        return "T-1"
+    if (
+        second_previous_trading_day is not None
+        and nav_date == second_previous_trading_day
+    ):
+        return "T-2"
+    if (
+        second_previous_trading_day is not None
+        and nav_date < second_previous_trading_day
+    ):
+        return "T-2+"
+    return None
+
+
 def build_market_snapshot(
     *,
     universe: Iterable[LofIdentity],
@@ -31,6 +57,8 @@ def build_market_snapshot(
     market_cutoff: datetime,
     max_quote_age_seconds: int,
     type_records: dict[tuple[str, str], FundTypeRecord] | None = None,
+    previous_trading_day: date | None = None,
+    second_previous_trading_day: date | None = None,
     snapshot_id: str | None = None,
 ) -> dict:
     universe_rows = list(universe)
@@ -154,6 +182,36 @@ def build_market_snapshot(
             state_available = True
             state_available_count += 1
 
+        static_premium = premium_rate(price, official_nav)
+        official_nav_lag_label = _official_nav_lag_label(
+            nav_date=official_nav_date,
+            as_of_date=as_of_date,
+            previous_trading_day=previous_trading_day,
+            second_previous_trading_day=second_previous_trading_day,
+        )
+        if estimated_premium is not None:
+            display_premium = estimated_premium
+            display_premium_basis = "ESTIMATED_NAV"
+        elif static_premium is not None:
+            display_premium = static_premium
+            display_premium_basis = "OFFICIAL_NAV"
+        else:
+            display_premium = None
+            display_premium_basis = "UNAVAILABLE"
+
+        effective_daily_subscription_limit = (
+            None
+            if (
+                state_available
+                and state.subscription_status == "SUSPENDED"
+            )
+            else (
+                state.daily_subscription_limit
+                if state_available
+                else None
+            )
+        )
+
         row = {
             "code": identity.code,
             "name": identity.name,
@@ -192,17 +250,18 @@ def build_market_snapshot(
             "estimated_nav_status": estimated_nav_status,
             "estimated_nav_age_seconds": estimated_nav_age,
             "estimated_nav_proxy": estimated_nav_proxy,
-            "static_premium_rate": premium_rate(price, official_nav),
+            "static_premium_rate": static_premium,
             "estimated_premium_rate": estimated_premium,
+            "display_premium_rate": display_premium,
+            "display_premium_basis": display_premium_basis,
+            "official_nav_lag_label": official_nav_lag_label,
             "subscription_status": (
                 state.subscription_status if state_available else "UNKNOWN"
             ),
             "redemption_status": (
                 state.redemption_status if state_available else "UNKNOWN"
             ),
-            "daily_subscription_limit": (
-                state.daily_subscription_limit if state_available else None
-            ),
+            "daily_subscription_limit": effective_daily_subscription_limit,
             "minimum_subscription_amount": (
                 state.minimum_subscription_amount if state_available else None
             ),
@@ -329,6 +388,26 @@ def validate_market_snapshot(
                 raise ValueError(f"available estimated nav lacks method: {key}")
             if row.get("estimated_nav_source") is None:
                 raise ValueError(f"available estimated nav lacks source: {key}")
+
+        display_premium = row.get("display_premium_rate")
+        display_basis = row.get("display_premium_basis")
+        if display_basis == "ESTIMATED_NAV":
+            if display_premium != estimated_premium or estimated_premium is None:
+                raise ValueError(f"invalid estimated display premium: {key}")
+        elif display_basis == "OFFICIAL_NAV":
+            if display_premium != static_premium or static_premium is None:
+                raise ValueError(f"invalid official-nav display premium: {key}")
+        elif display_basis == "UNAVAILABLE":
+            if display_premium is not None:
+                raise ValueError(f"unavailable display premium has value: {key}")
+        else:
+            raise ValueError(f"invalid display premium basis: {key}")
+
+        if (
+            row.get("subscription_status") == "SUSPENDED"
+            and row.get("daily_subscription_limit") is not None
+        ):
+            raise ValueError(f"suspended subscription exposes limit: {key}")
 
     summary = snapshot.get("quality_summary") or {}
     if summary.get("row_count") != len(rows):
