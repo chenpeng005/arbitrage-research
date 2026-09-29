@@ -11,6 +11,7 @@ from runtime.lof.nav import (
     OfficialNavRecord,
     fetch_all_official_nav,
     is_nav_stale,
+    load_official_nav_fixture,
     nav_age_days,
     parse_sse_nav_payload,
     parse_szse_nav_payload,
@@ -150,6 +151,33 @@ class LofOfficialNavTest(unittest.TestCase):
         )
         self.assertTrue(by_code["161128"].available)
         self.assertEqual(by_code["161128"].nav, Decimal("7.0123"))
+
+    def test_load_official_nav_fixture(self) -> None:
+        payload = {
+            "fetched_at": "2026-09-29T13:35:00+08:00",
+            "rows": [
+                {
+                    "code": "501047",
+                    "exchange": "SSE",
+                    "nav": "1.051",
+                    "nav_date": "2026-09-28",
+                    "source": "SSE_OFFICIAL_FIXTURE",
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "nav.json"
+            path.write_text(
+                json.dumps(payload, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            rows = load_official_nav_fixture(path)
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].code, "501047")
+        self.assertEqual(rows[0].nav, Decimal("1.051"))
+        self.assertEqual(rows[0].nav_date, date(2026, 9, 28))
+        self.assertTrue(rows[0].available)
 
     def test_missing_nav_is_stale(self) -> None:
         row = OfficialNavRecord(
