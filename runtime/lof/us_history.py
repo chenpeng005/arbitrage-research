@@ -48,7 +48,11 @@ def fetch_tencent_us_daily(
     count: int = 30,
     timeout: int = 10,
 ) -> list[DailyClose]:
-    key = f"us{symbol_with_exchange}"
+    key = (
+        symbol_with_exchange
+        if symbol_with_exchange.startswith("us")
+        else f"us{symbol_with_exchange}"
+    )
     params = {
         "param": f"{key},day,,,{count},qfq",
     }
