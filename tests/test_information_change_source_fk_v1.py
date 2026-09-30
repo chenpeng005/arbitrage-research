@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -86,6 +87,33 @@ class InformationChangeSourceFkV1Test(unittest.TestCase):
                     "SELECT COUNT(*) n FROM notification_change_link"
                 ).fetchone()["n"]
                 self.assertEqual(linked, 1)
+            finally:
+                conn.close()
+
+    def test_invalid_change_source_fails_at_change_insert(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            db = Path(td) / "runtime.sqlite"
+            initialize_schema(db)
+            conn = connect(db)
+            try:
+                now = "2026-09-30T00:00:00+00:00"
+                conn.execute(
+                    """INSERT INTO bond_master
+                       (bond_code,bond_name,stock_code,active,first_seen_at,updated_at)
+                       VALUES (?,?,?,?,?,?)""",
+                    ("123456", "测试转债", "600000", 1, now, now),
+                )
+                change = deep_research_change(
+                    bond_code="123456",
+                    bond_name="测试转债",
+                    path_id="DOWNWARD_REVISION",
+                    event_update_id="EVU_MISSING",
+                    event_family="REVISION:FINAL_K_CHANGE",
+                    reason="TEST",
+                )
+                change["change_source"] = "INVALID_SOURCE"
+                with self.assertRaises(sqlite3.IntegrityError):
+                    _insert_change(conn, change, now)
             finally:
                 conn.close()
 
