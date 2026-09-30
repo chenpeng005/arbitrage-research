@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from functools import lru_cache
 import base64
 import hashlib
 import json
@@ -173,7 +172,6 @@ def _json_bytes(data: bytes, *, label: str) -> dict[str, Any]:
     return payload
 
 
-@lru_cache(maxsize=4)
 def fetch_szse_relay_bundle(
     base_url: str,
     *,
