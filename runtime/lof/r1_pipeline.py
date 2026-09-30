@@ -4,6 +4,10 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Iterable
 
+from .csi_component_proxy import (
+    CsiComponentWeightSet,
+    reconstruct_csi_component_quotes,
+)
 from .domestic_index_resolver import resolve_r1_from_previous_close
 from .index_proxy import IndexProxyMapping
 from .index_quote import IndexQuote
@@ -43,6 +47,7 @@ def resolve_r1_batch(
     official_navs: dict[str, OfficialNavRecord],
     mapping_candidates: dict[str, ResolverMappingCandidate],
     proxy_mappings: dict[str, IndexProxyMapping],
+    component_weight_sets: dict[str, CsiComponentWeightSet] | None = None,
     expected_anchor_date: date,
     as_of: datetime,
     max_proxy_age_seconds: int = 60,
@@ -68,10 +73,57 @@ def resolve_r1_batch(
             continue
         unique_proxy_map[(proxy.tencent_symbol, proxy.xueqiu_symbol)] = proxy
 
+    component_weight_sets = component_weight_sets or {}
+    component_proxy_map = {
+        key: proxy
+        for key, proxy in unique_proxy_map.items()
+        if (
+            proxy.index_code
+            and proxy.index_code in component_weight_sets
+            and component_weight_sets[proxy.index_code].available
+        )
+    }
+    standard_proxy_map = {
+        key: proxy
+        for key, proxy in unique_proxy_map.items()
+        if key not in component_proxy_map
+    }
+
     quote_cache = fetch_index_quotes_for_mappings(
-        unique_proxy_map.values(),
+        standard_proxy_map.values(),
         timeout=timeout,
     )
+
+    component_quotes = reconstruct_csi_component_quotes(
+        {
+            proxy.index_code: component_weight_sets[proxy.index_code]
+            for proxy in component_proxy_map.values()
+            if proxy.index_code
+        },
+        as_of=as_of,
+        timeout=timeout,
+    )
+    component_failures: list[IndexProxyMapping] = []
+    for key, proxy in component_proxy_map.items():
+        quote = component_quotes.get(proxy.index_code or "")
+        if quote is not None and quote.error is None:
+            quote_cache[key] = quote
+        else:
+            if quote is not None:
+                quote_cache[key] = quote
+            component_failures.append(proxy)
+
+    if component_failures:
+        fallback_quotes = fetch_index_quotes_for_mappings(
+            component_failures,
+            timeout=timeout,
+        )
+        for proxy in component_failures:
+            key = (proxy.tencent_symbol, proxy.xueqiu_symbol)
+            fallback = fallback_quotes.get(key)
+            if fallback is not None and fallback.error is None:
+                quote_cache[key] = fallback
+
     results: list[EstimatedNavResult] = []
 
     for code in codes:
