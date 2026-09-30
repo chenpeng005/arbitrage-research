@@ -98,6 +98,10 @@ def proxy_from_tracking_index_code(
         market_num = "0"
     elif re.fullmatch(r"9(?:30|31|32|33)\d{3}", code):
         market_num = "2"
+    elif re.fullmatch(r"H\d{5}", code):
+        # Legacy CSI family code. CSI Official Intraday can resolve it
+        # even when common Tencent/Eastmoney-style market symbols cannot.
+        market_num = "2"
     elif re.fullmatch(r"98\d{4}", code):
         market_num = "0"
 
