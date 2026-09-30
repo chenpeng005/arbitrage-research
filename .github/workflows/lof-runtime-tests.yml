@@ -2,6 +2,7 @@ name: LOF Runtime Tests
 
 on:
   push:
+    branches: [main]
     paths:
       - "runtime/lof/**"
       - "runtime/deployment_gate.py"
