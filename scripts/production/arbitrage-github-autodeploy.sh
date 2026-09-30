@@ -16,9 +16,13 @@ if ! flock -n 9; then
   exit 0
 fi
 
-remote_sha="$(
-  git ls-remote "$REPO_URL" refs/heads/main | awk 'NR==1 {print $1}'
-)"
+if ! remote_line="$(
+  GIT_TERMINAL_PROMPT=0 timeout 15s git ls-remote "$REPO_URL" refs/heads/main
+)"; then
+  echo "[autodeploy] GitHub HEAD check timed out/failed; defer to next timer"
+  exit 0
+fi
+remote_sha="$(awk 'NR==1 {print $1}' <<<"$remote_line")"
 if [[ ! "$remote_sha" =~ ^[0-9a-f]{40}$ ]]; then
   echo "[autodeploy] invalid remote SHA: $remote_sha" >&2
   exit 2
@@ -42,7 +46,7 @@ fi
 echo "[autodeploy] new main commit detected: current=$current_sha remote=$remote_sha"
 
 workflow_file="$STATE_ROOT/workflow-$remote_sha.json"
-curl -fsSL \
+curl -fsSL --connect-timeout 5 --max-time 20 \
   -H 'Accept: application/vnd.github+json' \
   -H 'X-GitHub-Api-Version: 2022-11-28' \
   "$REPO_API/actions/workflows/$WORKFLOW_FILE/runs?branch=main&head_sha=$remote_sha&per_page=5" \
@@ -102,7 +106,9 @@ rm -rf "$stage"
 mkdir -p "$stage"
 archive="$STATE_ROOT/$remote_sha.tar.gz"
 
-curl -fsSL   "https://codeload.github.com/chenpeng005/arbitrage-research/tar.gz/$remote_sha"   -o "$archive"
+curl -fsSL --connect-timeout 5 --max-time 30 \
+  "https://codeload.github.com/chenpeng005/arbitrage-research/tar.gz/$remote_sha" \
+  -o "$archive"
 tar -xzf "$archive" -C "$stage" --strip-components=1
 rm -f "$archive"
 
