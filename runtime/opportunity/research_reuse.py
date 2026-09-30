@@ -318,4 +318,3 @@ def canonical_json(value: Any) -> str:
         separators=(",", ":"),
     )
 
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

@@ -178,4 +178,3 @@ def prepare_path_research_ai_input(
     _write_json(work_dir / "input_build_result.json", descriptor)
     return descriptor
 
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

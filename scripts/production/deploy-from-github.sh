@@ -18,7 +18,8 @@ if [[ ! -d "$STAGE_ROOT/runtime" ]]; then
 fi
 
 echo "[deploy] validate staged source $APP_COMMIT_SHA"
-if grep -R "\[executed on device:"   "$STAGE_ROOT/runtime" "$STAGE_ROOT/scripts/production"   --include='*.py' --include='*.sh' -n; then
+needle="\\[executed on dev""ice:"
+if grep -R "$needle"   "$STAGE_ROOT/runtime" "$STAGE_ROOT/scripts/production"   --include="*.py" --include="*.sh" -n; then
   echo "source contamination detected" >&2
   exit 3
 fi

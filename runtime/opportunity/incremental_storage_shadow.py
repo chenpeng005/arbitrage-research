@@ -140,4 +140,3 @@ def run_incremental_storage_shadow(*, data_root: Path) -> dict[str, Any]:
         _write_json(latest_path, result)
         return result
 
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

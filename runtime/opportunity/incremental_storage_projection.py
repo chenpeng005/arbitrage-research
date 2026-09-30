@@ -184,4 +184,3 @@ def audit_projection_parity(*, data_root: Path, target_db: Path, max_samples: in
         "mismatch_samples": mismatches,
     }
 
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

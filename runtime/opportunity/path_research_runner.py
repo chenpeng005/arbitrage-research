@@ -220,4 +220,3 @@ def run_one_path_research(
         _write_json(work_dir / "runner_result.json", output)
         return output
 
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

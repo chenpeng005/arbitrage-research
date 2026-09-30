@@ -177,4 +177,3 @@ def restore_unresolved_ledger_to_pending(data_root: Path) -> dict[str, Any]:
         "pending_total": len(pending.get("pending_tasks", [])),
     }
 
-[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
