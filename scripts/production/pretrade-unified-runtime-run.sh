@@ -81,7 +81,10 @@ poll_job() {
   return 1
 }
 
-market_body=$(curl -fsS -X POST 'http://127.0.0.1:7080/api/market-map-runs'   -H 'Content-Type: application/json'   --data "{"snapshot_mode":"PRE_TRADE_CLOSE","market_cutoff":"$market_cutoff","ai_execution_mode":"AUTO_API"}")
+market_payload=$(printf '{"snapshot_mode":"PRE_TRADE_CLOSE","market_cutoff":"%s","ai_execution_mode":"AUTO_API"}' "$market_cutoff")
+market_body=$(curl -fsS -X POST 'http://127.0.0.1:7080/api/market-map-runs' \
+  -H 'Content-Type: application/json' \
+  --data "$market_payload")
 market_job=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' <<<"$market_body")
 poll_job "$market_job" "MARKET_MAP"
 
