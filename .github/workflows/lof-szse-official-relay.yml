@@ -11,7 +11,8 @@ on:
       - "runtime/lof/szse_relay_publish.py"
   workflow_dispatch:
   schedule:
-    - cron: "30 0 * * 1-5"\n    - cron: "10 1 * * 1-5"
+    - cron: "30 0 * * 1-5"
+    - cron: "10 1 * * 1-5"
 
 permissions:
   contents: write
