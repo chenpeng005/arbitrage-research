@@ -41,15 +41,18 @@ fi
 
 echo "[autodeploy] new main commit detected: current=$current_sha remote=$remote_sha"
 
-workflow_json="$(
-  curl -fsSL     -H 'Accept: application/vnd.github+json'     -H 'X-GitHub-Api-Version: 2022-11-28'     "$REPO_API/actions/workflows/$WORKFLOW_FILE/runs?branch=main&head_sha=$remote_sha&per_page=5"
-)"
+workflow_file="$STATE_ROOT/workflow-$remote_sha.json"
+curl -fsSL \
+  -H 'Accept: application/vnd.github+json' \
+  -H 'X-GitHub-Api-Version: 2022-11-28' \
+  "$REPO_API/actions/workflows/$WORKFLOW_FILE/runs?branch=main&head_sha=$remote_sha&per_page=5" \
+  -o "$workflow_file"
 
 gate="$(
-  python3 - "$remote_sha" <<'PY' <<<"$workflow_json"
-import json, sys
+  python3 - "$remote_sha" "$workflow_file" <<'PY'
+import json, pathlib, sys
 sha=sys.argv[1]
-obj=json.load(sys.stdin)
+obj=json.loads(pathlib.Path(sys.argv[2]).read_text(encoding="utf-8"))
 runs=[
     r for r in obj.get("workflow_runs", [])
     if r.get("head_sha")==sha and r.get("event") in {"push","workflow_dispatch"}
@@ -57,7 +60,13 @@ runs=[
 if not runs:
     print("WAIT:NO_RUN")
     raise SystemExit
-runs.sort(key=lambda r: (int(r.get("run_number") or 0), r.get("created_at") or ""), reverse=True)
+runs.sort(
+    key=lambda r: (
+        int(r.get("run_number") or 0),
+        r.get("created_at") or "",
+    ),
+    reverse=True,
+)
 r=runs[0]
 status=r.get("status")
 conclusion=r.get("conclusion")
@@ -69,6 +78,7 @@ else:
     print(f"BLOCK:{conclusion or 'UNKNOWN'}")
 PY
 )"
+rm -f "$workflow_file"
 
 case "$gate" in
   PASS)
