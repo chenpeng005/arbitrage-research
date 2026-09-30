@@ -85,6 +85,7 @@ class LofIndexProxyMappingTest(unittest.TestCase):
             ("000300", "sh000300", "SH000300"),
             ("399998", "sz399998", "SZ399998"),
             ("930606", None, "CSI930606"),
+            ("H30094", None, "CSIH30094"),
             ("980017", "sz980017", "SZ980017"),
         ]
         for code, tencent, xueqiu in cases:
