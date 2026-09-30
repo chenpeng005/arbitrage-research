@@ -23,6 +23,12 @@ def resolve_r1_from_previous_close(
     Caller must provide expected_anchor_date from the trading-calendar layer.
     We fail closed when official NAV date does not equal that date.
     """
+    resolver_method = (
+        "CSI_COMPONENT_WEIGHT_PREV_CLOSE"
+        if index_quote.source == "CSI_COMPONENT_WEIGHT_PROXY"
+        else "INDEX_PROXY_PREV_CLOSE"
+    )
+
     if official_nav_date != expected_anchor_date:
         return EstimatedNavResult(
             fund_code=fund_code,
@@ -31,7 +37,7 @@ def resolve_r1_from_previous_close(
             estimated_nav_status="UNAVAILABLE",
             estimated_nav_quality="UNKNOWN",
             resolver_class="R1_DOMESTIC_INDEX",
-            resolver_method="INDEX_PROXY_PREV_CLOSE",
+            resolver_method=resolver_method,
             proxy_id=index_quote.code or index_quote.symbol,
             proxy_time=index_quote.quote_time,
             proxy_return=None,
@@ -49,7 +55,7 @@ def resolve_r1_from_previous_close(
             estimated_nav_status="UNAVAILABLE",
             estimated_nav_quality="UNKNOWN",
             resolver_class="R1_DOMESTIC_INDEX",
-            resolver_method="INDEX_PROXY_PREV_CLOSE",
+            resolver_method=resolver_method,
             proxy_id=index_quote.code or index_quote.symbol,
             proxy_time=index_quote.quote_time,
             proxy_return=None,
@@ -59,7 +65,11 @@ def resolve_r1_from_previous_close(
             error=f"INDEX_QUOTE_ERROR:{index_quote.error}",
         )
 
-    quality = "HIGH" if exposure_ratio is not None else "MEDIUM"
+    quality = (
+        "MEDIUM"
+        if index_quote.source == "CSI_COMPONENT_WEIGHT_PROXY"
+        else "HIGH" if exposure_ratio is not None else "MEDIUM"
+    )
     tz = index_quote.quote_time.tzinfo if index_quote.quote_time is not None else as_of.tzinfo
     proxy_anchor_time = datetime.combine(
         expected_anchor_date,
@@ -71,7 +81,7 @@ def resolve_r1_from_previous_close(
         ResolverInput(
             fund_code=fund_code,
             resolver_class="R1_DOMESTIC_INDEX",
-            resolver_method="INDEX_PROXY_PREV_CLOSE",
+            resolver_method=resolver_method,
             proxy_id=index_quote.code or index_quote.symbol,
             official_nav=official_nav,
             proxy_anchor_value=index_quote.previous_close,
