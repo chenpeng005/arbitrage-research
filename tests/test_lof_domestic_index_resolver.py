@@ -48,6 +48,32 @@ class LofDomesticIndexResolverTest(unittest.TestCase):
         self.assertEqual(result.estimated_nav_quality, "HIGH")
         self.assertIsNotNone(result.estimated_nav)
 
+    def test_target_etf_method_caps_quality_at_medium(self) -> None:
+        quote = IndexQuote(
+            symbol="sh562060",
+            code="562060",
+            name="标普A股红利ETF华宝",
+            current=Decimal("0.611"),
+            previous_close=Decimal("0.607"),
+            quote_time=datetime(2026, 9, 30, 10, 30, tzinfo=TZ),
+            source="TENCENT_QUOTE",
+        )
+        result = resolve_r1_from_previous_close(
+            fund_code="501029",
+            official_nav=Decimal("1.7270"),
+            official_nav_date=date(2026, 9, 29),
+            expected_anchor_date=date(2026, 9, 29),
+            index_quote=quote,
+            as_of=datetime(2026, 9, 30, 10, 30, 20, tzinfo=TZ),
+            exposure_ratio=Decimal("0.95"),
+            resolver_method="TARGET_ETF_PREV_CLOSE",
+            quality_cap="MEDIUM",
+        )
+        self.assertEqual(result.estimated_nav_status, "AVAILABLE")
+        self.assertEqual(result.estimated_nav_quality, "MEDIUM")
+        self.assertEqual(result.resolver_method, "TARGET_ETF_PREV_CLOSE")
+        self.assertEqual(result.proxy_id, "562060")
+
     def test_wrong_nav_date_fails_closed(self) -> None:
         quote = IndexQuote(
             symbol="sh000300",
