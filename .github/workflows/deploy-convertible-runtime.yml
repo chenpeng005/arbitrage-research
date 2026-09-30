@@ -41,6 +41,12 @@ jobs:
             exit 1
           fi
 
+      - name: Validate production shell scripts
+        shell: bash
+        run: |
+          find scripts/production -type f -name '*.sh' -print0 | \
+            xargs -0 -r -n1 bash -n
+
       - name: Compile critical runtime
         run: |
           python -m py_compile             runtime/opportunity/research_trigger.py             runtime/opportunity/full_runtime_controller.py             runtime/opportunity/incremental_information_controller.py             runtime/market_map/acquisition.py             runtime/market_map/calculation.py             runtime/web/app.py
