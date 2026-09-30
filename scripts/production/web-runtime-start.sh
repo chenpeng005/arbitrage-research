@@ -1,31 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT=/home/admin/projects/arbitrage-runtime
-cd "$ROOT"
+sudo -n systemctl restart arbitrage-web-public.service arbitrage-web-local.service
 
-set -a
-source .runtime_env
-set +a
-
-export RUNTIME_DATA_ROOT="$ROOT/runtime_data"
-export PYTHONPATH="$ROOT"
-export RUNTIME_TRUST_LOCAL_PROXY_AUTH=1
-
-mkdir -p runtime_data/logs
-
-pids=$(ps -ef | awk '/runtime.web.app:app.*(8010|7080)/ && !/awk/ {print $2}')
-if [[ -n "$pids" ]]; then
-  kill $pids
+for _ in $(seq 1 30); do
+  if curl -fsS http://127.0.0.1:7080/api/opportunity/information-status >/dev/null 2>&1; then
+    echo "web runtime ready"
+    exit 0
+  fi
   sleep 1
-fi
+done
 
-nohup .venv/bin/uvicorn runtime.web.app:app --host 0.0.0.0 --port 8010 \
-  > runtime_data/logs/web-8010.log 2>&1 < /dev/null &
-
-nohup .venv/bin/uvicorn runtime.web.app:app --host 127.0.0.1 --port 7080 --no-proxy-headers \
-  > runtime_data/logs/web-7080.log 2>&1 < /dev/null &
-
-sleep 2
-curl -fsS http://127.0.0.1:7080/api/opportunity/information-status >/dev/null
-echo "web runtime started with .runtime_env"
+echo "web runtime failed readiness check" >&2
+sudo -n systemctl status arbitrage-web-public.service --no-pager || true
+sudo -n systemctl status arbitrage-web-local.service --no-pager || true
+exit 1
