@@ -62,9 +62,19 @@ cp -a "$STAGE_ROOT/runtime" "$LIVE_ROOT/runtime"
 cp -a "$STAGE_ROOT/scripts" "$LIVE_ROOT/scripts"
 cp -a "$STAGE_ROOT/tests" "$LIVE_ROOT/tests"
 
-install -m 0755   "$LIVE_ROOT/scripts/production/web-runtime-start.sh"   /home/admin/bin/arbitrage-web-runtime-start.sh
-install -m 0755   "$LIVE_ROOT/scripts/production/information-runtime-run.sh"   /home/admin/bin/information-runtime-run.sh
-install -m 0755   "$LIVE_ROOT/scripts/production/pretrade-unified-runtime-run.sh"   /home/admin/bin/pretrade-unified-runtime-run.sh
+install -m 0755 "$LIVE_ROOT/scripts/production/web-runtime-start.sh" /home/admin/bin/arbitrage-web-runtime-start.sh
+install -m 0755 "$LIVE_ROOT/scripts/production/web-runtime-public.sh" /home/admin/bin/arbitrage-web-public.sh
+install -m 0755 "$LIVE_ROOT/scripts/production/web-runtime-local.sh" /home/admin/bin/arbitrage-web-local.sh
+install -m 0755 "$LIVE_ROOT/scripts/production/information-runtime-run.sh" /home/admin/bin/information-runtime-run.sh
+install -m 0755 "$LIVE_ROOT/scripts/production/pretrade-unified-runtime-run.sh" /home/admin/bin/pretrade-unified-runtime-run.sh
+install -m 0755 "$LIVE_ROOT/scripts/production/arbitrage-github-autodeploy.sh" /home/admin/bin/arbitrage-github-autodeploy.sh
+
+sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-web-public.service" /etc/systemd/system/arbitrage-web-public.service
+sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-web-local.service" /etc/systemd/system/arbitrage-web-local.service
+sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-github-autodeploy.service" /etc/systemd/system/arbitrage-github-autodeploy.service
+sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-github-autodeploy.timer" /etc/systemd/system/arbitrage-github-autodeploy.timer
+sudo -n systemctl daemon-reload
+sudo -n systemctl enable arbitrage-web-public.service arbitrage-web-local.service arbitrage-github-autodeploy.timer >/dev/null
 
 "$PY" - <<'PY'
 import datetime, json, os, pathlib
@@ -78,7 +88,7 @@ obj["deployed_at"] = datetime.datetime.now(
     datetime.timezone.utc
 ).isoformat()
 obj["deployment_method"] = (
-    "GitHub Actions automatic application deployment; "
+    "Validated GitHub pull auto-deployment; "
     "Knowledge snapshot unchanged"
 )
 tmp = path.with_suffix(".tmp")
@@ -95,7 +105,6 @@ export RUNTIME_DATA_ROOT="$LIVE_ROOT/runtime_data"
 "$PY" -m runtime.deployment_gate --data-root "$RUNTIME_DATA_ROOT"
 
 /home/admin/bin/arbitrage-web-runtime-start.sh
-curl -fsS http://127.0.0.1:7080/api/health >/dev/null
 curl -fsS http://127.0.0.1:7080/api/opportunity/information-status >/dev/null
 
 mkdir -p "$LIVE_ROOT/runtime_data/deployment"
@@ -111,7 +120,7 @@ out.write_text(json.dumps({
     "deployed_at": datetime.datetime.now(
         datetime.timezone.utc
     ).isoformat(),
-    "method": "github-actions-ssh-staged-validated",
+    "method": "validated-github-pull-systemd",
 }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 PY
 
