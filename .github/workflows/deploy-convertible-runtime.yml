@@ -1,0 +1,110 @@
+name: Deploy Convertible Runtime
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "runtime/**"
+      - "scripts/production/**"
+      - "tests/**"
+      - ".github/workflows/deploy-convertible-runtime.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: convertible-production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: runtime/requirements.txt
+
+      - name: Install runtime dependencies
+        run: python -m pip install -r runtime/requirements.txt
+
+      - name: Source sanitation
+        shell: bash
+        run: |
+          if grep -R "\[executed on device:" runtime scripts/production \
+            --include='*.py' --include='*.sh' -n; then
+            echo "Remote wrapper contamination detected"
+            exit 1
+          fi
+
+      - name: Compile critical runtime
+        run: |
+          python -m py_compile             runtime/opportunity/research_trigger.py             runtime/opportunity/full_runtime_controller.py             runtime/opportunity/incremental_information_controller.py             runtime/market_map/acquisition.py             runtime/market_map/calculation.py             runtime/web/app.py
+
+      - name: Run convertible deployment tests
+        shell: bash
+        run: |
+          for pattern in             test_daily_research_decoupling_v1.py             test_token_cost_gate_v1.py             test_reminder_policy_v2.py             test_deployment_gate.py
+          do
+            python -m unittest discover -s tests -p "$pattern" -v
+          done
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      LIVE_ROOT: /home/admin/projects/arbitrage-runtime
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check deployment credentials
+        id: creds
+        shell: bash
+        run: |
+          if [[ -n "$DEPLOY_HOST" && -n "$DEPLOY_USER" &&                 -n "$DEPLOY_SSH_PRIVATE_KEY" && -n "$DEPLOY_KNOWN_HOSTS" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "Production SSH credentials are configured."
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Production SSH credentials are not configured; validation only."
+          fi
+
+      - name: Configure SSH
+        if: steps.creds.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 0600 ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 0644 ~/.ssh/known_hosts
+
+      - name: Upload staged release
+        if: steps.creds.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          STAGE_ROOT="/home/admin/deploy-staging/arbitrage-runtime/$GITHUB_SHA"
+          ssh "$DEPLOY_USER@$DEPLOY_HOST"             "rm -rf '$STAGE_ROOT' && mkdir -p '$STAGE_ROOT'"
+          rsync -az             runtime scripts tests             "$DEPLOY_USER@$DEPLOY_HOST:$STAGE_ROOT/"
+
+      - name: Validate and activate release
+        if: steps.creds.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          STAGE_ROOT="/home/admin/deploy-staging/arbitrage-runtime/$GITHUB_SHA"
+          ssh "$DEPLOY_USER@$DEPLOY_HOST"             "chmod +x '$STAGE_ROOT/scripts/production/deploy-from-github.sh' &&              APP_COMMIT_SHA='$GITHUB_SHA'              STAGE_ROOT='$STAGE_ROOT'              LIVE_ROOT='$LIVE_ROOT'              bash '$STAGE_ROOT/scripts/production/deploy-from-github.sh'"
+
+      - name: Cleanup staging
+        if: always() && steps.creds.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          STAGE_ROOT="/home/admin/deploy-staging/arbitrage-runtime/$GITHUB_SHA"
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "rm -rf '$STAGE_ROOT'" || true
