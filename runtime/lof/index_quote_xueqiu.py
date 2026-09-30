@@ -255,6 +255,10 @@ def fetch_index_quotes_for_mappings(
 ) -> dict[tuple[str | None, str | None], IndexQuote]:
     from .index_proxy import IndexProxyMapping
     from .index_quote import fetch_tencent_index_quotes
+    from .index_quote_csindex import (
+        fetch_csindex_index_quotes,
+        supports_csindex_official_quote,
+    )
 
     mapping_list = list(mappings)
     tencent_symbols = [
@@ -263,6 +267,32 @@ def fetch_index_quotes_for_mappings(
     tencent_quotes = fetch_tencent_index_quotes(
         tencent_symbols,
         timeout=timeout,
+    )
+
+    # CSI official intraday is the primary fallback for CSI custom indices.
+    # It avoids relying on Xueqiu, whose API may return an empty WAF response
+    # from the production server.
+    need_csindex: list[str] = []
+    for mapping in mapping_list:
+        tq = (
+            tencent_quotes.get(mapping.tencent_symbol)
+            if mapping.tencent_symbol
+            else None
+        )
+        if (
+            (tq is None or tq.error is not None)
+            and supports_csindex_official_quote(mapping.index_code)
+            and mapping.index_code
+        ):
+            need_csindex.append(mapping.index_code)
+
+    csindex_quotes = (
+        fetch_csindex_index_quotes(
+            need_csindex,
+            timeout=timeout,
+        )
+        if need_csindex
+        else {}
     )
 
     need_xueqiu: list[str] = []
@@ -274,12 +304,24 @@ def fetch_index_quotes_for_mappings(
             if mapping.tencent_symbol
             else None
         )
-        if tq is None or tq.error is not None:
+        cq = (
+            csindex_quotes.get(mapping.index_code)
+            if mapping.index_code
+            else None
+        )
+        if (
+            (tq is None or tq.error is not None)
+            and (cq is None or cq.error is not None)
+        ):
             need_xueqiu.append(mapping.xueqiu_symbol)
 
-    xueqiu_quotes = fetch_xueqiu_index_quotes(
-        need_xueqiu,
-        timeout=timeout,
+    xueqiu_quotes = (
+        fetch_xueqiu_index_quotes(
+            need_xueqiu,
+            timeout=timeout,
+        )
+        if need_xueqiu
+        else {}
     )
 
     result: dict[tuple[str | None, str | None], IndexQuote] = {}
@@ -291,13 +333,22 @@ def fetch_index_quotes_for_mappings(
             else None
         )
         if quote is None or quote.error is not None:
-            fallback = (
+            csi_fallback = (
+                csindex_quotes.get(mapping.index_code)
+                if mapping.index_code
+                else None
+            )
+            if csi_fallback is not None and csi_fallback.error is None:
+                quote = csi_fallback
+
+        if quote is None or quote.error is not None:
+            xueqiu_fallback = (
                 xueqiu_quotes.get(mapping.xueqiu_symbol)
                 if mapping.xueqiu_symbol
                 else None
             )
-            if fallback is not None:
-                quote = fallback
+            if xueqiu_fallback is not None:
+                quote = xueqiu_fallback
 
         if quote is None:
             quote = IndexQuote(
