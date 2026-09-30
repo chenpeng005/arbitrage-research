@@ -4,6 +4,7 @@ set -euo pipefail
 LIVE_ROOT="${LIVE_ROOT:-/home/admin/projects/arbitrage-runtime}"
 STAGE_ROOT="${STAGE_ROOT:?STAGE_ROOT is required}"
 APP_COMMIT_SHA="${APP_COMMIT_SHA:?APP_COMMIT_SHA is required}"
+export LIVE_ROOT APP_COMMIT_SHA
 BACKUP_ROOT="${BACKUP_ROOT:-/home/admin/deploy-backups/arbitrage-runtime}"
 PY="${LIVE_ROOT}/.venv/bin/python"
 
