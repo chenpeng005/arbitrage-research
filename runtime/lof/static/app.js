@@ -25,6 +25,13 @@
     SUSPENDED: "暂停",
     UNKNOWN: "未知",
   };
+  const estimateMethodLabels = {
+    INDEX_PROXY_PREV_CLOSE: "指数直连",
+    CSI_COMPONENT_WEIGHT_PREV_CLOSE: "成分重建",
+    TARGET_ETF_PREV_CLOSE: "目标ETF代理",
+    MULTIDAY_PROXY_FX_BRIDGE: "跨日指数+汇率",
+    COMMODITY_FX_BRIDGE: "商品+汇率",
+  };
 
   const num = (v) => {
     if (v === null || v === undefined || v === "") return null;
@@ -80,6 +87,23 @@
     td.textContent = text;
     if (className) td.className = className;
     tr.appendChild(td);
+    return td;
+  };
+
+  const estimatedMethodText = (row) => {
+    if (row.estimated_nav_status !== "AVAILABLE") return "";
+    return estimateMethodLabels[row.estimated_nav_method] || "实时估算";
+  };
+
+  const appendEstimatedNavCell = (tr, row) => {
+    const td = cell(tr, fmt(row.estimated_nav, 4), "num primary-col");
+    const methodText = estimatedMethodText(row);
+    if (methodText) {
+      const method = document.createElement("div");
+      method.className = "estimate-method";
+      method.textContent = methodText;
+      td.appendChild(method);
+    }
     return td;
   };
 
@@ -175,7 +199,7 @@
       cell(tr, fmtPct(row.pct_change), `num ${premiumClass(row.pct_change)}`);
       cell(tr, fmtVolume(row.volume), "num");
       cell(tr, fmtAmount(row.amount), "num strong");
-      cell(tr, fmt(row.estimated_nav, 4), "num primary-col");
+      appendEstimatedNavCell(tr, row);
       appendPremiumCell(tr, row);
       cell(tr, qualityText(row), `quality q-${(row.estimated_nav_quality || "unknown").toLowerCase()}`);
       cell(tr, fmtPct(row.static_premium_rate), `num ${premiumClass(row.static_premium_rate)}`);
