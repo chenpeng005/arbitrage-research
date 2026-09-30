@@ -25,7 +25,9 @@ fi
 
 PYTHONPATH="$STAGE_ROOT" "$PY" -m py_compile   "$STAGE_ROOT/runtime/opportunity/research_trigger.py"   "$STAGE_ROOT/runtime/opportunity/full_runtime_controller.py"   "$STAGE_ROOT/runtime/opportunity/incremental_information_controller.py"   "$STAGE_ROOT/runtime/web/app.py"
 
-PYTHONPATH="$STAGE_ROOT" "$PY" -m unittest   tests.test_daily_research_decoupling_v1   tests.test_token_cost_gate_v1   tests.test_reminder_policy_v2
+for pattern in test_daily_research_decoupling_v1.py test_token_cost_gate_v1.py test_reminder_policy_v2.py; do
+  PYTHONPATH="$STAGE_ROOT" "$PY" -m unittest discover -s "$STAGE_ROOT/tests" -p "$pattern" -v
+done
 
 ts=$(date -u +%Y%m%dT%H%M%SZ)
 backup="$BACKUP_ROOT/$ts-$APP_COMMIT_SHA"
