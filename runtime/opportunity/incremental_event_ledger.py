@@ -101,11 +101,12 @@ def _insert_change(conn, raw: dict[str, Any], now: str) -> int:
     change=attach_notification_decision(raw)
     before=conn.total_changes
     conn.execute(
-        """INSERT OR IGNORE INTO change_ledger
+        """INSERT INTO change_ledger
            (change_id,source_type,source_event_update_id,market_snapshot_id,
             bond_code,scope_type,scope_id,change_type,impact,research_action,
             notification_level,previous_json,current_json,payload_json,detected_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+           ON CONFLICT(change_id) DO NOTHING""",
         (
             change["change_id"],change["change_source"],
             change.get("source_event_update_id"),change.get("market_snapshot_id"),
