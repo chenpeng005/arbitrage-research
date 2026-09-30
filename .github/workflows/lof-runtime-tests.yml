@@ -29,7 +29,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install LOF lightweight test dependency\n        run: python -m pip install "xlrd>=2.0,<3"\n\n      - name: Run LOF unit tests
+      - name: Install LOF lightweight test dependency
+        run: python -m pip install "xlrd>=2.0,<3"
+
+      - name: Run LOF unit tests
         run: python -m unittest discover -s tests -p "test_lof_*.py" -v
 
       - name: Run shared deployment gate regression tests
