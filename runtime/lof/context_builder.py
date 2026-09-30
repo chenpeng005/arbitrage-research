@@ -18,6 +18,11 @@ from .index_proxy import (
 from .mapping import ResolverMappingCandidate
 from .qdii_proxy_registry import QdiiProxyEntry, load_qdii_proxy_registry
 from .resolver_classification import ResolverClassDecision, classify_resolver
+from .r1_overrides import (
+    apply_target_etf_mapping_override,
+    apply_tracking_index_share_aliases,
+    target_etf_proxy_override,
+)
 from .tracking_index import TrackingIndexRecord, fetch_active_tracking_index_map
 from .universe import LofIdentity
 
@@ -103,6 +108,11 @@ def build_estimated_nav_context(
         )
     )
 
+    tracking_map = apply_tracking_index_share_aliases(
+        tracking_map,
+        active_codes={item.code for item in universe},
+    )
+
     mapping_candidates: dict[str, ResolverMappingCandidate] = {}
     for identity in universe:
         direct_row = tracking_map.get(identity.code)
@@ -114,6 +124,10 @@ def build_estimated_nav_context(
         merged = _merge_mapping(
             direct=direct,
             f10=f10_mapping_candidates.get(identity.code),
+        )
+        merged = apply_target_etf_mapping_override(
+            identity.code,
+            merged,
         )
         if merged is not None:
             mapping_candidates[identity.code] = merged
@@ -140,14 +154,16 @@ def build_estimated_nav_context(
         ):
             continue
 
-        proxy = proxy_from_tracking_index_code(
-            tracking_target_name=(
-                tracking.tracking_index_name
-                or identity.name
-            ),
-            index_code=tracking.tracking_index_code,
-            index_name=tracking.tracking_index_name,
-        )
+        proxy = target_etf_proxy_override(identity.code)
+        if proxy is None:
+            proxy = proxy_from_tracking_index_code(
+                tracking_target_name=(
+                    tracking.tracking_index_name
+                    or identity.name
+                ),
+                index_code=tracking.tracking_index_code,
+                index_name=tracking.tracking_index_name,
+            )
 
         if (
             proxy.status != "RESOLVED"
