@@ -9,6 +9,11 @@ from .commodity_proxy_registry import (
     CommodityProxyEntry,
     load_commodity_proxy_registry,
 )
+from .csi_component_proxy import (
+    CsiComponentWeightSet,
+    fetch_csi_component_weight_sets,
+    is_csi_component_proxy_candidate,
+)
 from .estimated_nav_lane import EstimatedNavContext
 from .index_proxy import (
     IndexProxyMapping,
@@ -83,6 +88,7 @@ def build_estimated_nav_context(
     f10_mapping_candidates: dict[str, ResolverMappingCandidate] | None = None,
     qdii_proxy_registry: dict[str, QdiiProxyEntry] | None = None,
     commodity_proxy_registry: dict[str, CommodityProxyEntry] | None = None,
+    csi_component_weight_sets: dict[str, CsiComponentWeightSet] | None = None,
     tracking_index_override: dict[str, TrackingIndexRecord] | None = None,
     timeout: int = 15,
     allow_name_search_fallback: bool = False,
@@ -161,6 +167,26 @@ def build_estimated_nav_context(
 
         r1_proxy_mappings[identity.code] = proxy
 
+    csi_index_codes = {
+        proxy.index_code
+        for proxy in r1_proxy_mappings.values()
+        if (
+            proxy.status == "RESOLVED"
+            and proxy.index_code
+            and is_csi_component_proxy_candidate(proxy.index_code)
+        )
+    }
+    component_weight_sets = (
+        dict(csi_component_weight_sets)
+        if csi_component_weight_sets is not None
+        else fetch_csi_component_weight_sets(
+            csi_index_codes,
+            timeout=timeout,
+        )
+        if csi_index_codes
+        else {}
+    )
+
     qdii_registry = (
         qdii_proxy_registry
         if qdii_proxy_registry is not None
@@ -193,6 +219,7 @@ def build_estimated_nav_context(
         qdii_proxy_registry=qdii_registry,
         commodity_proxy_registry=commodity_registry,
         previous_trading_day=previous_trading_day,
+        r1_component_weight_sets=component_weight_sets,
     )
 
     return EstimatedNavContextBuildResult(
