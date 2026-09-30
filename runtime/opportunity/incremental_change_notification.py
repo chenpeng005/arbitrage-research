@@ -163,7 +163,7 @@ def deep_research_change(
             path_id,
             "DEEP_RESEARCH_TRIGGERED",
         ),
-        "change_source": "RESEARCH_TRIGGER",
+        "change_source": "RESEARCH",
         "source_event_update_id": event_update_id,
         "event_family": event_family,
         "market_snapshot_id": None,
