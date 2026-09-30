@@ -1,0 +1,16 @@
+[Unit]
+Description=Arbitrage Runtime Web Public 8010
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/projects/arbitrage-runtime
+ExecStart=/home/admin/bin/arbitrage-web-public.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
