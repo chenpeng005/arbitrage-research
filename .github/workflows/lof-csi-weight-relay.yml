@@ -1,0 +1,56 @@
+name: LOF CSI Weight Relay
+
+on:
+  push:
+    paths:
+      - ".github/workflows/lof-csi-weight-relay.yml"
+      - "runtime/lof/csi_weight_relay_publish.py"
+  workflow_dispatch:
+  schedule:
+    - cron: "20 0 * * 1-5"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lof-csi-weight-relay
+  cancel-in-progress: false
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout application source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install XLS parser
+        run: python -m pip install "xlrd==2.0.2"
+
+      - name: Fetch and validate official CSI weights
+        run: |
+          rm -rf /tmp/lof-csi-weight-relay
+          python -m runtime.lof.csi_weight_relay_publish \
+            --output-dir /tmp/lof-csi-weight-relay/csi_weight_relay \
+            --timeout 20
+
+      - name: Publish last-good CSI weight relay branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout --orphan lof-csi-weight-publish
+          git rm -rf .
+          mkdir -p csi_weight_relay
+          cp -a /tmp/lof-csi-weight-relay/csi_weight_relay/. csi_weight_relay/
+
+          git add csi_weight_relay
+          git commit -m "LOF relay: update CSI official component weights"
+          git push --force origin HEAD:lof-csi-weight-relay
