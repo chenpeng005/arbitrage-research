@@ -17,6 +17,10 @@ on:
       - ".github/workflows/lof-runtime-tests.yml"
   workflow_dispatch:
 
+concurrency:
+  group: lof-runtime-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
