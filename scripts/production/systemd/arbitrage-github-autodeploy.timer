@@ -1,0 +1,12 @@
+[Unit]
+Description=Check GitHub for validated arbitrage runtime commits
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=10s
+Persistent=true
+Unit=arbitrage-github-autodeploy.service
+
+[Install]
+WantedBy=timers.target
