@@ -17,6 +17,8 @@ def resolve_r1_from_previous_close(
     as_of: datetime,
     exposure_ratio: Decimal | None,
     max_proxy_age_seconds: int = 60,
+    resolver_method: str = "INDEX_PROXY_PREV_CLOSE",
+    quality_cap: str | None = None,
 ) -> EstimatedNavResult:
     """R1 fast path when official NAV is anchored to prior index close.
 
@@ -31,7 +33,7 @@ def resolve_r1_from_previous_close(
             estimated_nav_status="UNAVAILABLE",
             estimated_nav_quality="UNKNOWN",
             resolver_class="R1_DOMESTIC_INDEX",
-            resolver_method="INDEX_PROXY_PREV_CLOSE",
+            resolver_method=resolver_method,
             proxy_id=index_quote.code or index_quote.symbol,
             proxy_time=index_quote.quote_time,
             proxy_return=None,
@@ -49,7 +51,7 @@ def resolve_r1_from_previous_close(
             estimated_nav_status="UNAVAILABLE",
             estimated_nav_quality="UNKNOWN",
             resolver_class="R1_DOMESTIC_INDEX",
-            resolver_method="INDEX_PROXY_PREV_CLOSE",
+            resolver_method=resolver_method,
             proxy_id=index_quote.code or index_quote.symbol,
             proxy_time=index_quote.quote_time,
             proxy_return=None,
@@ -60,6 +62,10 @@ def resolve_r1_from_previous_close(
         )
 
     quality = "HIGH" if exposure_ratio is not None else "MEDIUM"
+    if quality_cap == "MEDIUM" and quality == "HIGH":
+        quality = "MEDIUM"
+    elif quality_cap == "LOW":
+        quality = "LOW"
     tz = index_quote.quote_time.tzinfo if index_quote.quote_time is not None else as_of.tzinfo
     proxy_anchor_time = datetime.combine(
         expected_anchor_date,
@@ -71,7 +77,7 @@ def resolve_r1_from_previous_close(
         ResolverInput(
             fund_code=fund_code,
             resolver_class="R1_DOMESTIC_INDEX",
-            resolver_method="INDEX_PROXY_PREV_CLOSE",
+            resolver_method=resolver_method,
             proxy_id=index_quote.code or index_quote.symbol,
             official_nav=official_nav,
             proxy_anchor_value=index_quote.previous_close,
