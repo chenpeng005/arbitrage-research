@@ -126,7 +126,6 @@ class LofSzseRelayTest(unittest.TestCase):
             }[filename]
 
         content_mock.side_effect = get_bytes
-        fetch_szse_relay_bundle.cache_clear()
         bundle = fetch_szse_relay_bundle(
             DEFAULT_SZSE_RELAY_BASE_URL,
             timeout=20,
@@ -135,6 +134,73 @@ class LofSzseRelayTest(unittest.TestCase):
         self.assertEqual(len(bundle.nav["rows"]), 200)
         ref_mock.assert_called_once()
         self.assertEqual(content_mock.call_count, 3)
+
+    @patch("runtime.lof.szse_relay._fetch_relay_file")
+    @patch("runtime.lof.szse_relay._resolve_default_relay_commit")
+    def test_default_relay_rechecks_branch_head_between_calls(
+        self,
+        ref_mock,
+        file_mock,
+    ) -> None:
+        ref_mock.side_effect = ["a" * 40, "b" * 40]
+        universe = {
+            "source": "SZSE_OFFICIAL",
+            "rows": [
+                {"code": f"16{i:04d}", "name": f"LOF{i}"}
+                for i in range(200)
+            ],
+        }
+        nav = {
+            "source": "SZSE_OFFICIAL",
+            "rows": [
+                {"code": f"16{i:04d}", "nav": "1.0", "nav_date": "2026-09-29"}
+                for i in range(200)
+            ],
+        }
+        universe_bytes = json.dumps(
+            universe, ensure_ascii=False, separators=(",", ":")
+        ).encode("utf-8")
+        nav_bytes = json.dumps(
+            nav, ensure_ascii=False, separators=(",", ":")
+        ).encode("utf-8")
+        manifest = {
+            "relay_version": "lof-szse-official-relay-v1",
+            "source": "SZSE_OFFICIAL",
+            "fetched_at": "2026-09-30T03:15:43+00:00",
+            "universe_count": 200,
+            "nav_count": 200,
+            "files": {
+                "universe": {
+                    "filename": "szse_universe.json",
+                    "sha256": hashlib.sha256(universe_bytes).hexdigest(),
+                },
+                "nav": {
+                    "filename": "szse_nav.json",
+                    "sha256": hashlib.sha256(nav_bytes).hexdigest(),
+                },
+            },
+        }
+        manifest_bytes = json.dumps(
+            manifest, ensure_ascii=False, separators=(",", ":")
+        ).encode("utf-8")
+
+        pinned_refs: list[str | None] = []
+
+        def get_file(base_url, filename, *, timeout, pinned_ref=None):
+            pinned_refs.append(pinned_ref)
+            return {
+                "manifest.json": manifest_bytes,
+                "szse_universe.json": universe_bytes,
+                "szse_nav.json": nav_bytes,
+            }[filename]
+
+        file_mock.side_effect = get_file
+        fetch_szse_relay_bundle(DEFAULT_SZSE_RELAY_BASE_URL, timeout=20)
+        fetch_szse_relay_bundle(DEFAULT_SZSE_RELAY_BASE_URL, timeout=20)
+
+        self.assertEqual(ref_mock.call_count, 2)
+        self.assertEqual(pinned_refs[:3], ["a" * 40] * 3)
+        self.assertEqual(pinned_refs[3:], ["b" * 40] * 3)
 
     def test_stale_relay_fails_closed(self) -> None:
         now = datetime(2026, 9, 29, 8, tzinfo=timezone.utc)
