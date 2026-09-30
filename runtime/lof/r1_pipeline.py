@@ -120,6 +120,7 @@ def resolve_r1_batch(
             else None
         )
 
+        is_target_etf = proxy.source == "R1_TARGET_ETF_OVERRIDE"
         results.append(
             resolve_r1_from_previous_close(
                 fund_code=code,
@@ -130,6 +131,12 @@ def resolve_r1_batch(
                 as_of=as_of,
                 exposure_ratio=exposure,
                 max_proxy_age_seconds=max_proxy_age_seconds,
+                resolver_method=(
+                    "TARGET_ETF_PREV_CLOSE"
+                    if is_target_etf
+                    else "INDEX_PROXY_PREV_CLOSE"
+                ),
+                quality_cap="MEDIUM" if is_target_etf else None,
             )
         )
 
