@@ -5,3 +5,4 @@ pandas>=2.2,<3
 
 statsmodels>=0.14,<1
 pypdf>=6,<7
+xlrd>=2.0,<3

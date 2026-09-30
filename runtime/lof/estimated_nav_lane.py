@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 
 from .commodity_proxy_registry import CommodityProxyEntry
+from .csi_component_proxy import CsiComponentWeightSet
 from .index_proxy import IndexProxyMapping
 from .mapping import ResolverMappingCandidate
 from .nav import OfficialNavRecord
@@ -23,6 +24,9 @@ class EstimatedNavContext:
     qdii_proxy_registry: dict[str, QdiiProxyEntry]
     previous_trading_day: date
     commodity_proxy_registry: dict[str, CommodityProxyEntry] = field(
+        default_factory=dict
+    )
+    r1_component_weight_sets: dict[str, CsiComponentWeightSet] = field(
         default_factory=dict
     )
 
@@ -73,6 +77,7 @@ def resolve_estimated_nav_lane(
             official_navs=nav_map,
             mapping_candidates=context.mapping_candidates,
             proxy_mappings=context.r1_proxy_mappings,
+            component_weight_sets=context.r1_component_weight_sets,
             expected_anchor_date=context.previous_trading_day,
             as_of=as_of,
             timeout=timeout,
