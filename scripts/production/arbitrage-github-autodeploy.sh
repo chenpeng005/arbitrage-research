@@ -7,14 +7,30 @@ WORKFLOW_FILE="${WORKFLOW_FILE:-deploy-convertible-runtime.yml}"
 LIVE_ROOT="${LIVE_ROOT:-/home/admin/projects/arbitrage-runtime}"
 STATE_ROOT="${STATE_ROOT:-/home/admin/.local/state/arbitrage-autodeploy}"
 STAGING_ROOT="${STAGING_ROOT:-/home/admin/deploy-staging/arbitrage-runtime}"
-LOCK_FILE="${LOCK_FILE:-/tmp/arbitrage-github-autodeploy.lock}"
+LOCK_DIR="${LOCK_DIR:-/tmp/arbitrage-github-autodeploy.lock.d}"
 
 mkdir -p "$STATE_ROOT" "$STAGING_ROOT"
-exec 9>"$LOCK_FILE"
-if ! flock -n 9; then
-  echo "[autodeploy] another deployment check is running"
+acquire_lock() {
+  if mkdir "$LOCK_DIR" 2>/dev/null; then
+    printf '%s\n' "$" > "$LOCK_DIR/pid"
+    return 0
+  fi
+
+  local old_pid=""
+  old_pid="$(cat "$LOCK_DIR/pid" 2>/dev/null || true)"
+  if [[ "$old_pid" =~ ^[0-9]+$ ]] && kill -0 "$old_pid" 2>/dev/null; then
+    echo "[autodeploy] another deployment check is running: pid=$old_pid"
+    return 1
+  fi
+
+  rm -rf "$LOCK_DIR"
+  mkdir "$LOCK_DIR"
+  printf '%s\n' "$" > "$LOCK_DIR/pid"
+}
+if ! acquire_lock; then
   exit 0
 fi
+trap 'rm -rf "$LOCK_DIR"' EXIT
 
 if ! remote_line="$(
   GIT_TERMINAL_PROMPT=0 timeout 15s git ls-remote "$REPO_URL" refs/heads/main
