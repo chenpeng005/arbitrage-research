@@ -1,0 +1,16 @@
+[Unit]
+Description=Arbitrage GitHub Auto Deploy
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=admin
+Group=admin
+WorkingDirectory=/home/admin
+Environment=HOME=/home/admin
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/admin/bin/arbitrage-github-autodeploy.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
