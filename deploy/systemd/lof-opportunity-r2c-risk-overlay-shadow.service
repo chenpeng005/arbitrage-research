@@ -1,0 +1,22 @@
+[Reading 18 lines from start (total: 18 lines, 0 remaining)]
+
+[Unit]
+Description=LOF R2-C Risk Asset Overlay Shadow
+After=network-online.target lof-opportunity-updater.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/projects/lof-opportunity-runtime/r2c-risk-overlay/current
+Environment=PYTHONPATH=/home/admin/projects/lof-opportunity-runtime/r2c-risk-overlay/current
+Environment=LOF_RUNTIME_DATA_ROOT=/home/admin/projects/lof-opportunity-runtime/runtime_data
+ExecStart=/home/admin/projects/lof-opportunity-runtime/.venv/bin/python -m runtime.lof.r2c_risk_overlay --data-root /home/admin/projects/lof-opportunity-runtime/runtime_data --loop --quote-interval-seconds 30 --off-hours-interval-seconds 300 --low-frequency-refresh-seconds 21600 --timeout 6 --max-quote-age-seconds 120
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]

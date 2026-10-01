@@ -1,0 +1,176 @@
+[Reading 172 lines from start (total: 172 lines, 0 remaining)]
+
+{
+  "version": "R2C_RISK_OVERLAY_REGISTRY_V0_1",
+  "generated_from": "2026-10-02 C3/C4 historical overlay audit",
+  "funds": {
+    "160621": {
+      "name": "鹏华丰和LOF",
+      "band_group": "C3_MODERATE",
+      "driver": "EQUITY",
+      "quality_candidate": "MEDIUM",
+      "stock_weight_pct": 14.2,
+      "cb_weight_pct": 1.18,
+      "backtest_mae_pct": 0.0537,
+      "backtest_p90_pct": 0.1099
+    },
+    "160641": {
+      "name": "鹏华丰锐LOF",
+      "band_group": "C4_HIGH",
+      "driver": "EQUITY",
+      "quality_candidate": "MEDIUM",
+      "stock_weight_pct": 20.19,
+      "cb_weight_pct": 0,
+      "backtest_mae_pct": 0.1242,
+      "backtest_p90_pct": 0.268
+    },
+    "161010": {
+      "name": "富国天丰LOF",
+      "band_group": "C4_HIGH",
+      "driver": "CONVERTIBLE_BOND",
+      "quality_candidate": "LOW",
+      "stock_weight_pct": 0,
+      "cb_weight_pct": 63.66,
+      "backtest_mae_pct": 0.2388,
+      "backtest_p90_pct": 0.5215
+    },
+    "161019": {
+      "name": "富国天锋LOF",
+      "band_group": "C3_MODERATE",
+      "driver": "CONVERTIBLE_BOND",
+      "quality_candidate": "MEDIUM",
+      "stock_weight_pct": 0,
+      "cb_weight_pct": 17.41,
+      "backtest_mae_pct": 0.0435,
+      "backtest_p90_pct": 0.0956
+    },
+    "161216": {
+      "name": "国投双债LOF",
+      "band_group": "C3_MODERATE",
+      "driver": "EQUITY_CB",
+      "quality_candidate": "MEDIUM",
+      "stock_weight_pct": 5.25,
+      "cb_weight_pct": 9.99,
+      "backtest_mae_pct": 0.0551,
+      "backtest_p90_pct": 0.1262
+    },
+    "161505": {
+      "name": "银河通利债券LOF",
+      "band_group": "C4_HIGH",
+      "driver": "CONVERTIBLE_BOND",
+      "quality_candidate": "LOW",
+      "stock_weight_pct": 0,
+      "cb_weight_pct": 31.91,
+      "backtest_mae_pct": 0.3204,
+      "backtest_p90_pct": 0.7227
+    },
+    "161713": {
+      "name": "招商信用添利LOF",
+      "band_group": "C3_MODERATE",
+      "driver": "EQUITY_CB",
+      "quality_candidate": "MEDIUM",
+      "stock_weight_pct": 5.51,
+      "cb_weight_pct": 5.94,
+      "backtest_mae_pct": 0.0925,
+      "backtest_p90_pct": 0.1999
+    },
+    "162105": {
+      "name": "金鹰持久增利LOF",
+      "band_group": "C4_HIGH",
+      "driver": "EQUITY_CB",
+      "quality_candidate": "LOW",
+      "stock_weight_pct": 19.96,
+      "cb_weight_pct": 19.39,
+      "backtest_mae_pct": 0.1723,
+      "backtest_p90_pct": 0.3989
+    },
+    "162215": {
+      "name": "宏利聚利债券LOF",
+      "band_group": "C3_MODERATE",
+      "driver": "CONVERTIBLE_BOND",
+      "quality_candidate": "MEDIUM",
+      "stock_weight_pct": 0,
+      "cb_weight_pct": 6.32,
+      "backtest_mae_pct": 0.0895,
+      "backtest_p90_pct": 0.1722
+    },
+    "164105": {
+      "name": "华富强债LOF",
+      "band_group": "C3_MODERATE",
+      "driver": "EQUITY_CB",
+      "quality_candidate": "MEDIUM",
+      "stock_weight_pct": 18.9,
+      "cb_weight_pct": 11.9,
+      "backtest_mae_pct": 0.0584,
+      "backtest_p90_pct": 0.1254
+    },
+    "164606": {
+      "name": "信用增利LOF",
+      "band_group": "C4_HIGH",
+      "driver": "CONVERTIBLE_BOND",
+      "quality_candidate": "MEDIUM",
+      "stock_weight_pct": 0,
+      "cb_weight_pct": 18.03,
+      "backtest_mae_pct": 0.0617,
+      "backtest_p90_pct": 0.1222
+    },
+    "164814": {
+      "name": "工银双债LOF",
+      "band_group": "C4_HIGH",
+      "driver": "EQUITY_CB",
+      "quality_candidate": "LOW",
+      "stock_weight_pct": 14.23,
+      "cb_weight_pct": 78.77,
+      "backtest_mae_pct": 0.2013,
+      "backtest_p90_pct": 0.4021
+    },
+    "164902": {
+      "name": "交银添利LOF",
+      "band_group": "C3_MODERATE",
+      "driver": "CONVERTIBLE_BOND",
+      "quality_candidate": "MEDIUM",
+      "stock_weight_pct": 0,
+      "cb_weight_pct": 22.4,
+      "backtest_mae_pct": 0.0444,
+      "backtest_p90_pct": 0.0932
+    },
+    "165509": {
+      "name": "中信保诚增强LOF",
+      "band_group": "C4_HIGH",
+      "driver": "EQUITY",
+      "quality_candidate": "MEDIUM",
+      "stock_weight_pct": 19.9,
+      "cb_weight_pct": 3.94,
+      "backtest_mae_pct": 0.0711,
+      "backtest_p90_pct": 0.1487
+    },
+    "165517": {
+      "name": "中信保诚双盈LOF",
+      "band_group": "C3_MODERATE",
+      "driver": "CONVERTIBLE_BOND",
+      "quality_candidate": "MEDIUM",
+      "stock_weight_pct": 0,
+      "cb_weight_pct": 10.99,
+      "backtest_mae_pct": 0.0639,
+      "backtest_p90_pct": 0.1392
+    },
+    "166105": {
+      "name": "信澳鑫安LOF",
+      "band_group": "C3_MODERATE",
+      "driver": "EQUITY",
+      "quality_candidate": "MEDIUM",
+      "stock_weight_pct": 18.34,
+      "cb_weight_pct": 1.3,
+      "backtest_mae_pct": 0.104,
+      "backtest_p90_pct": 0.2177
+    }
+  },
+  "rejected": {
+    "161626": {
+      "name": "融通通福LOF",
+      "reason": "overlay worsened historical MAE from 0.2609% to 0.3635%"
+    }
+  }
+}
+
+[executed on device: iZ2vc3972s0n20m9kq0ns4Z (b3130143-0d28-448b-8a4c-d5f1482304ab)]
