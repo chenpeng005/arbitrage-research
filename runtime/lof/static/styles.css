@@ -80,3 +80,8 @@ tr:hover td { background: #fbfcfd; }
   .summary { grid-template-columns: repeat(2, 1fr); }
   .table-wrap { max-height: calc(100vh - 310px); }
 }
+
+.resolver-r2 {
+  font-weight: 600;
+  white-space: nowrap;
+}

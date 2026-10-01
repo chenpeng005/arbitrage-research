@@ -19,6 +19,36 @@
     R4_QDII_OTHER: "海外QDII其他",
     R5_SPECIAL: "商品/跨境特殊",
   };
+  const r2SubclassLabels = {
+    EQUITY: "R2-A 主动股票",
+    MIXED: "R2-B 混合型",
+    BOND: "R2-C 债券型",
+    FOF: "R2-D FOF",
+  };
+  const resolverDisplayLabel = (row) => {
+    if (row.resolver_class === "R2_DOMESTIC_OTHER") {
+      return r2SubclassLabels[row.lof_type] || "R2-待归类";
+    }
+    return resolverLabels[row.resolver_class] || "未分类";
+  };
+
+  const matchResolverFilter = (row, value) => {
+    if (!value) return true;
+    if (value === "R2A_EQUITY") {
+      return row.resolver_class === "R2_DOMESTIC_OTHER" && row.lof_type === "EQUITY";
+    }
+    if (value === "R2B_MIXED") {
+      return row.resolver_class === "R2_DOMESTIC_OTHER" && row.lof_type === "MIXED";
+    }
+    if (value === "R2C_BOND") {
+      return row.resolver_class === "R2_DOMESTIC_OTHER" && row.lof_type === "BOND";
+    }
+    if (value === "R2D_FOF") {
+      return row.resolver_class === "R2_DOMESTIC_OTHER" && row.lof_type === "FOF";
+    }
+    return row.resolver_class === value;
+  };
+
   const statusLabels = {
     OPEN: "开放",
     LIMITED: "限额",
@@ -145,7 +175,7 @@
 
   function rowSortValue(row, key) {
     if (key === "_index") return row._index;
-    if (key === "resolver_class") return resolverLabels[row.resolver_class] || "";
+    if (key === "resolver_class") return resolverDisplayLabel(row);
     const value = row[key];
     const n = num(value);
     return n !== null ? n : (value ?? "");
@@ -171,7 +201,7 @@
 
     state.filtered = state.rows.filter((row) => {
       const matchQ = !q || `${row.code || ""} ${row.name || ""}`.toLowerCase().includes(q);
-      const matchResolver = !resolver || row.resolver_class === resolver;
+      const matchResolver = matchResolverFilter(row, resolver);
       const matchSub = !sub || row.subscription_status === sub;
       const matchEstimate = !estimate || row.estimated_nav_status === estimate;
       return matchQ && matchResolver && matchSub && matchEstimate;
@@ -198,7 +228,7 @@
       identity.append(code, name);
       tr.appendChild(identity);
 
-      cell(tr, resolverLabels[row.resolver_class] || "未分类");
+      cell(tr, resolverDisplayLabel(row), row.resolver_class === "R2_DOMESTIC_OTHER" ? "resolver-r2" : "");
       cell(tr, fmt(row.price, 3), "num");
       cell(tr, fmtPct(row.pct_change), `num ${premiumClass(row.pct_change)}`);
       cell(tr, fmtVolume(row.volume), "num");

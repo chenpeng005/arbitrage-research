@@ -25,5 +25,24 @@ class LofStaticMethodLabelsTest(unittest.TestCase):
             self.assertIn(label, app_js)
         self.assertIn("appendEstimatedNavCell(tr, row)", app_js)
 
+    def test_r2_subclasses_are_visible_and_filterable(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        app_js = (root / "runtime/lof/static/app.js").read_text(encoding="utf-8")
+        index_html = (root / "runtime/lof/static/index.html").read_text(encoding="utf-8")
+        expected = {
+            "EQUITY": "R2-A 主动股票",
+            "MIXED": "R2-B 混合型",
+            "BOND": "R2-C 债券型",
+            "FOF": "R2-D FOF",
+        }
+        for lof_type, label in expected.items():
+            self.assertIn(lof_type, app_js)
+            self.assertIn(label, app_js)
+            self.assertIn(label, index_html)
+        self.assertIn("R2-待归类", app_js)
+        for value in ["R2A_EQUITY", "R2B_MIXED", "R2C_BOND", "R2D_FOF"]:
+            self.assertIn(value, app_js)
+            self.assertIn(value, index_html)
+
 if __name__ == "__main__":
     unittest.main()
