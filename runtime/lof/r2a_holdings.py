@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import re
 import tempfile
+import time
 from typing import Iterable
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -94,8 +95,17 @@ def _request_text(url: str, *, timeout: int, fund_code: str) -> str:
             "Referer": f"https://fundf10.eastmoney.com/ccmx_{fund_code}.html",
         },
     )
-    with urlopen(request, timeout=timeout) as response:
-        return response.read().decode("utf-8", errors="replace")
+    last_error = None
+    for attempt in range(2):
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                return response.read().decode("utf-8", errors="replace")
+        except Exception as exc:
+            last_error = exc
+            if attempt == 0:
+                time.sleep(0.2)
+    assert last_error is not None
+    raise last_error
 
 
 def _url(
@@ -375,7 +385,7 @@ class HoldingsStore:
         codes = sorted(set(fund_codes))
 
         with ThreadPoolExecutor(
-            max_workers=min(6, len(codes))
+            max_workers=min(3, len(codes))
         ) as pool:
             futures = {
                 pool.submit(

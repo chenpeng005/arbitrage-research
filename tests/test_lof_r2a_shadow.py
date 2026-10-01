@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
@@ -9,6 +11,7 @@ from zoneinfo import ZoneInfo
 from runtime.lof.r2a_holdings import (
     Holding,
     HoldingsSnapshot,
+    HoldingsStore,
     discover_periods,
     fetch_latest_full_snapshot,
     snapshot_identity,
@@ -169,6 +172,40 @@ class R2AShadowTest(unittest.TestCase):
         row = next(x for x in rows if x["fund_code"]=="501201")
         self.assertEqual(row["status"], "UNAVAILABLE")
         self.assertEqual(row["error"], "OFFICIAL_NAV_NOT_T1")
+
+    @patch("runtime.lof.r2a_holdings.fetch_latest_full_snapshot")
+    def test_refresh_failure_preserves_previous_snapshot(
+        self,
+        fetch_mock,
+    ):
+        now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
+        row = _holdings(
+            "501219",
+            [
+                Holding(
+                    "A","sz000001","000001","A",Decimal("0.85")
+                ),
+            ],
+            now - timedelta(hours=1),
+        )
+        fetch_mock.side_effect = RuntimeError("temporary source failure")
+        with tempfile.TemporaryDirectory() as tmp:
+            store = HoldingsStore(Path(tmp))
+            store.persist(
+                {"501219": row},
+                generated_at=now - timedelta(hours=1),
+            )
+            loaded, errors = store.refresh(
+                ["501219"],
+                now=now,
+                timeout=1,
+            )
+        self.assertIn("501219", loaded)
+        self.assertEqual(
+            loaded["501219"].identity,
+            row.identity,
+        )
+        self.assertIn("501219", errors)
 
     def test_holdings_cache_refresh_gate(self):
         now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
