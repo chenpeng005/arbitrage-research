@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import re
 import tempfile
+import time
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
@@ -462,12 +463,45 @@ def calculate_rows(
     return result
 
 
+def holdings_need_refresh(
+    holdings_by_fund: dict[str, HoldingsSnapshot],
+    *,
+    now: datetime,
+    refresh_seconds: int,
+) -> bool:
+    if set(PROFILES) - set(holdings_by_fund):
+        return True
+    for code in PROFILES:
+        row = holdings_by_fund.get(code)
+        if row is None:
+            return True
+        fetched_at = row.fetched_at
+        if fetched_at.tzinfo is None:
+            fetched_at = fetched_at.replace(tzinfo=SHANGHAI_TZ)
+        current = now
+        if current.tzinfo is None:
+            current = current.replace(tzinfo=SHANGHAI_TZ)
+        age = (
+            current.astimezone(SHANGHAI_TZ)
+            - fetched_at.astimezone(SHANGHAI_TZ)
+        ).total_seconds()
+        if age < 0 or age >= refresh_seconds:
+            return True
+    return False
+
+
+def _main_snapshot_has_fresh_market(snapshot: dict) -> bool:
+    quality = snapshot.get("quality_summary") or {}
+    return int(quality.get("quote_fresh_count") or 0) > 0
+
+
 def collect_once(
     *,
     data_root: str | Path,
     now: datetime | None = None,
     timeout: int = 6,
     max_quote_age_seconds: int = 120,
+    holdings_refresh_seconds: int = 21600,
 ) -> dict:
     now = now or datetime.now(SHANGHAI_TZ)
     main_snapshot = LofSnapshotStore(data_root).load_latest()
@@ -475,11 +509,18 @@ def collect_once(
         raise RuntimeError("MAIN_SNAPSHOT_UNAVAILABLE")
 
     holdings_store = HoldingsStore(data_root)
-    holdings, holdings_errors = holdings_store.refresh(
-        PROFILES.keys(),
+    holdings = holdings_store.load()
+    holdings_errors: dict[str, str] = {}
+    if holdings_need_refresh(
+        holdings,
         now=now,
-        timeout=timeout,
-    )
+        refresh_seconds=holdings_refresh_seconds,
+    ):
+        holdings, holdings_errors = holdings_store.refresh(
+            PROFILES.keys(),
+            now=now,
+            timeout=timeout,
+        )
 
     symbols = {
         item.symbol
@@ -584,20 +625,106 @@ def persist_snapshot(data_root: str | Path, snapshot: dict) -> Path:
     return archive
 
 
+def run_loop(
+    *,
+    data_root: str | Path,
+    timeout: int = 6,
+    max_quote_age_seconds: int = 120,
+    holdings_refresh_seconds: int = 21600,
+    quote_interval_seconds: float = 30.0,
+    off_hours_interval_seconds: float = 300.0,
+) -> int:
+    main_store = LofSnapshotStore(data_root)
+    while True:
+        cycle_started = time.monotonic()
+        now = datetime.now(SHANGHAI_TZ)
+        interval = off_hours_interval_seconds
+        try:
+            main_snapshot = main_store.load_latest()
+            if (
+                main_snapshot is not None
+                and _main_snapshot_has_fresh_market(main_snapshot)
+            ):
+                snapshot = collect_once(
+                    data_root=data_root,
+                    now=now,
+                    timeout=timeout,
+                    max_quote_age_seconds=max_quote_age_seconds,
+                    holdings_refresh_seconds=holdings_refresh_seconds,
+                )
+                interval = quote_interval_seconds
+                print(
+                    json.dumps(
+                        {
+                            "event": "r2a_shadow_persisted",
+                            "time": now.isoformat(),
+                            "snapshot_id": snapshot["snapshot_id"],
+                            "summary": snapshot["summary"],
+                        },
+                        ensure_ascii=False,
+                    ),
+                    flush=True,
+                )
+            else:
+                print(
+                    json.dumps(
+                        {
+                            "event": "r2a_shadow_idle",
+                            "time": now.isoformat(),
+                            "reason": "MAIN_MARKET_NOT_FRESH",
+                        },
+                        ensure_ascii=False,
+                    ),
+                    flush=True,
+                )
+        except Exception as exc:
+            print(
+                json.dumps(
+                    {
+                        "event": "r2a_shadow_failed",
+                        "time": now.isoformat(),
+                        "error": (
+                            f"{type(exc).__name__}:{str(exc)[:240]}"
+                        ),
+                    },
+                    ensure_ascii=False,
+                ),
+                flush=True,
+            )
+
+        elapsed = time.monotonic() - cycle_started
+        time.sleep(max(0.0, interval - elapsed))
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-root", required=True)
     parser.add_argument("--timeout", type=int, default=6)
     parser.add_argument("--max-quote-age-seconds", type=int, default=120)
+    parser.add_argument("--holdings-refresh-seconds", type=int, default=21600)
+    parser.add_argument("--quote-interval-seconds", type=float, default=30.0)
+    parser.add_argument("--off-hours-interval-seconds", type=float, default=300.0)
+    parser.add_argument("--loop", action="store_true")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    if args.loop:
+        return run_loop(
+            data_root=args.data_root,
+            timeout=args.timeout,
+            max_quote_age_seconds=args.max_quote_age_seconds,
+            holdings_refresh_seconds=args.holdings_refresh_seconds,
+            quote_interval_seconds=args.quote_interval_seconds,
+            off_hours_interval_seconds=args.off_hours_interval_seconds,
+        )
+
     snapshot = collect_once(
         data_root=args.data_root,
         timeout=args.timeout,
         max_quote_age_seconds=args.max_quote_age_seconds,
+        holdings_refresh_seconds=args.holdings_refresh_seconds,
     )
     print(json.dumps(
         {

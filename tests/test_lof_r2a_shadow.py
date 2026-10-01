@@ -15,7 +15,9 @@ from runtime.lof.r2a_holdings import (
 )
 from runtime.lof.r2a_shadow import (
     LiveQuote,
+    PROFILES,
     calculate_rows,
+    holdings_need_refresh,
     parse_quote_response,
 )
 
@@ -167,6 +169,63 @@ class R2AShadowTest(unittest.TestCase):
         row = next(x for x in rows if x["fund_code"]=="501201")
         self.assertEqual(row["status"], "UNAVAILABLE")
         self.assertEqual(row["error"], "OFFICIAL_NAV_NOT_T1")
+
+    def test_holdings_cache_refresh_gate(self):
+        now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
+        base = _holdings(
+            "501201",
+            [
+                Holding(
+                    "A","sz000001","000001","A",Decimal("0.85")
+                ),
+            ],
+            now,
+        )
+        complete = {}
+        for code in PROFILES:
+            complete[code] = HoldingsSnapshot(
+                fund_code=code,
+                as_of_date=base.as_of_date,
+                first_seen_at=base.first_seen_at,
+                fetched_at=now - timedelta(hours=1),
+                holdings=base.holdings,
+                total_weight=base.total_weight,
+                identity=base.identity + code,
+            )
+        self.assertFalse(
+            holdings_need_refresh(
+                complete,
+                now=now,
+                refresh_seconds=21600,
+            )
+        )
+        missing = dict(complete)
+        missing.pop("501219")
+        self.assertTrue(
+            holdings_need_refresh(
+                missing,
+                now=now,
+                refresh_seconds=21600,
+            )
+        )
+        stale = dict(complete)
+        old = stale["501219"]
+        stale["501219"] = HoldingsSnapshot(
+            fund_code=old.fund_code,
+            as_of_date=old.as_of_date,
+            first_seen_at=old.first_seen_at,
+            fetched_at=now - timedelta(hours=7),
+            holdings=old.holdings,
+            total_weight=old.total_weight,
+            identity=old.identity,
+        )
+        self.assertTrue(
+            holdings_need_refresh(
+                stale,
+                now=now,
+                refresh_seconds=21600,
+            )
+        )
 
     def test_hk_return_includes_fx(self):
         now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
