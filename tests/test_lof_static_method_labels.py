@@ -15,6 +15,8 @@ class LofStaticMethodLabelsTest(unittest.TestCase):
             "CSI_COMPONENT_WEIGHT_PREV_CLOSE": "成分重建",
             "TARGET_ETF_PREV_CLOSE": "目标ETF代理",
             "MULTIDAY_PROXY_FX_BRIDGE": "跨日指数+汇率",
+            "US_FUTURES_FX_BRIDGE": "美股期货桥接",
+            "US_LAST_CLOSE_FX_BRIDGE": "美股隔夜收盘",
             "COMMODITY_FX_BRIDGE": "商品+汇率",
             "DOMESTIC_FUTURES_PREV_SETTLEMENT": "国内期货主连",
         }

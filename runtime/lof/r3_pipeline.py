@@ -17,7 +17,7 @@ from .nav import OfficialNavRecord
 from .qdii_index_resolver import resolve_r3_qdii_index_bridge
 from .qdii_proxy_registry import QdiiProxyEntry
 from .resolver import EstimatedNavResult
-from .us_history import close_on, fetch_tencent_us_daily, latest_close
+from .us_history import close_on, fetch_tencent_us_daily, latest_close, us_cash_close_time
 
 
 def _unavailable(
@@ -138,12 +138,12 @@ def resolve_r3_one(
         latest = latest_close(history)
         current = latest.close if latest else None
         latest_date = latest.date if latest else None
-        # During China trading hours the U.S. cash market is closed. We may
-        # overlay current index futures to bridge from the latest cash close.
-        timing_quality = "MEDIUM"
-        proxy_time = None
-        enforce_realtime_freshness = False
-        resolver_method = "MULTIDAY_PROXY_FX_BRIDGE"
+        # The latest U.S. cash close is a cross-session reference, not a
+        # synchronous realtime input during China daytime.
+        timing_quality = "LOW"
+        proxy_time = us_cash_close_time(latest.date) if latest else None
+        enforce_realtime_freshness = True
+        resolver_method = "US_LAST_CLOSE_FX_BRIDGE"
         exactness = (
             "EXACT_INDEX"
             if proxy.proxy_type == "DIRECT_INDEX"
@@ -168,8 +168,15 @@ def resolve_r3_one(
                 code=proxy.futures_overlay_code,
                 timeout=timeout,
             )
-            if futures_quote.error is None:
+            if (
+                futures_quote.error is None
+                and futures_quote.adjustment_return is not None
+                and futures_quote.quote_time is not None
+            ):
                 intraday_adjustment_return = futures_quote.adjustment_return
+                proxy_time = futures_quote.quote_time
+                resolver_method = "US_FUTURES_FX_BRIDGE"
+                enforce_realtime_freshness = True
                 if proxy.futures_overlay_quality:
                     timing_quality = proxy.futures_overlay_quality
         except Exception:

@@ -142,8 +142,13 @@ class LofR3PipelineTest(unittest.TestCase):
             proxy=proxy,
             as_of=self.now,
         )
-        self.assertEqual(row.estimated_nav_status, "AVAILABLE")
-        self.assertEqual(row.estimated_nav_quality, "MEDIUM")
+        self.assertEqual(row.estimated_nav_status, "STALE")
+        self.assertEqual(row.estimated_nav_quality, "LOW")
+        self.assertEqual(row.resolver_method, "US_LAST_CLOSE_FX_BRIDGE")
+        self.assertEqual(
+            row.estimated_nav_time,
+            datetime(2026, 9, 29, 4, 0, tzinfo=TZ),
+        )
 
     def test_unresolved_proxy_fails_closed(self) -> None:
         nav = OfficialNavRecord(

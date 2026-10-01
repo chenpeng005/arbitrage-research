@@ -1,14 +1,26 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, time
 from decimal import Decimal, InvalidOperation
 import json
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+from zoneinfo import ZoneInfo
 
 
 TENCENT_US_KLINE_URL = "https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get"
+NEW_YORK_TZ = ZoneInfo("America/New_York")
+SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
+
+
+def us_cash_close_time(trading_date: date) -> datetime:
+    """Return the regular U.S. cash close (16:00 New York) in Shanghai time."""
+    return datetime.combine(
+        trading_date,
+        time(16, 0),
+        tzinfo=NEW_YORK_TZ,
+    ).astimezone(SHANGHAI_TZ)
 
 
 @dataclass(frozen=True)
