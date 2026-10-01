@@ -49,6 +49,38 @@
     return row.resolver_class === value;
   };
 
+  const r2cT1Profiles = {
+    "163907":["STABLE",0.0058,0.0000], "164210":["STABLE",0.0072,0.0159],
+    "161820":["STABLE",0.0154,0.0344], "161015":["STABLE",0.0163,0.0305],
+    "164509":["STABLE",0.0173,0.0412], "160618":["STABLE",0.0253,0.0490],
+    "163003":["STABLE",0.0268,0.0595], "162712":["STABLE",0.0273,0.0634],
+    "166401":["STABLE",0.0273,0.0612], "162715":["STABLE",0.0283,0.0589],
+    "164703":["STABLE",0.0286,0.0575], "164808":["STABLE",0.0317,0.0687],
+    "160617":["STABLE",0.0318,0.0628], "165311":["STABLE",0.0334,0.0691],
+    "166016":["STABLE",0.0361,0.0763], "161115":["STABLE",0.0374,0.0661],
+    "161614":["STABLE",0.0386,0.0854], "163005":["STABLE",0.0405,0.0891],
+    "162108":["STABLE",0.0437,0.0902], "166008":["STABLE",0.0452,0.0872],
+    "164208":["STABLE",0.0509,0.1075], "163819":["STABLE",0.0565,0.1245],
+    "160622":["STABLE",0.0733,0.1762], "161908":["STABLE",0.0823,0.1635],
+    "161716":["STABLE",0.0876,0.1755], "167501":["STABLE",0.0994,0.2142],
+    "160513":["STABLE",0.1028,0.2486], "161216":["STABLE",0.1067,0.2495],
+    "162215":["STABLE",0.1139,0.2729], "164206":["STABLE",0.1207,0.2518],
+    "160621":["STABLE",0.1238,0.2871], "161713":["STABLE",0.1371,0.2837],
+    "161019":["STABLE",0.1398,0.2969], "164105":["STABLE",0.1687,0.3593],
+    "165517":["STABLE",0.1699,0.3531], "164606":["STABLE",0.1704,0.3501],
+    "164902":["STABLE",0.1986,0.4339],
+    "166105":["MODERATE",0.2434,0.4610], "161626":["MODERATE",0.2609,0.6600],
+    "161505":["MODERATE",0.3868,1.0856], "160641":["MODERATE",0.3908,1.0053],
+    "165509":["MODERATE",0.3982,0.8374],
+    "161010":["VOLATILE",0.5926,1.3282], "162105":["VOLATILE",0.6458,1.4191],
+    "164814":["VOLATILE",1.0148,1.9451],
+  };
+
+  const r2cT1Profile = (row) => {
+    if (row.resolver_class !== "R2_DOMESTIC_OTHER" || row.lof_type !== "BOND") return null;
+    return r2cT1Profiles[row.code] || null;
+  };
+
   const statusLabels = {
     OPEN: "开放",
     LIMITED: "限额",
@@ -109,11 +141,28 @@
   };
 
   const qualityText = (row) => {
+    if (row.estimated_nav_status === "AVAILABLE") {
+      return ({ HIGH: "高", MEDIUM: "中", LOW: "低", UNKNOWN: "未知" })[
+        row.estimated_nav_quality
+      ] || "未知";
+    }
     if (row.estimated_nav_status === "STALE") return "过期";
-    if (row.estimated_nav_status !== "AVAILABLE") return "—";
-    return ({ HIGH: "高", MEDIUM: "中", LOW: "低", UNKNOWN: "未知" })[
-      row.estimated_nav_quality
-    ] || "未知";
+    const profile = r2cT1Profile(row);
+    if (profile) {
+      const label = ({
+        STABLE: "T-1近似稳",
+        MODERATE: "T-1近似中",
+        VOLATILE: "T-1波动大",
+      })[profile[0]] || "T-1近似";
+      return `${label} ${profile[1].toFixed(2)}%`;
+    }
+    return "—";
+  };
+
+  const qualityTitle = (row) => {
+    const profile = r2cT1Profile(row);
+    if (!profile || row.estimated_nav_status === "AVAILABLE") return "";
+    return `65个净值间隔：T-1近似MAE ${profile[1].toFixed(2)}%，P90 ${profile[2].toFixed(2)}%。这是历史近似质量，不是实时估值。`;
   };
 
   const cell = (tr, text, className = "") => {
@@ -235,7 +284,9 @@
       cell(tr, fmtAmount(row.amount), "num strong");
       appendEstimatedNavCell(tr, row);
       appendPremiumCell(tr, row);
-      cell(tr, qualityText(row), `quality q-${(row.estimated_nav_quality || "unknown").toLowerCase()}`);
+      const qualityCell = cell(tr, qualityText(row), `quality q-${(row.estimated_nav_quality || "unknown").toLowerCase()}`);
+      const qTitle = qualityTitle(row);
+      if (qTitle) qualityCell.title = qTitle;
       cell(tr, fmtPct(row.static_premium_rate), `num ${premiumClass(row.static_premium_rate)}`);
       cell(tr, fmt(row.official_nav, 4), "num");
       cell(tr, row.official_nav_date || "—");
