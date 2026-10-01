@@ -1,5 +1,5 @@
 [Unit]
-Description=LOF R2-A Holdings Basket Shadow
+Description=LOF R2 Holdings Basket Shadow
 After=network-online.target lof-opportunity-updater.service
 Wants=network-online.target
 

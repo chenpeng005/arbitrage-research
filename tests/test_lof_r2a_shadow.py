@@ -172,6 +172,27 @@ class R2AShadowTest(unittest.TestCase):
         self.assertEqual(row.as_of_date, date(2026, 6, 30))
         self.assertEqual(row.total_weight, Decimal("0.85"))
 
+    def test_profiles_include_r2a_and_r2b1(self):
+        self.assertEqual(len(PROFILES), 11)
+        self.assertEqual(
+            PROFILES["501201"]["research_group"],
+            "R2-A",
+        )
+        self.assertEqual(
+            PROFILES["501085"]["research_group"],
+            "R2-B1",
+        )
+        self.assertEqual(
+            PROFILES["501085"]["quality"],
+            "LOW",
+        )
+        for code in ["162703", "163417", "163406", "506002"]:
+            self.assertEqual(
+                PROFILES[code]["research_group"],
+                "R2-B1",
+            )
+            self.assertEqual(PROFILES[code]["quality"], "MEDIUM")
+
     def test_a_share_basket_available(self):
         now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
         hs = _holdings(

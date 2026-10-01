@@ -31,12 +31,61 @@ METHOD = "DISCLOSED_HOLDINGS_BASKET"
 HKD_CNY_SYMBOL = "whHKDCNY"
 
 PROFILES = {
-    "501201": {"quality": "LOW", "name": "科创红土LOF"},
-    "501219": {"quality": "MEDIUM", "name": "智胜先锋LOF"},
-    "160127": {"quality": "LOW", "name": "南方消费LOF"},
-    "160133": {"quality": "MEDIUM", "name": "南方天元LOF"},
-    "160919": {"quality": "LOW", "name": "产业升级LOF"},
-    "163110": {"quality": "MEDIUM", "name": "申万量化LOF"},
+    "501201": {
+        "quality": "LOW",
+        "name": "科创红土LOF",
+        "research_group": "R2-A",
+    },
+    "501219": {
+        "quality": "MEDIUM",
+        "name": "智胜先锋LOF",
+        "research_group": "R2-A",
+    },
+    "160127": {
+        "quality": "LOW",
+        "name": "南方消费LOF",
+        "research_group": "R2-A",
+    },
+    "160133": {
+        "quality": "MEDIUM",
+        "name": "南方天元LOF",
+        "research_group": "R2-A",
+    },
+    "160919": {
+        "quality": "LOW",
+        "name": "产业升级LOF",
+        "research_group": "R2-A",
+    },
+    "163110": {
+        "quality": "MEDIUM",
+        "name": "申万量化LOF",
+        "research_group": "R2-A",
+    },
+    "501085": {
+        "quality": "LOW",
+        "name": "财通科创LOF",
+        "research_group": "R2-B1",
+    },
+    "162703": {
+        "quality": "MEDIUM",
+        "name": "广发小盘LOF",
+        "research_group": "R2-B1",
+    },
+    "163417": {
+        "quality": "MEDIUM",
+        "name": "兴全合宜LOF",
+        "research_group": "R2-B1",
+    },
+    "163406": {
+        "quality": "MEDIUM",
+        "name": "兴全合润LOF",
+        "research_group": "R2-B1",
+    },
+    "506002": {
+        "quality": "MEDIUM",
+        "name": "易方达科创板",
+        "research_group": "R2-B1",
+    },
 }
 
 
@@ -218,6 +267,7 @@ def _unavailable(
         "method": METHOD,
         "status": "UNAVAILABLE",
         "quality_candidate": profile["quality"],
+        "research_group": profile["research_group"],
         "shadow_estimated_nav": None,
         "shadow_premium_rate": None,
         "estimated_return": None,
@@ -490,6 +540,7 @@ def calculate_rows(
                 "method": METHOD,
                 "status": status,
                 "quality_candidate": profile["quality"],
+                "research_group": profile["research_group"],
                 "shadow_estimated_nav": float(estimated_nav),
                 "shadow_premium_rate": (
                     float(premium) if premium is not None else None
