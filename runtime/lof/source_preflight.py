@@ -124,10 +124,18 @@ def evaluate_preflight(
         ),
         PreflightCheck(
             name="estimated_nav_nonzero",
-            status="PASS" if estimated_available > 0 else "FAIL",
+            status=(
+                "PASS"
+                if (estimated_available + estimated_stale) > 0
+                else "FAIL"
+            ),
             hard=True,
-            value=estimated_available,
-            threshold=">0",
+            value=estimated_available + estimated_stale,
+            threshold="AVAILABLE+STALE >0",
+            detail=(
+                f"available={estimated_available};"
+                f"stale={estimated_stale}"
+            ),
         ),
     ]
 
@@ -150,6 +158,28 @@ def evaluate_preflight(
                 value=round(_ratio(quote_fresh, universe_count), 6),
                 threshold=">=95% when --expect-fresh-quotes",
                 detail="freshness not required for this preflight run",
+            )
+        )
+
+    if expect_fresh_quotes:
+        checks.append(
+            PreflightCheck(
+                name="estimated_nav_fresh_nonzero",
+                status="PASS" if estimated_available > 0 else "FAIL",
+                hard=True,
+                value=estimated_available,
+                threshold="AVAILABLE >0 when fresh quotes are required",
+            )
+        )
+    else:
+        checks.append(
+            PreflightCheck(
+                name="estimated_nav_fresh_nonzero",
+                status="SKIP",
+                hard=False,
+                value=estimated_available,
+                threshold="AVAILABLE >0 when fresh quotes are required",
+                detail="fresh estimated NAV not required for this preflight run",
             )
         )
 
