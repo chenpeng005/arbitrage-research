@@ -69,8 +69,15 @@
     },
     {
       "fund_code": "164701",
-      "benchmark": "黄金及贵金属QDII-FOF",
-      "status": "UNRESOLVED"
+      "benchmark": "伦敦金价格收益率（折成人民币后）；当前用GC+USD/CNY近似",
+      "status": "RESOLVED",
+      "commodity_history_symbol": "GC",
+      "commodity_live_market": "101",
+      "commodity_live_code": "GC00Y",
+      "currency": "USD",
+      "exposure_ratio": "1.0",
+      "proxy_quality": "MEDIUM",
+      "anchor_mode": "HISTORY_CLOSE"
     },
     {
       "fund_code": "165513",
