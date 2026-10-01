@@ -1,0 +1,18 @@
+[Unit]
+Description=LOF R2-C NAV Upside Band Shadow
+After=network-online.target lof-opportunity-updater.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/projects/lof-opportunity-runtime/r2c-band/current
+Environment=PYTHONPATH=/home/admin/projects/lof-opportunity-runtime/r2c-band/current
+Environment=LOF_RUNTIME_DATA_ROOT=/home/admin/projects/lof-opportunity-runtime/runtime_data
+ExecStart=/home/admin/projects/lof-opportunity-runtime/.venv/bin/python -m runtime.lof.r2c_nav_band --data-root /home/admin/projects/lof-opportunity-runtime/runtime_data --loop --quote-interval-seconds 30 --off-hours-interval-seconds 300 --timeout 6
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
