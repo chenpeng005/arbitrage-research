@@ -96,14 +96,14 @@ def _request_text(url: str, *, timeout: int, fund_code: str) -> str:
         },
     )
     last_error = None
-    for attempt in range(2):
+    for attempt in range(3):
         try:
             with urlopen(request, timeout=timeout) as response:
                 return response.read().decode("utf-8", errors="replace")
         except Exception as exc:
             last_error = exc
-            if attempt == 0:
-                time.sleep(0.2)
+            if attempt < 2:
+                time.sleep(0.5 * (attempt + 1))
     assert last_error is not None
     raise last_error
 
@@ -436,7 +436,7 @@ class HoldingsStore:
         codes = sorted(set(fund_codes))
 
         with ThreadPoolExecutor(
-            max_workers=min(3, len(codes))
+            max_workers=1
         ) as pool:
             futures = {
                 pool.submit(

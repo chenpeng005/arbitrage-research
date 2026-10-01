@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import re
+import time
 import tempfile
 from typing import Iterable
 from urllib.request import Request, urlopen
@@ -180,11 +181,23 @@ def fetch_distribution_schedule(
         PAGE_URL.format(fund_code=fund_code),
         headers={"User-Agent": "Mozilla/5.0"},
     )
-    with urlopen(request, timeout=timeout) as response:
-        text = response.read().decode(
-            "utf-8",
-            errors="replace",
-        )
+    last_error = None
+    text = None
+    for attempt in range(3):
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                text = response.read().decode(
+                    "utf-8",
+                    errors="replace",
+                )
+            break
+        except Exception as exc:
+            last_error = exc
+            if attempt < 2:
+                time.sleep(0.5 * (attempt + 1))
+    if text is None:
+        assert last_error is not None
+        raise last_error
 
     return DistributionSchedule(
         fund_code=fund_code,
@@ -277,7 +290,7 @@ class DistributionStore:
         codes = sorted(set(fund_codes))
 
         with ThreadPoolExecutor(
-            max_workers=min(3, len(codes))
+            max_workers=1
         ) as pool:
             futures = {
                 pool.submit(

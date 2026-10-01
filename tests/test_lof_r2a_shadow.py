@@ -3,8 +3,10 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
+from io import BytesIO
 import tempfile
 import unittest
+from urllib.error import HTTPError
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
@@ -24,6 +26,7 @@ from runtime.lof.r2a_shadow import (
     parse_quote_response,
 )
 from runtime.lof.r2_fund_events import (
+    fetch_distribution_schedule,
     CashDistribution,
     DistributionSchedule,
     parse_distribution_page,
@@ -338,6 +341,41 @@ class R2AShadowTest(unittest.TestCase):
                 refresh_seconds=21600,
             )
         )
+
+    @patch("runtime.lof.r2_fund_events.time.sleep")
+    @patch("runtime.lof.r2_fund_events.urlopen")
+    def test_distribution_fetch_retries_frequency_cap(
+        self,
+        urlopen_mock,
+        sleep_mock,
+    ):
+        class Response:
+            def __enter__(self):
+                return self
+            def __exit__(self, exc_type, exc, tb):
+                return False
+            def read(self):
+                return b"<table></table>"
+
+        urlopen_mock.side_effect = [
+            HTTPError(
+                "https://example.invalid",
+                514,
+                "Frequency Capped",
+                hdrs=None,
+                fp=None,
+            ),
+            Response(),
+        ]
+        now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
+        row = fetch_distribution_schedule(
+            "501085",
+            now=now,
+            timeout=1,
+        )
+        self.assertEqual(row.fund_code, "501085")
+        self.assertEqual(urlopen_mock.call_count, 2)
+        sleep_mock.assert_called_once()
 
     def test_distribution_page_parser(self):
         page = """
