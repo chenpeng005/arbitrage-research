@@ -59,7 +59,7 @@
       "commodity_live_code": "agm",
       "currency": "CNY",
       "exposure_ratio": "1.0",
-      "proxy_quality": "MEDIUM",
+      "proxy_quality": "LOW",
       "anchor_mode": "PREVIOUS_SETTLEMENT"
     },
     {

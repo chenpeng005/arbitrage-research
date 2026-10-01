@@ -11,7 +11,7 @@ class R5QualityRegistryTest(unittest.TestCase):
         for code in ("160719", "161116", "164701"):
             self.assertEqual(registry[code].proxy_quality, "MEDIUM")
 
-        for code in ("160723", "161129"):
+        for code in ("160723", "161129", "161226"):
             self.assertEqual(registry[code].proxy_quality, "LOW")
 
 
