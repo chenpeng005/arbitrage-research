@@ -124,10 +124,29 @@ def evaluate_preflight(
         ),
         PreflightCheck(
             name="estimated_nav_nonzero",
-            status="PASS" if estimated_available > 0 else "FAIL",
+            status=(
+                "PASS"
+                if (
+                    estimated_available > 0
+                    if expect_fresh_quotes
+                    else (estimated_available + estimated_stale) > 0
+                )
+                else "FAIL"
+            ),
             hard=True,
-            value=estimated_available,
-            threshold=">0",
+            value=(
+                estimated_available
+                if expect_fresh_quotes
+                else estimated_available + estimated_stale
+            ),
+            threshold=(
+                "available>0"
+                if expect_fresh_quotes
+                else "available+stale>0"
+            ),
+            detail=(
+                f"available={estimated_available};stale={estimated_stale}"
+            ),
         ),
     ]
 

@@ -19,6 +19,7 @@ def _snapshot(
     nav: int = 390,
     state: int = 395,
     estimated: int = 100,
+    estimated_stale: int = 0,
     lane_errors: dict | None = None,
 ) -> dict:
     return {
@@ -34,8 +35,10 @@ def _snapshot(
             "state_available_count": state,
             "state_unavailable_count": universe - state,
             "estimated_nav_available_count": estimated,
-            "estimated_nav_stale_count": 0,
-            "estimated_nav_unavailable_count": universe - estimated,
+            "estimated_nav_stale_count": estimated_stale,
+            "estimated_nav_unavailable_count": (
+                universe - estimated - estimated_stale
+            ),
         },
         "lane_errors": lane_errors or {},
     }
@@ -73,6 +76,49 @@ class LofProductionSourcePreflightTest(unittest.TestCase):
             if x["name"] == "quote_fresh_coverage"
         )
         self.assertEqual(check["status"], "SKIP")
+
+    def test_off_hours_stale_estimates_count_as_observable(self) -> None:
+        result = evaluate_preflight(
+            snapshot=_snapshot(
+                quote_fresh=0,
+                quote_stale=398,
+                quote_unavailable=2,
+                estimated=0,
+                estimated_stale=100,
+            ),
+            r1_context_resolved=120,
+            r1_context_unresolved=10,
+            expect_fresh_quotes=False,
+            application_commit_sha="abc",
+            checked_at=datetime(2026, 10, 1, 14, 0, tzinfo=TZ),
+        )
+        self.assertEqual(result["status"], "PASS")
+        check = next(
+            x for x in result["checks"]
+            if x["name"] == "estimated_nav_nonzero"
+        )
+        self.assertEqual(check["value"], 100)
+        self.assertEqual(check["threshold"], "available+stale>0")
+
+    def test_market_hours_all_stale_estimates_fail(self) -> None:
+        result = evaluate_preflight(
+            snapshot=_snapshot(
+                estimated=0,
+                estimated_stale=100,
+            ),
+            r1_context_resolved=120,
+            r1_context_unresolved=10,
+            expect_fresh_quotes=True,
+            application_commit_sha="abc",
+            checked_at=datetime(2026, 9, 29, 14, 0, tzinfo=TZ),
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(
+            any(
+                x["name"] == "estimated_nav_nonzero"
+                for x in result["errors"]
+            )
+        )
 
     def test_low_nav_coverage_fails(self) -> None:
         result = evaluate_preflight(
