@@ -86,6 +86,41 @@ PROFILES = {
         "name": "易方达科创板",
         "research_group": "R2-B1",
     },
+    "168401": {
+        "quality": "LOW",
+        "name": "红土创新精选LOF",
+        "research_group": "R2-B1",
+    },
+    "501205": {
+        "quality": "LOW",
+        "name": "鹏华创新未来LOF",
+        "research_group": "R2-B1",
+    },
+    "161903": {
+        "quality": "MEDIUM",
+        "name": "万家行业优选LOF",
+        "research_group": "R2-B1",
+    },
+    "501096": {
+        "quality": "LOW",
+        "name": "国联安科创LOF",
+        "research_group": "R2-B1",
+    },
+    "163415": {
+        "quality": "MEDIUM",
+        "name": "兴全商业模式LOF",
+        "research_group": "R2-B1",
+    },
+    "162605": {
+        "quality": "MEDIUM",
+        "name": "景顺鼎益LOF",
+        "research_group": "R2-B1",
+    },
+    "163402": {
+        "quality": "MEDIUM",
+        "name": "兴全趋势LOF",
+        "research_group": "R2-B1",
+    },
 }
 
 
