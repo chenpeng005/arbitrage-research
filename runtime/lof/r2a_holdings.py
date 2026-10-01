@@ -136,6 +136,27 @@ def parse_periods(text: str) -> list[date]:
     return sorted(periods, reverse=True)
 
 
+def _quarter_end_candidates(
+    as_of: date,
+    *,
+    count: int = 8,
+) -> list[date]:
+    month_days = {
+        3: 31,
+        6: 30,
+        9: 30,
+        12: 31,
+    }
+    values: list[date] = []
+    for year in range(as_of.year, as_of.year - 3, -1):
+        for month in (12, 9, 6, 3):
+            value = date(year, month, month_days[month])
+            if value <= as_of:
+                values.append(value)
+    values.sort(reverse=True)
+    return values[:count]
+
+
 def discover_periods(
     fund_code: str,
     *,
@@ -168,6 +189,36 @@ def discover_periods(
         periods = parse_periods(text)
         if periods:
             return periods
+
+    # Some funds return no period list unless an explicit quarter is
+    # requested. Probe recent completed quarter-ends, newest first.
+    discovered: set[date] = set()
+    for candidate in _quarter_end_candidates(as_of):
+        try:
+            text = _request_text(
+                _url(
+                    fund_code,
+                    topline=20,
+                    year=str(candidate.year),
+                    month=str(candidate.month),
+                ),
+                timeout=timeout,
+                fund_code=fund_code,
+            )
+        except Exception as exc:
+            errors.append(
+                f"{candidate.isoformat()}:{type(exc).__name__}"
+            )
+            continue
+        for period in parse_periods(text):
+            if period <= as_of:
+                discovered.add(period)
+        if discovered:
+            # Return all periods exposed by this explicit-quarter page.
+            # fetch_latest_full_snapshot will still reject partial/top-10
+            # disclosures using the minimum total-weight gate.
+            return sorted(discovered, reverse=True)
+
     raise ValueError(
         f"NO_HOLDINGS_PERIOD:{fund_code}:" + "|".join(errors)
     )

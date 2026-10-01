@@ -86,6 +86,24 @@ class R2AShadowTest(unittest.TestCase):
         self.assertEqual(periods, [date(2026, 6, 30)])
         self.assertEqual(request_mock.call_count, 2)
 
+    @patch("runtime.lof.r2a_holdings._request_text")
+    def test_discovery_falls_back_to_explicit_quarter(
+        self,
+        request_mock,
+    ):
+        request_mock.side_effect = [
+            "no period",
+            "no period",
+            "no period",
+            "截止至：<font>2026-09-30</font>",
+        ]
+        periods = discover_periods(
+            "163110",
+            as_of=date(2026, 10, 1),
+        )
+        self.assertEqual(periods, [date(2026, 9, 30)])
+        self.assertEqual(request_mock.call_count, 4)
+
     @patch("runtime.lof.r2a_holdings.fetch_period_holdings")
     @patch("runtime.lof.r2a_holdings.discover_periods")
     def test_latest_partial_period_falls_back_to_full(
