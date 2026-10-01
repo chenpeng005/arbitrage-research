@@ -1,0 +1,17 @@
+[Unit]
+Description=LOF R2-C Live Equity Convertible Overlay Shadow
+After=network-online.target lof-opportunity-updater.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/projects/lof-opportunity-runtime/r2c-live-overlay/current
+Environment=PYTHONPATH=/home/admin/projects/lof-opportunity-runtime/r2c-live-overlay/current
+ExecStart=/home/admin/projects/lof-opportunity-runtime/.venv/bin/python -m runtime.lof.r2c_live_overlay --main-data-root /home/admin/projects/lof-opportunity-runtime/runtime_data --state-root /home/admin/projects/lof-opportunity-runtime/runtime_data/r2c_live_overlay --loop --quote-interval-seconds 30 --off-hours-interval-seconds 300 --holdings-refresh-seconds 21600 --distribution-refresh-seconds 21600 --timeout 6 --max-quote-age-seconds 120
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
