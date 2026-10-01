@@ -53,8 +53,14 @@
     },
     {
       "fund_code": "161226",
-      "benchmark": "上期所白银期货主力合约",
-      "status": "UNRESOLVED"
+      "benchmark": "上海期货交易所白银期货主力合约收益率（扣除相关费用）",
+      "status": "RESOLVED",
+      "commodity_live_market": "113",
+      "commodity_live_code": "agm",
+      "currency": "CNY",
+      "exposure_ratio": "1.0",
+      "proxy_quality": "MEDIUM",
+      "anchor_mode": "PREVIOUS_SETTLEMENT"
     },
     {
       "fund_code": "161815",

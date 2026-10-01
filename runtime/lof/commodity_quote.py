@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 import json
 from urllib.request import Request, urlopen
@@ -51,6 +51,21 @@ def parse_eastmoney_commodity_quote(
             ).replace(tzinfo=SHANGHAI_TZ)
         except ValueError:
             quote_time = None
+
+    if quote_time is None:
+        raw_utime = row.get("utime")
+        try:
+            utime = int(raw_utime)
+        except (TypeError, ValueError):
+            utime = 0
+        if utime > 0:
+            try:
+                quote_time = datetime.fromtimestamp(
+                    utime,
+                    tz=timezone.utc,
+                ).astimezone(SHANGHAI_TZ)
+            except (OverflowError, OSError, ValueError):
+                quote_time = None
 
     error = None
     if current is None or current <= 0 or quote_time is None:

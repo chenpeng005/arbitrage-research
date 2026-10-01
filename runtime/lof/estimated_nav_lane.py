@@ -128,6 +128,7 @@ def resolve_estimated_nav_lane(
                 nav=nav_map[code],
                 proxy=proxy,
                 as_of=as_of,
+                expected_anchor_date=context.previous_trading_day,
                 timeout=timeout,
             )
             continue

@@ -17,6 +17,7 @@ class CommodityProxyEntry:
     currency: str | None = None
     exposure_ratio: Decimal | None = None
     proxy_quality: str = "UNKNOWN"
+    anchor_mode: str = "HISTORY_CLOSE"
 
 
 def load_commodity_proxy_registry(
@@ -38,6 +39,7 @@ def load_commodity_proxy_registry(
                 Decimal(str(exposure)) if exposure is not None else None
             ),
             proxy_quality=str(row.get("proxy_quality") or "UNKNOWN"),
+            anchor_mode=str(row.get("anchor_mode") or "HISTORY_CLOSE"),
         )
         result[entry.fund_code] = entry
     return result

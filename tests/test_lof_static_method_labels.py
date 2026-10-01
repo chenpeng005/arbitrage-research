@@ -16,6 +16,7 @@ class LofStaticMethodLabelsTest(unittest.TestCase):
             "TARGET_ETF_PREV_CLOSE": "目标ETF代理",
             "MULTIDAY_PROXY_FX_BRIDGE": "跨日指数+汇率",
             "COMMODITY_FX_BRIDGE": "商品+汇率",
+            "DOMESTIC_FUTURES_PREV_SETTLEMENT": "国内期货主连",
         }
         for method, label in expected.items():
             self.assertIn(method, app_js)
