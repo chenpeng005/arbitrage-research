@@ -32,7 +32,7 @@
       "commodity_live_code": "CL00Y",
       "currency": "USD",
       "exposure_ratio": "1.0",
-      "proxy_quality": "MEDIUM",
+      "proxy_quality": "LOW",
       "status": "RESOLVED"
     },
     {
@@ -43,7 +43,7 @@
       "commodity_live_code": "CL00Y",
       "currency": "USD",
       "exposure_ratio": "1.0",
-      "proxy_quality": "MEDIUM",
+      "proxy_quality": "LOW",
       "status": "RESOLVED"
     },
     {
