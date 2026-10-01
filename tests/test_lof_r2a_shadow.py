@@ -23,6 +23,11 @@ from runtime.lof.r2a_shadow import (
     holdings_need_refresh,
     parse_quote_response,
 )
+from runtime.lof.r2_fund_events import (
+    CashDistribution,
+    DistributionSchedule,
+    parse_distribution_page,
+)
 
 
 TZ = ZoneInfo("Asia/Shanghai")
@@ -57,6 +62,35 @@ def _market_row(code: str, lag: str = "T-1"):
         "official_nav_lag_label": lag,
         "price": 1.05,
     }
+
+
+
+
+def _distribution_schedule(
+    code: str,
+    now: datetime,
+    *,
+    cash_per_unit: Decimal = Decimal("0"),
+    ex_date: date | None = None,
+    fetched_at: datetime | None = None,
+):
+    events = ()
+    if cash_per_unit > 0:
+        target = ex_date or now.date()
+        events = (
+            CashDistribution(
+                record_date=target,
+                ex_date=target,
+                cash_per_unit=cash_per_unit,
+                payment_date=None,
+                raw_text=f"每10份派现金{cash_per_unit * 10}元",
+            ),
+        )
+    return DistributionSchedule(
+        fund_code=code,
+        fetched_at=fetched_at or now,
+        events=events,
+    )
 
 
 class R2AShadowTest(unittest.TestCase):
@@ -155,6 +189,7 @@ class R2AShadowTest(unittest.TestCase):
         rows = calculate_rows(
             main_snapshot={"rows":[_market_row("501201")]},
             holdings_by_fund={"501201":hs},
+            distributions_by_fund={"501201":_distribution_schedule("501201", now)},
             quotes={
                 "sz000001": LiveQuote(
                     "sz000001",Decimal("110"),Decimal("100"),now
@@ -184,6 +219,7 @@ class R2AShadowTest(unittest.TestCase):
         rows = calculate_rows(
             main_snapshot={"rows":[_market_row("501201","T-2")]},
             holdings_by_fund={"501201":hs},
+            distributions_by_fund={"501201":_distribution_schedule("501201", now)},
             quotes={},
             as_of=now,
         )
@@ -282,6 +318,124 @@ class R2AShadowTest(unittest.TestCase):
             )
         )
 
+    def test_distribution_page_parser(self):
+        page = """
+        <table><tbody>
+        <tr><td>2026年</td><td>2026-07-10</td>
+        <td>2026-07-10</td><td>每10份派现金2.0000元</td>
+        <td>2026-07-14</td></tr>
+        </tbody></table>
+        """
+        events = parse_distribution_page(page)
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].ex_date, date(2026, 7, 10))
+        self.assertEqual(
+            events[0].cash_per_unit,
+            Decimal("0.2000"),
+        )
+
+    def test_cash_distribution_adjusts_shadow_nav(self):
+        now = datetime(2026, 7, 10, 10, 0, tzinfo=TZ)
+        hs = _holdings(
+            "501201",
+            [
+                Holding(
+                    "A","sz000001","000001","A",Decimal("0.85")
+                ),
+            ],
+            now,
+        )
+        rows = calculate_rows(
+            main_snapshot={"rows":[_market_row("501201")]},
+            holdings_by_fund={"501201":hs},
+            distributions_by_fund={
+                "501201": _distribution_schedule(
+                    "501201",
+                    now,
+                    cash_per_unit=Decimal("0.20"),
+                    ex_date=date(2026, 7, 10),
+                )
+            },
+            quotes={
+                "sz000001": LiveQuote(
+                    "sz000001",Decimal("100"),Decimal("100"),now
+                ),
+            },
+            as_of=now,
+        )
+        row = next(x for x in rows if x["fund_code"]=="501201")
+        self.assertEqual(row["status"], "AVAILABLE")
+        self.assertAlmostEqual(
+            row["shadow_estimated_nav"],
+            0.80,
+            places=8,
+        )
+        self.assertAlmostEqual(
+            row["cash_distribution_per_unit"],
+            0.20,
+            places=8,
+        )
+        self.assertEqual(
+            row["distribution_ex_date"],
+            "2026-07-10",
+        )
+
+    def test_missing_distribution_schedule_fails_closed(self):
+        now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
+        hs = _holdings(
+            "501201",
+            [
+                Holding(
+                    "A","sz000001","000001","A",Decimal("0.85")
+                ),
+            ],
+            now,
+        )
+        rows = calculate_rows(
+            main_snapshot={"rows":[_market_row("501201")]},
+            holdings_by_fund={"501201":hs},
+            distributions_by_fund={},
+            quotes={},
+            as_of=now,
+        )
+        row = next(x for x in rows if x["fund_code"]=="501201")
+        self.assertEqual(row["status"], "UNAVAILABLE")
+        self.assertEqual(
+            row["error"],
+            "DISTRIBUTION_SCHEDULE_UNAVAILABLE",
+        )
+
+    def test_stale_distribution_schedule_fails_closed(self):
+        now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
+        hs = _holdings(
+            "501201",
+            [
+                Holding(
+                    "A","sz000001","000001","A",Decimal("0.85")
+                ),
+            ],
+            now,
+        )
+        rows = calculate_rows(
+            main_snapshot={"rows":[_market_row("501201")]},
+            holdings_by_fund={"501201":hs},
+            distributions_by_fund={
+                "501201": _distribution_schedule(
+                    "501201",
+                    now,
+                    fetched_at=now - timedelta(hours=25),
+                )
+            },
+            quotes={},
+            as_of=now,
+        )
+        row = next(x for x in rows if x["fund_code"]=="501201")
+        self.assertEqual(row["status"], "UNAVAILABLE")
+        self.assertEqual(
+            row["error"],
+            "DISTRIBUTION_SCHEDULE_STALE",
+        )
+
     def test_hk_return_includes_fx(self):
         now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
         hs = _holdings(
@@ -299,6 +453,7 @@ class R2AShadowTest(unittest.TestCase):
         rows = calculate_rows(
             main_snapshot={"rows":[_market_row("160127")]},
             holdings_by_fund={"160127":hs},
+            distributions_by_fund={"160127":_distribution_schedule("160127", now)},
             quotes={
                 "sz000001": LiveQuote(
                     "sz000001",Decimal("100"),Decimal("100"),now

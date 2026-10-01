@@ -16,6 +16,12 @@ from zoneinfo import ZoneInfo
 
 from .fx import fetch_tencent_fx_daily, fetch_tencent_fx_quote, fx_close_on
 from .r2a_holdings import HoldingsSnapshot, HoldingsStore
+from .r2_fund_events import (
+    DistributionSchedule,
+    DistributionStore,
+    cash_distribution_on,
+    schedules_need_refresh,
+)
 from .snapshot_store import LofSnapshotStore
 
 
@@ -237,6 +243,9 @@ def _unavailable(
         ),
         "live_coverage_ratio": None,
         "fresh_coverage_ratio": None,
+        "cash_distribution_per_unit": None,
+        "distribution_ex_date": None,
+        "distribution_schedule_fetched_at": None,
         "error": error,
     }
 
@@ -245,6 +254,7 @@ def calculate_rows(
     *,
     main_snapshot: dict,
     holdings_by_fund: dict[str, HoldingsSnapshot],
+    distributions_by_fund: dict[str, DistributionSchedule],
     quotes: dict[str, LiveQuote],
     as_of: datetime,
     fx_current: Decimal | None = None,
@@ -254,6 +264,7 @@ def calculate_rows(
     min_disclosed_weight: Decimal = Decimal("0.80"),
     min_live_ratio: Decimal = Decimal("0.98"),
     max_holdings_age_days: int = 130,
+    max_distribution_schedule_age_seconds: int = 86400,
 ) -> list[dict]:
     fx_anchor_by_nav_date = fx_anchor_by_nav_date or {}
     market = {
@@ -285,6 +296,39 @@ def calculate_rows(
                 )
             )
             continue
+
+        distribution_schedule = distributions_by_fund.get(code)
+        if distribution_schedule is None:
+            result.append(
+                _unavailable(
+                    code,
+                    market_row=row,
+                    holdings=holdings,
+                    error="DISTRIBUTION_SCHEDULE_UNAVAILABLE",
+                )
+            )
+            continue
+        schedule_age = _quote_age(
+            distribution_schedule.fetched_at,
+            as_of,
+        )
+        if (
+            schedule_age is None
+            or schedule_age > max_distribution_schedule_age_seconds
+        ):
+            result.append(
+                _unavailable(
+                    code,
+                    market_row=row,
+                    holdings=holdings,
+                    error="DISTRIBUTION_SCHEDULE_STALE",
+                )
+            )
+            continue
+        cash_distribution = cash_distribution_on(
+            distribution_schedule,
+            as_of.date(),
+        )
 
         nav = _decimal(row.get("official_nav"))
         try:
@@ -413,7 +457,20 @@ def calculate_rows(
             if fx_age is None or fx_age > max_quote_age_seconds:
                 status = "STALE"
 
-        estimated_nav = nav * (Decimal("1") + estimated_return)
+        estimated_nav = (
+            nav * (Decimal("1") + estimated_return)
+            - cash_distribution
+        )
+        if estimated_nav <= 0:
+            result.append(
+                _unavailable(
+                    code,
+                    market_row=row,
+                    holdings=holdings,
+                    error="NON_POSITIVE_ESTIMATED_NAV",
+                )
+            )
+            continue
         market_price = _decimal(row.get("price"))
         premium = None
         if (
@@ -446,6 +503,15 @@ def calculate_rows(
                 "disclosed_weight": float(disclosed),
                 "live_coverage_ratio": float(live_ratio),
                 "fresh_coverage_ratio": float(fresh_ratio),
+                "cash_distribution_per_unit": float(cash_distribution),
+                "distribution_ex_date": (
+                    as_of.date().isoformat()
+                    if cash_distribution > 0
+                    else None
+                ),
+                "distribution_schedule_fetched_at": (
+                    distribution_schedule.fetched_at.isoformat()
+                ),
                 "quote_time_min": (
                     min(used_times).isoformat()
                     if used_times
@@ -502,6 +568,7 @@ def collect_once(
     timeout: int = 6,
     max_quote_age_seconds: int = 120,
     holdings_refresh_seconds: int = 21600,
+    distribution_refresh_seconds: int = 21600,
 ) -> dict:
     now = now or datetime.now(SHANGHAI_TZ)
     main_snapshot = LofSnapshotStore(data_root).load_latest()
@@ -520,6 +587,23 @@ def collect_once(
             PROFILES.keys(),
             now=now,
             timeout=timeout,
+        )
+
+    distribution_store = DistributionStore(data_root)
+    distributions = distribution_store.load()
+    distribution_errors: dict[str, str] = {}
+    if schedules_need_refresh(
+        distributions,
+        PROFILES.keys(),
+        now=now,
+        refresh_seconds=distribution_refresh_seconds,
+    ):
+        distributions, distribution_errors = (
+            distribution_store.refresh(
+                PROFILES.keys(),
+                now=now,
+                timeout=timeout,
+            )
         )
 
     symbols = {
@@ -569,6 +653,7 @@ def collect_once(
     rows = calculate_rows(
         main_snapshot=main_snapshot,
         holdings_by_fund=holdings,
+        distributions_by_fund=distributions,
         quotes=quotes,
         as_of=now,
         fx_current=fx_current,
@@ -582,13 +667,14 @@ def collect_once(
         "unavailable_count": sum(x["status"] == "UNAVAILABLE" for x in rows),
     }
     snapshot = {
-        "contract_version": "R2A_SHADOW_V1",
+        "contract_version": "R2A_SHADOW_V2",
         "snapshot_id": "r2a-shadow-" + now.strftime("%Y%m%dT%H%M%S"),
         "generated_at": now.isoformat(),
         "source_market_snapshot_id": main_snapshot.get("snapshot_id"),
         "method": METHOD,
         "summary": summary,
         "holdings_refresh_errors": holdings_errors,
+        "distribution_refresh_errors": distribution_errors,
         "rows": rows,
     }
     persist_snapshot(data_root, snapshot)
@@ -631,6 +717,7 @@ def run_loop(
     timeout: int = 6,
     max_quote_age_seconds: int = 120,
     holdings_refresh_seconds: int = 21600,
+    distribution_refresh_seconds: int = 21600,
     quote_interval_seconds: float = 30.0,
     off_hours_interval_seconds: float = 300.0,
 ) -> int:
@@ -651,6 +738,7 @@ def run_loop(
                     timeout=timeout,
                     max_quote_age_seconds=max_quote_age_seconds,
                     holdings_refresh_seconds=holdings_refresh_seconds,
+                    distribution_refresh_seconds=distribution_refresh_seconds,
                 )
                 interval = quote_interval_seconds
                 print(
@@ -702,6 +790,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout", type=int, default=6)
     parser.add_argument("--max-quote-age-seconds", type=int, default=120)
     parser.add_argument("--holdings-refresh-seconds", type=int, default=21600)
+    parser.add_argument("--distribution-refresh-seconds", type=int, default=21600)
     parser.add_argument("--quote-interval-seconds", type=float, default=30.0)
     parser.add_argument("--off-hours-interval-seconds", type=float, default=300.0)
     parser.add_argument("--loop", action="store_true")
@@ -716,6 +805,7 @@ def main(argv: list[str] | None = None) -> int:
             timeout=args.timeout,
             max_quote_age_seconds=args.max_quote_age_seconds,
             holdings_refresh_seconds=args.holdings_refresh_seconds,
+            distribution_refresh_seconds=args.distribution_refresh_seconds,
             quote_interval_seconds=args.quote_interval_seconds,
             off_hours_interval_seconds=args.off_hours_interval_seconds,
         )
@@ -725,6 +815,7 @@ def main(argv: list[str] | None = None) -> int:
         timeout=args.timeout,
         max_quote_age_seconds=args.max_quote_age_seconds,
         holdings_refresh_seconds=args.holdings_refresh_seconds,
+        distribution_refresh_seconds=args.distribution_refresh_seconds,
     )
     print(json.dumps(
         {
@@ -732,6 +823,7 @@ def main(argv: list[str] | None = None) -> int:
             "source_market_snapshot_id": snapshot["source_market_snapshot_id"],
             "summary": snapshot["summary"],
             "holdings_refresh_errors": snapshot["holdings_refresh_errors"],
+            "distribution_refresh_errors": snapshot["distribution_refresh_errors"],
         },
         ensure_ascii=False,
     ))
