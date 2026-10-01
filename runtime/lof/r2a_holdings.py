@@ -105,13 +105,14 @@ def _url(
     year: str = "",
     month: str = "",
 ) -> str:
-    return f"{ARCHIVE_URL}?{urlencode({
-        'type': 'jjcc',
-        'code': fund_code,
-        'topline': str(topline),
-        'year': year,
-        'month': month,
-    })}"
+    params = {
+        "type": "jjcc",
+        "code": fund_code,
+        "topline": str(topline),
+        "year": year,
+        "month": month,
+    }
+    return ARCHIVE_URL + "?" + urlencode(params)
 
 
 def parse_periods(text: str) -> list[date]:
