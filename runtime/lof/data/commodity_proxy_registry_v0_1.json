@@ -1,6 +1,6 @@
 {
   "version": "COMMODITY_PROXY_REGISTRY_V0.1",
-  "as_of": "2026-09-29",
+  "as_of": "2026-10-01",
   "entries": [
     {
       "fund_code": "160719",
@@ -69,8 +69,14 @@
     },
     {
       "fund_code": "164701",
-      "benchmark": "黄金及贵金属QDII-FOF",
-      "status": "UNRESOLVED"
+      "benchmark": "伦敦金价格收益率（折成人民币后）",
+      "status": "RESOLVED",
+      "commodity_history_symbol": "GC",
+      "commodity_live_market": "101",
+      "commodity_live_code": "GC00Y",
+      "currency": "USD",
+      "exposure_ratio": "1.0",
+      "proxy_quality": "MEDIUM"
     },
     {
       "fund_code": "165513",
