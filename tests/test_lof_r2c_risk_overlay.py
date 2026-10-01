@@ -1,5 +1,3 @@
-[Reading 275 lines from start (total: 275 lines, 0 remaining)]
-
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta

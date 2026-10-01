@@ -1,5 +1,3 @@
-[Reading 513 lines from start (total: 513 lines, 0 remaining)]
-
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed

@@ -1,5 +1,3 @@
-[Reading 930 lines from start (total: 930 lines, 0 remaining)]
-
 from __future__ import annotations
 
 import argparse
