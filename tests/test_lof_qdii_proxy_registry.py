@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from decimal import Decimal
 import tempfile
 import unittest
 from pathlib import Path
@@ -21,6 +22,7 @@ class QdiiProxyRegistryTest(unittest.TestCase):
                     "history_symbol": "usNDX",
                     "currency": "USD",
                     "quality": "HIGH",
+                    "exposure_ratio": "1.0",
                 }
             ],
         }
@@ -31,6 +33,7 @@ class QdiiProxyRegistryTest(unittest.TestCase):
 
         self.assertEqual(rows["161130"].proxy_type, "DIRECT_INDEX")
         self.assertEqual(rows["161130"].quality, "HIGH")
+        self.assertEqual(rows["161130"].exposure_ratio, Decimal("1.0"))
 
 
 if __name__ == "__main__":

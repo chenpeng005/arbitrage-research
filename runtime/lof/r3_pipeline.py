@@ -65,7 +65,11 @@ def resolve_r3_one(
             error="UNRESOLVED_PROXY",
         )
 
-    exposure = mapping.exposure_ratio_candidate
+    exposure = (
+        mapping.exposure_ratio_candidate
+        if mapping.exposure_ratio_candidate is not None
+        else proxy.exposure_ratio
+    )
 
     fx_symbol = {
         "USD": "whUSDCNY",
@@ -106,9 +110,18 @@ def resolve_r3_one(
             proxy.proxy_symbol,
             timeout=timeout,
         )
+        if live_quote.error is not None:
+            return _unavailable(
+                fund_code=nav.code,
+                proxy_id=proxy.proxy_symbol,
+                error=f"PROXY_QUOTE_ERROR:{live_quote.error}",
+            )
         current = live_quote.current
         latest_date = as_of.date()
+        proxy_time = live_quote.quote_time
         timing_quality = "HIGH"
+        enforce_realtime_freshness = True
+        resolver_method = "HK_LIVE_INDEX_FX_BRIDGE"
         exactness = (
             "EXACT_INDEX"
             if proxy.proxy_type == "DIRECT_INDEX"
@@ -128,6 +141,9 @@ def resolve_r3_one(
         # During China trading hours the U.S. cash market is closed. We may
         # overlay current index futures to bridge from the latest cash close.
         timing_quality = "MEDIUM"
+        proxy_time = None
+        enforce_realtime_freshness = False
+        resolver_method = "MULTIDAY_PROXY_FX_BRIDGE"
         exactness = (
             "EXACT_INDEX"
             if proxy.proxy_type == "DIRECT_INDEX"
@@ -176,4 +192,9 @@ def resolve_r3_one(
         proxy_exactness=exactness,
         timing_quality=timing_quality,
         intraday_adjustment_return=intraday_adjustment_return,
+        proxy_time=proxy_time,
+        fx_time=fx_quote.quote_time,
+        max_proxy_age_seconds=180,
+        enforce_realtime_freshness=enforce_realtime_freshness,
+        resolver_method=resolver_method,
     )

@@ -22,6 +22,11 @@ def resolve_r3_qdii_index_bridge(
     proxy_exactness: str,
     timing_quality: str = "MEDIUM",
     intraday_adjustment_return: Decimal | None = None,
+    proxy_time: datetime | None = None,
+    fx_time: datetime | None = None,
+    max_proxy_age_seconds: int = 180,
+    enforce_realtime_freshness: bool = False,
+    resolver_method: str = "MULTIDAY_PROXY_FX_BRIDGE",
 ) -> EstimatedNavResult:
     """Bridge a stale QDII NAV to current China-market time.
 
@@ -45,7 +50,7 @@ def resolve_r3_qdii_index_bridge(
             estimated_nav_status="UNAVAILABLE",
             estimated_nav_quality="UNKNOWN",
             resolver_class="R3_QDII_INDEX",
-            resolver_method="MULTIDAY_PROXY_FX_BRIDGE",
+            resolver_method=resolver_method,
             proxy_id=proxy_id,
             proxy_time=None,
             proxy_return=None,
@@ -86,6 +91,37 @@ def resolve_r3_qdii_index_bridge(
         else timing_quality
     )
 
+    # Only paths that explicitly claim realtime semantics enforce raw input
+    # freshness here. Cross-market last-close-only paths remain a separate
+    # timing class and are handled by their lower timing quality.
+    estimated_nav_time = as_of
+    estimated_nav_status = "AVAILABLE"
+    if enforce_realtime_freshness:
+        if proxy_time is None or fx_time is None:
+            return EstimatedNavResult(
+                fund_code=fund_code,
+                estimated_nav=None,
+                estimated_nav_time=None,
+                estimated_nav_status="UNAVAILABLE",
+                estimated_nav_quality="UNKNOWN",
+                resolver_class="R3_QDII_INDEX",
+                resolver_method=resolver_method,
+                proxy_id=proxy_id,
+                proxy_time=proxy_time,
+                proxy_return=None,
+                fx_return=None,
+                exposure_ratio_used=exposure,
+                tracking_adjustment_used=None,
+                error="MISSING_REALTIME_TIMESTAMP",
+            )
+        estimated_nav_time = min(proxy_time, fx_time)
+        age_seconds = max(
+            Decimal("0"),
+            Decimal(str((as_of - estimated_nav_time).total_seconds())),
+        )
+        if age_seconds > Decimal(str(max_proxy_age_seconds)):
+            estimated_nav_status = "STALE"
+
     # The proxy may be the latest completed overseas session rather than a
     # currently-trading instrument. timing_quality captures this cross-market
     # alignment. U.S. last-close-only estimates during China hours should
@@ -93,13 +129,13 @@ def resolve_r3_qdii_index_bridge(
     return EstimatedNavResult(
         fund_code=fund_code,
         estimated_nav=estimated_nav,
-        estimated_nav_time=as_of,
-        estimated_nav_status="AVAILABLE",
+        estimated_nav_time=estimated_nav_time,
+        estimated_nav_status=estimated_nav_status,
         estimated_nav_quality=quality,
         resolver_class="R3_QDII_INDEX",
-        resolver_method="MULTIDAY_PROXY_FX_BRIDGE",
+        resolver_method=resolver_method,
         proxy_id=proxy_id,
-        proxy_time=None,
+        proxy_time=proxy_time,
         proxy_return=proxy_return,
         fx_return=fx_return,
         exposure_ratio_used=exposure,

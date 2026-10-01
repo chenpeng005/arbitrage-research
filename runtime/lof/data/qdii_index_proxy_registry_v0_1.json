@@ -1,6 +1,6 @@
 {
   "version": "QDII_INDEX_PROXY_REGISTRY_V0.1",
-  "as_of": "2026-09-29",
+  "as_of": "2026-10-01",
   "entries": [
     {
       "fund_code": "160140",
@@ -18,7 +18,8 @@
       "proxy_symbol": "hkHSCEI",
       "history_symbol": "hkHSCEI",
       "currency": "HKD",
-      "quality": "HIGH"
+      "quality": "HIGH",
+      "exposure_ratio": "1.0"
     },
     {
       "fund_code": "160924",
@@ -27,7 +28,8 @@
       "proxy_symbol": "hkHSI",
       "history_symbol": "hkHSI",
       "currency": "HKD",
-      "quality": "HIGH"
+      "quality": "HIGH",
+      "exposure_ratio": "1.0"
     },
     {
       "fund_code": "161124",
@@ -99,7 +101,8 @@
       "proxy_symbol": "hkHSCEI",
       "history_symbol": "hkHSCEI",
       "currency": "HKD",
-      "quality": "HIGH"
+      "quality": "HIGH",
+      "exposure_ratio": "1.0"
     },
     {
       "fund_code": "162411",
@@ -126,7 +129,8 @@
       "proxy_symbol": "hkHSI",
       "history_symbol": "hkHSI",
       "currency": "HKD",
-      "quality": "HIGH"
+      "quality": "HIGH",
+      "exposure_ratio": "1.0"
     },
     {
       "fund_code": "164906",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal
 import json
 from pathlib import Path
 from typing import Literal
@@ -26,6 +27,7 @@ class QdiiProxyEntry:
     futures_overlay_market: str | None = None
     futures_overlay_code: str | None = None
     futures_overlay_quality: str | None = None
+    exposure_ratio: Decimal | None = None
 
 
 def load_qdii_proxy_registry(path: str | Path) -> dict[str, QdiiProxyEntry]:
@@ -43,6 +45,11 @@ def load_qdii_proxy_registry(path: str | Path) -> dict[str, QdiiProxyEntry]:
             futures_overlay_market=row.get("futures_overlay_market"),
             futures_overlay_code=row.get("futures_overlay_code"),
             futures_overlay_quality=row.get("futures_overlay_quality"),
+            exposure_ratio=(
+                Decimal(str(row["exposure_ratio"]))
+                if row.get("exposure_ratio") is not None
+                else None
+            ),
         )
         result[entry.fund_code] = entry
     return result
