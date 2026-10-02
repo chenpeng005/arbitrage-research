@@ -16,7 +16,7 @@ def parse_trading_dates(
     symbol: str,
 ) -> list[date]:
     root = (payload.get("data") or {}).get(symbol) or {}
-    rows = root.get("day") or []
+    rows = root.get("qfqday") or root.get("day") or []
     result: list[date] = []
     for row in rows:
         if not row:
