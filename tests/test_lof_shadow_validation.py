@@ -136,6 +136,46 @@ class ShadowValidationTests(unittest.TestCase):
         variants = {row["variant"] for row in ledger["observations"].values()}
         self.assertEqual(variants, {"SENSEX", "SENSEX_INR_CNY"})
 
+    def test_r2b2_cash_shadow_is_ingested(self):
+        with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as state:
+            data = Path(root)
+            _write(
+                data / "r2b2_cash_shadow" / "snapshots" / "r2b2-cash-160916-shadow-20261009T140000.json",
+                {
+                    "snapshot_id": "r2b2-cash-160916-shadow-20261009T140000",
+                    "generated_at": "2026-10-09T14:00:00+08:00",
+                    "rows": [
+                        {
+                            "fund_code": "160916",
+                            "fund_name": "优选LOF",
+                            "status": "AVAILABLE",
+                            "method": "R2B2_CASH_HEAVY_HOLDINGS_BASKET",
+                            "shadow_estimated_nav": 4.60,
+                            "asset_allocation_date": "2026-06-30",
+                            "allocation_stock_weight": 0.7378,
+                            "allocation_cash_weight": 0.2603,
+                            "disclosed_stock_weight": 0.7373,
+                            "live_coverage_ratio": 1.0,
+                            "fresh_coverage_ratio": 1.0,
+                        }
+                    ],
+                },
+            )
+            result = run_once(data_root=data, state_root=state)
+            ledger = json.loads(
+                Path(state, "shadow_validation_ledger.json").read_text()
+            )
+
+        self.assertEqual(result["observation_count"], 1)
+        item = next(iter(ledger["observations"].values()))
+        self.assertEqual(item["source"], "R2B2_CASH_160916")
+        self.assertEqual(
+            item["metadata"]["asset_allocation_date"],
+            "2026-06-30",
+        )
+        self.assertEqual(item["metadata"]["live_coverage_ratio"], 1.0)
+
+
     def test_second_run_is_idempotent(self):
         with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as state:
             data = Path(root)
