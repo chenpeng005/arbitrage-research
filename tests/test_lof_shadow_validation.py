@@ -218,6 +218,37 @@ class ShadowValidationTests(unittest.TestCase):
         )
 
 
+    def test_r5_hsi_feeder_shadow_is_ingested(self):
+        with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as state:
+            data = Path(root)
+            _write(
+                data / "r5_hsi_feeder_501302_shadow" / "snapshots" / "r5-hsi-feeder-501302-shadow-20261009T140000.json",
+                {
+                    "snapshot_id": "r5-hsi-feeder-501302-shadow-20261009T140000",
+                    "generated_at": "2026-10-09T14:00:00+08:00",
+                    "rows": [{
+                        "fund_code": "501302",
+                        "fund_name": "恒生指数基金LOF",
+                        "status": "AVAILABLE",
+                        "method": "R5_HSI_FEEDER_DIRECT_INDEX",
+                        "shadow_estimated_nav": 1.12,
+                        "research_group": "R5-CROSS-BORDER-INDEX",
+                        "proxy_time": "2026-10-09T13:59:00+08:00",
+                        "market_quote_status": "FRESH",
+                    }],
+                },
+            )
+            result = run_once(data_root=data, state_root=state)
+            ledger = json.loads(
+                Path(state, "shadow_validation_ledger.json").read_text()
+            )
+
+        self.assertEqual(result["observation_count"], 1)
+        item = next(iter(ledger["observations"].values()))
+        self.assertEqual(item["source"], "R5_HSI_FEEDER_501302")
+        self.assertEqual(item["fund_code"], "501302")
+
+
     def test_second_run_is_idempotent(self):
         with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as state:
             data = Path(root)
