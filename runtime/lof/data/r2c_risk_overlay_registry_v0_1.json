@@ -1,6 +1,6 @@
 {
   "version": "R2C_RISK_OVERLAY_REGISTRY_V0_1",
-  "generated_from": "2026-10-02 C3/C4 historical overlay audit",
+  "generated_from": "2026-10-02 C3/C4 historical overlay audit + R2-B2 501080 reuse",
   "funds": {
     "160621": {
       "name": "鹏华丰和LOF",
@@ -161,6 +161,21 @@
       "cb_weight_pct": 1.3,
       "backtest_mae_pct": 0.104,
       "backtest_p90_pct": 0.2177
+    },
+    "501080": {
+      "name": "科创主题投资基金LOF",
+      "band_group": "B2_BOND_HEAVY",
+      "driver": "EQUITY_CB",
+      "quality_candidate": "LOW",
+      "research_group": "R2-B2",
+      "economic_priority": "HIGH",
+      "stock_weight_pct": 34.42,
+      "cb_weight_pct": 56.3,
+      "backtest_mae_pct": 0.414,
+      "backtest_p90_pct": 0.907,
+      "recent20_mae_pct": 0.516,
+      "backtest_source": "SINA_RAW_DAILY",
+      "note": "stock+CB overlay; shadow only"
     }
   },
   "rejected": {
