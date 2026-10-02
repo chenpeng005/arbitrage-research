@@ -247,6 +247,28 @@ class R2CNavBandTest(unittest.TestCase):
         self.assertEqual(merged[-1].day, new_day)
         self.assertEqual(len(merged), 161)
 
+    def test_fixed_income_index_row_joins_bond_profile_lane(self) -> None:
+        row = market_row(
+            "161119",
+            nav_date="2026-09-30",
+        )
+        row["resolver_class"] = "R1_DOMESTIC_INDEX"
+        row["lof_type"] = "OTHER"
+        row["fund_type_raw"] = "指数型-固收"
+        self.assertEqual(
+            profiles_requiring_refresh(
+                {"rows": [row]},
+                {},
+            ),
+            ["161119"],
+        )
+        result = calculate_band_rows(
+            main_snapshot={"rows": [row]},
+            profiles={"161119": profile("161119")},
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["status"], "AVAILABLE")
+
     def test_refresh_gate_uses_official_nav_date(self) -> None:
         main = {
             "rows": [
