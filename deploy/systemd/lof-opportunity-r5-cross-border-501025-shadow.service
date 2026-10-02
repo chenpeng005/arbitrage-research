@@ -1,0 +1,17 @@
+[Unit]
+Description=LOF 501025 Cross-Border Index Shadow
+After=network-online.target lof-opportunity-updater.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/projects/lof-opportunity-runtime/r5-cross-border-501025-shadow/current
+Environment=PYTHONPATH=/home/admin/projects/lof-opportunity-runtime/r5-cross-border-501025-shadow/current
+ExecStart=/home/admin/projects/lof-opportunity-runtime/.venv/bin/python -m runtime.lof.r5_cross_border_index_shadow --main-data-root /home/admin/projects/lof-opportunity-runtime/runtime_data --state-root /home/admin/projects/lof-opportunity-runtime/runtime_data/r5_cross_border_501025_shadow --loop --quote-interval-seconds 30 --off-hours-interval-seconds 300 --timeout 6 --max-quote-age-seconds 180
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

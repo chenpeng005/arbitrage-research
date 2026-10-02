@@ -1,0 +1,26 @@
+{
+  "version": "R5_CROSS_BORDER_INDEX_SHADOW_PROFILE_V0",
+  "generated_at": "2026-10-02T22:35:00+08:00",
+  "fund_code": "501025",
+  "name": "香港银行LOF",
+  "research_group": "R5-CROSS_BORDER-INDEX",
+  "tracking_target": "中证香港银行投资人民币指数",
+  "index_code": "000869",
+  "tencent_symbol": "sh000869",
+  "currency": "CNY",
+  "exposure_ratio": 0.95,
+  "quality_candidate": "MEDIUM",
+  "economic_priority": "HIGH",
+  "backtest": {
+    "period": "2026-06-30..2026-09-30",
+    "intervals": 63,
+    "tencent_mae_pct": 0.106,
+    "tencent_p90_pct": 0.215,
+    "tencent_recent20_mae_pct": 0.110,
+    "tencent_corr": 0.992,
+    "sina_mae_pct": 0.149,
+    "sina_p90_pct": 0.318,
+    "sina_recent20_mae_pct": 0.143,
+    "sina_corr": 0.982
+  }
+}
