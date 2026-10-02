@@ -176,7 +176,7 @@ class R2AShadowTest(unittest.TestCase):
         self.assertEqual(row.total_weight, Decimal("0.85"))
 
     def test_profiles_include_r2a_and_r2b1(self):
-        self.assertEqual(len(PROFILES), 18)
+        self.assertEqual(len(PROFILES), 22)
         self.assertEqual(
             sum(
                 1
@@ -191,13 +191,16 @@ class R2AShadowTest(unittest.TestCase):
                 for x in PROFILES.values()
                 if x["research_group"] == "R2-B1"
             ),
-            12,
+            16,
         )
         self.assertEqual(
             PROFILES["501201"]["research_group"],
             "R2-A",
         )
-        for code in ["501085", "168401", "501205", "501096"]:
+        for code in [
+            "501085", "168401", "501205", "501096",
+            "501015", "501026",
+        ]:
             self.assertEqual(
                 PROFILES[code]["research_group"],
                 "R2-B1",
@@ -206,6 +209,7 @@ class R2AShadowTest(unittest.TestCase):
         for code in [
             "162703", "163417", "163406", "506002",
             "161903", "163415", "162605", "163402",
+            "161005", "501227",
         ]:
             self.assertEqual(
                 PROFILES[code]["research_group"],
@@ -213,6 +217,7 @@ class R2AShadowTest(unittest.TestCase):
             )
             self.assertEqual(PROFILES[code]["quality"], "MEDIUM")
         self.assertNotIn("160220", PROFILES)
+        self.assertNotIn("160324", PROFILES)
 
     def test_a_share_basket_available(self):
         now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
