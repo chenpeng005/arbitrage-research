@@ -562,9 +562,21 @@ def run_loop(
     quote_interval_seconds: float = 30.0,
     off_hours_interval_seconds: float = 300.0,
 ) -> int:
+    main_store = LofSnapshotStore(main_data_root)
     while True:
         started = time.monotonic()
         now = datetime.now(SHANGHAI_TZ)
+        main_snapshot = main_store.load_latest()
+        main_row = _main_row(main_snapshot or {})
+        active = bool(
+            main_row
+            and main_row.get("quote_status") == "FRESH"
+        )
+        interval = (
+            quote_interval_seconds
+            if active
+            else off_hours_interval_seconds
+        )
         try:
             snapshot = collect_once(
                 main_data_root=main_data_root,
@@ -580,6 +592,7 @@ def run_loop(
                         "time": now.isoformat(),
                         "snapshot_id": snapshot["snapshot_id"],
                         "summary": snapshot["summary"],
+                        "active_sampling": active,
                     },
                     ensure_ascii=False,
                 ),
@@ -600,12 +613,7 @@ def run_loop(
                 flush=True,
             )
         elapsed = time.monotonic() - started
-        time.sleep(
-            max(
-                0.0,
-                off_hours_interval_seconds - elapsed,
-            )
-        )
+        time.sleep(max(0.0, interval - elapsed))
 
 
 def _parser() -> argparse.ArgumentParser:
