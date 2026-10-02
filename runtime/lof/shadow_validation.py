@@ -22,7 +22,11 @@ SOURCE_DIRS = {
     "R2C_LIVE_164814": ("r2c_live_overlay", "snapshots"),
     "R4_INDIA": ("r4_india_shadow", "snapshots"),
     "R4_USD_BOND_501300": ("r4_usd_bond_shadow", "snapshots"),
-    "R2B2_CASH_160916": ("r2b2_cash_shadow", "snapshots"),
+    "R2B2_CASH_HEAVY": ("r2b2_cash_shadow", "snapshots"),
+    "R2B2_LOW_VOL_RESIDUAL": (
+        "r2b2_low_vol_residual_shadow",
+        "snapshots",
+    ),
 }
 
 
