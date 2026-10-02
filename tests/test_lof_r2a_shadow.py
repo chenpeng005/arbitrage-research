@@ -190,7 +190,7 @@ class R2AShadowTest(unittest.TestCase):
         self.assertEqual(rows[0].asset_type, "A")
 
     def test_profiles_include_r2a_and_r2b1(self):
-        self.assertEqual(len(PROFILES), 21)
+        self.assertEqual(len(PROFILES), 29)
         self.assertEqual(
             sum(
                 1
@@ -205,7 +205,7 @@ class R2AShadowTest(unittest.TestCase):
                 for x in PROFILES.values()
                 if x["research_group"] == "R2-B1"
             ),
-            15,
+            23,
         )
         self.assertEqual(
             PROFILES["501201"]["research_group"],
@@ -213,7 +213,7 @@ class R2AShadowTest(unittest.TestCase):
         )
         for code in [
             "501085", "168401", "501205", "501096",
-            "501015", "501026",
+            "501015", "501026", "501227", "169101",
         ]:
             self.assertEqual(
                 PROFILES[code]["research_group"],
@@ -223,7 +223,8 @@ class R2AShadowTest(unittest.TestCase):
         for code in [
             "162703", "163417", "163406", "506002",
             "161903", "163415", "162605", "163402",
-            "161005",
+            "161005", "161914", "161810", "166011",
+            "162607", "160505", "160314",
         ]:
             self.assertEqual(
                 PROFILES[code]["research_group"],
