@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 from runtime.lof.india_index_quote import (
     DelayedGlobalIndexQuote,
     parse_eastmoney_delayed_global_index,
+    parse_wscn_delayed_global_index,
 )
 from runtime.lof.r4_india_shadow import (
     india_cash_timing_regime,
@@ -58,6 +59,42 @@ def test_parse_delayed_sensex_quote_and_timestamp():
     assert quote.quote_time == quote_time
     assert quote.session_return is not None
     assert quote.session_return < 0
+
+
+
+def test_parse_wscn_sensex_quote_and_derive_prev_close():
+    quote_time = datetime(2026, 10, 1, 17, 58, 42, tzinfo=SHANGHAI_TZ)
+    payload = {
+        "code": 20000,
+        "data": {
+            "fields": [
+                "symbol",
+                "prod_name",
+                "last_px",
+                "px_change",
+                "px_change_rate",
+                "update_time",
+                "delisting_date",
+            ],
+            "snapshot": {
+                "SENSEX.OTC": [
+                    "SENSEX",
+                    "印度孟买SENSEX指数",
+                    71909.7,
+                    -570.59,
+                    -0.79,
+                    int(quote_time.timestamp()),
+                    0,
+                ]
+            },
+        },
+    }
+    quote = parse_wscn_delayed_global_index(payload)
+    assert quote.error is None
+    assert quote.current == Decimal("71909.7")
+    assert quote.previous_close == Decimal("72480.29")
+    assert quote.quote_time == quote_time
+    assert quote.source == "WSCN_MARKET_REAL"
 
 
 def test_india_cash_timing_regime_matches_china_clock():
