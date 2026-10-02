@@ -22,6 +22,7 @@ SOURCE_DIRS = {
     "R2C_LIVE_164814": ("r2c_live_overlay", "snapshots"),
     "R4_INDIA": ("r4_india_shadow", "snapshots"),
     "R4_USD_BOND_501300": ("r4_usd_bond_shadow", "snapshots"),
+    "R2B2_CASH_160916": ("r2b2_cash_shadow", "snapshots"),
 }
 
 
@@ -222,6 +223,12 @@ def _observation_payload(
         "research_group",
         "driver",
         "holdings_as_of_date",
+        "asset_allocation_date",
+        "allocation_stock_weight",
+        "allocation_bond_weight",
+        "allocation_cash_weight",
+        "disclosed_stock_weight",
+        "live_coverage_ratio",
         "fresh_coverage_ratio",
         "proxy_source",
         "proxy_time",
