@@ -490,12 +490,19 @@ def _parse_date(value) -> date | None:
         return None
 
 
+def _is_bond_like_row(row: dict) -> bool:
+    raw_type = str(row.get("fund_type_raw") or "")
+    return (
+        row.get("lof_type") == "BOND"
+        or "固收" in raw_type
+    )
+
+
 def _bond_rows(main_snapshot: dict) -> list[dict]:
     return [
         row
         for row in (main_snapshot.get("rows") or [])
-        if row.get("resolver_class") == "R2_DOMESTIC_OTHER"
-        and row.get("lof_type") == "BOND"
+        if _is_bond_like_row(row)
         and row.get("subscription_status") in {"OPEN", "LIMITED"}
     ]
 
