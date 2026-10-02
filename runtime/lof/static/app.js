@@ -6,6 +6,8 @@
     sortDir: "desc",
     snapshot: null,
     r2cProfiles: {},
+    shadowRegistry: {},
+    shadowSummary: {},
     timer: null,
   };
 
@@ -134,6 +136,40 @@
       return `${label} ${mae.toFixed(2)}%`;
     }
     return "—";
+  };
+
+  const researchProfile = (row) => state.shadowRegistry[row.code] || null;
+
+  const researchStateText = (row) => {
+    const profile = researchProfile(row);
+    if (!profile) return "—";
+    if (profile.main_estimate_available) return "主估值";
+    if (profile.shadow_active) {
+      const suffix = profile.t1_profile_available ? " + T-1" : "";
+      return `Shadow ${profile.shadow_model_count || 1}路${suffix}`;
+    }
+    if (profile.t1_profile_available) return "T-1质量";
+    return "—";
+  };
+
+  const researchStateTitle = (row) => {
+    const profile = researchProfile(row);
+    if (!profile) return "";
+    const parts = [];
+    (profile.models || []).forEach((model) => {
+      const status = model.status || "UNKNOWN";
+      const method = model.method || model.source || "Shadow";
+      parts.push(`${method}: ${status}`);
+    });
+    if (profile.validation_evaluated_count) {
+      const mae = num(profile.validation_best_mae_pct);
+      parts.push(
+        mae === null
+          ? `已验证 ${profile.validation_evaluated_count} 个样本`
+          : `已验证 ${profile.validation_evaluated_count} 个样本，最佳MAE ${mae.toFixed(2)}%`
+      );
+    }
+    return parts.join("；");
   };
 
   const qualityTitle = (row) => {
@@ -273,6 +309,9 @@
       const qualityCell = cell(tr, qualityText(row), `quality q-${(row.estimated_nav_quality || "unknown").toLowerCase()}`);
       const qTitle = qualityTitle(row);
       if (qTitle) qualityCell.title = qTitle;
+      const researchCell = cell(tr, researchStateText(row), "research-state");
+      const researchTitle = researchStateTitle(row);
+      if (researchTitle) researchCell.title = researchTitle;
       cell(tr, fmtPct(row.static_premium_rate), `num ${premiumClass(row.static_premium_rate)}`);
       cell(tr, fmt(row.official_nav, 4), "num");
       cell(tr, row.official_nav_date || "—");
@@ -301,6 +340,8 @@
     $("subscribableCount").textContent = rows.filter(
       (r) => r.subscription_status === "OPEN" || r.subscription_status === "LIMITED"
     ).length;
+    $("shadowCount").textContent =
+      state.shadowSummary.active_shadow_fund_count ?? "—";
     $("collectorStatus").textContent = snapshot.collector_status || "—";
     $("collectorStatus").className =
       snapshot.collector_status === "PASS" ? "ok" : "warn";
@@ -317,6 +358,8 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const snapshot = await response.json();
       let r2cProfiles = {};
+      let shadowRegistry = {};
+      let shadowSummary = {};
       try {
         const profileResponse = await fetch("/api/lof/r2c-t1-profile", { cache: "no-store" });
         if (profileResponse.ok) {
@@ -326,8 +369,21 @@
       } catch (_) {
         r2cProfiles = {};
       }
+      try {
+        const registryResponse = await fetch("/api/lof/shadow-registry", { cache: "no-store" });
+        if (registryResponse.ok) {
+          const registryPayload = await registryResponse.json();
+          shadowRegistry = registryPayload.rows || {};
+          shadowSummary = registryPayload.summary || {};
+        }
+      } catch (_) {
+        shadowRegistry = {};
+        shadowSummary = {};
+      }
       state.snapshot = snapshot;
       state.r2cProfiles = r2cProfiles;
+      state.shadowRegistry = shadowRegistry;
+      state.shadowSummary = shadowSummary;
       state.rows = (snapshot.rows || []).map((r, i) => ({ ...r, _index: i + 1 }));
       renderSummary(snapshot);
       applyFilters();

@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .r2c_profile_summary import load_r2c_t1_profile_summary
+from .shadow_registry import load_shadow_registry
 from .snapshot_store import LofSnapshotStore
 
 
@@ -54,3 +55,11 @@ def latest_snapshot():
 @app.get("/api/lof/r2c-t1-profile")
 def r2c_t1_profile_summary():
     return load_r2c_t1_profile_summary(DATA_ROOT)
+
+
+@app.get("/api/lof/shadow-registry")
+def shadow_registry():
+    return load_shadow_registry(
+        DATA_ROOT,
+        main_snapshot=store.load_latest(),
+    )

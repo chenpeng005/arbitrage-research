@@ -22,7 +22,7 @@ button { cursor: pointer; }
 button:hover { background: #f9fafb; }
 button:disabled { opacity: .5; cursor: default; }
 .summary {
-  display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr));
+  display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr));
   gap: 10px; margin-bottom: 12px;
 }
 .card {
