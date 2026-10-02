@@ -1,0 +1,29 @@
+{
+  "version": "R2B2_LOW_VOL_RESIDUAL_PROFILE_V0",
+  "generated_at": "2026-10-02T22:13:00+08:00",
+  "fund_code": "165508",
+  "name": "中信保诚深度LOF",
+  "research_group": "R2-B2-LOW_VOL_RESIDUAL",
+  "quality_candidate": "MEDIUM",
+  "economic_priority": "HIGH",
+  "min_disclosed_weight": 0.70,
+  "backtest": {
+    "period": "2026-06-30..2026-09-30",
+    "intervals": 65,
+    "tencent_mae_pct": 0.108,
+    "tencent_p90_pct": 0.216,
+    "tencent_recent20_mae_pct": 0.131,
+    "tencent_corr": 0.971,
+    "sina_mae_pct": 0.124,
+    "sina_p90_pct": 0.263,
+    "sina_recent20_mae_pct": 0.137,
+    "sina_corr": 0.957
+  },
+  "validated_structure": {
+    "allocation_date": "2026-06-30",
+    "stock_weight": 0.7230,
+    "bond_weight": 0.1178,
+    "cash_weight": 0.1740,
+    "model": "disclosed stock basket + zero-return validated low-vol residual"
+  }
+}
