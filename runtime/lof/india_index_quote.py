@@ -79,6 +79,10 @@ def parse_wscn_delayed_global_index(
     row = dict(zip(fields, values))
     current = _decimal(row.get("last_px"))
     previous_close = _decimal(row.get("preclose_px"))
+    if previous_close is None:
+        change = _decimal(row.get("px_change"))
+        if current is not None and change is not None:
+            previous_close = current - change
     quote_time = _quote_time(row.get("update_time"))
     error = None
     if (
