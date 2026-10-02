@@ -119,3 +119,19 @@ def test_prior_session_quote_is_stale_on_india_holiday():
     assert result.error == "STALE_SENSEX_QUOTE"
     assert result.estimated_nav is None
     assert result.quote_age_seconds > 1800
+
+
+def test_missing_delayed_quote_fails_closed():
+    quote = parse_eastmoney_delayed_global_index(
+        {"data": {"diff": []}},
+        secid="100.SENSEX",
+    )
+    result = resolve_164824_india_shadow(
+        official_nav=Decimal("1.2378"),
+        quote=quote,
+        as_of=datetime(2026, 9, 30, 14, 0, tzinfo=SHANGHAI_TZ),
+    )
+    assert result.shadow_status == "UNAVAILABLE"
+    assert result.shadow_quality == "UNKNOWN"
+    assert result.error == "NO_QUOTE"
+    assert result.eligible_for_main is False
