@@ -1,0 +1,22 @@
+{
+  "version": "R5_HSI_FEEDER_501302_PROFILE_V0",
+  "fund_code": "501302",
+  "name": "恒生指数基金LOF",
+  "tracking_target": "恒生指数",
+  "proxy_symbol": "hkHSI",
+  "exposure_ratio": 0.95,
+  "quality_candidate": "HIGH",
+  "economic_priority": "MEDIUM",
+  "backtest": {
+    "period": "2026-06-30..2026-09-30",
+    "intervals": 63,
+    "mae_pct": 0.052,
+    "median_pct": 0.047,
+    "p90_pct": 0.095,
+    "max_pct": 0.161,
+    "bias_pct": 0.007,
+    "corr": 0.998,
+    "recent20_mae_pct": 0.056,
+    "target_etf_price_mae_pct": 0.252
+  }
+}
