@@ -16,6 +16,7 @@ from runtime.lof.r2a_holdings import (
     HoldingsStore,
     discover_periods,
     fetch_latest_full_snapshot,
+    parse_holdings,
     snapshot_identity,
 )
 from runtime.lof.r2a_shadow import (
@@ -174,6 +175,19 @@ class R2AShadowTest(unittest.TestCase):
         )
         self.assertEqual(row.as_of_date, date(2026, 6, 30))
         self.assertEqual(row.total_weight, Decimal("0.85"))
+
+    def test_920_series_maps_to_beijing_exchange(self):
+        html = """
+        <table><tr>
+        <td>1</td><td>920179</td><td>凯德石英</td><td>x</td><td>x</td>
+        <td>1.23%</td><td>x</td><td>x</td>
+        <a href="https://quote.eastmoney.com/unify/r/0.920179"></a>
+        </tr></table>
+        """
+        rows = parse_holdings(html)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].symbol, "bj920179")
+        self.assertEqual(rows[0].asset_type, "A")
 
     def test_profiles_include_r2a_and_r2b1(self):
         self.assertEqual(len(PROFILES), 21)
