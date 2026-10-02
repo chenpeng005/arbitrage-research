@@ -7,6 +7,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from .r2c_profile_summary import load_r2c_t1_profile_summary
+from .research_disposition import load_research_dispositions
 
 
 SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
@@ -180,10 +181,17 @@ def load_shadow_registry(
         if main_snapshot is not None
         else []
     )
+    disposition_payload = load_research_dispositions(
+        root,
+        market_rows=market_rows,
+    )
+    dispositions = disposition_payload.get("rows") or {}
+
     rows: dict[str, dict[str, Any]] = {}
     main_count = 0
     t1_count = 0
     shadow_count = 0
+    deferred_count = 0
     unresolved_count = 0
 
     for market in market_rows:
@@ -206,6 +214,7 @@ def load_shadow_registry(
         t1_profile = t1_rows.get(code)
         models = models_by_code.get(code, [])
         validations = validation_by_code.get(code, [])
+        disposition = dispositions.get(code)
 
         layers: list[str] = []
         if main_covered:
@@ -217,6 +226,15 @@ def load_shadow_registry(
         if models:
             layers.append("ACTIVE_SHADOW")
             shadow_count += 1
+        deferred = bool(
+            disposition is not None
+            and not main_covered
+            and t1_profile is None
+            and not models
+        )
+        if deferred:
+            layers.append("RESEARCHED_DEFERRED")
+            deferred_count += 1
 
         if main_covered:
             display_state = "MAIN_ESTIMATE"
@@ -224,6 +242,8 @@ def load_shadow_registry(
             display_state = "ACTIVE_SHADOW"
         elif t1_profile is not None:
             display_state = "T1_PROFILE"
+        elif deferred:
+            display_state = "RESEARCHED_DEFERRED"
         else:
             display_state = "UNRESOLVED"
             unresolved_count += 1
@@ -267,6 +287,7 @@ def load_shadow_registry(
             "validation": validations,
             "validation_evaluated_count": evaluated_count,
             "validation_best_mae_pct": min(maes) if maes else None,
+            "research_disposition": disposition,
         }
 
     return {
@@ -279,6 +300,10 @@ def load_shadow_registry(
             else None
         ),
         "validation_ledger_updated_at": ledger_updated_at,
+        "research_disposition_status": disposition_payload.get("status"),
+        "research_disposition_knowledge_commit_sha": (
+            disposition_payload.get("knowledge_commit_sha")
+        ),
         "summary": {
             "universe_count": len(rows),
             "main_estimate_count": main_count,
@@ -289,6 +314,7 @@ def load_shadow_registry(
             ),
             "t1_profile_count": t1_count,
             "active_shadow_fund_count": shadow_count,
+            "researched_deferred_count": deferred_count,
             "unresolved_count": unresolved_count,
         },
         "rows": rows,
