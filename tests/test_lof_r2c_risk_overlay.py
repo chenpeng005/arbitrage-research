@@ -98,9 +98,11 @@ def schedule(now: datetime, cash: Decimal = Decimal("0")):
 class R2CRiskOverlayTest(unittest.TestCase):
     def test_registry_excludes_rejected_fund(self):
         rows = load_registry()
-        self.assertEqual(len(rows), 16)
+        self.assertEqual(len(rows), 17)
         self.assertNotIn("161626", rows)
         self.assertIn("164814", rows)
+        self.assertIn("501080", rows)
+        self.assertEqual(rows["501080"]["research_group"], "R2-B2")
 
     def test_bond_parser_separates_report_periods(self):
         text = """
