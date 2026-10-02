@@ -129,7 +129,7 @@ def fetch_asset_allocation(
 def is_cash_heavy_candidate(
     snapshot: AssetAllocationSnapshot,
     *,
-    min_stock_weight: Decimal = Decimal("0.70"),
+    min_stock_weight: Decimal = Decimal("0.40"),
     max_stock_weight: Decimal = Decimal("0.80"),
     max_bond_weight: Decimal = Decimal("0.05"),
     min_cash_weight: Decimal = Decimal("0.20"),

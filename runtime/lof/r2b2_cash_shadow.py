@@ -33,10 +33,30 @@ from .snapshot_store import LofSnapshotStore
 
 
 SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
-FUND_CODE = "160916"
-FUND_NAME = "优选LOF"
 METHOD = "R2B2_CASH_HEAVY_HOLDINGS_BASKET"
-CONTRACT_VERSION = "R2B2_CASH_HEAVY_SHADOW_V0"
+CONTRACT_VERSION = "R2B2_CASH_HEAVY_SHADOW_V1"
+PROFILE_PATH = (
+    Path(__file__).resolve().parent
+    / "data"
+    / "r2b2_cash_shadow_profiles_v0.json"
+)
+
+
+def _load_profiles() -> dict[str, dict]:
+    payload = json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
+    rows = payload.get("candidates") or {}
+    result: dict[str, dict] = {}
+    for code, value in rows.items():
+        row = dict(value)
+        row["fund_code"] = str(code)
+        row["min_disclosed_weight"] = Decimal(
+            str(row.get("min_disclosed_weight") or "0.40")
+        )
+        result[str(code)] = row
+    return result
+
+
+PROFILES = _load_profiles()
 
 
 def _decimal(value) -> Decimal | None:
@@ -64,12 +84,12 @@ def _quote_age(quote_time: datetime | None, as_of: datetime) -> int | None:
     )
 
 
-def _main_row(snapshot: dict) -> dict | None:
+def _main_row(snapshot: dict, fund_code: str) -> dict | None:
     return next(
         (
             row
             for row in (snapshot.get("rows") or [])
-            if str(row.get("code") or "") == FUND_CODE
+            if str(row.get("code") or "") == fund_code
         ),
         None,
     )
@@ -77,18 +97,21 @@ def _main_row(snapshot: dict) -> dict | None:
 
 def _unavailable(
     *,
+    fund_code: str,
+    profile: dict,
     row: dict | None,
     holdings: HoldingsSnapshot | None,
     allocation: AssetAllocationSnapshot | None,
     error: str,
 ) -> dict:
     return {
-        "fund_code": FUND_CODE,
-        "fund_name": (row or {}).get("name") or FUND_NAME,
+        "fund_code": fund_code,
+        "fund_name": (row or {}).get("name") or profile["name"],
         "method": METHOD,
         "status": "UNAVAILABLE",
-        "quality_candidate": "MEDIUM",
+        "quality_candidate": profile["quality_candidate"],
         "research_group": "R2-B2-CASH_HEAVY",
+        "economic_priority": profile.get("economic_priority"),
         "eligible_for_main": False,
         "shadow_estimated_nav": None,
         "shadow_premium_rate": None,
@@ -118,12 +141,15 @@ def _unavailable(
         "live_coverage_ratio": None,
         "fresh_coverage_ratio": None,
         "cash_distribution_per_unit": None,
+        "backtest": profile.get("backtest"),
         "error": error,
     }
 
 
 def calculate_shadow_row(
     *,
+    fund_code: str,
+    profile: dict,
     main_snapshot: dict,
     holdings: HoldingsSnapshot | None,
     allocation: AssetAllocationSnapshot | None,
@@ -131,16 +157,17 @@ def calculate_shadow_row(
     quotes: dict[str, LiveQuote],
     as_of: datetime,
     max_quote_age_seconds: int = 120,
-    min_disclosed_weight: Decimal = Decimal("0.70"),
     min_live_ratio: Decimal = Decimal("0.98"),
     max_holdings_age_days: int = 130,
     max_allocation_age_days: int = 130,
     max_distribution_age_seconds: int = 86400,
     max_weight_gap: Decimal = Decimal("0.03"),
 ) -> dict:
-    row = _main_row(main_snapshot)
+    row = _main_row(main_snapshot, fund_code)
     if row is None:
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=None,
             holdings=holdings,
             allocation=allocation,
@@ -148,6 +175,8 @@ def calculate_shadow_row(
         )
     if holdings is None:
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=None,
             allocation=allocation,
@@ -155,6 +184,8 @@ def calculate_shadow_row(
         )
     if allocation is None:
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=holdings,
             allocation=None,
@@ -162,6 +193,8 @@ def calculate_shadow_row(
         )
     if distribution is None:
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=holdings,
             allocation=allocation,
@@ -171,6 +204,8 @@ def calculate_shadow_row(
     official_nav = _decimal(row.get("official_nav"))
     if official_nav is None:
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=holdings,
             allocation=allocation,
@@ -178,6 +213,8 @@ def calculate_shadow_row(
         )
     if row.get("official_nav_lag_label") != "T-1":
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=holdings,
             allocation=allocation,
@@ -187,6 +224,8 @@ def calculate_shadow_row(
     holdings_age = (as_of.date() - holdings.as_of_date).days
     if holdings_age < 0 or holdings_age > max_holdings_age_days:
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=holdings,
             allocation=allocation,
@@ -195,6 +234,8 @@ def calculate_shadow_row(
     allocation_age = (as_of.date() - allocation.as_of_date).days
     if allocation_age < 0 or allocation_age > max_allocation_age_days:
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=holdings,
             allocation=allocation,
@@ -202,13 +243,19 @@ def calculate_shadow_row(
         )
     if not is_cash_heavy_candidate(allocation):
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=holdings,
             allocation=allocation,
             error="ASSET_ALLOCATION_NOT_CASH_HEAVY",
         )
+
+    min_disclosed_weight = profile["min_disclosed_weight"]
     if holdings.total_weight < min_disclosed_weight:
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=holdings,
             allocation=allocation,
@@ -216,6 +263,8 @@ def calculate_shadow_row(
         )
     if abs(holdings.total_weight - allocation.stock_weight) > max_weight_gap:
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=holdings,
             allocation=allocation,
@@ -229,15 +278,14 @@ def calculate_shadow_row(
         or dist_age > max_distribution_age_seconds
     ):
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=holdings,
             allocation=allocation,
             error="DISTRIBUTION_SCHEDULE_STALE",
         )
-    cash_distribution = cash_distribution_on(
-        distribution,
-        as_of.date(),
-    )
+    cash_distribution = cash_distribution_on(distribution, as_of.date())
 
     estimated_return = Decimal("0")
     valid_weight = Decimal("0")
@@ -252,8 +300,7 @@ def calculate_shadow_row(
         assert quote.previous_close is not None
         assert quote.quote_time is not None
         asset_return = (
-            quote.current / quote.previous_close
-            - Decimal("1")
+            quote.current / quote.previous_close - Decimal("1")
         )
         estimated_return += item.nav_weight * asset_return
         valid_weight += item.nav_weight
@@ -267,6 +314,8 @@ def calculate_shadow_row(
     fresh_ratio = fresh_weight / disclosed
     if live_ratio < min_live_ratio:
         result = _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=holdings,
             allocation=allocation,
@@ -284,6 +333,8 @@ def calculate_shadow_row(
     )
     if estimated_nav <= 0:
         return _unavailable(
+            fund_code=fund_code,
+            profile=profile,
             row=row,
             holdings=holdings,
             allocation=allocation,
@@ -302,12 +353,13 @@ def calculate_shadow_row(
         ) * Decimal("100")
 
     return {
-        "fund_code": FUND_CODE,
-        "fund_name": row.get("name") or FUND_NAME,
+        "fund_code": fund_code,
+        "fund_name": row.get("name") or profile["name"],
         "method": METHOD,
         "status": status,
-        "quality_candidate": "MEDIUM",
+        "quality_candidate": profile["quality_candidate"],
         "research_group": "R2-B2-CASH_HEAVY",
+        "economic_priority": profile.get("economic_priority"),
         "eligible_for_main": False,
         "shadow_estimated_nav": float(estimated_nav),
         "shadow_premium_rate": (
@@ -335,16 +387,20 @@ def calculate_shadow_row(
         "quote_time_max": (
             max(used_times).isoformat() if used_times else None
         ),
+        "backtest": profile.get("backtest"),
         "error": error,
     }
 
 
-def _holdings_path(state_root: str | Path) -> Path:
-    return Path(state_root) / "r2b2_160916_holdings.json"
+def _holdings_path(state_root: str | Path, fund_code: str) -> Path:
+    return Path(state_root) / f"r2b2_{fund_code}_holdings.json"
 
 
-def _load_holdings(state_root: str | Path) -> HoldingsSnapshot | None:
-    path = _holdings_path(state_root)
+def _load_holdings(
+    state_root: str | Path,
+    fund_code: str,
+) -> HoldingsSnapshot | None:
+    path = _holdings_path(state_root, fund_code)
     if not path.is_file():
         return None
     return HoldingsSnapshot.from_dict(
@@ -356,7 +412,7 @@ def _persist_holdings(
     state_root: str | Path,
     holdings: HoldingsSnapshot,
 ) -> None:
-    path = _holdings_path(state_root)
+    path = _holdings_path(state_root, holdings.fund_code)
     path.parent.mkdir(parents=True, exist_ok=True)
     _atomic_write(
         path,
@@ -411,7 +467,7 @@ def persist_shadow(
 ) -> Path:
     root = Path(state_root)
     archive = root / "snapshots" / f"{snapshot['snapshot_id']}.json"
-    latest = root / "r2b2_cash_160916_shadow.json"
+    latest = root / "r2b2_cash_shadow.json"
     payload = json.dumps(
         snapshot,
         ensure_ascii=False,
@@ -439,89 +495,128 @@ def collect_once(
     if main_snapshot is None:
         raise RuntimeError("MAIN_SNAPSHOT_UNAVAILABLE")
 
-    holdings = _load_holdings(state_root)
-    if (
-        holdings is None
-        or _needs_refresh(
-            holdings.fetched_at,
-            now=now,
-            refresh_seconds=holdings_refresh_seconds,
-        )
-    ):
-        holdings = fetch_latest_full_snapshot(
-            FUND_CODE,
-            now=now,
-            timeout=timeout,
-            min_total_weight=Decimal("0.70"),
-            previous=holdings,
-        )
-        _persist_holdings(state_root, holdings)
+    holdings_by_fund: dict[str, HoldingsSnapshot] = {}
+    holdings_refresh_errors: dict[str, str] = {}
+    for code, profile in PROFILES.items():
+        holdings = _load_holdings(state_root, code)
+        if (
+            holdings is None
+            or _needs_refresh(
+                holdings.fetched_at,
+                now=now,
+                refresh_seconds=holdings_refresh_seconds,
+            )
+        ):
+            try:
+                holdings = fetch_latest_full_snapshot(
+                    code,
+                    now=now,
+                    timeout=timeout,
+                    min_total_weight=profile["min_disclosed_weight"],
+                    previous=holdings,
+                )
+                _persist_holdings(state_root, holdings)
+            except Exception as exc:
+                holdings_refresh_errors[code] = (
+                    f"{type(exc).__name__}:{str(exc)[:180]}"
+                )
+        if holdings is not None:
+            holdings_by_fund[code] = holdings
 
     allocation_store = AssetAllocationStore(state_root)
     allocations = allocation_store.load()
-    allocation = allocations.get(FUND_CODE)
-    if (
-        allocation is None
-        or _needs_refresh(
-            allocation.fetched_at,
-            now=now,
-            refresh_seconds=allocation_refresh_seconds,
-        )
-    ):
-        allocation = fetch_asset_allocation(
-            FUND_CODE,
-            now=now,
-            timeout=timeout,
-        )
-        allocation_store.persist(
-            {FUND_CODE: allocation},
-            generated_at=now,
-        )
+    allocation_refresh_errors: dict[str, str] = {}
+    for code in PROFILES:
+        allocation = allocations.get(code)
+        if (
+            allocation is None
+            or _needs_refresh(
+                allocation.fetched_at,
+                now=now,
+                refresh_seconds=allocation_refresh_seconds,
+            )
+        ):
+            try:
+                allocation = fetch_asset_allocation(
+                    code,
+                    now=now,
+                    timeout=timeout,
+                )
+                allocations[code] = allocation
+            except Exception as exc:
+                allocation_refresh_errors[code] = (
+                    f"{type(exc).__name__}:{str(exc)[:180]}"
+                )
+    allocation_store.persist(
+        {
+            code: allocations[code]
+            for code in PROFILES
+            if code in allocations
+        },
+        generated_at=now,
+    )
 
     distribution_store = DistributionStore(state_root)
     distributions = distribution_store.load()
+    distribution_refresh_errors: dict[str, str] = {}
     if schedules_need_refresh(
         distributions,
-        [FUND_CODE],
+        PROFILES.keys(),
         now=now,
         refresh_seconds=distribution_refresh_seconds,
     ):
-        distributions, _ = distribution_store.refresh(
-            [FUND_CODE],
-            now=now,
-            timeout=timeout,
+        distributions, distribution_refresh_errors = (
+            distribution_store.refresh(
+                PROFILES.keys(),
+                now=now,
+                timeout=timeout,
+            )
         )
-    distribution = distributions.get(FUND_CODE)
 
-    quotes = fetch_live_quotes(
-        [item.symbol for item in holdings.holdings],
-        timeout=timeout,
+    symbols = sorted(
+        {
+            item.symbol
+            for holdings in holdings_by_fund.values()
+            for item in holdings.holdings
+        }
     )
-    row = calculate_shadow_row(
-        main_snapshot=main_snapshot,
-        holdings=holdings,
-        allocation=allocation,
-        distribution=distribution,
-        quotes=quotes,
-        as_of=now,
-        max_quote_age_seconds=max_quote_age_seconds,
-    )
+    quotes = fetch_live_quotes(symbols, timeout=timeout)
+
+    rows = [
+        calculate_shadow_row(
+            fund_code=code,
+            profile=profile,
+            main_snapshot=main_snapshot,
+            holdings=holdings_by_fund.get(code),
+            allocation=allocations.get(code),
+            distribution=distributions.get(code),
+            quotes=quotes,
+            as_of=now,
+            max_quote_age_seconds=max_quote_age_seconds,
+        )
+        for code, profile in sorted(PROFILES.items())
+    ]
 
     snapshot = {
         "contract_version": CONTRACT_VERSION,
         "snapshot_id": (
-            "r2b2-cash-160916-shadow-"
-            + now.strftime("%Y%m%dT%H%M%S")
+            "r2b2-cash-shadow-" + now.strftime("%Y%m%dT%H%M%S")
         ),
         "generated_at": now.isoformat(),
         "source_market_snapshot_id": main_snapshot.get("snapshot_id"),
         "method": METHOD,
+        "candidate_count": len(PROFILES),
         "summary": {
-            "available_count": int(row["status"] == "AVAILABLE"),
-            "stale_count": int(row["status"] == "STALE"),
-            "unavailable_count": int(row["status"] == "UNAVAILABLE"),
+            "available_count": sum(x["status"] == "AVAILABLE" for x in rows),
+            "stale_count": sum(x["status"] == "STALE" for x in rows),
+            "unavailable_count": sum(
+                x["status"] == "UNAVAILABLE" for x in rows
+            ),
         },
-        "rows": [row],
+        "holdings_refresh_errors": holdings_refresh_errors,
+        "allocation_refresh_errors": allocation_refresh_errors,
+        "distribution_refresh_errors": distribution_refresh_errors,
+        "rows": rows,
     }
     persist_shadow(state_root, snapshot)
     return snapshot
@@ -541,10 +636,11 @@ def run_loop(
         started = time.monotonic()
         now = datetime.now(SHANGHAI_TZ)
         main_snapshot = main_store.load_latest()
-        main_row = _main_row(main_snapshot or {})
-        active = bool(
-            main_row
-            and main_row.get("quote_status") == "FRESH"
+        active = any(
+            (
+                _main_row(main_snapshot or {}, code) or {}
+            ).get("quote_status") == "FRESH"
+            for code in PROFILES
         )
         interval = (
             quote_interval_seconds
@@ -598,7 +694,11 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout", type=int, default=6)
     parser.add_argument("--max-quote-age-seconds", type=int, default=120)
     parser.add_argument("--quote-interval-seconds", type=float, default=30.0)
-    parser.add_argument("--off-hours-interval-seconds", type=float, default=300.0)
+    parser.add_argument(
+        "--off-hours-interval-seconds",
+        type=float,
+        default=300.0,
+    )
     parser.add_argument("--loop", action="store_true")
     return parser
 
@@ -625,9 +725,11 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(
             {
                 "snapshot_id": snapshot["snapshot_id"],
-                "source_market_snapshot_id": snapshot["source_market_snapshot_id"],
+                "source_market_snapshot_id": snapshot[
+                    "source_market_snapshot_id"
+                ],
                 "summary": snapshot["summary"],
-                "row": snapshot["rows"][0],
+                "rows": snapshot["rows"],
             },
             ensure_ascii=False,
         )

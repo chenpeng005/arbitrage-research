@@ -1,0 +1,42 @@
+{
+  "version": "R2B2_CASH_SHADOW_PROFILES_V0",
+  "generated_at": "2026-10-02T18:15:00+08:00",
+  "candidates": {
+    "160916": {
+      "name": "优选LOF",
+      "quality_candidate": "MEDIUM",
+      "min_disclosed_weight": 0.7,
+      "backtest": {
+        "mae_pct": 0.162,
+        "p90_pct": 0.339,
+        "recent20_mae_pct": 0.156,
+        "corr": 0.982
+      },
+      "economic_priority": "HIGH"
+    },
+    "164403": {
+      "name": "农业精选LOF",
+      "quality_candidate": "MEDIUM",
+      "min_disclosed_weight": 0.7,
+      "backtest": {
+        "mae_pct": 0.253,
+        "p90_pct": 0.667,
+        "recent20_mae_pct": 0.166,
+        "corr": 0.965
+      },
+      "economic_priority": "HIGH"
+    },
+    "501077": {
+      "name": "富国创新企业LOF",
+      "quality_candidate": "MEDIUM",
+      "min_disclosed_weight": 0.4,
+      "backtest": {
+        "mae_pct": 0.313,
+        "p90_pct": 0.76,
+        "recent20_mae_pct": 0.311,
+        "corr": 0.976
+      },
+      "economic_priority": "HIGH"
+    }
+  }
+}
