@@ -153,6 +153,7 @@
       return `Shadow ${profile.shadow_model_count || 1}路${suffix}`;
     }
     if (profile.t1_profile_available) return "T-1质量";
+    if (profile.display_state === "RESEARCHED_DEFERRED") return "已研究·暂缓";
     return "—";
   };
 
@@ -165,6 +166,12 @@
       const method = model.method || model.source || "Shadow";
       parts.push(`${method}: ${status}`);
     });
+    const disposition = profile.research_disposition;
+    if (disposition) {
+      if (disposition.reason_code) parts.push(`暂缓原因：${disposition.reason_code}`);
+      if (disposition.evidence) parts.push(disposition.evidence);
+      if (disposition.next_condition) parts.push(`重开条件：${disposition.next_condition}`);
+    }
     if (profile.validation_evaluated_count) {
       const mae = num(profile.validation_best_mae_pct);
       parts.push(
@@ -346,6 +353,8 @@
     ).length;
     $("shadowCount").textContent =
       state.shadowSummary.active_shadow_fund_count ?? "—";
+    $("deferredCount").textContent =
+      state.shadowSummary.researched_deferred_count ?? "—";
     $("collectorStatus").textContent = snapshot.collector_status || "—";
     $("collectorStatus").className =
       snapshot.collector_status === "PASS" ? "ok" : "warn";
