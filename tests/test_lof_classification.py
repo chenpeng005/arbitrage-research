@@ -42,6 +42,13 @@ class LofClassificationTest(unittest.TestCase):
         )
         self.assertEqual(
             normalize_lof_type(
+                name="易方达中债新综指发起式(LOF)A",
+                fund_type_raw="指数型-固收",
+            ),
+            "BOND",
+        )
+        self.assertEqual(
+            normalize_lof_type(
                 name="某FOF-LOF",
                 fund_type_raw="FOF-稳健型",
             ),

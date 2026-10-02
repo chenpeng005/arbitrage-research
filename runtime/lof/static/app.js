@@ -51,7 +51,9 @@
   };
 
   const r2cT1Profile = (row) => {
-    if (row.resolver_class !== "R2_DOMESTIC_OTHER" || row.lof_type !== "BOND") return null;
+    const rawType = String(row.fund_type_raw || "");
+    const isBondLike = row.lof_type === "BOND" || rawType.includes("固收");
+    if (!isBondLike) return null;
     return state.r2cProfiles[row.code] || null;
   };
 

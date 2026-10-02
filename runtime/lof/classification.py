@@ -42,7 +42,10 @@ def normalize_lof_type(
         return "QDII_EQUITY"
     if "商品" in (fund_type_raw or ""):
         return "COMMODITY"
-    if "债券" in (fund_type_raw or ""):
+    if (
+        "债券" in (fund_type_raw or "")
+        or "固收" in (fund_type_raw or "")
+    ):
         return "BOND"
     if "FOF" in joined:
         return "FOF"

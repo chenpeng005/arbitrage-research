@@ -11,6 +11,8 @@ class R2CProfileStaticTests(unittest.TestCase):
         self.assertIn("/api/lof/r2c-t1-profile", text)
         self.assertIn("state.r2cProfiles[row.code]", text)
         self.assertNotIn("const r2cT1Profiles = {", text)
+        self.assertIn('rawType.includes("固收")', text)
+        self.assertNotIn('row.resolver_class !== "R2_DOMESTIC_OTHER"', text)
 
 
 if __name__ == "__main__":
