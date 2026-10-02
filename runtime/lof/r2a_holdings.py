@@ -268,7 +268,10 @@ def parse_holdings(text: str) -> tuple[Holding, ...]:
             symbol = "sh" + code.zfill(6)
         elif market == "0":
             asset_type = "A"
-            symbol = "sz" + code.zfill(6)
+            if code.startswith("920"):
+                symbol = "bj" + code.zfill(6)
+            else:
+                symbol = "sz" + code.zfill(6)
         else:
             continue
 
