@@ -174,6 +174,71 @@ class ShadowRegistryTests(unittest.TestCase):
         self.assertEqual(row["validation_evaluated_count"], 8)
         self.assertEqual(row["validation_best_mae_pct"], 0.12)
 
+    def test_researched_deferred_is_not_unresolved(self):
+        snapshot = {
+            "snapshot_id": "main-1",
+            "rows": [
+                {
+                    "code": "160220",
+                    "name": "Deferred",
+                    "resolver_class": "R2_DOMESTIC_OTHER",
+                    "lof_type": "MIXED",
+                    "estimated_nav_status": "UNAVAILABLE",
+                    "estimated_nav_method": "UNAVAILABLE",
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as root:
+            base = Path(root)
+            knowledge = "k1"
+            (base / "deployment_manifest.json").write_text(
+                json.dumps({"knowledge_commit_sha": knowledge}),
+                encoding="utf-8",
+            )
+            target = (
+                base
+                / "knowledge_snapshots"
+                / knowledge
+                / "files"
+                / "05 套利研究"
+                / "LOF机会发现"
+                / "02_数据与监控"
+            )
+            target.mkdir(parents=True)
+            (
+                target
+                / "LOF-Research-Disposition-Registry-V0.1.json"
+            ).write_text(
+                json.dumps(
+                    {
+                        "version": "x",
+                        "entries": {
+                            "160220": {
+                                "status": "RESEARCHED_DEFERRED",
+                                "reason_code": "MODEL_REJECTED",
+                            }
+                        },
+                        "rules": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = load_shadow_registry(
+                root,
+                main_snapshot=snapshot,
+                now=datetime(2026, 10, 3, 9, 31, tzinfo=TZ),
+            )
+
+        self.assertEqual(
+            result["rows"]["160220"]["display_state"],
+            "RESEARCHED_DEFERRED",
+        )
+        self.assertEqual(
+            result["summary"]["researched_deferred_count"],
+            1,
+        )
+        self.assertEqual(result["summary"]["unresolved_count"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
