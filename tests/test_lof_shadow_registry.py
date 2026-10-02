@@ -19,7 +19,8 @@ class ShadowRegistryTests(unittest.TestCase):
                 {
                     "code": "100001",
                     "name": "Main",
-                    "estimated_nav_status": "AVAILABLE",
+                    "estimated_nav_status": "UNAVAILABLE",
+                    "estimated_nav_method": "INDEX_PROXY_PREV_CLOSE",
                 },
                 {
                     "code": "160916",
@@ -83,12 +84,18 @@ class ShadowRegistryTests(unittest.TestCase):
             result["rows"]["100001"]["display_state"],
             "MAIN_ESTIMATE",
         )
+        self.assertTrue(
+            result["rows"]["100001"]["main_estimate_covered"]
+        )
+        self.assertFalse(
+            result["rows"]["100001"]["main_estimate_available_now"]
+        )
         self.assertEqual(
             result["rows"]["160916"]["display_state"],
             "ACTIVE_SHADOW",
         )
         self.assertFalse(
-            result["rows"]["160916"]["main_estimate_available"]
+            result["rows"]["160916"]["main_estimate_covered"]
         )
         self.assertEqual(
             result["rows"]["161119"]["display_state"],

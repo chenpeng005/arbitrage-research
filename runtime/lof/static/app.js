@@ -143,7 +143,11 @@
   const researchStateText = (row) => {
     const profile = researchProfile(row);
     if (!profile) return "—";
-    if (profile.main_estimate_available) return "主估值";
+    if (profile.main_estimate_covered) {
+      return profile.main_estimate_available_now
+        ? "主估值·可用"
+        : "主估值覆盖";
+    }
     if (profile.shadow_active) {
       const suffix = profile.t1_profile_available ? " + T-1" : "";
       return `Shadow ${profile.shadow_model_count || 1}路${suffix}`;

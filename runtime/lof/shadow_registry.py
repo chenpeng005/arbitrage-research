@@ -190,15 +190,25 @@ def load_shadow_registry(
         code = str(market.get("code") or "").strip()
         if not code:
             continue
-        main_available = (
+        main_available_now = (
             market.get("estimated_nav_status") == "AVAILABLE"
+        )
+        main_method = str(
+            market.get("estimated_nav_method") or ""
+        ).strip()
+        main_covered = (
+            main_available_now
+            or (
+                bool(main_method)
+                and main_method != "UNAVAILABLE"
+            )
         )
         t1_profile = t1_rows.get(code)
         models = models_by_code.get(code, [])
         validations = validation_by_code.get(code, [])
 
         layers: list[str] = []
-        if main_available:
+        if main_covered:
             layers.append("MAIN_ESTIMATE")
             main_count += 1
         if t1_profile is not None:
@@ -208,7 +218,7 @@ def load_shadow_registry(
             layers.append("ACTIVE_SHADOW")
             shadow_count += 1
 
-        if main_available:
+        if main_covered:
             display_state = "MAIN_ESTIMATE"
         elif models:
             display_state = "ACTIVE_SHADOW"
@@ -238,7 +248,11 @@ def load_shadow_registry(
             "fund_name": market.get("name"),
             "display_state": display_state,
             "coverage_layers": layers,
-            "main_estimate_available": main_available,
+            "main_estimate_covered": main_covered,
+            "main_estimate_available_now": main_available_now,
+            "main_estimate_method": (
+                main_method if main_covered else None
+            ),
             "t1_profile_available": t1_profile is not None,
             "shadow_active": bool(models),
             "shadow_model_count": len(models),
@@ -268,6 +282,11 @@ def load_shadow_registry(
         "summary": {
             "universe_count": len(rows),
             "main_estimate_count": main_count,
+            "main_estimate_covered_count": main_count,
+            "main_estimate_available_now_count": sum(
+                row.get("estimated_nav_status") == "AVAILABLE"
+                for row in market_rows
+            ),
             "t1_profile_count": t1_count,
             "active_shadow_fund_count": shadow_count,
             "unresolved_count": unresolved_count,
