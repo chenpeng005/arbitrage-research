@@ -136,6 +136,46 @@ PROFILES = {
         "name": "财通福享混合LOF",
         "research_group": "R2-B1",
     },
+    "501227": {
+        "quality": "LOW",
+        "name": "泓德红利优选LOF",
+        "research_group": "R2-B1",
+    },
+    "161914": {
+        "quality": "MEDIUM",
+        "name": "创业板2年定开",
+        "research_group": "R2-B1",
+    },
+    "161810": {
+        "quality": "MEDIUM",
+        "name": "银华内需LOF",
+        "research_group": "R2-B1",
+    },
+    "166011": {
+        "quality": "MEDIUM",
+        "name": "中欧盛世LOF",
+        "research_group": "R2-B1",
+    },
+    "169101": {
+        "quality": "LOW",
+        "name": "东方红睿丰LOF",
+        "research_group": "R2-B1",
+    },
+    "162607": {
+        "quality": "MEDIUM",
+        "name": "景顺资源LOF",
+        "research_group": "R2-B1",
+    },
+    "160505": {
+        "quality": "MEDIUM",
+        "name": "博时主题LOF",
+        "research_group": "R2-B1",
+    },
+    "160314": {
+        "quality": "MEDIUM",
+        "name": "华夏行业LOF",
+        "research_group": "R2-B1",
+    },
 }
 
 
