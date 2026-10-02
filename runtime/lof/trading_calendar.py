@@ -8,6 +8,10 @@ from urllib.request import Request, urlopen
 
 TENCENT_KLINE_URL = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
 TENCENT_QUOTE_URL = "https://qt.gtimg.cn/q="
+SINA_KLINE_URL = (
+    "https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/"
+    "CN_MarketData.getKLineData"
+)
 
 
 def parse_trading_dates(
@@ -26,6 +30,45 @@ def parse_trading_dates(
         except ValueError:
             continue
     return sorted(set(result))
+
+
+def parse_sina_trading_dates(payload: object) -> list[date]:
+    if not isinstance(payload, list):
+        return []
+    result: list[date] = []
+    for row in payload:
+        if not isinstance(row, dict):
+            continue
+        raw = str(row.get("day") or "")[:10]
+        try:
+            result.append(date.fromisoformat(raw))
+        except ValueError:
+            continue
+    return sorted(set(result))
+
+
+def fetch_sina_trading_dates(
+    *,
+    symbol: str = "sh000001",
+    timeout: int = 8,
+    count: int = 30,
+) -> list[date]:
+    params = {
+        "symbol": symbol,
+        "scale": "240",
+        "ma": "no",
+        "datalen": str(max(count, 12)),
+    }
+    request = Request(
+        f"{SINA_KLINE_URL}?{urlencode(params)}",
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Referer": "https://finance.sina.com.cn/",
+        },
+    )
+    with urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    return parse_sina_trading_dates(payload)
 
 
 def previous_trading_day_from_dates(
@@ -105,6 +148,24 @@ def fetch_previous_trading_day(
     except Exception:
         # Holiday / off-hours fallback below. Do not guess by subtracting
         # calendar days because long holidays would be wrong.
+        pass
+
+    # Independent historical fallback. This is especially important for
+    # deriving T-2 during long holidays: a latest quote can prove the latest
+    # session date, but cannot safely reveal the session before it.
+    try:
+        sina_dates = fetch_sina_trading_dates(
+            symbol=symbol,
+            timeout=timeout,
+            count=max(count, 30),
+        )
+        previous = previous_trading_day_from_dates(
+            sina_dates,
+            as_of=as_of,
+        )
+        if previous is not None:
+            return previous
+    except Exception:
         pass
 
     try:
