@@ -110,6 +110,7 @@ def fetch_eastmoney_delayed_global_index(
     secid: str = "100.SENSEX",
     *,
     timeout: int = 8,
+    attempts: int = 4,
 ) -> DelayedGlobalIndexQuote:
     params = {
         "secids": secid,
@@ -117,13 +118,12 @@ def fetch_eastmoney_delayed_global_index(
         "invt": "2",
         "fields": "f12,f14,f2,f3,f4,f17,f15,f16,f18,f124",
     }
-    request = Request(
-        f"{EASTMONEY_DELAYED_LIST_URL}?{urlencode(params)}",
-        headers={
-            "User-Agent": "Mozilla/5.0",
-            "Referer": "https://quote.eastmoney.com/",
-        },
+    payload = fetch_json_with_retry(
+        EASTMONEY_DELAYED_LIST_URL,
+        params,
+        referer="https://quote.eastmoney.com/",
+        timeout=timeout,
+        attempts=attempts,
+        base_delay_seconds=0.35,
     )
-    with urlopen(request, timeout=timeout) as response:
-        payload = json.loads(response.read().decode("utf-8"))
     return parse_eastmoney_delayed_global_index(payload, secid=secid)
