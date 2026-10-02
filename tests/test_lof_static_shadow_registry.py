@@ -13,6 +13,8 @@ class ShadowRegistryStaticTests(unittest.TestCase):
         self.assertIn("/api/lof/shadow-registry", app)
         self.assertIn("state.shadowRegistry[row.code]", app)
         self.assertIn('id="shadowCount"', index)
+        self.assertIn('id="deferredCount"', index)
+        self.assertIn("已研究·暂缓", app)
         self.assertIn('data-key="_research_state"', index)
 
 
