@@ -168,12 +168,54 @@ class ShadowValidationTests(unittest.TestCase):
 
         self.assertEqual(result["observation_count"], 1)
         item = next(iter(ledger["observations"].values()))
-        self.assertEqual(item["source"], "R2B2_CASH_160916")
+        self.assertEqual(item["source"], "R2B2_CASH_HEAVY")
         self.assertEqual(
             item["metadata"]["asset_allocation_date"],
             "2026-06-30",
         )
         self.assertEqual(item["metadata"]["live_coverage_ratio"], 1.0)
+
+
+    def test_r2b2_low_vol_residual_shadow_is_ingested(self):
+        with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as state:
+            data = Path(root)
+            _write(
+                data / "r2b2_low_vol_residual_shadow" / "snapshots" / "r2b2-low-vol-165508-shadow-20261009T140000.json",
+                {
+                    "snapshot_id": "r2b2-low-vol-165508-shadow-20261009T140000",
+                    "generated_at": "2026-10-09T14:00:00+08:00",
+                    "rows": [
+                        {
+                            "fund_code": "165508",
+                            "fund_name": "中信保诚深度LOF",
+                            "status": "AVAILABLE",
+                            "method": "R2B2_LOW_VOL_RESIDUAL_STOCK_BASKET",
+                            "shadow_estimated_nav": 2.12,
+                            "research_group": "R2-B2-LOW_VOL_RESIDUAL",
+                            "asset_allocation_date": "2026-06-30",
+                            "allocation_stock_weight": 0.723,
+                            "allocation_bond_weight": 0.1178,
+                            "allocation_cash_weight": 0.174,
+                            "disclosed_stock_weight": 0.7228,
+                            "live_coverage_ratio": 1.0,
+                            "fresh_coverage_ratio": 1.0,
+                        }
+                    ],
+                },
+            )
+            result = run_once(data_root=data, state_root=state)
+            ledger = json.loads(
+                Path(state, "shadow_validation_ledger.json").read_text()
+            )
+
+        self.assertEqual(result["observation_count"], 1)
+        item = next(iter(ledger["observations"].values()))
+        self.assertEqual(item["source"], "R2B2_LOW_VOL_RESIDUAL")
+        self.assertEqual(item["fund_code"], "165508")
+        self.assertEqual(
+            item["metadata"]["research_group"],
+            "R2-B2-LOW_VOL_RESIDUAL",
+        )
 
 
     def test_second_run_is_idempotent(self):
