@@ -1,0 +1,17 @@
+[Unit]
+Description=LOF R4 501300 USD Bond Shadow
+After=network-online.target lof-opportunity-updater.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/projects/lof-opportunity-runtime/r4-usd-bond-shadow/current
+Environment=PYTHONPATH=/home/admin/projects/lof-opportunity-runtime/r4-usd-bond-shadow/current
+ExecStart=/home/admin/projects/lof-opportunity-runtime/.venv/bin/python -m runtime.lof.r4_usd_bond_shadow_runner --main-data-root /home/admin/projects/lof-opportunity-runtime/runtime_data --state-root /home/admin/projects/lof-opportunity-runtime/runtime_data/r4_usd_bond_shadow --loop --quote-interval-seconds 30 --off-hours-interval-seconds 300 --timeout 6 --max-input-age-seconds 1800
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
