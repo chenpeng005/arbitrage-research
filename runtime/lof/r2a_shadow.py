@@ -121,6 +121,21 @@ PROFILES = {
         "name": "兴全趋势LOF",
         "research_group": "R2-B1",
     },
+    "161005": {
+        "quality": "MEDIUM",
+        "name": "富国天惠LOF",
+        "research_group": "R2-B1",
+    },
+    "501015": {
+        "quality": "LOW",
+        "name": "财通升级混合LOF",
+        "research_group": "R2-B1",
+    },
+    "501026": {
+        "quality": "LOW",
+        "name": "财通福享混合LOF",
+        "research_group": "R2-B1",
+    },
 }
 
 
