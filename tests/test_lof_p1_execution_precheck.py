@@ -2,6 +2,10 @@ import unittest
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from runtime.lof.p1_execution_evidence import (
+    load_execution_evidence,
+    match_execution_evidence,
+)
 from runtime.lof.p1_execution_precheck import (
     build_execution_precheck_snapshot,
     evaluate_execution_precheck,
@@ -108,6 +112,67 @@ class P1ExecutionPrecheckTests(unittest.TestCase):
         self.assertEqual(result["execution_precheck_state"], "PRECHECK_CLEAR")
         self.assertFalse(result["eligible_for_opportunity"])
 
+
+    def test_registry_matches_current_501312_and_clears_fund_side_blocker(self):
+        evidence = load_execution_evidence()["501312"]
+        result = evaluate_execution_precheck(
+            _row(),
+            evidence=evidence,
+        )
+        self.assertEqual(result["execution_evidence_status"], "MATCHED")
+        self.assertEqual(
+            result["limit_scope"],
+            "FUND_ACCOUNT_DAILY_CUMULATIVE",
+        )
+        self.assertEqual(
+            result["over_limit_handling"],
+            "PARTIAL_CONFIRM_TO_LIMIT",
+        )
+        self.assertTrue(result["fund_partial_confirmation_confirmed"])
+        self.assertNotIn(
+            "OVER_LIMIT_PARTIAL_CONFIRMATION_UNVERIFIED",
+            result["blockers"],
+        )
+        self.assertIn(
+            "BROKER_OVER_LIMIT_SUPPORT_UNVERIFIED",
+            result["blockers"],
+        )
+        self.assertIn("SELLABLE_TIMING_UNKNOWN_QDII", result["blockers"])
+
+    def test_registry_does_not_apply_when_limit_changed(self):
+        evidence = load_execution_evidence()["501312"]
+        status, matched = match_execution_evidence(
+            _row(limit=100.0),
+            evidence,
+        )
+        self.assertEqual(status, "LIMIT_MISMATCH")
+        self.assertIsNotNone(matched)
+        result = evaluate_execution_precheck(
+            _row(limit=100.0),
+            evidence=evidence,
+        )
+        self.assertEqual(result["execution_evidence_status"], "LIMIT_MISMATCH")
+        self.assertEqual(result["limit_scope"], "UNKNOWN")
+
+    def test_registry_clears_limit_scope_for_high_value_candidates(self):
+        evidence_rows = load_execution_evidence()
+        for code, limit, exchange in [
+            ("501300", 50_000_000.0, "SSE"),
+            ("164824", 500_000.0, "SZSE"),
+        ]:
+            result = evaluate_execution_precheck(
+                _row(
+                    code=code,
+                    exchange=exchange,
+                    limit=limit,
+                    limit_scope="UNKNOWN",
+                ),
+                evidence=evidence_rows[code],
+            )
+            self.assertEqual(result["execution_evidence_status"], "MATCHED")
+            self.assertNotIn("LIMIT_SCOPE_UNKNOWN", result["blockers"])
+            self.assertIn("SELLABLE_TIMING_UNKNOWN_QDII", result["blockers"])
+
     def test_snapshot_only_includes_qdii_scope(self):
         qdii = _row(
             code="501300",
@@ -134,6 +199,7 @@ class P1ExecutionPrecheckTests(unittest.TestCase):
                 "rows": [qdii, domestic],
             },
             generated_at=datetime(2026, 10, 9, 14, 0, tzinfo=SHANGHAI_TZ),
+            evidence_rows={},
         )
         self.assertEqual(snapshot["summary"]["row_count"], 1)
         self.assertEqual(snapshot["rows"][0]["code"], "501300")

@@ -18,6 +18,7 @@ import tempfile
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from .p1_execution_evidence import load_execution_evidence, match_execution_evidence
 from .snapshot_store import LofSnapshotStore
 
 
@@ -60,7 +61,11 @@ def _exchange_rules(exchange: str) -> tuple[float, float | None]:
     return 1.0, None
 
 
-def evaluate_execution_precheck(row: dict[str, Any]) -> dict[str, Any]:
+def evaluate_execution_precheck(
+    row: dict[str, Any],
+    *,
+    evidence: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     code = str(row.get("code") or "")
     exchange = str(row.get("exchange") or "")
     status = str(row.get("subscription_status") or "UNKNOWN")
@@ -88,7 +93,29 @@ def evaluate_execution_precheck(row: dict[str, Any]) -> dict[str, Any]:
 
     confirmation_days = row.get("subscription_confirmation_days")
     sell_days = row.get("subscription_to_sell_days")
+    evidence_status, matched_evidence = match_execution_evidence(row, evidence)
     limit_scope = str(row.get("limit_scope") or "UNKNOWN")
+    over_limit_handling = "UNKNOWN"
+    sellable_timing_evidence_level = "UNVERIFIED"
+    evidence_date = None
+    evidence_source_url = None
+    evidence_source_authority = None
+    if evidence_status == "MATCHED" and matched_evidence is not None:
+        limit_scope = str(
+            matched_evidence.get("limit_scope")
+            or limit_scope
+        )
+        over_limit_handling = str(
+            matched_evidence.get("over_limit_handling")
+            or "UNKNOWN"
+        )
+        sellable_timing_evidence_level = str(
+            matched_evidence.get("sellable_timing_evidence_level")
+            or "UNVERIFIED"
+        )
+        evidence_date = matched_evidence.get("evidence_date")
+        evidence_source_url = matched_evidence.get("source_url")
+        evidence_source_authority = matched_evidence.get("source_authority")
 
     blockers: list[str] = []
 
@@ -106,7 +133,10 @@ def evaluate_execution_precheck(row: dict[str, Any]) -> dict[str, Any]:
         if status == "LIMITED" and limit_scope == "UNKNOWN":
             blockers.append("LIMIT_SCOPE_UNKNOWN")
         if limit_conflict:
-            blockers.append("OVER_LIMIT_PARTIAL_CONFIRMATION_UNVERIFIED")
+            if over_limit_handling != "PARTIAL_CONFIRM_TO_LIMIT":
+                blockers.append(
+                    "OVER_LIMIT_PARTIAL_CONFIRMATION_UNVERIFIED"
+                )
             blockers.append("BROKER_OVER_LIMIT_SUPPORT_UNVERIFIED")
         if confirmation_days is None:
             blockers.append("CONFIRMATION_DAYS_UNKNOWN")
@@ -132,6 +162,15 @@ def evaluate_execution_precheck(row: dict[str, Any]) -> dict[str, Any]:
         "limit_scope": limit_scope,
         "limit_vs_order_min_conflict": limit_conflict,
         "requires_over_limit_partial_confirmation": limit_conflict,
+        "over_limit_handling": over_limit_handling,
+        "fund_partial_confirmation_confirmed": (
+            over_limit_handling == "PARTIAL_CONFIRM_TO_LIMIT"
+        ),
+        "execution_evidence_status": evidence_status,
+        "execution_evidence_date": evidence_date,
+        "execution_evidence_source_authority": evidence_source_authority,
+        "execution_evidence_source_url": evidence_source_url,
+        "sellable_timing_evidence_level": sellable_timing_evidence_level,
         "subscription_confirmation_days": confirmation_days,
         "subscription_to_sell_days": sell_days,
         "qdii_timing_evidence_required": bool(
@@ -147,9 +186,18 @@ def build_execution_precheck_snapshot(
     *,
     main_snapshot: dict[str, Any],
     generated_at: datetime,
+    evidence_rows: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    evidence_rows = (
+        load_execution_evidence()
+        if evidence_rows is None
+        else evidence_rows
+    )
     rows = [
-        evaluate_execution_precheck(row)
+        evaluate_execution_precheck(
+            row,
+            evidence=evidence_rows.get(str(row.get("code") or "")),
+        )
         for row in (main_snapshot.get("rows") or [])
         if is_qdii_row(row)
     ]
@@ -181,6 +229,14 @@ def build_execution_precheck_snapshot(
         ),
         "sellable_timing_unknown_count": sum(
             bool(row["qdii_timing_evidence_required"]) for row in rows
+        ),
+        "execution_evidence_matched_count": sum(
+            row["execution_evidence_status"] == "MATCHED"
+            for row in rows
+        ),
+        "fund_partial_confirmation_confirmed_count": sum(
+            bool(row["fund_partial_confirmation_confirmed"])
+            for row in rows
         ),
     }
 

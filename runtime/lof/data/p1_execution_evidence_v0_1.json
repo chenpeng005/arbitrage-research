@@ -1,0 +1,58 @@
+{
+  "version": "P1_EXECUTION_EVIDENCE_V0_1",
+  "updated_at": "2026-10-02",
+  "rows": {
+    "162411": {
+      "fund_code": "162411",
+      "current_limit_reference": 10,
+      "limit_scope": "FUND_ACCOUNT_DAILY_CUMULATIVE",
+      "over_limit_handling": "PARTIAL_CONFIRM_TO_LIMIT",
+      "effective_from": "2026-03-05",
+      "evidence_date": "2026-03-04",
+      "source_authority": "SZSE_OFFICIAL",
+      "source_title": "华宝标普石油天然气上游股票指数证券投资基金（LOF）调整大额申购（含定投）金额上限的公告",
+      "source_url": "https://disc.static.szse.cn/disc/disk03/finalpage/2026-03-04/b991edd8-935b-4341-b9d7-3a5fa5503bfd.PDF",
+      "sellable_timing_evidence_level": "PARTIAL_CONFIRMATION_ONLY",
+      "sellable_trading_days": null
+    },
+    "164824": {
+      "fund_code": "164824",
+      "current_limit_reference": 500000,
+      "limit_scope": "FUND_ACCOUNT_DAILY_CUMULATIVE",
+      "over_limit_handling": "MANAGER_MAY_REJECT",
+      "effective_from": "2026-05-22",
+      "evidence_date": "2026-05-21",
+      "source_authority": "OFFICIAL_DISCLOSURE",
+      "source_title": "关于调整工银瑞信印度市场证券投资基金（LOF）大额申购、定期定额投资业务限制金额的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-05-21/1225318540.PDF",
+      "sellable_timing_evidence_level": "PARTIAL_CONFIRMATION_ONLY",
+      "sellable_trading_days": null
+    },
+    "501300": {
+      "fund_code": "501300",
+      "current_limit_reference": 50000000,
+      "limit_scope": "FUND_ACCOUNT_DAILY_CUMULATIVE",
+      "over_limit_handling": "MANAGER_MAY_REJECT",
+      "effective_from": "2026-06-05",
+      "evidence_date": "2026-06-05",
+      "source_authority": "SSE_OFFICIAL",
+      "source_title": "海富通全球美元收益债券型证券投资基金（LOF）调整大额申购业务限额及总规模上限的公告",
+      "source_url": "https://www.sse.com.cn/disclosure/fund/announcement/c/new/2026-06-05/501300_20260605_81M1.pdf",
+      "sellable_timing_evidence_level": "PARTIAL_CONFIRMATION_ONLY",
+      "sellable_trading_days": null
+    },
+    "501312": {
+      "fund_code": "501312",
+      "current_limit_reference": 20,
+      "limit_scope": "FUND_ACCOUNT_DAILY_CUMULATIVE",
+      "over_limit_handling": "PARTIAL_CONFIRM_TO_LIMIT",
+      "effective_from": "2026-06-23",
+      "evidence_date": "2026-06-22",
+      "source_authority": "FUND_ANNOUNCEMENT_MIRROR",
+      "source_title": "华宝海外科技股票型证券投资基金（QDII-LOF）调整大额申购（含定投）金额上限的公告",
+      "source_url": "https://notice.10jqka.com.cn/api/pdf/6834bf6dd0008e24.pdf",
+      "sellable_timing_evidence_level": "UNVERIFIED",
+      "sellable_trading_days": null
+    }
+  }
+}
