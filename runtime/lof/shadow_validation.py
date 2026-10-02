@@ -27,6 +27,14 @@ SOURCE_DIRS = {
         "r2b2_low_vol_residual_shadow",
         "snapshots",
     ),
+    "R5_CROSS_BORDER_501025": (
+        "r5_cross_border_501025_shadow",
+        "snapshots",
+    ),
+    "R5_HSI_FEEDER_501302": (
+        "r5_hsi_feeder_501302_shadow",
+        "snapshots",
+    ),
 }
 
 
