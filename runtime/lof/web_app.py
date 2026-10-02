@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from .r2c_profile_summary import load_r2c_t1_profile_summary
 from .snapshot_store import LofSnapshotStore
 
 
@@ -48,3 +49,8 @@ def latest_snapshot():
     if snapshot is None:
         raise HTTPException(status_code=503, detail="LOF snapshot unavailable")
     return snapshot
+
+
+@app.get("/api/lof/r2c-t1-profile")
+def r2c_t1_profile_summary():
+    return load_r2c_t1_profile_summary(DATA_ROOT)
