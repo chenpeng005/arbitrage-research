@@ -25,6 +25,7 @@ LOF_REQUIRED_CANONICAL_PATHS = (
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-Production-Source-Preflight-Contract-V1.md",
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-Release-Profile-V1.md",
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-SZSE-Official-Relay-V1.md",
+    "05 套利研究/LOF机会发现/02_数据与监控/LOF-Research-Disposition-Registry-V0.1.json",
 )
 
 
