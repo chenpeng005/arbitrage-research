@@ -8,6 +8,8 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
+from .http_json import fetch_json_with_retry
+
 
 EASTMONEY_DELAYED_LIST_URL = "https://push2delay.eastmoney.com/api/qt/ulist.np/get"
 SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
