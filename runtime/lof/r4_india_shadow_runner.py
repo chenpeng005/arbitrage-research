@@ -1,3 +1,5 @@
+"""R4 India shadow-only sampler; never feeds main estimated NAV."""
+
 from __future__ import annotations
 
 import argparse
