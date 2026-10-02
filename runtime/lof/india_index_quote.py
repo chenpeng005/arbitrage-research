@@ -158,12 +158,12 @@ def parse_eastmoney_delayed_global_index(
     )
 
 
-def fetch_wscn_delayed_sensex(
+def fetch_wscn_market_proxy(
+    prod_code: str,
     *,
     timeout: int = 8,
     attempts: int = 3,
 ) -> DelayedGlobalIndexQuote:
-    prod_code = "SENSEX.OTC"
     params = {
         "fields": (
             "symbol,en_name,prod_name,last_px,px_change,px_change_rate,"
@@ -179,6 +179,18 @@ def fetch_wscn_delayed_sensex(
         base_delay_seconds=0.25,
     )
     return parse_wscn_delayed_global_index(payload, prod_code=prod_code)
+
+
+def fetch_wscn_delayed_sensex(
+    *,
+    timeout: int = 8,
+    attempts: int = 3,
+) -> DelayedGlobalIndexQuote:
+    return fetch_wscn_market_proxy(
+        "SENSEX.OTC",
+        timeout=timeout,
+        attempts=attempts,
+    )
 
 
 def fetch_eastmoney_delayed_global_index(
