@@ -1,0 +1,2 @@
+# LOF P1 execution precheck: research-only facts, never emits opportunity alerts.
+*/10 * * * * /usr/bin/flock -n /home/admin/projects/lof-opportunity-runtime/p1-execution-precheck/runner.lock /bin/bash -lc 'cd /home/admin/projects/lof-opportunity-runtime/p1-execution-precheck/current && exec /home/admin/projects/lof-opportunity-runtime/.venv/bin/python -m runtime.lof.p1_execution_precheck --data-root /home/admin/projects/lof-opportunity-runtime/runtime_data >> /home/admin/projects/lof-opportunity-runtime/logs/p1-execution-precheck.log 2>&1'
