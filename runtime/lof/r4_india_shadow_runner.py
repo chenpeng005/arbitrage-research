@@ -12,7 +12,8 @@ import tempfile
 import time
 from zoneinfo import ZoneInfo
 
-from .india_index_quote import fetch_india_sensex_quote
+from .india_index_quote import fetch_india_sensex_quote, fetch_wscn_market_proxy
+from .r4_india_fx import resolve_inr_cny_bridge
 from .r4_india_shadow import india_cash_timing_regime, resolve_164824_india_shadow
 from .snapshot_store import LofSnapshotStore
 
@@ -83,6 +84,8 @@ def calculate_shadow_row(
     quote,
     as_of: datetime,
     max_quote_age_seconds: int = 1800,
+    usd_inr_quote=None,
+    usd_cny_quote=None,
 ) -> dict:
     market_row = _market_row(main_snapshot)
     if market_row is None:
@@ -107,6 +110,29 @@ def calculate_shadow_row(
         max_quote_age_seconds=max_quote_age_seconds,
     )
 
+    fx_bridge = None
+    fx_estimated_nav = None
+    if (
+        result.shadow_status == "AVAILABLE"
+        and result.estimated_nav is not None
+        and usd_inr_quote is not None
+        and usd_cny_quote is not None
+    ):
+        fx_bridge = resolve_inr_cny_bridge(
+            usd_inr=usd_inr_quote,
+            usd_cny=usd_cny_quote,
+            as_of=as_of,
+            max_quote_age_seconds=max_quote_age_seconds,
+        )
+        if (
+            fx_bridge.status == "AVAILABLE"
+            and fx_bridge.fx_return is not None
+        ):
+            fx_estimated_nav = (
+                result.estimated_nav
+                * (Decimal("1") + fx_bridge.fx_return)
+            )
+
     market_price = _decimal(market_row.get("price"))
     premium = None
     if (
@@ -129,6 +155,16 @@ def calculate_shadow_row(
         "shadow_estimated_nav": (
             float(result.estimated_nav)
             if result.estimated_nav is not None
+            else None
+        ),
+        "shadow_estimated_nav_sensex": (
+            float(result.estimated_nav)
+            if result.estimated_nav is not None
+            else None
+        ),
+        "shadow_estimated_nav_sensex_inr_cny": (
+            float(fx_estimated_nav)
+            if fx_estimated_nav is not None
             else None
         ),
         "shadow_premium_rate": (
@@ -159,6 +195,31 @@ def calculate_shadow_row(
         ),
         "proxy_quote_age_seconds": result.quote_age_seconds,
         "timing_regime": result.timing_regime,
+        "fx_bridge_status": (
+            fx_bridge.status
+            if fx_bridge is not None
+            else "UNAVAILABLE"
+        ),
+        "fx_bridge_quality": (
+            fx_bridge.quality
+            if fx_bridge is not None
+            else "UNKNOWN"
+        ),
+        "fx_return": (
+            float(fx_bridge.fx_return)
+            if fx_bridge is not None and fx_bridge.fx_return is not None
+            else None
+        ),
+        "fx_quote_age_seconds": (
+            fx_bridge.max_quote_age_seconds
+            if fx_bridge is not None
+            else None
+        ),
+        "fx_error": (
+            fx_bridge.error
+            if fx_bridge is not None
+            else "FX_NOT_EVALUATED"
+        ),
         "eligible_for_main": False,
         "error": result.error,
     }
@@ -214,11 +275,29 @@ def collect_once(
         raise RuntimeError("MAIN_SNAPSHOT_UNAVAILABLE")
 
     quote = fetch_india_sensex_quote(timeout=timeout)
+    usd_inr_quote = None
+    usd_cny_quote = None
+    try:
+        usd_inr_quote = fetch_wscn_market_proxy(
+            "USDINR.OTC",
+            timeout=timeout,
+        )
+        usd_cny_quote = fetch_wscn_market_proxy(
+            "USDCNY.OTC",
+            timeout=timeout,
+        )
+    except Exception:
+        # FX is a candidate overlay only. Failure must not hide the
+        # independently auditable SENSEX-only shadow.
+        pass
+
     row = calculate_shadow_row(
         main_snapshot=main_snapshot,
         quote=quote,
         as_of=now,
         max_quote_age_seconds=max_quote_age_seconds,
+        usd_inr_quote=usd_inr_quote,
+        usd_cny_quote=usd_cny_quote,
     )
     snapshot = {
         "contract_version": CONTRACT_VERSION,
