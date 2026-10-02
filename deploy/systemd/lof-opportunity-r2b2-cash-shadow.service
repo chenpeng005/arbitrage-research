@@ -1,0 +1,17 @@
+[Unit]
+Description=LOF R2-B2 Cash-Heavy Shadow
+After=network-online.target lof-opportunity-updater.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/projects/lof-opportunity-runtime/r2b2-cash-shadow/current
+Environment=PYTHONPATH=/home/admin/projects/lof-opportunity-runtime/r2b2-cash-shadow/current
+ExecStart=/home/admin/projects/lof-opportunity-runtime/.venv/bin/python -m runtime.lof.r2b2_cash_shadow --main-data-root /home/admin/projects/lof-opportunity-runtime/runtime_data --state-root /home/admin/projects/lof-opportunity-runtime/runtime_data/r2b2_cash_shadow --loop --quote-interval-seconds 30 --off-hours-interval-seconds 300 --timeout 6 --max-quote-age-seconds 120
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
