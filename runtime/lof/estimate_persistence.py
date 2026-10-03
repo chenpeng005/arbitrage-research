@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import argparse
 import json
 from pathlib import Path
 from typing import Any
@@ -259,3 +260,26 @@ def audit_estimate_history(
         _write_json(root / "estimate_history_manifest.json", manifest)
 
     return manifest
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Audit and optionally migrate LOF Estimated NAV persistence."
+    )
+    parser.add_argument("--data-root", required=True)
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Rewrite active history, write quarantine and manifests.",
+    )
+    args = parser.parse_args(argv)
+    result = audit_estimate_history(
+        args.data_root,
+        apply=args.apply,
+    )
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
