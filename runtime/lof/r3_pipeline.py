@@ -11,6 +11,7 @@ from .fx import (
     fetch_tencent_fx_quote,
     fx_close_on,
 )
+from .fx_resolver import resolve_usdcny_input
 from .hk_history import fetch_tencent_hk_daily, hk_close_on
 from .mapping import ResolverMappingCandidate
 from .nav import OfficialNavRecord
@@ -71,32 +72,54 @@ def resolve_r3_one(
         else proxy.exposure_ratio
     )
 
-    fx_symbol = {
-        "USD": "whUSDCNY",
-        "HKD": "whHKDCNY",
-    }.get(proxy.currency)
-    if fx_symbol is None:
+    if proxy.currency == "USD":
+        fx_input = resolve_usdcny_input(
+            nav_date=nav.nav_date,
+            as_of=as_of,
+            timeout=timeout,
+            max_quote_age_seconds=180,
+        )
+        fx_anchor = fx_input.anchor
+        fx_current = fx_input.current
+        fx_time = fx_input.quote_time
+        fx_source = fx_input.source
+        if (
+            fx_anchor is None
+            or fx_current is None
+            or fx_time is None
+            or fx_input.status == "UNAVAILABLE"
+        ):
+            return _unavailable(
+                fund_code=nav.code,
+                proxy_id=proxy.proxy_symbol,
+                error=f"FX_INPUT_ERROR:{fx_input.error or 'UNAVAILABLE'}",
+            )
+    elif proxy.currency == "HKD":
+        fx_symbol = "whHKDCNY"
+        fx_rows = fetch_tencent_fx_daily(
+            fx_symbol,
+            count=40,
+            timeout=timeout,
+        )
+        fx_anchor = fx_close_on(fx_rows, nav.nav_date)
+        fx_quote = fetch_tencent_fx_quote(
+            fx_symbol,
+            timeout=timeout,
+        )
+        if fx_quote.error is not None:
+            return _unavailable(
+                fund_code=nav.code,
+                proxy_id=proxy.proxy_symbol,
+                error=f"FX_QUOTE_ERROR:{fx_quote.error}",
+            )
+        fx_current = fx_quote.current
+        fx_time = fx_quote.quote_time
+        fx_source = fx_quote.source
+    else:
         return _unavailable(
             fund_code=nav.code,
             proxy_id=proxy.proxy_symbol,
             error="UNSUPPORTED_CURRENCY",
-        )
-
-    fx_rows = fetch_tencent_fx_daily(
-        fx_symbol,
-        count=40,
-        timeout=timeout,
-    )
-    fx_anchor = fx_close_on(fx_rows, nav.nav_date)
-    fx_quote = fetch_tencent_fx_quote(
-        fx_symbol,
-        timeout=timeout,
-    )
-    if fx_quote.error is not None:
-        return _unavailable(
-            fund_code=nav.code,
-            proxy_id=proxy.proxy_symbol,
-            error=f"FX_QUOTE_ERROR:{fx_quote.error}",
         )
 
     if proxy.proxy_symbol.startswith("hk"):
@@ -184,6 +207,12 @@ def resolve_r3_one(
             # available but keeps its lower timing quality.
             intraday_adjustment_return = None
 
+    if fx_source == "TENCENT_CNY_ANCHOR_WSCN_CNH_RETURN":
+        resolver_method = {
+            "US_LAST_CLOSE_FX_BRIDGE": "US_LAST_CLOSE_CNH_FALLBACK_BRIDGE",
+            "US_FUTURES_FX_BRIDGE": "US_FUTURES_CNH_FALLBACK_BRIDGE",
+        }.get(resolver_method, resolver_method)
+
     return resolve_r3_qdii_index_bridge(
         fund_code=nav.code,
         official_nav=nav.nav,
@@ -193,14 +222,15 @@ def resolve_r3_one(
         proxy_latest_date=latest_date,
         proxy_id=proxy.proxy_symbol,
         fx_anchor=fx_anchor,
-        fx_current=fx_quote.current,
+        fx_current=fx_current,
         as_of=as_of,
         exposure_ratio=exposure,
         proxy_exactness=exactness,
         timing_quality=timing_quality,
         intraday_adjustment_return=intraday_adjustment_return,
         proxy_time=proxy_time,
-        fx_time=fx_quote.quote_time,
+        fx_time=fx_time,
+        fx_source=fx_source,
         max_proxy_age_seconds=180,
         enforce_realtime_freshness=enforce_realtime_freshness,
         resolver_method=resolver_method,
