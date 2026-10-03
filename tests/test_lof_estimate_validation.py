@@ -72,6 +72,57 @@ class LofEstimateValidationTest(unittest.TestCase):
                 places=6,
             )
 
+    def test_audited_sep30_legacy_observation_seeds_current_version(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            ledger = {
+                "version": "LOF_ESTIMATE_VALIDATION_V1",
+                "truth_signature": "old",
+                "updated_at": "2026-10-01T00:00:00+08:00",
+                "observations": {
+                    "501016|2026-09-30": {
+                        "code": "501016",
+                        "name": "券商基金LOF",
+                        "resolver_class": "R1_DOMESTIC_INDEX",
+                        "method": "INDEX_PROXY_PREV_CLOSE",
+                        "truth_date": "2026-09-30",
+                        "official_nav": 1.0,
+                        "estimated_nav": 1.001,
+                        "estimated_nav_time": "2026-09-30T15:00:00+08:00",
+                        "error_pct": 0.1,
+                        "abs_error_pct": 0.1,
+                    }
+                },
+                "rows": {},
+                "methods": {},
+                "summary": {},
+            }
+            (root / "estimate_validation_ledger.json").write_text(
+                json.dumps(ledger),
+                encoding="utf-8",
+            )
+            latest = {
+                "snapshot_id": "latest",
+                "generated_at": "2026-10-03T17:00:00+08:00",
+                "rows": [
+                    {
+                        "code": "501016",
+                        "name": "券商基金LOF",
+                        "resolver_class": "R1_DOMESTIC_INDEX",
+                        "estimated_nav_method": "INDEX_PROXY_PREV_CLOSE",
+                    }
+                ],
+            }
+            (root / "latest_market_snapshot.json").write_text(
+                json.dumps(latest),
+                encoding="utf-8",
+            )
+            summary = load_estimate_validation_summary(td)
+            row = summary["rows"]["501016"]
+            self.assertEqual(row["current_model_version"], "R1_INDEX_PROXY_V1")
+            self.assertEqual(row["current_version"]["sample_count"], 1)
+            self.assertEqual(row["windows"]["1"]["sample_count"], 1)
+
     def test_stale_estimate_is_not_written_to_daily_history(self):
         with tempfile.TemporaryDirectory() as td:
             snapshot = {
@@ -157,11 +208,11 @@ class LofEstimateValidationTest(unittest.TestCase):
                 "truth_signature": "old",
                 "updated_at": "2026-10-01T00:00:00+08:00",
                 "observations": {
-                    "501016|2026-09-30": {
-                        "code": "501016",
-                        "name": "券商基金LOF",
-                        "resolver_class": "R1_DOMESTIC_INDEX",
-                        "method": "INDEX_PROXY_PREV_CLOSE",
+                    "160621|2026-09-30": {
+                        "code": "160621",
+                        "name": "鹏华丰和LOF",
+                        "resolver_class": "R2_DOMESTIC_OTHER",
+                        "method": "RISK_ASSET_OVERLAY",
                         "truth_date": "2026-09-30",
                         "official_nav": 1.0,
                         "estimated_nav": 1.001,
@@ -183,10 +234,10 @@ class LofEstimateValidationTest(unittest.TestCase):
                 "generated_at": "2026-10-03T17:00:00+08:00",
                 "rows": [
                     {
-                        "code": "501016",
-                        "name": "券商基金LOF",
-                        "resolver_class": "R1_DOMESTIC_INDEX",
-                        "estimated_nav_method": "INDEX_PROXY_PREV_CLOSE",
+                        "code": "160621",
+                        "name": "鹏华丰和LOF",
+                        "resolver_class": "R2_DOMESTIC_OTHER",
+                        "estimated_nav_method": "RISK_ASSET_OVERLAY",
                     }
                 ],
             }
@@ -195,9 +246,9 @@ class LofEstimateValidationTest(unittest.TestCase):
                 encoding="utf-8",
             )
             summary = load_estimate_validation_summary(td)
-            row = summary["rows"]["501016"]
+            row = summary["rows"]["160621"]
             self.assertEqual(row["sample_count"], 1)
-            self.assertEqual(row["current_model_version"], "R1_INDEX_PROXY_V1")
+            self.assertEqual(row["current_model_version"], "R2C_RISK_OVERLAY_V1")
             self.assertEqual(row["current_version"]["sample_count"], 0)
             self.assertEqual(row["windows"]["1"]["sample_count"], 0)
             self.assertEqual(summary["summary"]["current_version_validated_fund_count"], 0)
