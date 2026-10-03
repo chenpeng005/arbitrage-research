@@ -15,7 +15,7 @@ from .r3_pipeline import resolve_r3_one
 from .r5_pipeline import resolve_r5_commodity_one
 from .resolver import EstimatedNavResult
 from .resolver_classification import ResolverClassDecision
-from .r2_promotion import load_promoted_r2_results
+from .r2_promotion import load_promoted_r2_results, promoted_r2_method
 
 
 @dataclass(frozen=True)
@@ -106,15 +106,39 @@ def resolve_estimated_nav_lane(
             if promoted is not None:
                 results[code] = promoted
             else:
-                results[code] = _unavailable(
-                    code=code,
-                    resolver_class=decision.resolver_class,
-                    error=(
-                        "R2_NOT_PROMOTED_OR_INPUT_UNAVAILABLE"
-                        if runtime_data_root is not None
-                        else "RESOLVER_CLASS_NOT_IMPLEMENTED"
-                    ),
+                configured = (
+                    promoted_r2_method(code)
+                    if runtime_data_root is not None
+                    else None
                 )
+                if configured is not None:
+                    source_name, method = configured
+                    results[code] = EstimatedNavResult(
+                        fund_code=code,
+                        estimated_nav=None,
+                        estimated_nav_time=None,
+                        estimated_nav_status="UNAVAILABLE",
+                        estimated_nav_quality="UNKNOWN",
+                        resolver_class=decision.resolver_class,
+                        resolver_method=method,
+                        proxy_id=f"PROMOTED_SHADOW:{source_name}",
+                        proxy_time=None,
+                        proxy_return=None,
+                        fx_return=None,
+                        exposure_ratio_used=None,
+                        tracking_adjustment_used=None,
+                        error="R2_PROMOTED_INPUT_UNAVAILABLE",
+                    )
+                else:
+                    results[code] = _unavailable(
+                        code=code,
+                        resolver_class=decision.resolver_class,
+                        error=(
+                            "R2_NOT_PROMOTED_OR_INPUT_UNAVAILABLE"
+                            if runtime_data_root is not None
+                            else "RESOLVER_CLASS_NOT_IMPLEMENTED"
+                        ),
+                    )
             continue
 
         if decision.resolver_class == "R3_QDII_INDEX":
