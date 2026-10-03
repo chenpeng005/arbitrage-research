@@ -132,10 +132,26 @@ class LofSnapshotStore:
         rows = payload.get("rows")
         if not isinstance(rows, dict):
             rows = {}
+        normalized_rows = {}
+        for code, raw in rows.items():
+            if not isinstance(raw, dict):
+                continue
+            value = dict(raw)
+            method = value.get("estimated_nav_method")
+            if method:
+                value["estimated_model_id"] = (
+                    value.get("estimated_model_id")
+                    or estimate_model_id(method)
+                )
+                value["estimated_model_version"] = (
+                    value.get("estimated_model_version")
+                    or estimate_model_version(method)
+                )
+            normalized_rows[str(code)] = value
         return {
             "version": LAST_ESTIMATE_VERSION,
             "updated_at": payload.get("updated_at"),
-            "rows": rows,
+            "rows": normalized_rows,
         }
 
     @staticmethod
