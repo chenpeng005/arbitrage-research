@@ -29,6 +29,10 @@ class QdiiProxyResolutionV1Test(unittest.TestCase):
         row = self.registry()["161124"]
         self.assertEqual(row.proxy_type, "UNRESOLVED")
         self.assertIsNone(row.proxy_symbol)
+        self.assertEqual(
+            row.unresolved_reason,
+            "NO_LIVE_HSSI_SOURCE_IN_CURRENT_RUNTIME",
+        )
 
 
 if __name__ == "__main__":
