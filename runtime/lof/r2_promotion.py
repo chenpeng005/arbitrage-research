@@ -45,6 +45,14 @@ PROMOTED_R2_SOURCES = {
 }
 
 
+def promoted_r2_method(code: str) -> tuple[str, str] | None:
+    code = str(code or "").strip()
+    for source_name, source in PROMOTED_R2_SOURCES.items():
+        if code in source["codes"]:
+            return source_name, str(source["method"])
+    return None
+
+
 def _decimal(value) -> Decimal | None:
     try:
         if value is None or value == "":
