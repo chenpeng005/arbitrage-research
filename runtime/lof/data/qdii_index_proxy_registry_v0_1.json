@@ -38,7 +38,8 @@
       "proxy_symbol": null,
       "history_symbol": null,
       "currency": "HKD",
-      "quality": "UNKNOWN"
+      "quality": "UNKNOWN",
+      "unresolved_reason": "NO_LIVE_HSSI_SOURCE_IN_CURRENT_RUNTIME"
     },
     {
       "fund_code": "161125",
