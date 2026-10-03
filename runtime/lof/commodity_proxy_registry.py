@@ -27,6 +27,7 @@ class CommodityProxyEntry:
     proxy_quality: str = "UNKNOWN"
     anchor_mode: str = "HISTORY_CLOSE"
     components: tuple[CommodityProxyComponent, ...] = ()
+    unresolved_reason: str | None = None
 
 
 def load_commodity_proxy_registry(
@@ -59,6 +60,7 @@ def load_commodity_proxy_registry(
             proxy_quality=str(row.get("proxy_quality") or "UNKNOWN"),
             anchor_mode=str(row.get("anchor_mode") or "HISTORY_CLOSE"),
             components=components,
+            unresolved_reason=row.get("unresolved_reason"),
         )
         result[entry.fund_code] = entry
     return result
