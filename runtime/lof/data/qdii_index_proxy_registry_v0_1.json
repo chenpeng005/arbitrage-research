@@ -1,6 +1,6 @@
 {
-  "version": "QDII_INDEX_PROXY_REGISTRY_V0.1",
-  "as_of": "2026-10-01",
+  "version": "QDII_INDEX_PROXY_REGISTRY_V0.2",
+  "as_of": "2026-10-04",
   "entries": [
     {
       "fund_code": "160140",
@@ -115,12 +115,13 @@
     },
     {
       "fund_code": "162415",
-      "tracking_target": "标普美国品质消费股票指数",
-      "proxy_type": "UNRESOLVED",
-      "proxy_symbol": null,
-      "history_symbol": null,
+      "tracking_target": "标普美国品质消费股票指数（S&P Consumer Discretionary Select Sector Index）",
+      "proxy_type": "ETF_SAME_INDEX",
+      "proxy_symbol": "usXLY",
+      "history_symbol": "XLY.AM",
       "currency": "USD",
-      "quality": "UNKNOWN"
+      "quality": "MEDIUM",
+      "exposure_ratio": "0.95"
     },
     {
       "fund_code": "164705",
