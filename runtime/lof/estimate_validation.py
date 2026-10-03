@@ -11,44 +11,22 @@ from pathlib import Path
 import tempfile
 from typing import Any, Iterable
 
+from .estimate_model_registry import (
+    estimate_model_id,
+    estimate_model_version,
+)
+from .estimate_persistence import (
+    AUDITED_BASELINE_DATE,
+    AUDITED_BASELINE_METHODS,
+    history_validation_eligible,
+    runtime_history_row,
+)
 from .estimate_reliability import is_reliable_available_estimate
 
 
-HISTORY_VERSION = "LOF_ESTIMATE_HISTORY_V2"
+HISTORY_VERSION = "LOF_ESTIMATE_HISTORY_V3"
 VALIDATION_VERSION = "LOF_ESTIMATE_VALIDATION_V2"
 VALIDATION_WINDOWS = (1, 3, 5, 10)
-
-MODEL_VERSION_BY_METHOD = {
-    "INDEX_PROXY_PREV_CLOSE": "R1_INDEX_PROXY_V1",
-    "CSI_COMPONENT_WEIGHT_PREV_CLOSE": "R1_CSI_COMPONENT_V2",
-    "TARGET_ETF_PREV_CLOSE": "R1_TARGET_ETF_V1",
-    "MULTIDAY_PROXY_FX_BRIDGE": "R3_MULTIDAY_FX_V1",
-    "HK_LIVE_INDEX_FX_BRIDGE": "R3_HK_LIVE_FX_V1",
-    "US_FUTURES_FX_BRIDGE": "R3_US_FUTURES_FX_V1",
-    "US_LAST_CLOSE_FX_BRIDGE": "R3_US_LAST_CLOSE_FX_V1",
-    "COMMODITY_FX_BRIDGE": "R5_COMMODITY_FX_V1",
-    "DOMESTIC_FUTURES_PREV_SETTLEMENT": "R5_DOMESTIC_FUTURES_V1",
-    "DISCLOSED_HOLDINGS_BASKET": "R2A_HOLDINGS_BASKET_V1",
-    "R2B2_CASH_HEAVY_HOLDINGS_BASKET": "R2B2_CASH_HEAVY_V1",
-    "RISK_ASSET_OVERLAY": "R2C_RISK_OVERLAY_V1",
-}
-
-# These methods already have a manually audited 2026-09-30 baseline after the
-# freshness/last-reliable reconstruction. Their existing V1 observations may
-# seed the current model version. Other legacy observations remain historical.
-AUDITED_BASELINE_METHODS = {
-    "INDEX_PROXY_PREV_CLOSE",
-    "CSI_COMPONENT_WEIGHT_PREV_CLOSE",
-    "TARGET_ETF_PREV_CLOSE",
-    "MULTIDAY_PROXY_FX_BRIDGE",
-}
-AUDITED_BASELINE_MAX_TRUTH_DATE = "2026-09-30"
-
-
-def estimate_model_version(method: Any) -> str:
-    value = str(method or "UNKNOWN").strip() or "UNKNOWN"
-    return MODEL_VERSION_BY_METHOD.get(value, f"{value}_V1")
-
 
 def _json_default(value: Any):
     if isinstance(value, Decimal):
@@ -147,7 +125,7 @@ def _history_row(snapshot: dict, row: dict) -> dict | None:
         or not code
     ):
         return None
-    return {
+    return runtime_history_row({
         "code": code,
         "name": row.get("name"),
         "resolver_class": row.get("resolver_class"),
@@ -158,8 +136,13 @@ def _history_row(snapshot: dict, row: dict) -> dict | None:
         "estimated_nav": nav,
         "estimated_nav_time": _iso_text(estimate_time),
         "estimated_nav_method": row.get("estimated_nav_method"),
-        "estimated_model_version": estimate_model_version(
-            row.get("estimated_nav_method")
+        "estimated_model_id": (
+            row.get("estimated_model_id")
+            or estimate_model_id(row.get("estimated_nav_method"))
+        ),
+        "estimated_model_version": (
+            row.get("estimated_model_version")
+            or estimate_model_version(row.get("estimated_nav_method"))
         ),
         "estimated_nav_quality": row.get("estimated_nav_quality"),
         "estimated_nav_proxy": row.get("estimated_nav_proxy"),
@@ -180,7 +163,7 @@ def _history_row(snapshot: dict, row: dict) -> dict | None:
         "quote_time": _iso_text(row.get("quote_time")),
         "source_snapshot_id": snapshot.get("snapshot_id"),
         "snapshot_generated_at": _iso_text(snapshot.get("generated_at")),
-    }
+    })
 
 
 def _merge_history_state(state: dict, snapshot: dict, *, day: str) -> dict:
@@ -306,7 +289,7 @@ def _migrated_model_version(method: Any, truth_date: Any) -> str:
     if (
         method_text in AUDITED_BASELINE_METHODS
         and truth_text
-        and truth_text <= AUDITED_BASELINE_MAX_TRUTH_DATE
+        and truth_text == AUDITED_BASELINE_DATE
     ):
         return estimate_model_version(method_text)
     return _legacy_model_version(method_text)
@@ -510,6 +493,11 @@ def update_estimate_validation_ledger(
         estimated_nav = _decimal(estimate.get("estimated_nav"))
         if estimated_nav is None or estimated_nav <= 0:
             continue
+        if not history_validation_eligible(
+            estimate,
+            truth_date=truth_date,
+        ):
+            continue
 
         method = estimate.get("estimated_nav_method")
         model_version = (
@@ -528,6 +516,10 @@ def update_estimate_validation_ledger(
                 or row.get("resolver_class")
             ),
             "method": method,
+            "model_id": (
+                estimate.get("estimated_model_id")
+                or estimate_model_id(method)
+            ),
             "model_version": model_version,
             "proxy": estimate.get("estimated_nav_proxy"),
             "truth_date": truth_date,
