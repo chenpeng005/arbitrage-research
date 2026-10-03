@@ -329,6 +329,26 @@ def build_market_snapshot(
             "subscription_to_sell_days": (
                 state.subscription_to_sell_days if state_available else None
             ),
+            # Reference for the brokerage on-market LOF subscription path:
+            # ChinaClear/SZSE rules make subscribed on-market shares usable
+            # from the day after confirmation. This is a route reference,
+            # not a broker-specific verified execution fact.
+            "onsite_subscription_to_sell_days_reference": (
+                state.subscription_confirmation_days + 1
+                if (
+                    state_available
+                    and state.subscription_confirmation_days is not None
+                )
+                else None
+            ),
+            "onsite_sell_day_reference_source": (
+                "CHINACLEAR_LOF_ONMARKET_RULE"
+                if (
+                    state_available
+                    and state.subscription_confirmation_days is not None
+                )
+                else None
+            ),
             "subscription_fee_reference": (
                 list(state.subscription_fee_schedule) if state_available else None
             ),
