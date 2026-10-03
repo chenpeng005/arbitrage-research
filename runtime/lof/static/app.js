@@ -2,7 +2,7 @@
   const state = {
     rows: [],
     filtered: [],
-    sortKey: "display_premium_rate",
+    sortKey: "_estimate_premium_display",
     sortDir: "desc",
     snapshot: null,
     r2cProfiles: {},
@@ -199,19 +199,58 @@
     return td;
   };
 
+  const currentEstimateAvailable = (row) =>
+    row.estimated_nav_status === "AVAILABLE"
+    && num(row.estimated_nav) !== null;
+
+  const displayedEstimatedNav = (row) =>
+    currentEstimateAvailable(row)
+      ? row.estimated_nav
+      : row.last_estimated_nav;
+
+  const displayedEstimatedPremium = (row) =>
+    currentEstimateAvailable(row)
+      ? row.estimated_premium_rate
+      : row.last_estimated_premium_rate;
+
+  const estimateTimeText = (value) => {
+    if (!value) return "";
+    return String(value).replace("T", " ").slice(5, 16);
+  };
+
   const estimatedMethodText = (row) => {
-    if (row.estimated_nav_status !== "AVAILABLE") return "";
-    return estimateMethodLabels[row.estimated_nav_method] || "实时估算";
+    if (currentEstimateAvailable(row)) {
+      return estimateMethodLabels[row.estimated_nav_method] || "实时估算";
+    }
+    if (num(row.last_estimated_nav) !== null) {
+      const time = estimateTimeText(row.last_estimated_nav_time);
+      return time ? `最后估值 ${time}` : "最后估值";
+    }
+    return "";
   };
 
   const appendEstimatedNavCell = (tr, row) => {
-    const td = cell(tr, fmt(row.estimated_nav, 4), "num primary-col");
+    const current = currentEstimateAvailable(row);
+    const value = displayedEstimatedNav(row);
+    const td = cell(
+      tr,
+      fmt(value, 4),
+      `num primary-col ${current ? "" : "last-estimate"}`
+    );
     const methodText = estimatedMethodText(row);
     if (methodText) {
       const method = document.createElement("div");
       method.className = "estimate-method";
       method.textContent = methodText;
       td.appendChild(method);
+    }
+    if (!current && num(row.last_estimated_nav) !== null) {
+      const method =
+        estimateMethodLabels[row.last_estimated_nav_method]
+        || row.last_estimated_nav_method
+        || "历史估值";
+      const status = row.last_estimated_nav_status || "UNKNOWN";
+      td.title = `${method}；状态 ${status}；估值时间 ${row.last_estimated_nav_time || "未知"}；行情时间 ${row.last_estimated_quote_time || "未知"}`;
     }
     return td;
   };
@@ -223,20 +262,20 @@
   };
 
   const premiumBasisText = (row) => {
-    if (row.display_premium_basis === "ESTIMATED_NAV") return "实时估算";
-    if (row.display_premium_basis === "OFFICIAL_NAV") {
-      const lag = row.official_nav_lag_label || "官方NAV";
-      return lag === "官方NAV" ? lag : `${lag}净值`;
+    if (currentEstimateAvailable(row)) return "实时估算";
+    if (num(row.last_estimated_nav) !== null) {
+      const time = estimateTimeText(row.last_estimated_nav_time);
+      return time ? `最后估值 ${time}` : "最后估值";
     }
     return "";
   };
 
   const appendPremiumCell = (tr, row) => {
-    const value = row.display_premium_rate;
+    const value = displayedEstimatedPremium(row);
     const td = cell(
       tr,
       fmtPct(value),
-      `num primary-col strong ${premiumClass(value)}`
+      `num primary-col strong ${premiumClass(value)} ${currentEstimateAvailable(row) ? "" : "last-estimate"}`
     );
     const basisText = premiumBasisText(row);
     if (basisText) {
@@ -251,6 +290,12 @@
   function rowSortValue(row, key) {
     if (key === "_index") return row._index;
     if (key === "resolver_class") return resolverDisplayLabel(row);
+    if (key === "_estimate_nav_display") {
+      return displayedEstimatedNav(row);
+    }
+    if (key === "_estimate_premium_display") {
+      return displayedEstimatedPremium(row);
+    }
     const value = row[key];
     const n = num(value);
     return n !== null ? n : (value ?? "");
@@ -278,7 +323,10 @@
       const matchQ = !q || `${row.code || ""} ${row.name || ""}`.toLowerCase().includes(q);
       const matchResolver = matchResolverFilter(row, resolver);
       const matchSub = !sub || row.subscription_status === sub;
-      const matchEstimate = !estimate || row.estimated_nav_status === estimate;
+      const matchEstimate = !estimate
+        || (estimate === "LAST"
+          ? num(row.last_estimated_nav) !== null
+          : row.estimated_nav_status === estimate);
       return matchQ && matchResolver && matchSub && matchEstimate;
     });
     state.filtered.sort(compareRows);
@@ -340,6 +388,9 @@
     $("totalCount").textContent = snapshot.universe_count ?? rows.length;
     $("estimatedCount").textContent = rows.filter(
       (r) => r.estimated_nav_status === "AVAILABLE"
+    ).length;
+    $("lastEstimatedCount").textContent = rows.filter(
+      (r) => num(r.last_estimated_nav) !== null
     ).length;
     $("subscribableCount").textContent = rows.filter(
       (r) => r.subscription_status === "OPEN" || r.subscription_status === "LIMITED"

@@ -24,11 +24,17 @@ class LofStaticMethodLabelsTest(unittest.TestCase):
             self.assertIn(method, app_js)
             self.assertIn(label, app_js)
         self.assertIn("appendEstimatedNavCell(tr, row)", app_js)
+        self.assertIn("last_estimated_nav", app_js)
+        self.assertIn("最后估值", app_js)
+        self.assertIn("displayedEstimatedPremium", app_js)
 
     def test_r2_subclasses_are_visible_and_filterable(self) -> None:
         root = Path(__file__).resolve().parents[1]
         app_js = (root / "runtime/lof/static/app.js").read_text(encoding="utf-8")
         index_html = (root / "runtime/lof/static/index.html").read_text(encoding="utf-8")
+        self.assertIn("估算净值", index_html)
+        self.assertIn("估算溢价", index_html)
+        self.assertIn('id="lastEstimatedCount"', index_html)
         expected = {
             "EQUITY": "R2-A 主动股票",
             "MIXED": "R2-B 混合型",

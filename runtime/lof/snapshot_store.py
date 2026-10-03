@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
-from typing import Any
+from typing import Any, Iterable
 
 
 def _json_default(value: Any):
@@ -33,11 +33,28 @@ def snapshot_from_json(text: str) -> dict:
     return value
 
 
+LAST_ESTIMATE_VERSION = "LOF_LAST_ESTIMATE_V1"
+
+
+def _as_decimal(value: Any) -> Decimal | None:
+    if value is None or value == "":
+        return None
+    try:
+        return Decimal(str(value))
+    except Exception:
+        return None
+
+
+def _time_key(value: Any) -> str:
+    return str(value or "")
+
+
 class LofSnapshotStore:
     def __init__(self, root: str | Path):
         self.root = Path(root)
         self.snapshots_dir = self.root / "snapshots"
         self.latest_path = self.root / "latest_market_snapshot.json"
+        self.last_estimates_path = self.root / "last_estimated_nav.json"
 
     def persist(self, snapshot: dict) -> Path:
         snapshot_id = str(snapshot.get("snapshot_id") or "").strip()
@@ -51,6 +68,11 @@ class LofSnapshotStore:
         archive_path = self.snapshots_dir / f"{snapshot_id}.json"
         self._atomic_write(archive_path, payload)
         self._atomic_write(self.latest_path, payload)
+        try:
+            self.update_last_estimates(snapshot)
+        except Exception:
+            # Presentation history must never block the market snapshot lane.
+            pass
         return archive_path
 
     def load_latest(self) -> dict | None:
@@ -59,6 +81,160 @@ class LofSnapshotStore:
         return snapshot_from_json(
             self.latest_path.read_text(encoding="utf-8")
         )
+
+    def load_last_estimates(self) -> dict:
+        if not self.last_estimates_path.exists():
+            return {
+                "version": LAST_ESTIMATE_VERSION,
+                "updated_at": None,
+                "rows": {},
+            }
+        try:
+            payload = snapshot_from_json(
+                self.last_estimates_path.read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError, json.JSONDecodeError):
+            return {
+                "version": LAST_ESTIMATE_VERSION,
+                "updated_at": None,
+                "rows": {},
+            }
+        rows = payload.get("rows")
+        if not isinstance(rows, dict):
+            rows = {}
+        return {
+            "version": LAST_ESTIMATE_VERSION,
+            "updated_at": payload.get("updated_at"),
+            "rows": rows,
+        }
+
+    @staticmethod
+    def _merge_last_estimates(state: dict, snapshot: dict) -> dict:
+        rows = dict(state.get("rows") or {})
+        snapshot_time = snapshot.get("generated_at")
+        snapshot_id = snapshot.get("snapshot_id")
+
+        for row in snapshot.get("rows") or []:
+            code = str(row.get("code") or "").strip()
+            nav = _as_decimal(row.get("estimated_nav"))
+            status = str(row.get("estimated_nav_status") or "")
+            if not code or nav is None or status not in {"AVAILABLE", "STALE"}:
+                continue
+
+            estimate_time = (
+                row.get("estimated_nav_time")
+                or row.get("quote_time")
+                or snapshot_time
+            )
+            existing = rows.get(code) or {}
+            if _time_key(estimate_time) < _time_key(
+                existing.get("estimated_nav_time")
+            ):
+                continue
+
+            premium = _as_decimal(row.get("estimated_premium_rate"))
+            price = _as_decimal(row.get("price"))
+            if premium is None and price is not None and nav > 0:
+                premium = (price / nav - Decimal("1")) * Decimal("100")
+
+            rows[code] = {
+                "code": code,
+                "name": row.get("name"),
+                "estimated_nav": nav,
+                "estimated_premium_rate": premium,
+                "estimated_nav_time": estimate_time,
+                "estimated_nav_status": status,
+                "estimated_nav_method": row.get("estimated_nav_method"),
+                "estimated_nav_quality": row.get("estimated_nav_quality"),
+                "estimated_nav_proxy": row.get("estimated_nav_proxy"),
+                "price": price,
+                "quote_time": row.get("quote_time"),
+                "source_snapshot_id": snapshot_id,
+                "snapshot_generated_at": snapshot_time,
+            }
+
+        return {
+            "version": LAST_ESTIMATE_VERSION,
+            "updated_at": snapshot_time or state.get("updated_at"),
+            "rows": rows,
+        }
+
+    def update_last_estimates(self, snapshot: dict) -> dict:
+        state = self._merge_last_estimates(
+            self.load_last_estimates(),
+            snapshot,
+        )
+        payload = snapshot_to_json(state) + "\n"
+        self._atomic_write(self.last_estimates_path, payload)
+        return state
+
+    def rebuild_last_estimates(
+        self,
+        snapshot_paths: Iterable[str | Path] | None = None,
+    ) -> dict:
+        paths = (
+            [Path(p) for p in snapshot_paths]
+            if snapshot_paths is not None
+            else sorted(self.snapshots_dir.glob("runtime-*.json"))
+        )
+        state = {
+            "version": LAST_ESTIMATE_VERSION,
+            "updated_at": None,
+            "rows": {},
+        }
+        for path in paths:
+            try:
+                snapshot = snapshot_from_json(
+                    path.read_text(encoding="utf-8")
+                )
+            except (OSError, ValueError, json.JSONDecodeError):
+                continue
+            state = self._merge_last_estimates(state, snapshot)
+        payload = snapshot_to_json(state) + "\n"
+        self._atomic_write(self.last_estimates_path, payload)
+        return state
+
+    def enrich_with_last_estimates(self, snapshot: dict) -> dict:
+        state = self.load_last_estimates()
+        history = state.get("rows") or {}
+        result = dict(snapshot)
+        enriched_rows = []
+        for row in snapshot.get("rows") or []:
+            value = dict(row)
+            last = history.get(str(row.get("code") or "")) or {}
+            value.update(
+                {
+                    "last_estimated_nav": last.get("estimated_nav"),
+                    "last_estimated_premium_rate": last.get(
+                        "estimated_premium_rate"
+                    ),
+                    "last_estimated_nav_time": last.get(
+                        "estimated_nav_time"
+                    ),
+                    "last_estimated_nav_status": last.get(
+                        "estimated_nav_status"
+                    ),
+                    "last_estimated_nav_method": last.get(
+                        "estimated_nav_method"
+                    ),
+                    "last_estimated_nav_quality": last.get(
+                        "estimated_nav_quality"
+                    ),
+                    "last_estimated_nav_proxy": last.get(
+                        "estimated_nav_proxy"
+                    ),
+                    "last_estimated_price": last.get("price"),
+                    "last_estimated_quote_time": last.get("quote_time"),
+                    "last_estimated_source_snapshot_id": last.get(
+                        "source_snapshot_id"
+                    ),
+                }
+            )
+            enriched_rows.append(value)
+        result["rows"] = enriched_rows
+        result["last_estimate_count"] = len(history)
+        result["last_estimates_updated_at"] = state.get("updated_at")
+        return result
 
     @staticmethod
     def _atomic_write(path: Path, payload: str) -> None:

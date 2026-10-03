@@ -49,7 +49,7 @@ def latest_snapshot():
     snapshot = store.load_latest()
     if snapshot is None:
         raise HTTPException(status_code=503, detail="LOF snapshot unavailable")
-    return snapshot
+    return store.enrich_with_last_estimates(snapshot)
 
 
 @app.get("/api/lof/r2c-t1-profile")

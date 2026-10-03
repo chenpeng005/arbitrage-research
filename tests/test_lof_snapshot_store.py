@@ -46,6 +46,80 @@ class LofSnapshotStoreTest(unittest.TestCase):
                 "2026-09-24",
             )
 
+    def test_last_estimate_survives_unavailable_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            store = LofSnapshotStore(td)
+            first = {
+                "snapshot_id": "s1",
+                "generated_at": "2026-09-30T14:59:00+08:00",
+                "rows": [
+                    {
+                        "code": "160924",
+                        "name": "恒生指数LOF",
+                        "price": 0.969,
+                        "quote_time": "2026-09-30T14:58:48+08:00",
+                        "estimated_nav": 0.9708,
+                        "estimated_nav_time": "2026-09-30T14:58:48+08:00",
+                        "estimated_nav_status": "AVAILABLE",
+                        "estimated_nav_method": "MULTIDAY_PROXY_FX_BRIDGE",
+                        "estimated_nav_quality": "LOW",
+                        "estimated_premium_rate": -0.19,
+                    }
+                ],
+            }
+            store.persist(first)
+            second = {
+                "snapshot_id": "s2",
+                "generated_at": "2026-10-03T10:00:00+08:00",
+                "rows": [
+                    {
+                        "code": "160924",
+                        "name": "恒生指数LOF",
+                        "estimated_nav": None,
+                        "estimated_nav_status": "UNAVAILABLE",
+                    }
+                ],
+            }
+            store.persist(second)
+            enriched = store.enrich_with_last_estimates(second)
+            row = enriched["rows"][0]
+            self.assertAlmostEqual(row["last_estimated_nav"], 0.9708)
+            self.assertEqual(
+                row["last_estimated_nav_time"],
+                "2026-09-30T14:58:48+08:00",
+            )
+            self.assertEqual(
+                row["last_estimated_nav_status"],
+                "AVAILABLE",
+            )
+
+    def test_stale_non_null_estimate_can_be_last_estimate(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            store = LofSnapshotStore(td)
+            snapshot = {
+                "snapshot_id": "s1",
+                "generated_at": "2026-10-03T10:00:00+08:00",
+                "rows": [
+                    {
+                        "code": "160140",
+                        "name": "美国REIT精选LOF",
+                        "price": 1.36,
+                        "quote_time": "2026-09-30T16:14:27+08:00",
+                        "estimated_nav": 1.34,
+                        "estimated_nav_time": "2026-10-01T02:59:56+08:00",
+                        "estimated_nav_status": "STALE",
+                        "estimated_nav_method": "US_LAST_CLOSE_FX_BRIDGE",
+                        "estimated_nav_quality": "LOW",
+                        "estimated_premium_rate": None,
+                    }
+                ],
+            }
+            store.persist(snapshot)
+            row = store.enrich_with_last_estimates(snapshot)["rows"][0]
+            self.assertEqual(row["last_estimated_nav_status"], "STALE")
+            self.assertAlmostEqual(row["last_estimated_nav"], 1.34)
+            self.assertIsNotNone(row["last_estimated_premium_rate"])
+
     def test_snapshot_id_is_required(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             with self.assertRaises(ValueError):
