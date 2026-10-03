@@ -189,6 +189,15 @@ class LofMarketSnapshotTest(unittest.TestCase):
         self.assertEqual(row["display_premium_basis"], "OFFICIAL_NAV")
         self.assertEqual(row["official_nav_lag_label"], "T-2")
         self.assertIsNone(row["daily_subscription_limit"])
+        self.assertEqual(row["subscription_confirmation_days"], 1)
+        self.assertEqual(
+            row["onsite_subscription_to_sell_days_reference"],
+            2,
+        )
+        self.assertEqual(
+            row["onsite_sell_day_reference_source"],
+            "CHINACLEAR_LOF_ONMARKET_RULE",
+        )
 
     def test_old_quote_is_stale_not_fresh(self) -> None:
         quotes = [
