@@ -8,6 +8,11 @@ from pathlib import Path
 import tempfile
 from typing import Any, Iterable
 
+from .estimate_validation import (
+    record_estimate_history,
+    update_estimate_validation_ledger,
+)
+
 
 def _json_default(value: Any):
     if isinstance(value, Decimal):
@@ -73,6 +78,13 @@ class LofSnapshotStore:
         except Exception:
             # Presentation history must never block the market snapshot lane.
             pass
+        try:
+            record_estimate_history(self.root, snapshot)
+            update_estimate_validation_ledger(self.root, snapshot)
+        except Exception:
+            # Validation bookkeeping is evidence-only and must never block
+            # the market snapshot lane.
+            pass
         return archive_path
 
     def load_latest(self) -> dict | None:
@@ -118,7 +130,7 @@ class LofSnapshotStore:
             code = str(row.get("code") or "").strip()
             nav = _as_decimal(row.get("estimated_nav"))
             status = str(row.get("estimated_nav_status") or "")
-            if not code or nav is None or status not in {"AVAILABLE", "STALE"}:
+            if not code or nav is None or status != "AVAILABLE":
                 continue
 
             estimate_time = (
@@ -147,6 +159,22 @@ class LofSnapshotStore:
                 "estimated_nav_method": row.get("estimated_nav_method"),
                 "estimated_nav_quality": row.get("estimated_nav_quality"),
                 "estimated_nav_proxy": row.get("estimated_nav_proxy"),
+                "estimated_nav_proxy_time": row.get(
+                    "estimated_nav_proxy_time"
+                ),
+                "estimated_nav_proxy_return": row.get(
+                    "estimated_nav_proxy_return"
+                ),
+                "estimated_nav_fx_return": row.get(
+                    "estimated_nav_fx_return"
+                ),
+                "estimated_nav_exposure_ratio": row.get(
+                    "estimated_nav_exposure_ratio"
+                ),
+                "estimated_nav_tracking_adjustment": row.get(
+                    "estimated_nav_tracking_adjustment"
+                ),
+                "resolver_class": row.get("resolver_class"),
                 "price": price,
                 "quote_time": row.get("quote_time"),
                 "source_snapshot_id": snapshot_id,
@@ -222,6 +250,24 @@ class LofSnapshotStore:
                     ),
                     "last_estimated_nav_proxy": last.get(
                         "estimated_nav_proxy"
+                    ),
+                    "last_estimated_nav_proxy_time": last.get(
+                        "estimated_nav_proxy_time"
+                    ),
+                    "last_estimated_nav_proxy_return": last.get(
+                        "estimated_nav_proxy_return"
+                    ),
+                    "last_estimated_nav_fx_return": last.get(
+                        "estimated_nav_fx_return"
+                    ),
+                    "last_estimated_nav_exposure_ratio": last.get(
+                        "estimated_nav_exposure_ratio"
+                    ),
+                    "last_estimated_nav_tracking_adjustment": last.get(
+                        "estimated_nav_tracking_adjustment"
+                    ),
+                    "last_estimated_resolver_class": last.get(
+                        "resolver_class"
                     ),
                     "last_estimated_price": last.get("price"),
                     "last_estimated_quote_time": last.get("quote_time"),
