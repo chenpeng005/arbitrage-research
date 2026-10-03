@@ -138,9 +138,17 @@ def _fetch_relay_file(
             timeout=timeout,
         )
 
-    ref = pinned_ref or _resolve_default_relay_commit(
-        timeout=max(timeout, 20),
-    )
+    if pinned_ref is None:
+        # GitHub's REST API can be rate-limited while raw branch content
+        # remains available. Hash checks in fetch_szse_relay_bundle still
+        # protect manifest/data consistency.
+        return _fetch_bytes(
+            _join(base_url, filename),
+            timeout=max(timeout, 20),
+            attempts=3,
+        )
+
+    ref = pinned_ref
     try:
         return _fetch_github_contents_bytes(
             filename,
@@ -177,11 +185,16 @@ def fetch_szse_relay_bundle(
     *,
     timeout: int = 20,
 ) -> SzseRelayBundle:
-    pinned_ref = (
-        _resolve_default_relay_commit(timeout=max(timeout, 20))
-        if base_url.rstrip("/") == DEFAULT_SZSE_RELAY_BASE_URL.rstrip("/")
-        else None
-    )
+    pinned_ref: str | None = None
+    if base_url.rstrip("/") == DEFAULT_SZSE_RELAY_BASE_URL.rstrip("/"):
+        try:
+            pinned_ref = _resolve_default_relay_commit(
+                timeout=max(timeout, 20),
+            )
+        except Exception:
+            # Fail over to raw branch transport. The manifest hashes remain
+            # the integrity gate; API rate limiting must not stop Runtime.
+            pinned_ref = None
     manifest_bytes = _fetch_relay_file(
         base_url,
         "manifest.json",
