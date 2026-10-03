@@ -120,7 +120,14 @@
     if (subscriptionStatus === "SUSPENDED") return "—";
     const n = num(v);
     if (n === null) return "—";
-    if (n >= 10000) return `${(n / 10000).toFixed(n % 10000 === 0 ? 0 : 1)}万`;
+    if (n > 1e8) {
+      const yi = n / 1e8;
+      return `${yi.toFixed(n % 1e8 === 0 ? 0 : 2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1")}亿`;
+    }
+    if (n >= 10000) {
+      const wan = n / 10000;
+      return `${wan.toFixed(n % 10000 === 0 ? 0 : 1)}万`;
+    }
     return `${n.toFixed(n % 1 === 0 ? 0 : 2)}元`;
   };
 
@@ -135,7 +142,7 @@
     const confirm = num(row.subscription_confirmation_days);
     if (sell !== null) return `T申购 → T+${sell}可卖`;
     if (referenceSell !== null) {
-      return `场内参考 T+${referenceSell}可卖`;
+      return `T+${referenceSell}可卖`;
     }
     if (confirm !== null) return `T+${confirm}确认 · 可卖待核`;
     return "可卖待核";
