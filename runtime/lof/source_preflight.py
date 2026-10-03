@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from .nav import fetch_all_official_nav
 from .runtime_session import LofRuntimeSession
 from .szse_relay import DEFAULT_SZSE_RELAY_BASE_URL
 from .szse_relay import fetch_szse_relay_bundle
@@ -85,6 +86,23 @@ def evaluate_preflight(
 
     r1_total = r1_context_resolved + r1_context_unresolved
     source_transport = dict(source_transport or {})
+
+    expected_nav_date = str(
+        source_transport.get("expected_nav_date") or ""
+    ).strip()
+    r1_rows = [
+        row
+        for row in rows
+        if row.get("resolver_class") == "R1_DOMESTIC_INDEX"
+    ]
+    r1_nav_fresh = (
+        sum(
+            str(row.get("official_nav_date") or "") >= expected_nav_date
+            for row in r1_rows
+        )
+        if expected_nav_date
+        else 0
+    )
 
     checks: list[PreflightCheck] = [
         PreflightCheck(
@@ -169,6 +187,17 @@ def evaluate_preflight(
                 value=round(_ratio(quote_fresh, universe_count), 6),
                 threshold=">=95% when --expect-fresh-quotes",
                 detail="freshness not required for this preflight run",
+            )
+        )
+
+    if expected_nav_date and r1_rows:
+        checks.append(
+            _check_min_ratio(
+                name="r1_official_nav_expected_date_coverage",
+                numerator=r1_nav_fresh,
+                denominator=len(r1_rows),
+                threshold=0.90,
+                hard=True,
             )
         )
 
@@ -358,12 +387,22 @@ def run_production_source_preflight(
             timeout=timeout,
             szse_relay_base_url=szse_relay_base_url,
         )
+        preflight_nav = fetch_all_official_nav(
+            session.universe,
+            timeout=timeout,
+            szse_relay_bundle=session.szse_relay_bundle,
+            expected_nav_date=(
+                session.estimated_nav_context.previous_trading_day
+            ),
+            fallback_as_of_date=now.date(),
+        )
         snapshot = session.collect(
             generated_at=now,
             market_cutoff=now,
             max_quote_age_seconds=max_quote_age_seconds,
             timeout=timeout,
             snapshot_id="production-source-preflight",
+            official_nav_override=preflight_nav,
         )
         szse_codes = {
             row.code for row in session.universe if row.exchange == "SZSE"
@@ -373,17 +412,20 @@ def run_production_source_preflight(
             and row.source == "SZSE_OFFICIAL_RELAY"
             for row in session.universe
         )
-        nav_relay = any(
-            row.get("code") in szse_codes
-            and row.get("official_nav_source") == "SZSE_OFFICIAL_RELAY"
-            for row in (snapshot.get("rows") or [])
-        )
+        nav_relay = session.szse_relay_bundle is not None
         source_transport: dict[str, Any] = {
             "szse_universe_transport": (
                 "OFFICIAL_RELAY" if universe_relay else "DIRECT_OFFICIAL"
             ),
             "szse_nav_transport": (
                 "OFFICIAL_RELAY" if nav_relay else "DIRECT_OFFICIAL"
+            ),
+            "expected_nav_date": (
+                session.estimated_nav_context.previous_trading_day.isoformat()
+            ),
+            "published_nav_fallback_count": sum(
+                row.source == "EASTMONEY_PUBLISHED_NAV_FALLBACK"
+                for row in preflight_nav
             ),
         }
         bundle = session.szse_relay_bundle
