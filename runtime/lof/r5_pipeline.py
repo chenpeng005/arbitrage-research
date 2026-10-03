@@ -10,7 +10,7 @@ from .commodity_history import (
 from .commodity_proxy_registry import CommodityProxyEntry
 from .commodity_quote import fetch_eastmoney_commodity_quote
 from .commodity_resolver import resolve_r5_commodity_bridge
-from .fx import fetch_tencent_fx_daily, fetch_tencent_fx_quote, fx_close_on
+from .fx_resolver import resolve_usdcny_input
 from .nav import OfficialNavRecord
 from .resolver import EstimatedNavResult
 
@@ -248,29 +248,41 @@ def resolve_r5_commodity_one(
             anchor = commodity_close_on(history, nav.nav_date)
 
     fx_quote_time = None
+    fx_source = None
     if proxy.currency == "USD":
-        fx_rows = fetch_tencent_fx_daily(
-            "whUSDCNY",
-            count=60,
+        fx_input = resolve_usdcny_input(
+            nav_date=nav.nav_date,
+            as_of=as_of,
             timeout=timeout,
+            max_quote_age_seconds=max_proxy_age_seconds,
         )
-        fx_anchor = fx_close_on(fx_rows, nav.nav_date)
-        fx_quote = fetch_tencent_fx_quote(
-            "whUSDCNY",
-            timeout=timeout,
-        )
-        if fx_quote.error is not None:
+        fx_anchor = fx_input.anchor
+        fx_current = fx_input.current
+        fx_quote_time = fx_input.quote_time
+        fx_source = fx_input.source
+        if (
+            fx_anchor is None
+            or fx_current is None
+            or fx_quote_time is None
+            or fx_input.status == "UNAVAILABLE"
+        ):
             return _unavailable(
                 fund_code=nav.code,
                 proxy_id=commodity_proxy_id,
-                error=f"FX_QUOTE_ERROR:{fx_quote.error}",
+                error=f"FX_INPUT_ERROR:{fx_input.error or 'UNAVAILABLE'}",
                 method=method,
             )
-        fx_current = fx_quote.current
-        fx_quote_time = fx_quote.quote_time
+        if fx_source == "TENCENT_CNY_ANCHOR_WSCN_CNH_RETURN":
+            method = {
+                "COMMODITY_FX_BRIDGE": "COMMODITY_CNH_FALLBACK_BRIDGE",
+                "COMMODITY_BASKET_FX_BRIDGE": (
+                    "COMMODITY_BASKET_CNH_FALLBACK_BRIDGE"
+                ),
+            }.get(method, method)
     elif proxy.currency in {None, "CNY"}:
         fx_anchor = None
         fx_current = None
+        fx_source = None
     else:
         return _unavailable(
             fund_code=nav.code,
@@ -291,6 +303,7 @@ def resolve_r5_commodity_one(
         fx_current=fx_current,
         fx_quote_time=fx_quote_time,
         as_of=as_of,
+        fx_source=fx_source,
         exposure_ratio=proxy.exposure_ratio,
         proxy_quality=proxy.proxy_quality,
         resolver_method=method,
