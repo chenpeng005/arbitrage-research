@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, datetime, time
 from decimal import Decimal
 
@@ -21,6 +22,7 @@ def resolve_r5_commodity_bridge(
     as_of: datetime,
     exposure_ratio: Decimal,
     proxy_quality: str,
+    fx_source: str | None = None,
     resolver_method: str = "COMMODITY_FX_BRIDGE",
     max_proxy_age_seconds: int = 180,
 ) -> EstimatedNavResult:
@@ -33,7 +35,7 @@ def resolve_r5_commodity_bridge(
         tzinfo=tz,
     )
 
-    return resolve_estimated_nav(
+    result = resolve_estimated_nav(
         ResolverInput(
             fund_code=fund_code,
             resolver_class="R5_SPECIAL",
@@ -55,5 +57,15 @@ def resolve_r5_commodity_bridge(
                 if proxy_quality in {"HIGH", "MEDIUM", "LOW"}
                 else "UNKNOWN"
             ),
+            fx_current_time=fx_quote_time,
+            fx_source=fx_source,
         )
+    )
+    # Keep estimated_nav_time as the oldest effective input timestamp, but
+    # expose the commodity and FX timestamps separately for diagnostics.
+    return replace(
+        result,
+        proxy_time=commodity_quote_time,
+        fx_time=fx_quote_time,
+        fx_source=fx_source,
     )
