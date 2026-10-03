@@ -28,6 +28,8 @@ class ResolverInput:
     fx_current: Decimal | None = None
     tracking_adjustment: Decimal = Decimal("1")
     quality: EstimatedNavQuality = "UNKNOWN"
+    fx_current_time: datetime | None = None
+    fx_source: str | None = None
 
 
 @dataclass(frozen=True)
@@ -45,6 +47,8 @@ class EstimatedNavResult:
     fx_return: Decimal | None
     exposure_ratio_used: Decimal | None
     tracking_adjustment_used: Decimal | None
+    fx_time: datetime | None = None
+    fx_source: str | None = None
     error: str | None = None
 
 
@@ -220,5 +224,7 @@ def resolve_estimated_nav(inp: ResolverInput) -> EstimatedNavResult:
         fx_return=fx_return,
         exposure_ratio_used=exposure,
         tracking_adjustment_used=inp.tracking_adjustment,
+        fx_time=inp.fx_current_time,
+        fx_source=inp.fx_source,
         error=None,
     )
