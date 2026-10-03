@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+import tempfile
 from datetime import date, datetime
 from decimal import Decimal
 from unittest.mock import patch
@@ -151,6 +152,39 @@ class EstimatedNavLaneTest(unittest.TestCase):
             by_code["000001"].error,
             "RESOLVER_CLASS_NOT_IMPLEMENTED",
         )
+
+
+    def test_r2_configured_promotion_is_covered_when_input_unavailable(self) -> None:
+        nav = OfficialNavRecord(
+            code="501219",
+            exchange="SSE",
+            nav=Decimal("1.6"),
+            nav_date=date(2026, 9, 30),
+            fetched_at=self.now,
+            source="SSE_OFFICIAL",
+        )
+        context = EstimatedNavContext(
+            resolver_classes={
+                "501219": ResolverClassDecision(
+                    "501219", "R2_DOMESTIC_OTHER", "domestic_non_index"
+                )
+            },
+            mapping_candidates={},
+            r1_proxy_mappings={},
+            qdii_proxy_registry={},
+            previous_trading_day=date(2026, 9, 30),
+        )
+        with tempfile.TemporaryDirectory() as td:
+            rows = resolve_estimated_nav_lane(
+                official_navs=[nav],
+                context=context,
+                as_of=self.now,
+                runtime_data_root=td,
+            )
+        row = rows[0]
+        self.assertEqual(row.estimated_nav_status, "UNAVAILABLE")
+        self.assertEqual(row.resolver_method, "DISCLOSED_HOLDINGS_BASKET")
+        self.assertEqual(row.error, "R2_PROMOTED_INPUT_UNAVAILABLE")
 
 
 if __name__ == "__main__":
