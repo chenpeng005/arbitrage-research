@@ -25,7 +25,7 @@ class LofStaticMethodLabelsTest(unittest.TestCase):
             self.assertIn(label, app_js)
         self.assertIn("appendEstimatedNavCell(tr, row)", app_js)
         self.assertIn("last_estimated_nav", app_js)
-        self.assertIn("最后估值", app_js)
+        self.assertIn("最后可靠", app_js)
         self.assertIn("displayedEstimatedPremium", app_js)
 
     def test_r2_subclasses_are_visible_and_filterable(self) -> None:
