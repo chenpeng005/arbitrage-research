@@ -50,6 +50,14 @@ class LofMarketSnapshotTest(unittest.TestCase):
                 volume=Decimal("100"),
                 amount=Decimal("90000"),
                 source="TENCENT_QUOTE",
+                bid1_price=Decimal("1.428"),
+                bid1_volume=Decimal("20"),
+                bid2_price=Decimal("1.427"),
+                bid2_volume=Decimal("30"),
+                ask1_price=Decimal("1.430"),
+                ask1_volume=Decimal("25"),
+                ask2_price=Decimal("1.431"),
+                ask2_volume=Decimal("35"),
             )
         ]
         navs = [
@@ -103,6 +111,15 @@ class LofMarketSnapshotTest(unittest.TestCase):
         self.assertEqual(by_code["501001"]["estimated_nav_status"], "AVAILABLE")
         self.assertEqual(by_code["501001"]["estimated_nav_quality"], "HIGH")
         self.assertIsNotNone(by_code["501001"]["estimated_premium_rate"])
+        self.assertEqual(by_code["501001"]["bid1_price"], Decimal("1.428"))
+        self.assertEqual(by_code["501001"]["bid1_volume"], Decimal("20"))
+        self.assertIsNotNone(
+            by_code["501001"]["bid1_estimated_premium_rate"]
+        )
+        self.assertEqual(
+            by_code["501001"]["estimated_nav_proxy_return"],
+            Decimal("0.01"),
+        )
 
         # Missing source data must not delete the LOF from the all-market table.
         self.assertEqual(by_code["161128"]["quote_status"], "UNAVAILABLE")
