@@ -54,6 +54,39 @@ def _time_key(value: Any) -> str:
     return str(value or "")
 
 
+def _date_key(value: Any) -> str | None:
+    text = str(value or "")
+    if len(text) < 10:
+        return None
+    candidate = text[:10]
+    try:
+        date.fromisoformat(candidate)
+    except ValueError:
+        return None
+    return candidate
+
+
+def _is_reliable_last_estimate(row: dict) -> bool:
+    status = str(row.get("estimated_nav_status") or "")
+    nav = _as_decimal(row.get("estimated_nav"))
+    if status != "AVAILABLE" or nav is None or nav <= 0:
+        return False
+
+    # Historical bug guard: CSI component reconstruction used to stamp the
+    # calculation clock as estimate time. On holidays this could create a
+    # later "AVAILABLE" record from old constituent quotes. A valid component
+    # reconstruction must belong to the same market date as the LOF quote.
+    if row.get("estimated_nav_method") == "CSI_COMPONENT_WEIGHT_PREV_CLOSE":
+        estimate_day = _date_key(
+            row.get("estimated_nav_proxy_time")
+            or row.get("estimated_nav_time")
+        )
+        quote_day = _date_key(row.get("quote_time"))
+        if estimate_day and quote_day and estimate_day != quote_day:
+            return False
+    return True
+
+
 class LofSnapshotStore:
     def __init__(self, root: str | Path):
         self.root = Path(root)
@@ -130,7 +163,7 @@ class LofSnapshotStore:
             code = str(row.get("code") or "").strip()
             nav = _as_decimal(row.get("estimated_nav"))
             status = str(row.get("estimated_nav_status") or "")
-            if not code or nav is None or status != "AVAILABLE":
+            if not code or nav is None or not _is_reliable_last_estimate(row):
                 continue
 
             estimate_time = (
