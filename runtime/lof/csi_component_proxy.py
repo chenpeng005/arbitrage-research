@@ -378,6 +378,7 @@ def reconstruct_csi_component_quotes(
 
         covered = Decimal("0")
         weighted_return = Decimal("0")
+        quote_times: list[datetime] = []
         for constituent in row.constituents:
             quote = stock_quotes.get(constituent.symbol)
             if (
@@ -387,9 +388,11 @@ def reconstruct_csi_component_quotes(
                 or quote.previous_close is None
                 or quote.current <= 0
                 or quote.previous_close <= 0
+                or quote.quote_time is None
             ):
                 continue
             covered += constituent.weight
+            quote_times.append(quote.quote_time)
             weighted_return += constituent.weight * (
                 quote.current / quote.previous_close - Decimal("1")
             )
@@ -413,13 +416,17 @@ def reconstruct_csi_component_quotes(
             continue
 
         proxy_return = weighted_return / covered
+        # Freshness belongs to the underlying market data, not to the
+        # reconstruction clock. Use the oldest included constituent quote so
+        # weekends/holidays cannot become "fresh" merely because we recompute.
+        component_quote_time = min(quote_times)
         result[code] = IndexQuote(
             symbol=symbol,
             code=code,
             name=row.index_name,
             current=Decimal("1") + proxy_return,
             previous_close=Decimal("1"),
-            quote_time=as_of,
+            quote_time=component_quote_time,
             source=CSI_COMPONENT_SOURCE,
             error=None,
         )
