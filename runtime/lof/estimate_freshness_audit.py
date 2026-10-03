@@ -9,6 +9,7 @@ from statistics import median
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from .shadow_registry import load_shadow_registry
 from .snapshot_archive import iter_snapshot_paths, read_snapshot_json
 
 
@@ -130,26 +131,59 @@ def _configured_unavailable_reason(row: dict) -> str:
     return "MODEL_INPUT_UNAVAILABLE"
 
 
-def _diagnostic_flags(row: dict) -> list[str]:
+def _diagnostic_flags(row: dict, *, context: dict) -> list[str]:
     flags: list[str] = []
     estimate_time = _parse_datetime(row.get("estimated_nav_time"))
     proxy_time = _parse_datetime(row.get("estimated_nav_proxy_time"))
     if estimate_time is not None and proxy_time is not None:
         lag = (proxy_time - estimate_time).total_seconds()
         if lag > 90:
-            flags.append("PROXY_NEWER_THAN_ESTIMATE")
+            if row.get("resolver_class") == "R3_QDII_INDEX":
+                flags.append("FX_OLDER_THAN_PROXY_LIMITS_FRESHNESS")
+            else:
+                flags.append("PROXY_NEWER_THAN_ESTIMATE")
     quote_time = _parse_datetime(row.get("quote_time"))
-    if estimate_time is not None and quote_time is not None:
+    if (
+        context.get("state") == "DOMESTIC_MARKET_REFRESH_WINDOW"
+        and estimate_time is not None
+        and quote_time is not None
+    ):
         lag = (quote_time - estimate_time).total_seconds()
         if lag > 90:
             flags.append("EXCHANGE_QUOTE_NEWER_THAN_ESTIMATE")
     return flags
 
 
-def classify_row(row: dict, *, context: dict) -> dict:
+def _r2_shadow_waiting_next_session(
+    row: dict,
+    shadow_row: dict | None,
+    *,
+    context: dict,
+) -> bool:
+    if row.get("resolver_class") != "R2_DOMESTIC_OTHER":
+        return False
+    if context.get("state") == "DOMESTIC_MARKET_REFRESH_WINDOW":
+        return False
+    if row.get("official_nav_lag_label") != "T-1":
+        return False
+    if not shadow_row:
+        return False
+    errors = {
+        str(model.get("error") or "")
+        for model in (shadow_row.get("models") or [])
+    }
+    return "OFFICIAL_NAV_NOT_T1" in errors
+
+
+def classify_row(
+    row: dict,
+    *,
+    context: dict,
+    shadow_row: dict | None = None,
+) -> dict:
     coverage = _coverage_state(row)
     status = str(row.get("estimated_nav_status") or "UNAVAILABLE")
-    flags = _diagnostic_flags(row)
+    flags = _diagnostic_flags(row, context=context)
 
     if coverage == "NO_MAIN_MODEL":
         update_state = "STRUCTURAL_NO_MAIN_MODEL"
@@ -172,8 +206,16 @@ def classify_row(row: dict, *, context: dict) -> dict:
                 )
             )
     else:
-        update_state = "CONFIGURED_BUT_UNAVAILABLE"
-        blocker = _configured_unavailable_reason(row)
+        if _r2_shadow_waiting_next_session(
+            row,
+            shadow_row,
+            context=context,
+        ):
+            update_state = "WAITING_NEXT_ACTIVE_SESSION"
+            blocker = "R2_SHADOW_NAV_SYNC_WAITS_FOR_FRESH_MARKET"
+        else:
+            update_state = "CONFIGURED_BUT_UNAVAILABLE"
+            blocker = _configured_unavailable_reason(row)
 
     return {
         "code": row.get("code"),
@@ -201,6 +243,22 @@ def classify_row(row: dict, *, context: dict) -> dict:
         "last_estimated_nav_time": row.get("last_estimated_nav_time"),
         "last_estimated_nav_method": row.get("last_estimated_nav_method"),
         "diagnostic_flags": flags,
+        "shadow_status": (
+            shadow_row.get("shadow_status")
+            if shadow_row else None
+        ),
+        "shadow_latest_generated_at": (
+            shadow_row.get("shadow_latest_generated_at")
+            if shadow_row else None
+        ),
+        "shadow_errors": (
+            sorted({
+                str(model.get("error"))
+                for model in (shadow_row.get("models") or [])
+                if model.get("error")
+            })
+            if shadow_row else []
+        ),
         "target_runtime_cycle_seconds": TARGET_MARKET_CYCLE_SECONDS,
     }
 
@@ -398,14 +456,20 @@ def build_freshness_audit(
     *,
     snapshot: dict,
     cadence_profile: dict | None = None,
+    shadow_registry: dict | None = None,
 ) -> dict:
     context = market_context(snapshot)
     cadence_profile = cadence_profile or {}
     cadence_rows = cadence_profile.get("rows") or {}
+    shadow_rows = (shadow_registry or {}).get("rows") or {}
 
     rows: list[dict] = []
     for source in snapshot.get("rows") or []:
-        row = classify_row(source, context=context)
+        row = classify_row(
+            source,
+            context=context,
+            shadow_row=shadow_rows.get(str(source.get("code") or "")),
+        )
         cadence = cadence_rows.get(str(row.get("code") or ""))
         if (
             cadence
@@ -484,6 +548,9 @@ def build_freshness_audit(
             "configured_but_unavailable_count": update_states.get(
                 "CONFIGURED_BUT_UNAVAILABLE", 0
             ),
+            "waiting_next_active_session_count": update_states.get(
+                "WAITING_NEXT_ACTIVE_SESSION", 0
+            ),
             "structural_no_main_model_count": update_states.get(
                 "STRUCTURAL_NO_MAIN_MODEL", 0
             ),
@@ -509,9 +576,14 @@ def load_freshness_audit(
         root / "estimate_freshness_cadence.json",
         {},
     )
+    shadow_registry = load_shadow_registry(
+        root,
+        main_snapshot=snapshot,
+    )
     return build_freshness_audit(
         snapshot=snapshot,
         cadence_profile=profile,
+        shadow_registry=shadow_registry,
     )
 
 
