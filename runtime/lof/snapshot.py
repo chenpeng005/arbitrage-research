@@ -99,6 +99,14 @@ def build_market_snapshot(
             pct_change = None
             volume = None
             amount = None
+            bid1_price = None
+            bid1_volume = None
+            bid2_price = None
+            bid2_volume = None
+            ask1_price = None
+            ask1_volume = None
+            ask2_price = None
+            ask2_volume = None
             quote_source = quote.source if quote is not None else None
         else:
             quote_age = quote_age_seconds(quote, now=market_cutoff)
@@ -120,6 +128,14 @@ def build_market_snapshot(
             pct_change = quote.pct_change
             volume = quote.volume
             amount = quote.amount
+            bid1_price = quote.bid1_price
+            bid1_volume = quote.bid1_volume
+            bid2_price = quote.bid2_price
+            bid2_volume = quote.bid2_volume
+            ask1_price = quote.ask1_price
+            ask1_volume = quote.ask1_volume
+            ask2_price = quote.ask2_price
+            ask2_volume = quote.ask2_volume
             quote_source = quote.source
 
         if nav is None or not nav.available:
@@ -147,6 +163,11 @@ def build_market_snapshot(
             estimated_nav_status = "UNAVAILABLE"
             estimated_nav_age = None
             estimated_nav_proxy = None
+            estimated_nav_proxy_time = None
+            estimated_nav_proxy_return = None
+            estimated_nav_fx_return = None
+            estimated_nav_exposure_ratio = None
+            estimated_nav_tracking_adjustment = None
             estimated_premium = None
             estimated_nav_unavailable_count += 1
         else:
@@ -158,6 +179,11 @@ def build_market_snapshot(
             estimated_nav_quality = estimated.estimated_nav_quality
             estimated_nav_status = estimated.estimated_nav_status
             estimated_nav_proxy = estimated.proxy_id
+            estimated_nav_proxy_time = estimated.proxy_time
+            estimated_nav_proxy_return = estimated.proxy_return
+            estimated_nav_fx_return = estimated.fx_return
+            estimated_nav_exposure_ratio = estimated.exposure_ratio_used
+            estimated_nav_tracking_adjustment = estimated.tracking_adjustment_used
             if estimated_nav_time is None:
                 estimated_nav_age = None
             else:
@@ -233,6 +259,14 @@ def build_market_snapshot(
             "pct_change": pct_change,
             "volume": volume,
             "amount": amount,
+            "bid1_price": bid1_price,
+            "bid1_volume": bid1_volume,
+            "bid2_price": bid2_price,
+            "bid2_volume": bid2_volume,
+            "ask1_price": ask1_price,
+            "ask1_volume": ask1_volume,
+            "ask2_price": ask2_price,
+            "ask2_volume": ask2_volume,
             "quote_source": quote_source,
             "quote_status": quote_status,
             "quote_age_seconds": quote_age,
@@ -250,6 +284,27 @@ def build_market_snapshot(
             "estimated_nav_status": estimated_nav_status,
             "estimated_nav_age_seconds": estimated_nav_age,
             "estimated_nav_proxy": estimated_nav_proxy,
+            "estimated_nav_proxy_time": estimated_nav_proxy_time,
+            "estimated_nav_proxy_return": estimated_nav_proxy_return,
+            "estimated_nav_fx_return": estimated_nav_fx_return,
+            "estimated_nav_exposure_ratio": estimated_nav_exposure_ratio,
+            "estimated_nav_tracking_adjustment": estimated_nav_tracking_adjustment,
+            "bid1_estimated_premium_rate": (
+                premium_rate(bid1_price, estimated_nav)
+                if (
+                    quote_status == "FRESH"
+                    and estimated_nav_status == "AVAILABLE"
+                )
+                else None
+            ),
+            "bid2_estimated_premium_rate": (
+                premium_rate(bid2_price, estimated_nav)
+                if (
+                    quote_status == "FRESH"
+                    and estimated_nav_status == "AVAILABLE"
+                )
+                else None
+            ),
             "static_premium_rate": static_premium,
             "estimated_premium_rate": estimated_premium,
             "display_premium_rate": display_premium,
