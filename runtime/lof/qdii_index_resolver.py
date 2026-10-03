@@ -24,6 +24,7 @@ def resolve_r3_qdii_index_bridge(
     intraday_adjustment_return: Decimal | None = None,
     proxy_time: datetime | None = None,
     fx_time: datetime | None = None,
+    fx_source: str | None = None,
     max_proxy_age_seconds: int = 180,
     enforce_realtime_freshness: bool = False,
     resolver_method: str = "MULTIDAY_PROXY_FX_BRIDGE",
@@ -140,5 +141,7 @@ def resolve_r3_qdii_index_bridge(
         fx_return=fx_return,
         exposure_ratio_used=exposure,
         tracking_adjustment_used=Decimal("1"),
+        fx_time=fx_time,
+        fx_source=fx_source,
         error=None,
     )
