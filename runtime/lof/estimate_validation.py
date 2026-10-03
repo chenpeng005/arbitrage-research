@@ -300,6 +300,18 @@ def _legacy_model_version(method: Any) -> str:
     return f"LEGACY_PRE_V2:{value}"
 
 
+def _migrated_model_version(method: Any, truth_date: Any) -> str:
+    method_text = str(method or "UNKNOWN").strip() or "UNKNOWN"
+    truth_text = str(truth_date or "")
+    if (
+        method_text in AUDITED_BASELINE_METHODS
+        and truth_text
+        and truth_text <= AUDITED_BASELINE_MAX_TRUTH_DATE
+    ):
+        return estimate_model_version(method_text)
+    return _legacy_model_version(method_text)
+
+
 def _normalize_observations(raw: dict) -> tuple[dict[str, dict], bool]:
     normalized: dict[str, dict] = {}
     changed = False
@@ -309,15 +321,9 @@ def _normalize_observations(raw: dict) -> tuple[dict[str, dict], bool]:
             continue
         row = dict(value)
         if not row.get("model_version"):
-            method = str(row.get("method") or "UNKNOWN")
-            truth_date = str(row.get("truth_date") or "")
-            row["model_version"] = (
-                estimate_model_version(method)
-                if (
-                    method in AUDITED_BASELINE_METHODS
-                    and truth_date <= AUDITED_BASELINE_MAX_TRUTH_DATE
-                )
-                else _legacy_model_version(method)
+            row["model_version"] = _migrated_model_version(
+                row.get("method"),
+                row.get("truth_date"),
             )
             changed = True
         normalized[str(key)] = row
@@ -508,7 +514,7 @@ def update_estimate_validation_ledger(
         method = estimate.get("estimated_nav_method")
         model_version = (
             estimate.get("estimated_model_version")
-            or _legacy_model_version(method)
+            or _migrated_model_version(method, truth_date)
         )
         error_pct = float(
             (estimated_nav / truth - Decimal("1")) * Decimal("100")
