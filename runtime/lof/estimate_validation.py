@@ -14,8 +14,29 @@ from typing import Any, Iterable
 from .estimate_reliability import is_reliable_available_estimate
 
 
-HISTORY_VERSION = "LOF_ESTIMATE_HISTORY_V1"
-VALIDATION_VERSION = "LOF_ESTIMATE_VALIDATION_V1"
+HISTORY_VERSION = "LOF_ESTIMATE_HISTORY_V2"
+VALIDATION_VERSION = "LOF_ESTIMATE_VALIDATION_V2"
+VALIDATION_WINDOWS = (1, 3, 5, 10)
+
+MODEL_VERSION_BY_METHOD = {
+    "INDEX_PROXY_PREV_CLOSE": "R1_INDEX_PROXY_V1",
+    "CSI_COMPONENT_WEIGHT_PREV_CLOSE": "R1_CSI_COMPONENT_V2",
+    "TARGET_ETF_PREV_CLOSE": "R1_TARGET_ETF_V1",
+    "MULTIDAY_PROXY_FX_BRIDGE": "R3_MULTIDAY_FX_V1",
+    "HK_LIVE_INDEX_FX_BRIDGE": "R3_HK_LIVE_FX_V1",
+    "US_FUTURES_FX_BRIDGE": "R3_US_FUTURES_FX_V1",
+    "US_LAST_CLOSE_FX_BRIDGE": "R3_US_LAST_CLOSE_FX_V1",
+    "COMMODITY_FX_BRIDGE": "R5_COMMODITY_FX_V1",
+    "DOMESTIC_FUTURES_PREV_SETTLEMENT": "R5_DOMESTIC_FUTURES_V1",
+    "DISCLOSED_HOLDINGS_BASKET": "R2A_HOLDINGS_BASKET_V1",
+    "R2B2_CASH_HEAVY_HOLDINGS_BASKET": "R2B2_CASH_HEAVY_V1",
+    "RISK_ASSET_OVERLAY": "R2C_RISK_OVERLAY_V1",
+}
+
+
+def estimate_model_version(method: Any) -> str:
+    value = str(method or "UNKNOWN").strip() or "UNKNOWN"
+    return MODEL_VERSION_BY_METHOD.get(value, f"{value}_V1")
 
 
 def _json_default(value: Any):
@@ -126,6 +147,9 @@ def _history_row(snapshot: dict, row: dict) -> dict | None:
         "estimated_nav": nav,
         "estimated_nav_time": _iso_text(estimate_time),
         "estimated_nav_method": row.get("estimated_nav_method"),
+        "estimated_model_version": estimate_model_version(
+            row.get("estimated_nav_method")
+        ),
         "estimated_nav_quality": row.get("estimated_nav_quality"),
         "estimated_nav_proxy": row.get("estimated_nav_proxy"),
         "estimated_nav_proxy_time": _iso_text(
