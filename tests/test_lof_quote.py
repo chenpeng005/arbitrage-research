@@ -23,6 +23,14 @@ class LofQuoteTest(unittest.TestCase):
         fields[1] = "全球芯片LOF"
         fields[2] = "501225"
         fields[3] = "3.849"
+        fields[9] = "3.848"
+        fields[10] = "120"
+        fields[11] = "3.847"
+        fields[12] = "80"
+        fields[19] = "3.850"
+        fields[20] = "90"
+        fields[21] = "3.851"
+        fields[22] = "60"
         fields[30] = "20260929113624"
         fields[32] = "-0.44"
         fields[35] = "3.849/24060/9243237"
@@ -38,6 +46,14 @@ class LofQuoteTest(unittest.TestCase):
         self.assertEqual(row.pct_change, Decimal("-0.44"))
         self.assertEqual(row.volume, Decimal("24060"))
         self.assertEqual(row.amount, Decimal("9243237"))
+        self.assertEqual(row.bid1_price, Decimal("3.848"))
+        self.assertEqual(row.bid1_volume, Decimal("120"))
+        self.assertEqual(row.bid2_price, Decimal("3.847"))
+        self.assertEqual(row.bid2_volume, Decimal("80"))
+        self.assertEqual(row.ask1_price, Decimal("3.850"))
+        self.assertEqual(row.ask1_volume, Decimal("90"))
+        self.assertEqual(row.ask2_price, Decimal("3.851"))
+        self.assertEqual(row.ask2_volume, Decimal("60"))
         self.assertEqual(
             row.quote_time,
             datetime(2026, 9, 29, 11, 36, 24, tzinfo=TZ),
