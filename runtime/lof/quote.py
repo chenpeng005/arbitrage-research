@@ -25,6 +25,14 @@ class QuoteRecord:
     volume: Decimal | None
     amount: Decimal | None
     source: str
+    bid1_price: Decimal | None = None
+    bid1_volume: Decimal | None = None
+    bid2_price: Decimal | None = None
+    bid2_volume: Decimal | None = None
+    ask1_price: Decimal | None = None
+    ask1_volume: Decimal | None = None
+    ask2_price: Decimal | None = None
+    ask2_volume: Decimal | None = None
     error: str | None = None
 
     @property
@@ -94,6 +102,14 @@ def parse_tencent_quote_line(line: str) -> QuoteRecord | None:
     pct_change = _decimal_or_none(fields[32] if len(fields) > 32 else None)
     volume = _decimal_or_none(fields[36] if len(fields) > 36 else None)
     amount = _extract_exact_amount(fields)
+    bid1_price = _decimal_or_none(fields[9] if len(fields) > 9 else None)
+    bid1_volume = _decimal_or_none(fields[10] if len(fields) > 10 else None)
+    bid2_price = _decimal_or_none(fields[11] if len(fields) > 11 else None)
+    bid2_volume = _decimal_or_none(fields[12] if len(fields) > 12 else None)
+    ask1_price = _decimal_or_none(fields[19] if len(fields) > 19 else None)
+    ask1_volume = _decimal_or_none(fields[20] if len(fields) > 20 else None)
+    ask2_price = _decimal_or_none(fields[21] if len(fields) > 21 else None)
+    ask2_volume = _decimal_or_none(fields[22] if len(fields) > 22 else None)
 
     error = None
     if price is None or quote_time is None:
@@ -109,6 +125,14 @@ def parse_tencent_quote_line(line: str) -> QuoteRecord | None:
         volume=volume,
         amount=amount,
         source="TENCENT_QUOTE",
+        bid1_price=bid1_price,
+        bid1_volume=bid1_volume,
+        bid2_price=bid2_price,
+        bid2_volume=bid2_volume,
+        ask1_price=ask1_price,
+        ask1_volume=ask1_volume,
+        ask2_price=ask2_price,
+        ask2_volume=ask2_volume,
         error=error,
     )
 
