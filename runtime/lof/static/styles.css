@@ -22,7 +22,7 @@ button { cursor: pointer; }
 button:hover { background: #f9fafb; }
 button:disabled { opacity: .5; cursor: default; }
 .summary {
-  display: grid; grid-template-columns: repeat(6, minmax(130px, 1fr));
+  display: grid; grid-template-columns: repeat(7, minmax(130px, 1fr));
   gap: 10px; margin-bottom: 12px;
 }
 .card {
@@ -34,6 +34,8 @@ button:disabled { opacity: .5; cursor: default; }
 .card strong { font-size: 20px; }
 .ok { color: #087443; }
 .warn { color: #b54708; }
+.nav-fresh { color: #087443; }
+.nav-lagging { color: #b54708; font-weight: 600; }
 .filters {
   display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
   margin-bottom: 10px;

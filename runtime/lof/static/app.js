@@ -366,7 +366,19 @@
       if (researchTitle) researchCell.title = researchTitle;
       cell(tr, fmtPct(row.static_premium_rate), `num ${premiumClass(row.static_premium_rate)}`);
       cell(tr, fmt(row.official_nav, 4), "num");
-      cell(tr, row.official_nav_date || "—");
+      const navLag = row.official_nav_lag_label || "";
+      const navDateText = row.official_nav_date
+        ? `${row.official_nav_date}${navLag ? ` · ${navLag}` : ""}`
+        : "—";
+      const navDateCell = cell(
+        tr,
+        navDateText,
+        navLag === "T-1" ? "nav-fresh" : "nav-lagging"
+      );
+      navDateCell.title = [
+        row.official_nav_source ? `来源 ${row.official_nav_source}` : "",
+        navLag ? `新鲜度 ${navLag}` : "",
+      ].filter(Boolean).join("；");
       cell(tr, statusLabels[row.subscription_status] || row.subscription_status || "未知");
       cell(tr, fmtLimit(row.daily_subscription_limit, row.subscription_status), "num");
       cell(tr, statusLabels[row.redemption_status] || row.redemption_status || "未知");
@@ -397,6 +409,16 @@
     ).length;
     $("shadowCount").textContent =
       state.shadowSummary.active_shadow_fund_count ?? "—";
+    const navFreshness = snapshot.nav_freshness || {};
+    const navTotal = Number(navFreshness.r1_total || 0);
+    const navT1 = Number(navFreshness.r1_t1_count || 0);
+    $("navFreshness").textContent =
+      navTotal > 0 ? `${navT1}/${navTotal}` : "—";
+    $("navFreshness").className =
+      navFreshness.status === "PASS" ? "ok" : "warn";
+    $("navFreshness").title = navFreshness.expected_nav_date
+      ? `应有NAV日期：${navFreshness.expected_nav_date}；滞后：${navFreshness.r1_lagging_count || 0}只`
+      : "尚未识别应有NAV日期";
     $("collectorStatus").textContent = snapshot.collector_status || "—";
     $("collectorStatus").className =
       snapshot.collector_status === "PASS" ? "ok" : "warn";

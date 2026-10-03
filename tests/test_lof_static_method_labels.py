@@ -35,6 +35,9 @@ class LofStaticMethodLabelsTest(unittest.TestCase):
         self.assertIn("估算净值", index_html)
         self.assertIn("估算溢价", index_html)
         self.assertIn('id="lastEstimatedCount"', index_html)
+        self.assertIn('id="navFreshness"', index_html)
+        self.assertIn("official_nav_lag_label", app_js)
+        self.assertIn("nav-lagging", app_js)
         expected = {
             "EQUITY": "R2-A 主动股票",
             "MIXED": "R2-B 混合型",
