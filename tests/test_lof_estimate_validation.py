@@ -312,7 +312,7 @@ class LofEstimateValidationTest(unittest.TestCase):
             with gzip.open(path, "wt", encoding="utf-8") as handle:
                 json.dump(snapshot, handle)
             result = rebuild_estimate_history(root)
-            self.assertEqual(result["snapshot_count"], 1)
+            self.assertEqual(result["snapshot_files_read"], 1)
             history = json.loads(
                 (root / "estimate_history/2026-09-30.json").read_text()
             )
