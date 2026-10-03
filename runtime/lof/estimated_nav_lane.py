@@ -134,7 +134,7 @@ def resolve_estimated_nav_lane(
                         code=code,
                         resolver_class=decision.resolver_class,
                         error=(
-                            "R2_NOT_PROMOTED_OR_INPUT_UNAVAILABLE"
+                            "R2_NOT_PROMOTED_TO_MAIN"
                             if runtime_data_root is not None
                             else "RESOLVER_CLASS_NOT_IMPLEMENTED"
                         ),
