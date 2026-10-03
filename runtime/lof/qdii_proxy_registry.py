@@ -28,6 +28,7 @@ class QdiiProxyEntry:
     futures_overlay_code: str | None = None
     futures_overlay_quality: str | None = None
     exposure_ratio: Decimal | None = None
+    unresolved_reason: str | None = None
 
 
 def load_qdii_proxy_registry(path: str | Path) -> dict[str, QdiiProxyEntry]:
@@ -50,6 +51,7 @@ def load_qdii_proxy_registry(path: str | Path) -> dict[str, QdiiProxyEntry]:
                 if row.get("exposure_ratio") is not None
                 else None
             ),
+            unresolved_reason=row.get("unresolved_reason"),
         )
         result[entry.fund_code] = entry
     return result
