@@ -16,6 +16,7 @@ from runtime.lof.nav import (
     is_nav_stale,
     load_official_nav_fixture,
     nav_age_days,
+    parse_published_nav_fallback_payload,
     parse_sse_nav_payload,
     parse_szse_nav_payload,
 )
@@ -76,6 +77,29 @@ class LofOfficialNavTest(unittest.TestCase):
         self.assertEqual(row.nav, Decimal("7.0123"))
         self.assertEqual(row.nav_date, date(2026, 9, 28))
         self.assertTrue(row.available)
+
+    def test_published_nav_fallback_uses_latest_date_not_first_row(self) -> None:
+        payload = {
+            "Data": {
+                "LSJZList": [
+                    {"FSRQ": "2026-09-29", "DWJZ": "1.1000"},
+                    {"FSRQ": "2026-09-30", "DWJZ": "1.1200"},
+                    {"FSRQ": "2026-09-28", "DWJZ": "1.0900"},
+                ]
+            }
+        }
+        row = parse_published_nav_fallback_payload(
+            payload,
+            requested_code="501001",
+            exchange="SSE",
+            fetched_at=self.fetched_at,
+        )
+        self.assertEqual(row.nav_date, date(2026, 9, 30))
+        self.assertEqual(row.nav, Decimal("1.1200"))
+        self.assertEqual(
+            row.source,
+            "EASTMONEY_PUBLISHED_NAV_FALLBACK",
+        )
 
     def test_szse_empty_payload_returns_explicit_missing_record(self) -> None:
         row = parse_szse_nav_payload(
@@ -154,6 +178,105 @@ class LofOfficialNavTest(unittest.TestCase):
         )
         self.assertTrue(by_code["161128"].available)
         self.assertEqual(by_code["161128"].nav, Decimal("7.0123"))
+
+    @patch("runtime.lof.nav.fetch_published_nav_fallback")
+    @patch("runtime.lof.nav.fetch_sse_official_nav")
+    @patch("runtime.lof.nav.fetch_szse_official_nav")
+    def test_newer_published_nav_replaces_lagging_exchange_nav(
+        self,
+        szse_mock,
+        sse_mock,
+        fallback_mock,
+    ) -> None:
+        sse_mock.return_value = [
+            OfficialNavRecord(
+                code="501001",
+                exchange="SSE",
+                nav=Decimal("1.10"),
+                nav_date=date(2026, 9, 29),
+                fetched_at=self.fetched_at,
+                source="SSE_OFFICIAL",
+            )
+        ]
+        szse_mock.return_value = []
+        fallback_mock.return_value = [
+            OfficialNavRecord(
+                code="501001",
+                exchange="SSE",
+                nav=Decimal("1.12"),
+                nav_date=date(2026, 9, 30),
+                fetched_at=self.fetched_at,
+                source="EASTMONEY_PUBLISHED_NAV_FALLBACK",
+            )
+        ]
+        universe = [
+            LofIdentity(
+                code="501001",
+                name="沪市LOF",
+                exchange="SSE",
+            )
+        ]
+        rows = fetch_all_official_nav(
+            universe,
+            expected_nav_date=date(2026, 9, 30),
+            fallback_as_of_date=date(2026, 10, 3),
+        )
+        self.assertEqual(rows[0].nav_date, date(2026, 9, 30))
+        self.assertEqual(rows[0].nav, Decimal("1.12"))
+        self.assertEqual(
+            rows[0].source,
+            "EASTMONEY_PUBLISHED_NAV_FALLBACK",
+        )
+
+    @patch("runtime.lof.nav.fetch_published_nav_fallback")
+    @patch("runtime.lof.nav.fetch_sse_official_nav")
+    @patch("runtime.lof.nav.fetch_szse_official_nav")
+    def test_previous_fallback_at_expected_date_is_reused(
+        self,
+        szse_mock,
+        sse_mock,
+        fallback_mock,
+    ) -> None:
+        sse_mock.return_value = [
+            OfficialNavRecord(
+                code="501001",
+                exchange="SSE",
+                nav=Decimal("1.10"),
+                nav_date=date(2026, 9, 29),
+                fetched_at=self.fetched_at,
+                source="SSE_OFFICIAL",
+            )
+        ]
+        szse_mock.return_value = []
+        previous = OfficialNavRecord(
+            code="501001",
+            exchange="SSE",
+            nav=Decimal("1.12"),
+            nav_date=date(2026, 9, 30),
+            fetched_at=self.fetched_at,
+            source="EASTMONEY_PUBLISHED_NAV_FALLBACK",
+        )
+        universe = [
+            LofIdentity(
+                code="501001",
+                name="沪市LOF",
+                exchange="SSE",
+            )
+        ]
+        rows = fetch_all_official_nav(
+            universe,
+            expected_nav_date=date(2026, 9, 30),
+            fallback_as_of_date=date(2026, 10, 3),
+            previous_records=[previous],
+        )
+        self.assertEqual(rows[0].nav_date, date(2026, 9, 30))
+        self.assertEqual(rows[0].nav, Decimal("1.12"))
+        fallback_mock.assert_called_once_with(
+            [],
+            as_of=date(2026, 10, 3),
+            timeout=10,
+            max_workers=16,
+        )
 
     def test_load_official_nav_fixture(self) -> None:
         payload = {
