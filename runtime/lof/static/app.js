@@ -172,12 +172,22 @@
 
   const validationProfile = (row) => state.estimateValidation[row.code] || null;
 
+  const currentValidation = (validation) =>
+    validation?.current_version || null;
+
   const qualityText = (row) => {
     const validation = validationProfile(row);
-    const samples = validation ? Number(validation.sample_count || 0) : 0;
-    const mae = validation ? num(validation.mae_pct) : null;
+    const current = currentValidation(validation);
+    const samples = current ? Number(current.sample_count || 0) : 0;
+    const mae = current ? num(current.mae_pct) : null;
     if (samples > 0 && mae !== null) {
-      return `MAE ${mae.toFixed(2)}% · ${samples}天`;
+      return `当前版 MAE ${mae.toFixed(2)}% · ${samples}天`;
+    }
+    if (validation?.current_model_version) {
+      const historyDays = Number(validation.sample_count || 0);
+      return historyDays > 0
+        ? `当前版待验证 · 历史${historyDays}天`
+        : "当前版待验证";
     }
     const profile = r2cT1Profile(row);
     const t1Mae = profile ? num(profile.mae_abs_return) : null;
@@ -233,14 +243,29 @@
 
   const qualityTitle = (row) => {
     const validation = validationProfile(row);
-    if (validation && Number(validation.sample_count || 0) > 0) {
+    if (validation?.current_model_version) {
+      const current = currentValidation(validation) || {};
       const parts = [
-        `真实NAV对账 ${validation.sample_count} 天`,
-        num(validation.mae_pct) === null ? "" : `MAE ${num(validation.mae_pct).toFixed(3)}%`,
-        num(validation.p90_abs_error_pct) === null ? "" : `P90 ${num(validation.p90_abs_error_pct).toFixed(3)}%`,
-        num(validation.bias_pct) === null ? "" : `Bias ${num(validation.bias_pct).toFixed(3)}%`,
-        validation.last_truth_date ? `最近 ${validation.last_truth_date}` : "",
-      ].filter(Boolean);
+        `当前模型 ${validation.current_model_version}`,
+        `当前版本 ${Number(current.sample_count || 0)} 天`,
+      ];
+      if (num(current.mae_pct) !== null) parts.push(`累计MAE ${num(current.mae_pct).toFixed(3)}%`);
+      ["1", "3", "5", "10"].forEach((days) => {
+        const window = validation.windows?.[days];
+        const count = Number(window?.sample_count || 0);
+        const mae = num(window?.mae_pct);
+        parts.push(
+          count >= Number(days) && mae !== null
+            ? `${days}日 MAE ${mae.toFixed(3)}%`
+            : `${days}日 样本不足(${count}/${days})`
+        );
+      });
+      if (num(current.p90_abs_error_pct) !== null) parts.push(`P90 ${num(current.p90_abs_error_pct).toFixed(3)}%`);
+      if (num(current.bias_pct) !== null) parts.push(`Bias ${num(current.bias_pct).toFixed(3)}%`);
+      if (num(current.max_abs_error_pct) !== null) parts.push(`最大误差 ${num(current.max_abs_error_pct).toFixed(3)}%`);
+      if (Number(validation.sample_count || 0) > Number(current.sample_count || 0)) {
+        parts.push(`历史累计 ${validation.sample_count} 天`);
+      }
       return parts.join("；");
     }
     const profile = r2cT1Profile(row);
@@ -412,11 +437,25 @@
 
     const validationBox = document.createElement("div");
     validationBox.className = "estimate-detail-validation";
-    if (validation && Number(validation.sample_count || 0) > 0) {
+    if (validation?.current_model_version) {
+      const current = currentValidation(validation) || {};
+      const windowParts = ["1", "3", "5", "10"].map((days) => {
+        const window = validation.windows?.[days] || {};
+        const count = Number(window.sample_count || 0);
+        const mae = num(window.mae_pct);
+        return count >= Number(days) && mae !== null
+          ? `${days}日 MAE ${mae.toFixed(3)}%`
+          : `${days}日 样本不足 ${count}/${days}`;
+      });
+      const metrics = [];
+      if (num(current.mae_pct) !== null) metrics.push(`累计MAE ${num(current.mae_pct).toFixed(3)}%`);
+      if (num(current.p90_abs_error_pct) !== null) metrics.push(`P90 ${num(current.p90_abs_error_pct).toFixed(3)}%`);
+      if (num(current.bias_pct) !== null) metrics.push(`Bias ${num(current.bias_pct).toFixed(3)}%`);
+      if (num(current.max_abs_error_pct) !== null) metrics.push(`最大误差 ${num(current.max_abs_error_pct).toFixed(3)}%`);
       validationBox.textContent =
-        `真实NAV对账：${validation.sample_count}天；MAE ${num(validation.mae_pct).toFixed(3)}%；P90 ${num(validation.p90_abs_error_pct).toFixed(3)}%；Bias ${num(validation.bias_pct).toFixed(3)}%；最近 ${validation.last_truth_date || "—"}。`;
+        `真实NAV对账：当前模型 ${validation.current_model_version}；当前版本 ${Number(current.sample_count || 0)}天${metrics.length ? "；" + metrics.join("；") : ""}；${windowParts.join("；")}；历史累计 ${Number(validation.sample_count || 0)}天。`;
     } else {
-      validationBox.textContent = "真实NAV对账：样本尚不足，先保留结构质量与时间状态，不给主观高/中/低结论。";
+      validationBox.textContent = "真实NAV对账：当前版本尚无样本，先保留结构质量与时间状态，不给主观高/中/低结论。";
     }
     td.append(title, facts, validationBox);
     detail.appendChild(td);
@@ -465,7 +504,7 @@
       return displayedEstimatedPremium(row);
     }
     if (key === "_validation") {
-      return validationProfile(row)?.mae_pct ?? null;
+      return validationProfile(row)?.current_version?.mae_pct ?? null;
     }
     if (key === "_execution") {
       return row.subscription_to_sell_days
