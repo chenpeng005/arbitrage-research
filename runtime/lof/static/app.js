@@ -78,6 +78,9 @@
     US_LAST_CLOSE_FX_BRIDGE: "美股隔夜收盘",
     COMMODITY_FX_BRIDGE: "商品+汇率",
     DOMESTIC_FUTURES_PREV_SETTLEMENT: "国内期货主连",
+    DISCLOSED_HOLDINGS_BASKET: "披露持仓篮子",
+    R2B2_CASH_HEAVY_HOLDINGS_BASKET: "现金型持仓篮子",
+    RISK_ASSET_OVERLAY: "风险资产覆盖",
   };
 
   const num = (v) => {
