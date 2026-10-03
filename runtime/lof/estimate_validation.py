@@ -441,6 +441,7 @@ def update_estimate_validation_ledger(
         {
             "version": VALIDATION_VERSION,
             "truth_signature": None,
+            "model_coverage_signature": None,
             "updated_at": None,
             "observations": {},
             "rows": {},
@@ -449,10 +450,19 @@ def update_estimate_validation_ledger(
         },
     )
     signature = _truth_signature(snapshot)
-    if signature and signature == ledger.get("truth_signature"):
+    model_signature = _model_coverage_signature(snapshot)
+    observations, normalized_changed = _normalize_observations(
+        dict(ledger.get("observations") or {})
+    )
+    if (
+        ledger.get("version") == VALIDATION_VERSION
+        and not normalized_changed
+        and signature
+        and signature == ledger.get("truth_signature")
+        and model_signature == ledger.get("model_coverage_signature")
+    ):
         return ledger
 
-    observations = dict(ledger.get("observations") or {})
     history_cache: dict[str, dict] = {}
     for row in snapshot.get("rows") or []:
         code = str(row.get("code") or "").strip()
@@ -475,6 +485,11 @@ def update_estimate_validation_ledger(
         if estimated_nav is None or estimated_nav <= 0:
             continue
 
+        method = estimate.get("estimated_nav_method")
+        model_version = (
+            estimate.get("estimated_model_version")
+            or _legacy_model_version(method)
+        )
         error_pct = float(
             (estimated_nav / truth - Decimal("1")) * Decimal("100")
         )
@@ -486,7 +501,8 @@ def update_estimate_validation_ledger(
                 estimate.get("resolver_class")
                 or row.get("resolver_class")
             ),
-            "method": estimate.get("estimated_nav_method"),
+            "method": method,
+            "model_version": model_version,
             "proxy": estimate.get("estimated_nav_proxy"),
             "truth_date": truth_date,
             "official_nav": float(truth),
@@ -497,48 +513,19 @@ def update_estimate_validation_ledger(
             "source_snapshot_id": estimate.get("source_snapshot_id"),
         }
 
-    by_code: dict[str, list[dict]] = {}
-    by_method: dict[str, list[dict]] = {}
-    for observation in observations.values():
-        code = str(observation.get("code") or "")
-        method = str(observation.get("method") or "UNKNOWN")
-        by_code.setdefault(code, []).append(observation)
-        by_method.setdefault(method, []).append(observation)
-
-    rows = {
-        code: {
-            "code": code,
-            "name": max(
-                values,
-                key=lambda row: str(row.get("truth_date") or ""),
-            ).get("name"),
-            "resolver_class": max(
-                values,
-                key=lambda row: str(row.get("truth_date") or ""),
-            ).get("resolver_class"),
-            **_aggregate(values),
-        }
-        for code, values in by_code.items()
-    }
-    methods = {
-        method: {
-            "method": method,
-            **_aggregate(values),
-        }
-        for method, values in by_method.items()
-    }
+    rows, methods, summary = _build_validation_views(
+        observations,
+        snapshot,
+    )
     ledger = {
         "version": VALIDATION_VERSION,
         "truth_signature": signature,
+        "model_coverage_signature": model_signature,
         "updated_at": _iso_text(snapshot.get("generated_at")),
         "observations": observations,
         "rows": rows,
         "methods": methods,
-        "summary": {
-            "observation_count": len(observations),
-            "fund_count": len(rows),
-            "method_count": len(methods),
-        },
+        "summary": summary,
     }
     _atomic_write(path, _dump(ledger))
     return ledger
@@ -550,21 +537,31 @@ def load_estimate_validation_summary(data_root: str | Path) -> dict:
         {
             "version": VALIDATION_VERSION,
             "updated_at": None,
+            "observations": {},
             "rows": {},
             "methods": {},
-            "summary": {
-                "observation_count": 0,
-                "fund_count": 0,
-                "method_count": 0,
-            },
+            "summary": {},
         },
     )
+    observations, _ = _normalize_observations(
+        dict(ledger.get("observations") or {})
+    )
+    latest = _load(Path(data_root) / "latest_market_snapshot.json", {})
+    if latest:
+        rows, methods, summary = _build_validation_views(
+            observations,
+            latest,
+        )
+    else:
+        rows = ledger.get("rows") or {}
+        methods = ledger.get("methods") or {}
+        summary = ledger.get("summary") or {}
     return {
         "version": VALIDATION_VERSION,
         "updated_at": ledger.get("updated_at"),
-        "rows": ledger.get("rows") or {},
-        "methods": ledger.get("methods") or {},
-        "summary": ledger.get("summary") or {},
+        "rows": rows,
+        "methods": methods,
+        "summary": summary,
     }
 
 
