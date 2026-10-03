@@ -21,6 +21,7 @@ LOF_REQUIRED_CANONICAL_PATHS = (
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-Web-View-Baseline-V0.1.md",
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-Realtime-Estimated-NAV-Resolver-Classification-V0.1.md",
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-Estimated-NAV-Resolver-Contract-V0.1.md",
+    "05 套利研究/LOF机会发现/02_数据与监控/LOF-Estimate-Validation-Depth-Execution-V0.1.md",
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-Cloud-Smoke-vs-Production-Preflight-V0.1.md",
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-Production-Source-Preflight-Contract-V1.md",
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-Release-Profile-V1.md",
