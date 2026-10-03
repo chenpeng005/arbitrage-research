@@ -5,6 +5,7 @@ from typing import Iterable
 from uuid import uuid4
 
 from .classification import FundTypeRecord
+from .estimate_model_registry import estimate_model_id, estimate_model_version
 from .nav import OfficialNavRecord, nav_age_days
 from .premium import premium_rate
 from .quote import QuoteRecord, is_quote_stale, quote_age_seconds
@@ -159,6 +160,8 @@ def build_market_snapshot(
             estimated_nav_time = None
             estimated_nav_source = None
             estimated_nav_method = None
+            estimated_model_id = None
+            estimated_model_version = None
             estimated_nav_quality = "UNKNOWN"
             estimated_nav_status = "UNAVAILABLE"
             estimated_nav_age = None
@@ -176,6 +179,10 @@ def build_market_snapshot(
             estimated_nav_time = estimated.estimated_nav_time
             estimated_nav_source = "LOF_RESOLVER"
             estimated_nav_method = estimated.resolver_method
+            estimated_model_id = estimate_model_id(estimated_nav_method)
+            estimated_model_version = estimate_model_version(
+                estimated_nav_method
+            )
             estimated_nav_quality = estimated.estimated_nav_quality
             estimated_nav_status = estimated.estimated_nav_status
             estimated_nav_proxy = estimated.proxy_id
@@ -280,6 +287,8 @@ def build_market_snapshot(
             "estimated_nav_time": estimated_nav_time,
             "estimated_nav_source": estimated_nav_source,
             "estimated_nav_method": estimated_nav_method,
+            "estimated_model_id": estimated_model_id,
+            "estimated_model_version": estimated_model_version,
             "estimated_nav_quality": estimated_nav_quality,
             "estimated_nav_status": estimated_nav_status,
             "estimated_nav_age_seconds": estimated_nav_age,
