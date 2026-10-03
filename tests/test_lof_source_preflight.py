@@ -163,6 +163,55 @@ class LofProductionSourcePreflightTest(unittest.TestCase):
         )
         self.assertEqual(result["status"], "WARN")
 
+    def test_r1_nav_date_lag_fails_even_with_full_nav_count(self) -> None:
+        snapshot = _snapshot()
+        snapshot["rows"] = [
+            {
+                "code": str(i),
+                "resolver_class": "R1_DOMESTIC_INDEX" if i < 100 else "R2_DOMESTIC_OTHER",
+                "official_nav_date": (
+                    "2026-09-29" if i < 100 else "2026-09-30"
+                ),
+            }
+            for i in range(400)
+        ]
+        result = evaluate_preflight(
+            snapshot=snapshot,
+            r1_context_resolved=100,
+            r1_context_unresolved=0,
+            expect_fresh_quotes=False,
+            application_commit_sha="abc",
+            checked_at=datetime(2026, 10, 3, 11, 0, tzinfo=TZ),
+            source_transport={"expected_nav_date": "2026-09-30"},
+        )
+        self.assertEqual(result["status"], "FAIL")
+        check = next(
+            x for x in result["checks"]
+            if x["name"] == "r1_official_nav_expected_date_coverage"
+        )
+        self.assertEqual(check["detail"], "0/100")
+
+    def test_r1_nav_expected_date_coverage_passes_after_recovery(self) -> None:
+        snapshot = _snapshot()
+        snapshot["rows"] = [
+            {
+                "code": str(i),
+                "resolver_class": "R1_DOMESTIC_INDEX" if i < 100 else "R2_DOMESTIC_OTHER",
+                "official_nav_date": "2026-09-30",
+            }
+            for i in range(400)
+        ]
+        result = evaluate_preflight(
+            snapshot=snapshot,
+            r1_context_resolved=100,
+            r1_context_unresolved=0,
+            expect_fresh_quotes=False,
+            application_commit_sha="abc",
+            checked_at=datetime(2026, 10, 3, 11, 0, tzinfo=TZ),
+            source_transport={"expected_nav_date": "2026-09-30"},
+        )
+        self.assertEqual(result["status"], "PASS")
+
     def test_low_r1_mapping_coverage_fails(self) -> None:
         result = evaluate_preflight(
             snapshot=_snapshot(),
