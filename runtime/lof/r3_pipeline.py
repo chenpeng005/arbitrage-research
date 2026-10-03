@@ -62,7 +62,7 @@ def resolve_r3_one(
         return _unavailable(
             fund_code=nav.code,
             proxy_id="",
-            error="UNRESOLVED_PROXY",
+            error=(proxy.unresolved_reason or "UNRESOLVED_PROXY"),
         )
 
     exposure = (
