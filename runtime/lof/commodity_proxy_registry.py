@@ -7,6 +7,14 @@ from pathlib import Path
 
 
 @dataclass(frozen=True)
+class CommodityProxyComponent:
+    history_symbol: str
+    live_market: str
+    live_code: str
+    weight: Decimal
+
+
+@dataclass(frozen=True)
 class CommodityProxyEntry:
     fund_code: str
     benchmark: str
@@ -18,6 +26,7 @@ class CommodityProxyEntry:
     exposure_ratio: Decimal | None = None
     proxy_quality: str = "UNKNOWN"
     anchor_mode: str = "HISTORY_CLOSE"
+    components: tuple[CommodityProxyComponent, ...] = ()
 
 
 def load_commodity_proxy_registry(
@@ -27,6 +36,15 @@ def load_commodity_proxy_registry(
     result: dict[str, CommodityProxyEntry] = {}
     for row in payload.get("entries") or []:
         exposure = row.get("exposure_ratio")
+        components = tuple(
+            CommodityProxyComponent(
+                history_symbol=str(component["history_symbol"]),
+                live_market=str(component["live_market"]),
+                live_code=str(component["live_code"]),
+                weight=Decimal(str(component["weight"])),
+            )
+            for component in (row.get("components") or [])
+        )
         entry = CommodityProxyEntry(
             fund_code=str(row["fund_code"]),
             benchmark=str(row.get("benchmark") or ""),
@@ -40,6 +58,7 @@ def load_commodity_proxy_registry(
             ),
             proxy_quality=str(row.get("proxy_quality") or "UNKNOWN"),
             anchor_mode=str(row.get("anchor_mode") or "HISTORY_CLOSE"),
+            components=components,
         )
         result[entry.fund_code] = entry
     return result
