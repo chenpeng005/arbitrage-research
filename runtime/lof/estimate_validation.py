@@ -340,7 +340,14 @@ def _current_model_map(snapshot: dict) -> dict[str, dict]:
             "name": row.get("name"),
             "resolver_class": row.get("resolver_class"),
             "method": method,
-            "model_version": estimate_model_version(method),
+            "model_id": (
+                row.get("estimated_model_id")
+                or estimate_model_id(method)
+            ),
+            "model_version": (
+                row.get("estimated_model_version")
+                or estimate_model_version(method)
+            ),
         }
     return result
 
@@ -400,6 +407,10 @@ def _build_validation_views(
                 or latest.get("resolver_class")
             ),
             "current_method": current.get("method"),
+            "current_model_id": (
+                current.get("model_id")
+                or estimate_model_id(current.get("method"))
+            ),
             "current_model_version": current_version,
             **_aggregate(values),
             "current_version": _aggregate(version_values),
@@ -421,6 +432,7 @@ def _build_validation_views(
         ]
         methods[method] = {
             "method": method,
+            "current_model_id": estimate_model_id(method),
             "current_model_version": current_version,
             **_aggregate(values),
             "current_version": _aggregate(version_values),
