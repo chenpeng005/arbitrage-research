@@ -8,7 +8,10 @@ from pathlib import Path
 import tempfile
 from typing import Any, Iterable
 
+from .estimate_model_registry import estimate_model_id, estimate_model_version
+from .estimate_persistence import write_model_registry_snapshot
 from .estimate_reliability import is_reliable_available_estimate
+from .snapshot_retention import maybe_apply_snapshot_retention
 from .estimate_validation import (
     record_estimate_history,
     update_estimate_validation_ledger,
@@ -39,7 +42,7 @@ def snapshot_from_json(text: str) -> dict:
     return value
 
 
-LAST_ESTIMATE_VERSION = "LOF_LAST_ESTIMATE_V1"
+LAST_ESTIMATE_VERSION = "LOF_LAST_ESTIMATE_V2"
 
 
 def _as_decimal(value: Any) -> Decimal | None:
@@ -82,9 +85,23 @@ class LofSnapshotStore:
         try:
             record_estimate_history(self.root, snapshot)
             update_estimate_validation_ledger(self.root, snapshot)
+            write_model_registry_snapshot(self.root)
         except Exception:
             # Validation bookkeeping is evidence-only and must never block
             # the market snapshot lane.
+            pass
+        try:
+            generated_at = snapshot.get("generated_at")
+            if isinstance(generated_at, datetime):
+                retention_as_of = generated_at
+            else:
+                retention_as_of = datetime.fromisoformat(str(generated_at))
+            maybe_apply_snapshot_retention(
+                self.root,
+                as_of=retention_as_of,
+            )
+        except Exception:
+            # Retention failure must never block live snapshot persistence.
             pass
         return archive_path
 
@@ -158,6 +175,14 @@ class LofSnapshotStore:
                 "estimated_nav_time": estimate_time,
                 "estimated_nav_status": status,
                 "estimated_nav_method": row.get("estimated_nav_method"),
+                "estimated_model_id": (
+                    row.get("estimated_model_id")
+                    or estimate_model_id(row.get("estimated_nav_method"))
+                ),
+                "estimated_model_version": (
+                    row.get("estimated_model_version")
+                    or estimate_model_version(row.get("estimated_nav_method"))
+                ),
                 "estimated_nav_quality": row.get("estimated_nav_quality"),
                 "estimated_nav_proxy": row.get("estimated_nav_proxy"),
                 "estimated_nav_proxy_time": row.get(
@@ -247,6 +272,12 @@ class LofSnapshotStore:
                     ),
                     "last_estimated_nav_method": last.get(
                         "estimated_nav_method"
+                    ),
+                    "last_estimated_model_id": last.get(
+                        "estimated_model_id"
+                    ),
+                    "last_estimated_model_version": last.get(
+                        "estimated_model_version"
                     ),
                     "last_estimated_nav_quality": last.get(
                         "estimated_nav_quality"
