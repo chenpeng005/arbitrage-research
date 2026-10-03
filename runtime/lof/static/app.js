@@ -8,6 +8,9 @@
     r2cProfiles: {},
     shadowRegistry: {},
     shadowSummary: {},
+    estimateValidation: {},
+    estimateValidationSummary: {},
+    expandedCode: null,
     timer: null,
   };
 
@@ -118,22 +121,67 @@
     return `${n.toFixed(n % 1 === 0 ? 0 : 2)}元`;
   };
 
-  const qualityText = (row) => {
-    if (row.estimated_nav_status === "AVAILABLE") {
-      return ({ HIGH: "高", MEDIUM: "中", LOW: "低", UNKNOWN: "未知" })[
-        row.estimated_nav_quality
-      ] || "未知";
+  const fmtRatioPct = (v) => {
+    const n = num(v);
+    return n === null ? "—" : fmtPct(n * 100);
+  };
+
+  const executionText = (row) => {
+    const sell = num(row.subscription_to_sell_days);
+    const confirm = num(row.subscription_confirmation_days);
+    if (sell !== null) return `T申购 → T+${sell}可卖`;
+    if (confirm !== null) return `T+${confirm}确认 · 可卖待核`;
+    return "可卖待核";
+  };
+
+  const depthLevelText = (label, price, volume) => {
+    const p = num(price);
+    const v = num(volume);
+    if (p === null) return `${label} —`;
+    return `${label} ${p.toFixed(3)}${v === null ? "" : `×${v.toFixed(0)}手`}`;
+  };
+
+  const appendDepthCell = (tr, row) => {
+    const td = document.createElement("td");
+    td.className = row.quote_status === "FRESH" ? "depth" : "depth depth-stale";
+    const bid = document.createElement("div");
+    bid.textContent = `${depthLevelText("买1", row.bid1_price, row.bid1_volume)} · ${depthLevelText("买2", row.bid2_price, row.bid2_volume)}`;
+    const ask = document.createElement("div");
+    ask.textContent = `${depthLevelText("卖1", row.ask1_price, row.ask1_volume)} · ${depthLevelText("卖2", row.ask2_price, row.ask2_volume)}`;
+    td.append(bid, ask);
+    const bidPremium = num(row.bid1_estimated_premium_rate);
+    if (bidPremium !== null) {
+      const premium = document.createElement("div");
+      premium.className = `depth-premium ${premiumClass(bidPremium)}`;
+      premium.textContent = `买1可卖溢价 ${fmtPct(bidPremium)}`;
+      td.appendChild(premium);
     }
-    if (row.estimated_nav_status === "STALE") return "过期";
+    if (row.quote_status !== "FRESH") {
+      td.title = "盘口不是当前新鲜行情，仅保留最近行情参考";
+    }
+    tr.appendChild(td);
+    return td;
+  };
+
+  const validationProfile = (row) => state.estimateValidation[row.code] || null;
+
+  const qualityText = (row) => {
+    const validation = validationProfile(row);
+    const samples = validation ? Number(validation.sample_count || 0) : 0;
+    const mae = validation ? num(validation.mae_pct) : null;
+    if (samples > 0 && mae !== null) {
+      return `MAE ${mae.toFixed(2)}% · ${samples}天`;
+    }
     const profile = r2cT1Profile(row);
-    const mae = profile ? num(profile.mae_abs_return) : null;
-    if (mae !== null) {
-      const label = mae <= 0.20
-        ? "T-1近似稳"
-        : mae <= 0.50
-          ? "T-1近似中"
-          : "T-1波动大";
-      return `${label} ${mae.toFixed(2)}%`;
+    const t1Mae = profile ? num(profile.mae_abs_return) : null;
+    if (t1Mae !== null) {
+      return `T-1参考 ${t1Mae.toFixed(2)}%`;
+    }
+    if (
+      currentEstimateAvailable(row)
+      || num(row.last_estimated_nav) !== null
+    ) {
+      return "待验证";
     }
     return "—";
   };
@@ -177,8 +225,19 @@
   };
 
   const qualityTitle = (row) => {
+    const validation = validationProfile(row);
+    if (validation && Number(validation.sample_count || 0) > 0) {
+      const parts = [
+        `真实NAV对账 ${validation.sample_count} 天`,
+        num(validation.mae_pct) === null ? "" : `MAE ${num(validation.mae_pct).toFixed(3)}%`,
+        num(validation.p90_abs_error_pct) === null ? "" : `P90 ${num(validation.p90_abs_error_pct).toFixed(3)}%`,
+        num(validation.bias_pct) === null ? "" : `Bias ${num(validation.bias_pct).toFixed(3)}%`,
+        validation.last_truth_date ? `最近 ${validation.last_truth_date}` : "",
+      ].filter(Boolean);
+      return parts.join("；");
+    }
     const profile = r2cT1Profile(row);
-    if (!profile || row.estimated_nav_status === "AVAILABLE") return "";
+    if (!profile) return "";
     const mae = num(profile.mae_abs_return);
     const up95 = num(profile.up95);
     const samples = Number(profile.return_sample_count || 0);
@@ -188,7 +247,7 @@
     if (up95 !== null) parts.push(`95%上行带 ${up95.toFixed(2)}%`);
     if (samples) parts.push(`样本 ${samples}`);
     parts.push(`截至 ${endDate}`);
-    return `${parts.join("；")}。这是历史近似质量，不是实时估值。`;
+    return `${parts.join("；")}。这是T-1历史波动参考，不是实时估值评级。`;
   };
 
   const cell = (tr, text, className = "") => {
@@ -220,11 +279,12 @@
 
   const estimatedMethodText = (row) => {
     if (currentEstimateAvailable(row)) {
-      return estimateMethodLabels[row.estimated_nav_method] || "实时估算";
+      const method = estimateMethodLabels[row.estimated_nav_method] || "实时估算";
+      return `${method} · 实时`;
     }
     if (num(row.last_estimated_nav) !== null) {
       const time = estimateTimeText(row.last_estimated_nav_time);
-      return time ? `最后估值 ${time}` : "最后估值";
+      return time ? `最后可靠 ${time}` : "最后可靠估值";
     }
     return "";
   };
@@ -249,10 +309,105 @@
         estimateMethodLabels[row.last_estimated_nav_method]
         || row.last_estimated_nav_method
         || "历史估值";
-      const status = row.last_estimated_nav_status || "UNKNOWN";
-      td.title = `${method}；状态 ${status}；估值时间 ${row.last_estimated_nav_time || "未知"}；行情时间 ${row.last_estimated_quote_time || "未知"}`;
+      td.title = `${method}；最后可靠估值时间 ${row.last_estimated_nav_time || "未知"}；行情时间 ${row.last_estimated_quote_time || "未知"}`;
+    }
+    if (num(value) !== null) {
+      td.classList.add("estimate-clickable");
+      const hint = document.createElement("div");
+      hint.className = "estimate-detail-hint";
+      hint.textContent = "点击看方法";
+      td.appendChild(hint);
+      td.addEventListener("click", (event) => {
+        event.stopPropagation();
+        state.expandedCode = state.expandedCode === row.code ? null : row.code;
+        renderTable();
+      });
     }
     return td;
+  };
+
+  const detailValue = (row, currentKey, lastKey) =>
+    currentEstimateAvailable(row)
+      ? row[currentKey]
+      : row[lastKey];
+
+  const buildEstimateDetailRow = (row) => {
+    const detail = document.createElement("tr");
+    detail.className = "estimate-detail-row";
+    const td = document.createElement("td");
+    td.colSpan = headers.length;
+    const methodCode = detailValue(
+      row,
+      "estimated_nav_method",
+      "last_estimated_nav_method"
+    );
+    const method = estimateMethodLabels[methodCode] || methodCode || "未知";
+    const proxy = detailValue(
+      row,
+      "estimated_nav_proxy",
+      "last_estimated_nav_proxy"
+    );
+    const proxyTime = detailValue(
+      row,
+      "estimated_nav_proxy_time",
+      "last_estimated_nav_proxy_time"
+    );
+    const proxyReturn = detailValue(
+      row,
+      "estimated_nav_proxy_return",
+      "last_estimated_nav_proxy_return"
+    );
+    const fxReturn = detailValue(
+      row,
+      "estimated_nav_fx_return",
+      "last_estimated_nav_fx_return"
+    );
+    const exposure = detailValue(
+      row,
+      "estimated_nav_exposure_ratio",
+      "last_estimated_nav_exposure_ratio"
+    );
+    const adjustment = detailValue(
+      row,
+      "estimated_nav_tracking_adjustment",
+      "last_estimated_nav_tracking_adjustment"
+    );
+    const estimateTime = currentEstimateAvailable(row)
+      ? row.estimated_nav_time
+      : row.last_estimated_nav_time;
+    const validation = validationProfile(row);
+
+    const title = document.createElement("strong");
+    title.textContent = `估值方法：${method}`;
+    const facts = document.createElement("div");
+    facts.className = "estimate-detail-facts";
+    const items = [
+      `基准NAV ${fmt(row.official_nav, 4)}（${row.official_nav_date || "未知"}）`,
+      proxy ? `代理 ${proxy}` : "",
+      proxyReturn === null || proxyReturn === undefined ? "" : `代理变动 ${fmtRatioPct(proxyReturn)}`,
+      fxReturn === null || fxReturn === undefined ? "" : `汇率变动 ${fmtRatioPct(fxReturn)}`,
+      exposure === null || exposure === undefined ? "" : `暴露 ${(Number(exposure) * 100).toFixed(1)}%`,
+      adjustment === null || adjustment === undefined ? "" : `跟踪调整 ×${Number(adjustment).toFixed(4)}`,
+      estimateTime ? `估值时间 ${String(estimateTime).replace("T", " ").slice(0, 19)}` : "",
+      proxyTime ? `底层时间 ${String(proxyTime).replace("T", " ").slice(0, 19)}` : "",
+    ].filter(Boolean);
+    items.forEach((text) => {
+      const span = document.createElement("span");
+      span.textContent = text;
+      facts.appendChild(span);
+    });
+
+    const validationBox = document.createElement("div");
+    validationBox.className = "estimate-detail-validation";
+    if (validation && Number(validation.sample_count || 0) > 0) {
+      validationBox.textContent =
+        `真实NAV对账：${validation.sample_count}天；MAE ${num(validation.mae_pct).toFixed(3)}%；P90 ${num(validation.p90_abs_error_pct).toFixed(3)}%；Bias ${num(validation.bias_pct).toFixed(3)}%；最近 ${validation.last_truth_date || "—"}。`;
+    } else {
+      validationBox.textContent = "真实NAV对账：样本尚不足，先保留结构质量与时间状态，不给主观高/中/低结论。";
+    }
+    td.append(title, facts, validationBox);
+    detail.appendChild(td);
+    return detail;
   };
 
   const premiumClass = (value) => {
@@ -265,7 +420,7 @@
     if (currentEstimateAvailable(row)) return "实时估算";
     if (num(row.last_estimated_nav) !== null) {
       const time = estimateTimeText(row.last_estimated_nav_time);
-      return time ? `最后估值 ${time}` : "最后估值";
+      return time ? `最后可靠 ${time}` : "最后可靠";
     }
     return "";
   };
@@ -356,6 +511,7 @@
       cell(tr, fmtPct(row.pct_change), `num ${premiumClass(row.pct_change)}`);
       cell(tr, fmtVolume(row.volume), "num");
       cell(tr, fmtAmount(row.amount), "num strong");
+      appendDepthCell(tr, row);
       appendEstimatedNavCell(tr, row);
       appendPremiumCell(tr, row);
       const qualityCell = cell(tr, qualityText(row), `quality q-${(row.estimated_nav_quality || "unknown").toLowerCase()}`);
@@ -381,10 +537,17 @@
       ].filter(Boolean).join("；");
       cell(tr, statusLabels[row.subscription_status] || row.subscription_status || "未知");
       cell(tr, fmtLimit(row.daily_subscription_limit, row.subscription_status), "num");
+      const executionCell = cell(tr, executionText(row), "execution");
+      if (num(row.subscription_to_sell_days) === null) {
+        executionCell.title = "已展示申购确认 T+N；确认日不等于真正可卖日，后者尚需按场内登记/转托管/券商执行链核实。";
+      }
       cell(tr, statusLabels[row.redemption_status] || row.redemption_status || "未知");
       cell(tr, row.quote_time ? String(row.quote_time).replace("T", " ").slice(5, 19) : "—", "mono");
 
       frag.appendChild(tr);
+      if (state.expandedCode === row.code) {
+        frag.appendChild(buildEstimateDetailRow(row));
+      }
     });
 
     tbody.appendChild(frag);
@@ -409,6 +572,8 @@
     ).length;
     $("shadowCount").textContent =
       state.shadowSummary.active_shadow_fund_count ?? "—";
+    $("validationCount").textContent =
+      state.estimateValidationSummary.fund_count ?? "—";
     const navFreshness = snapshot.nav_freshness || {};
     const navTotal = Number(navFreshness.r1_total || 0);
     const navT1 = Number(navFreshness.r1_t1_count || 0);
@@ -437,6 +602,8 @@
       let r2cProfiles = {};
       let shadowRegistry = {};
       let shadowSummary = {};
+      let estimateValidation = {};
+      let estimateValidationSummary = {};
       try {
         const profileResponse = await fetch("/api/lof/r2c-t1-profile", { cache: "no-store" });
         if (profileResponse.ok) {
@@ -457,10 +624,23 @@
         shadowRegistry = {};
         shadowSummary = {};
       }
+      try {
+        const validationResponse = await fetch("/api/lof/estimate-validation", { cache: "no-store" });
+        if (validationResponse.ok) {
+          const validationPayload = await validationResponse.json();
+          estimateValidation = validationPayload.rows || {};
+          estimateValidationSummary = validationPayload.summary || {};
+        }
+      } catch (_) {
+        estimateValidation = {};
+        estimateValidationSummary = {};
+      }
       state.snapshot = snapshot;
       state.r2cProfiles = r2cProfiles;
       state.shadowRegistry = shadowRegistry;
       state.shadowSummary = shadowSummary;
+      state.estimateValidation = estimateValidation;
+      state.estimateValidationSummary = estimateValidationSummary;
       state.rows = (snapshot.rows || []).map((r, i) => ({ ...r, _index: i + 1 }));
       renderSummary(snapshot);
       applyFilters();
