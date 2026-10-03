@@ -175,7 +175,7 @@ def resolve_r5_commodity_one(
                 if proxy.components
                 else (proxy.commodity_live_code or "")
             ),
-            error="UNRESOLVED_COMMODITY_PROXY",
+            error=(proxy.unresolved_reason or "UNRESOLVED_COMMODITY_PROXY"),
             method=method,
         )
 
