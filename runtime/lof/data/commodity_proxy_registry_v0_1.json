@@ -1,6 +1,6 @@
 {
-  "version": "COMMODITY_PROXY_REGISTRY_V0.1",
-  "as_of": "2026-09-29",
+  "version": "COMMODITY_PROXY_REGISTRY_V0.2",
+  "as_of": "2026-10-04",
   "entries": [
     {
       "fund_code": "160719",
@@ -86,8 +86,26 @@
     },
     {
       "fund_code": "501018",
-      "benchmark": "南方原油QDII-FOF",
-      "status": "UNRESOLVED"
+      "benchmark": "WTI原油价格收益率×60%+BRENT原油价格收益率×40%",
+      "status": "RESOLVED",
+      "currency": "USD",
+      "exposure_ratio": "1.0",
+      "proxy_quality": "LOW",
+      "anchor_mode": "HISTORY_CLOSE",
+      "components": [
+        {
+          "history_symbol": "CL",
+          "live_market": "102",
+          "live_code": "CL00Y",
+          "weight": "0.60"
+        },
+        {
+          "history_symbol": "OIL",
+          "live_market": "112",
+          "live_code": "B00Y",
+          "weight": "0.40"
+        }
+      ]
     }
   ]
 }
