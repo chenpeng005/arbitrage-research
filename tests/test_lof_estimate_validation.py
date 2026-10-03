@@ -8,6 +8,7 @@ from pathlib import Path
 from runtime.lof.estimate_validation import (
     load_estimate_validation_summary,
     record_estimate_history,
+    rebuild_estimate_history,
     update_estimate_validation_ledger,
 )
 
@@ -278,6 +279,48 @@ class LofEstimateValidationTest(unittest.TestCase):
             self.assertEqual(row["current_version"]["sample_count"], 0)
             self.assertEqual(row["windows"]["1"]["sample_count"], 0)
             self.assertEqual(summary["summary"]["current_version_validated_fund_count"], 0)
+
+
+    def test_rebuild_history_reads_gzip_snapshots(self):
+        import gzip
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            directory = root / "snapshots"
+            directory.mkdir(parents=True, exist_ok=True)
+            snapshot = {
+                "snapshot_id": "runtime-20260930T150000",
+                "generated_at": "2026-09-30T15:00:00+08:00",
+                "rows": [
+                    {
+                        "code": "501016",
+                        "name": "券商基金LOF",
+                        "resolver_class": "R1_DOMESTIC_INDEX",
+                        "official_nav": 1.0,
+                        "official_nav_date": "2026-09-29",
+                        "estimated_nav": 1.001,
+                        "estimated_nav_time": "2026-09-30T14:59:50+08:00",
+                        "estimated_nav_status": "AVAILABLE",
+                        "estimated_nav_method": "INDEX_PROXY_PREV_CLOSE",
+                        "estimated_nav_quality": "MEDIUM",
+                        "estimated_nav_proxy": "399707",
+                        "estimated_nav_proxy_time": "2026-09-30T14:59:50+08:00",
+                        "quote_time": "2026-09-30T14:59:48+08:00",
+                    }
+                ],
+            }
+            path = directory / "runtime-20260930T150000.json.gz"
+            with gzip.open(path, "wt", encoding="utf-8") as handle:
+                json.dump(snapshot, handle)
+            result = rebuild_estimate_history(root)
+            self.assertEqual(result["snapshot_count"], 1)
+            history = json.loads(
+                (root / "estimate_history/2026-09-30.json").read_text()
+            )
+            self.assertEqual(len(history["rows"]), 1)
+            self.assertEqual(
+                history["rows"]["501016"]["estimated_model_version"],
+                "R1_INDEX_PROXY_V1",
+            )
 
 
 if __name__ == "__main__":
