@@ -25,6 +25,7 @@
       <div class="card"><span>最后估值</span><strong id="lastEstimatedCount">—</strong></div>
       <div class="card"><span>可申购/限额</span><strong id="subscribableCount">—</strong></div>
       <div class="card"><span>Shadow研究</span><strong id="shadowCount">—</strong></div>
+      <div class="card"><span>估值已验证</span><strong id="validationCount">—</strong></div>
       <div class="card"><span>国内指数NAV</span><strong id="navFreshness">—</strong></div>
       <div class="card"><span>采集状态</span><strong id="collectorStatus">—</strong></div>
     </section>
@@ -74,15 +75,17 @@
             <th data-key="pct_change" class="num">涨跌</th>
             <th data-key="volume" class="num">成交量</th>
             <th data-key="amount" class="num">成交额</th>
+            <th data-key="_depth">盘口（买/卖）</th>
             <th data-key="_estimate_nav_display" class="num primary-col">估算净值</th>
             <th data-key="_estimate_premium_display" class="num primary-col">估算溢价</th>
-            <th data-key="estimated_nav_quality">估值质量</th>
+            <th data-key="_validation">估值验证</th>
             <th data-key="_research_state">研究状态</th>
             <th data-key="static_premium_rate" class="num">官方NAV溢价</th>
             <th data-key="official_nav" class="num">官方NAV</th>
             <th data-key="official_nav_date">NAV日期</th>
             <th data-key="subscription_status">申购状态</th>
             <th data-key="daily_subscription_limit" class="num">申购限额</th>
+            <th data-key="_execution">申购 → 可卖</th>
             <th data-key="redemption_status">赎回状态</th>
             <th data-key="quote_time">行情时间</th>
           </tr>
