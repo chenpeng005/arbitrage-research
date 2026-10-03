@@ -50,7 +50,7 @@ button:disabled { opacity: .5; cursor: default; }
 table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; font-size: 13px; }
 th, td {
   padding: 8px 9px; border-right: 1px solid #eaecf0; border-bottom: 1px solid #eaecf0;
-  white-space: nowrap; vertical-align: middle;
+  white-space: nowrap; vertical-align: middle; text-align: center;
 }
 th {
   position: sticky; top: 0; z-index: 2; background: #f8fafc;
@@ -60,7 +60,7 @@ th:hover { background: #eef2f6; }
 th.sorted::after { content: " ▼"; font-size: 9px; color: #667085; }
 th.sorted[data-dir="asc"]::after { content: " ▲"; }
 tr:hover td { background: #fbfcfd; }
-.num { text-align: right; font-variant-numeric: tabular-nums; }
+.num { text-align: center; font-variant-numeric: tabular-nums; }
 .mono { font-variant-numeric: tabular-nums; color: #667085; }
 .code { font-weight: 650; font-variant-numeric: tabular-nums; }
 .name { color: #667085; margin-top: 2px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
@@ -103,6 +103,7 @@ tr:hover td { background: #fbfcfd; }
   white-space: normal;
   padding: 12px 16px;
   border-bottom: 1px solid #d0d5dd;
+  text-align: left;
 }
 .estimate-detail-row:hover td { background: #f8fafc; }
 .estimate-detail-facts {
