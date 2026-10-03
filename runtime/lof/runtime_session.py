@@ -38,6 +38,7 @@ class LofRuntimeSession:
     second_previous_trading_day: date | None = None
     szse_transport: str = "DIRECT_OFFICIAL"
     szse_relay_bundle: SzseRelayBundle | None = None
+    runtime_data_root: str | Path | None = None
 
     @classmethod
     def build(
@@ -50,6 +51,7 @@ class LofRuntimeSession:
         tracking_index_fixture_path: str | Path | None = None,
         szse_relay_base_url: str | None = DEFAULT_SZSE_RELAY_BASE_URL,
         szse_relay_max_age_seconds: int = DEFAULT_RELAY_MAX_AGE_SECONDS,
+        runtime_data_root: str | Path | None = None,
     ) -> "LofRuntimeSession":
         universe = fetch_all_lof_universe(
             timeout=timeout,
@@ -116,6 +118,7 @@ class LofRuntimeSession:
                 else "DIRECT_OFFICIAL"
             ),
             szse_relay_bundle=relay_bundle,
+            runtime_data_root=runtime_data_root,
         )
 
     def collect(
@@ -143,6 +146,7 @@ class LofRuntimeSession:
             trade_states_override=trade_states_override,
             szse_relay_bundle=self.szse_relay_bundle,
             snapshot_id=snapshot_id,
+            runtime_data_root=self.runtime_data_root,
         )
 
     def collect_and_persist(
