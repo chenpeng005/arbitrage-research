@@ -33,6 +33,17 @@ MODEL_VERSION_BY_METHOD = {
     "RISK_ASSET_OVERLAY": "R2C_RISK_OVERLAY_V1",
 }
 
+# These methods already have a manually audited 2026-09-30 baseline after the
+# freshness/last-reliable reconstruction. Their existing V1 observations may
+# seed the current model version. Other legacy observations remain historical.
+AUDITED_BASELINE_METHODS = {
+    "INDEX_PROXY_PREV_CLOSE",
+    "CSI_COMPONENT_WEIGHT_PREV_CLOSE",
+    "TARGET_ETF_PREV_CLOSE",
+    "MULTIDAY_PROXY_FX_BRIDGE",
+}
+AUDITED_BASELINE_MAX_TRUTH_DATE = "2026-09-30"
+
 
 def estimate_model_version(method: Any) -> str:
     value = str(method or "UNKNOWN").strip() or "UNKNOWN"
@@ -298,7 +309,16 @@ def _normalize_observations(raw: dict) -> tuple[dict[str, dict], bool]:
             continue
         row = dict(value)
         if not row.get("model_version"):
-            row["model_version"] = _legacy_model_version(row.get("method"))
+            method = str(row.get("method") or "UNKNOWN")
+            truth_date = str(row.get("truth_date") or "")
+            row["model_version"] = (
+                estimate_model_version(method)
+                if (
+                    method in AUDITED_BASELINE_METHODS
+                    and truth_date <= AUDITED_BASELINE_MAX_TRUTH_DATE
+                )
+                else _legacy_model_version(method)
+            )
             changed = True
         normalized[str(key)] = row
     return normalized, changed
