@@ -118,8 +118,59 @@ class EstimateFreshnessAuditTest(unittest.TestCase):
         }
         audit = build_freshness_audit(snapshot=snapshot)
         self.assertIn(
-            "PROXY_NEWER_THAN_ESTIMATE",
+            "FX_OLDER_THAN_PROXY_LIMITS_FRESHNESS",
             audit["rows"][0]["diagnostic_flags"],
+        )
+
+    def test_r2_promoted_off_market_waits_for_next_active_session(self):
+        snapshot = {
+            "snapshot_id": "runtime-20261004T051800",
+            "generated_at": "2026-10-04T05:18:00+08:00",
+            "rows": [
+                {
+                    "code": "501219",
+                    "name": "智胜先锋LOF",
+                    "resolver_class": "R2_DOMESTIC_OTHER",
+                    "lof_type": "EQUITY",
+                    "quote_status": "STALE",
+                    "quote_time": "2026-09-30T15:00:00+08:00",
+                    "official_nav_date": "2026-09-30",
+                    "official_nav_lag_label": "T-1",
+                    "estimated_nav_status": "UNAVAILABLE",
+                    "estimated_nav_method": "DISCLOSED_HOLDINGS_BASKET",
+                    "estimated_model_id": "R2A_HOLDINGS_BASKET",
+                    "estimated_model_version": "R2A_HOLDINGS_BASKET_V1",
+                    "estimated_nav_error": "R2_PROMOTED_INPUT_UNAVAILABLE",
+                }
+            ],
+        }
+        shadow_registry = {
+            "rows": {
+                "501219": {
+                    "shadow_status": "UNAVAILABLE",
+                    "shadow_latest_generated_at": "2026-10-03T07:49:40+08:00",
+                    "models": [
+                        {
+                            "method": "DISCLOSED_HOLDINGS_BASKET",
+                            "error": "OFFICIAL_NAV_NOT_T1",
+                        }
+                    ],
+                }
+            }
+        }
+        audit = build_freshness_audit(
+            snapshot=snapshot,
+            shadow_registry=shadow_registry,
+        )
+        row = audit["rows"][0]
+        self.assertEqual(row["update_state"], "WAITING_NEXT_ACTIVE_SESSION")
+        self.assertEqual(
+            row["blocker"],
+            "R2_SHADOW_NAV_SYNC_WAITS_FOR_FRESH_MARKET",
+        )
+        self.assertEqual(
+            audit["summary"]["waiting_next_active_session_count"],
+            1,
         )
 
     def test_cadence_profile_measures_unique_estimate_updates(self):
