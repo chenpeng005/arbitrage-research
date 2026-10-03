@@ -46,12 +46,56 @@ def _refresh_nav(
     session: LofRuntimeSession,
     *,
     timeout: int,
+    as_of: datetime,
+    previous_records: list[OfficialNavRecord] | None = None,
 ) -> list[OfficialNavRecord]:
     return fetch_all_official_nav(
         session.universe,
         timeout=timeout,
         szse_relay_bundle=session.szse_relay_bundle,
+        expected_nav_date=(
+            session.estimated_nav_context.previous_trading_day
+        ),
+        fallback_as_of_date=as_of.date(),
+        previous_records=previous_records,
     )
+
+
+def _nav_refresh_fields(
+    rows: list[OfficialNavRecord],
+    *,
+    expected_nav_date,
+) -> dict:
+    available = [row for row in rows if row.available]
+    dates = [row.nav_date for row in available if row.nav_date is not None]
+    return {
+        "count": len(rows),
+        "available_count": len(available),
+        "expected_nav_date": (
+            expected_nav_date.isoformat()
+            if expected_nav_date is not None
+            else None
+        ),
+        "latest_nav_date": (
+            max(dates).isoformat() if dates else None
+        ),
+        "expected_or_newer_count": sum(
+            row.nav_date is not None
+            and expected_nav_date is not None
+            and row.nav_date >= expected_nav_date
+            for row in available
+        ),
+        "older_than_expected_count": sum(
+            row.nav_date is not None
+            and expected_nav_date is not None
+            and row.nav_date < expected_nav_date
+            for row in available
+        ),
+        "published_fallback_count": sum(
+            row.source == "EASTMONEY_PUBLISHED_NAV_FALLBACK"
+            for row in available
+        ),
+    }
 
 
 def _refresh_state(
@@ -94,7 +138,11 @@ def run_runtime_loop(
 
     now = now_fn()
     session = LofRuntimeSession.build(as_of=now, timeout=timeout)
-    nav_cache = _refresh_nav(session, timeout=timeout)
+    nav_cache = _refresh_nav(
+        session,
+        timeout=timeout,
+        as_of=now,
+    )
     state_cache = _refresh_state(session, timeout=timeout)
     last_session_refresh = monotonic_fn()
     last_nav_refresh = last_session_refresh
@@ -119,7 +167,12 @@ def run_runtime_loop(
                     as_of=now,
                     timeout=timeout,
                 )
-                new_nav = _refresh_nav(new_session, timeout=timeout)
+                new_nav = _refresh_nav(
+                    new_session,
+                    timeout=timeout,
+                    as_of=now,
+                    previous_records=nav_cache,
+                )
                 new_state = _refresh_state(new_session, timeout=timeout)
                 session = new_session
                 nav_cache = new_nav
@@ -140,9 +193,22 @@ def run_runtime_loop(
 
         if cycle_started - last_nav_refresh >= nav_refresh_seconds:
             try:
-                nav_cache = _refresh_nav(session, timeout=timeout)
+                nav_cache = _refresh_nav(
+                    session,
+                    timeout=timeout,
+                    as_of=now,
+                    previous_records=nav_cache,
+                )
                 last_nav_refresh = cycle_started
-                _log("nav_refreshed", count=len(nav_cache))
+                _log(
+                    "nav_refreshed",
+                    **_nav_refresh_fields(
+                        nav_cache,
+                        expected_nav_date=(
+                            session.estimated_nav_context.previous_trading_day
+                        ),
+                    ),
+                )
             except Exception as exc:
                 _log(
                     "nav_refresh_failed",
