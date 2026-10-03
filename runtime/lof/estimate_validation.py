@@ -112,6 +112,10 @@ def _history_row(snapshot: dict, row: dict) -> dict | None:
         "code": code,
         "name": row.get("name"),
         "resolver_class": row.get("resolver_class"),
+        "anchor_official_nav": row.get("official_nav"),
+        "anchor_official_nav_date": _iso_text(
+            row.get("official_nav_date")
+        )[:10],
         "estimated_nav": nav,
         "estimated_nav_time": _iso_text(estimate_time),
         "estimated_nav_method": row.get("estimated_nav_method"),
