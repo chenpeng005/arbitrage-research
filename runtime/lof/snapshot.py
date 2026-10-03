@@ -164,6 +164,7 @@ def build_market_snapshot(
             estimated_model_version = None
             estimated_nav_quality = "UNKNOWN"
             estimated_nav_status = "UNAVAILABLE"
+            estimated_nav_error = "ESTIMATED_NAV_RESULT_MISSING"
             estimated_nav_age = None
             estimated_nav_proxy = None
             estimated_nav_proxy_time = None
@@ -185,6 +186,7 @@ def build_market_snapshot(
             )
             estimated_nav_quality = estimated.estimated_nav_quality
             estimated_nav_status = estimated.estimated_nav_status
+            estimated_nav_error = estimated.error
             estimated_nav_proxy = estimated.proxy_id
             estimated_nav_proxy_time = estimated.proxy_time
             estimated_nav_proxy_return = estimated.proxy_return
@@ -291,6 +293,7 @@ def build_market_snapshot(
             "estimated_model_version": estimated_model_version,
             "estimated_nav_quality": estimated_nav_quality,
             "estimated_nav_status": estimated_nav_status,
+            "estimated_nav_error": estimated_nav_error,
             "estimated_nav_age_seconds": estimated_nav_age,
             "estimated_nav_proxy": estimated_nav_proxy,
             "estimated_nav_proxy_time": estimated_nav_proxy_time,
