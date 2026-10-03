@@ -1,4 +1,4 @@
-from runtime.lof.web_app import nav_freshness_summary
+from runtime.lof.nav_freshness import nav_freshness_summary
 
 
 def test_r1_nav_freshness_passes_when_all_t1():
