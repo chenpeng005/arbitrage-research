@@ -142,11 +142,16 @@ def resolve_r1_batch(
             continue
 
         if proxy is None or proxy.status != "RESOLVED" or not proxy.index_code:
+            detail = proxy.error if proxy is not None else None
             results.append(
                 _unavailable(
                     fund_code=code,
-                    proxy_id=None,
-                    error="UNRESOLVED_INDEX_PROXY",
+                    proxy_id=(proxy.index_code if proxy else None),
+                    error=(
+                        f"UNRESOLVED_INDEX_PROXY:{detail}"
+                        if detail
+                        else "UNRESOLVED_INDEX_PROXY"
+                    ),
                 )
             )
             continue
