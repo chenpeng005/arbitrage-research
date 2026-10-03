@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from .estimate_validation import load_estimate_validation_summary
 from .nav_freshness import nav_freshness_summary
 from .r2c_profile_summary import load_r2c_t1_profile_summary
 from .shadow_registry import load_shadow_registry
@@ -55,6 +56,11 @@ def latest_snapshot():
     result = store.enrich_with_last_estimates(snapshot)
     result["nav_freshness"] = nav_freshness_summary(snapshot)
     return result
+
+
+@app.get("/api/lof/estimate-validation")
+def estimate_validation_summary():
+    return load_estimate_validation_summary(DATA_ROOT)
 
 
 @app.get("/api/lof/r2c-t1-profile")
