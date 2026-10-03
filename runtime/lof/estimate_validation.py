@@ -11,6 +11,8 @@ from pathlib import Path
 import tempfile
 from typing import Any, Iterable
 
+from .estimate_reliability import is_reliable_available_estimate
+
 
 HISTORY_VERSION = "LOF_ESTIMATE_HISTORY_V1"
 VALIDATION_VERSION = "LOF_ESTIMATE_VALIDATION_V1"
@@ -101,12 +103,17 @@ def _ledger_path(data_root: str | Path) -> Path:
 
 
 def _history_row(snapshot: dict, row: dict) -> dict | None:
-    status = str(row.get("estimated_nav_status") or "")
     nav = _decimal(row.get("estimated_nav"))
     estimate_time = row.get("estimated_nav_time")
     day = _estimate_day(estimate_time)
     code = str(row.get("code") or "").strip()
-    if status != "AVAILABLE" or nav is None or nav <= 0 or not day or not code:
+    if (
+        not is_reliable_available_estimate(row)
+        or nav is None
+        or nav <= 0
+        or not day
+        or not code
+    ):
         return None
     return {
         "code": code,
@@ -170,7 +177,7 @@ def record_estimate_history(data_root: str | Path, snapshot: dict) -> dict:
             day
             for row in snapshot.get("rows") or []
             if (day := _estimate_day(row.get("estimated_nav_time")))
-            and str(row.get("estimated_nav_status") or "") == "AVAILABLE"
+            and is_reliable_available_estimate(row)
             and _decimal(row.get("estimated_nav")) is not None
         }
     )
@@ -402,7 +409,7 @@ def rebuild_estimate_history(data_root: str | Path) -> dict:
             day
             for row in snapshot.get("rows") or []
             if (day := _estimate_day(row.get("estimated_nav_time")))
-            and str(row.get("estimated_nav_status") or "") == "AVAILABLE"
+            and is_reliable_available_estimate(row)
             and _decimal(row.get("estimated_nav")) is not None
         }
         for day in days:
