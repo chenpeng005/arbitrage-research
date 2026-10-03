@@ -263,20 +263,172 @@ def _aggregate(observations: Iterable[dict]) -> dict:
             "mae_pct": None,
             "p90_abs_error_pct": None,
             "bias_pct": None,
+            "max_abs_error_pct": None,
             "last_error_pct": None,
+            "first_truth_date": None,
             "last_truth_date": None,
         }
     errors = [float(row["error_pct"]) for row in rows]
     absolute = [abs(value) for value in errors]
     latest = max(rows, key=lambda row: str(row.get("truth_date") or ""))
+    earliest = min(rows, key=lambda row: str(row.get("truth_date") or ""))
     return {
         "sample_count": len(rows),
         "mae_pct": sum(absolute) / len(absolute),
         "p90_abs_error_pct": _p90(absolute),
         "bias_pct": sum(errors) / len(errors),
+        "max_abs_error_pct": max(absolute),
         "last_error_pct": float(latest["error_pct"]),
+        "first_truth_date": earliest.get("truth_date"),
         "last_truth_date": latest.get("truth_date"),
     }
+
+
+def _legacy_model_version(method: Any) -> str:
+    value = str(method or "UNKNOWN").strip() or "UNKNOWN"
+    return f"LEGACY_PRE_V2:{value}"
+
+
+def _normalize_observations(raw: dict) -> tuple[dict[str, dict], bool]:
+    normalized: dict[str, dict] = {}
+    changed = False
+    for key, value in raw.items():
+        if not isinstance(value, dict):
+            changed = True
+            continue
+        row = dict(value)
+        if not row.get("model_version"):
+            row["model_version"] = _legacy_model_version(row.get("method"))
+            changed = True
+        normalized[str(key)] = row
+    return normalized, changed
+
+
+def _window_aggregates(observations: Iterable[dict]) -> dict[str, dict]:
+    ordered = sorted(
+        observations,
+        key=lambda row: str(row.get("truth_date") or ""),
+        reverse=True,
+    )
+    result: dict[str, dict] = {}
+    for days in VALIDATION_WINDOWS:
+        result[str(days)] = {
+            "requested_days": days,
+            **_aggregate(ordered[:days]),
+        }
+    return result
+
+
+def _current_model_map(snapshot: dict) -> dict[str, dict]:
+    result: dict[str, dict] = {}
+    for row in snapshot.get("rows") or []:
+        code = str(row.get("code") or "").strip()
+        method = str(row.get("estimated_nav_method") or "").strip()
+        if not code or not method or method == "UNAVAILABLE":
+            continue
+        result[code] = {
+            "code": code,
+            "name": row.get("name"),
+            "resolver_class": row.get("resolver_class"),
+            "method": method,
+            "model_version": estimate_model_version(method),
+        }
+    return result
+
+
+def _model_coverage_signature(snapshot: dict) -> str:
+    parts = []
+    for code, context in sorted(_current_model_map(snapshot).items()):
+        parts.append(
+            f"{code}|{context['method']}|{context['model_version']}"
+        )
+    return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()
+
+
+def _build_validation_views(
+    observations: dict[str, dict],
+    snapshot: dict,
+) -> tuple[dict, dict, dict]:
+    by_code: dict[str, list[dict]] = {}
+    by_method: dict[str, list[dict]] = {}
+    for observation in observations.values():
+        code = str(observation.get("code") or "")
+        method = str(observation.get("method") or "UNKNOWN")
+        if code:
+            by_code.setdefault(code, []).append(observation)
+        by_method.setdefault(method, []).append(observation)
+
+    current_models = _current_model_map(snapshot)
+    rows: dict[str, dict] = {}
+    for code in sorted(set(by_code) | set(current_models)):
+        values = by_code.get(code, [])
+        latest = (
+            max(values, key=lambda row: str(row.get("truth_date") or ""))
+            if values
+            else {}
+        )
+        current = current_models.get(code) or {
+            "code": code,
+            "name": latest.get("name"),
+            "resolver_class": latest.get("resolver_class"),
+            "method": latest.get("method") or "UNKNOWN",
+            "model_version": (
+                latest.get("model_version")
+                or _legacy_model_version(latest.get("method"))
+            ),
+        }
+        current_version = str(current["model_version"])
+        version_values = [
+            row
+            for row in values
+            if str(row.get("model_version") or "") == current_version
+        ]
+        rows[code] = {
+            "code": code,
+            "name": current.get("name") or latest.get("name"),
+            "resolver_class": (
+                current.get("resolver_class")
+                or latest.get("resolver_class")
+            ),
+            "current_method": current.get("method"),
+            "current_model_version": current_version,
+            **_aggregate(values),
+            "current_version": _aggregate(version_values),
+            "windows": _window_aggregates(version_values),
+        }
+
+    methods: dict[str, dict] = {}
+    current_methods = {
+        str(value.get("method") or "UNKNOWN")
+        for value in current_models.values()
+    }
+    for method in sorted(set(by_method) | current_methods):
+        values = by_method.get(method, [])
+        current_version = estimate_model_version(method)
+        version_values = [
+            row
+            for row in values
+            if str(row.get("model_version") or "") == current_version
+        ]
+        methods[method] = {
+            "method": method,
+            "current_model_version": current_version,
+            **_aggregate(values),
+            "current_version": _aggregate(version_values),
+            "windows": _window_aggregates(version_values),
+        }
+
+    summary = {
+        "observation_count": len(observations),
+        "fund_count": len(rows),
+        "method_count": len(methods),
+        "current_version_validated_fund_count": sum(
+            int((row.get("current_version") or {}).get("sample_count") or 0) > 0
+            for row in rows.values()
+        ),
+        "window_days": list(VALIDATION_WINDOWS),
+    }
+    return rows, methods, summary
 
 
 def update_estimate_validation_ledger(
