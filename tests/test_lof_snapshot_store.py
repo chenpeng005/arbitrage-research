@@ -142,6 +142,55 @@ class LofSnapshotStoreTest(unittest.TestCase):
                 "2026-09-30T14:58:48+08:00",
             )
 
+    def test_component_holiday_recompute_is_not_last_reliable(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            store = LofSnapshotStore(td)
+            valid = {
+                "snapshot_id": "s-valid",
+                "generated_at": "2026-09-30T15:00:00+08:00",
+                "rows": [
+                    {
+                        "code": "501005",
+                        "name": "精准医疗LOF",
+                        "price": 1.10,
+                        "quote_time": "2026-09-30T14:59:50+08:00",
+                        "estimated_nav": 1.09,
+                        "estimated_nav_time": "2026-09-30T14:59:50+08:00",
+                        "estimated_nav_proxy_time": "2026-09-30T14:59:50+08:00",
+                        "estimated_nav_status": "AVAILABLE",
+                        "estimated_nav_method": "CSI_COMPONENT_WEIGHT_PREV_CLOSE",
+                        "estimated_nav_quality": "MEDIUM",
+                        "estimated_premium_rate": 0.91,
+                    }
+                ],
+            }
+            bad_holiday = {
+                "snapshot_id": "s-bad",
+                "generated_at": "2026-10-03T10:00:00+08:00",
+                "rows": [
+                    {
+                        "code": "501005",
+                        "name": "精准医疗LOF",
+                        "price": 1.10,
+                        "quote_time": "2026-09-30T16:14:23+08:00",
+                        "estimated_nav": 1.11,
+                        "estimated_nav_time": "2026-10-03T10:00:00+08:00",
+                        "estimated_nav_status": "AVAILABLE",
+                        "estimated_nav_method": "CSI_COMPONENT_WEIGHT_PREV_CLOSE",
+                        "estimated_nav_quality": "MEDIUM",
+                        "estimated_premium_rate": -0.90,
+                    }
+                ],
+            }
+            store.persist(valid)
+            store.persist(bad_holiday)
+            row = store.enrich_with_last_estimates(bad_holiday)["rows"][0]
+            self.assertAlmostEqual(row["last_estimated_nav"], 1.09)
+            self.assertEqual(
+                row["last_estimated_nav_time"],
+                "2026-09-30T14:59:50+08:00",
+            )
+
     def test_snapshot_id_is_required(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             with self.assertRaises(ValueError):
