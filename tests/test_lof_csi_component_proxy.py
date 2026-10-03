@@ -104,7 +104,7 @@ class LofCsiComponentProxyTest(unittest.TestCase):
                 name="A",
                 current=Decimal("11"),
                 previous_close=Decimal("10"),
-                quote_time=self.now,
+                quote_time=self.now.replace(second=5),
                 source="TENCENT_QUOTE",
             ),
             "sh600000": IndexQuote(
@@ -113,7 +113,7 @@ class LofCsiComponentProxyTest(unittest.TestCase):
                 name="B",
                 current=Decimal("9.5"),
                 previous_close=Decimal("10"),
-                quote_time=self.now,
+                quote_time=self.now.replace(second=20),
                 source="TENCENT_QUOTE",
             ),
         }
@@ -125,6 +125,7 @@ class LofCsiComponentProxyTest(unittest.TestCase):
         self.assertEqual(result.source, "CSI_COMPONENT_WEIGHT_PROXY")
         self.assertEqual(result.previous_close, Decimal("1"))
         self.assertEqual(result.current, Decimal("1.04"))
+        self.assertEqual(result.quote_time, self.now.replace(second=5))
 
     @patch("runtime.lof.csi_component_proxy.fetch_tencent_index_quotes")
     def test_low_quote_coverage_fails_closed(self, quote_mock) -> None:
