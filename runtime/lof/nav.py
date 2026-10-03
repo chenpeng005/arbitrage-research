@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 import json
 import os
@@ -16,6 +16,8 @@ from .universe import LofIdentity
 
 SSE_NAV_URL = "https://query.sse.com.cn/commonQuery.do"
 SZSE_NAV_URL = "https://www.szse.cn/api/report/ShowReport/data"
+PUBLISHED_NAV_FALLBACK_URL = "https://api.fund.eastmoney.com/f10/lsjz"
+PUBLISHED_NAV_FALLBACK_SOURCE = "EASTMONEY_PUBLISHED_NAV_FALLBACK"
 
 
 @dataclass(frozen=True)
@@ -364,12 +366,129 @@ def _szse_nav_from_relay(
     return rows
 
 
+def parse_published_nav_fallback_payload(
+    payload: dict[str, Any],
+    *,
+    requested_code: str,
+    exchange: str,
+    fetched_at: datetime | None = None,
+) -> OfficialNavRecord:
+    fetched_at = fetched_at or datetime.now(timezone.utc)
+    rows = (payload.get("Data") or {}).get("LSJZList") or []
+    candidates: list[tuple[date, Decimal]] = []
+    for row in rows:
+        nav = _decimal_or_none(row.get("DWJZ"))
+        nav_date = _date_or_none(row.get("FSRQ"))
+        if nav is None or nav_date is None:
+            continue
+        candidates.append((nav_date, nav))
+
+    if not candidates:
+        return OfficialNavRecord(
+            code=requested_code,
+            exchange=exchange,
+            nav=None,
+            nav_date=None,
+            fetched_at=fetched_at,
+            source=PUBLISHED_NAV_FALLBACK_SOURCE,
+            error="NO_PUBLISHED_NAV_FALLBACK",
+        )
+
+    nav_date, nav = max(candidates, key=lambda item: item[0])
+    return OfficialNavRecord(
+        code=requested_code,
+        exchange=exchange,
+        nav=nav,
+        nav_date=nav_date,
+        fetched_at=fetched_at,
+        source=PUBLISHED_NAV_FALLBACK_SOURCE,
+        error=None,
+    )
+
+
+def fetch_published_nav_fallback_for_code(
+    code: str,
+    *,
+    exchange: str,
+    as_of: date,
+    timeout: int = 10,
+) -> OfficialNavRecord:
+    start = as_of - timedelta(days=21)
+    payload = _get_json(
+        PUBLISHED_NAV_FALLBACK_URL,
+        {
+            "fundCode": code,
+            "pageIndex": 1,
+            "pageSize": 8,
+            "startDate": start.isoformat(),
+            "endDate": as_of.isoformat(),
+        },
+        referer="https://fundf10.eastmoney.com/",
+        timeout=timeout,
+        retries=2,
+    )
+    return parse_published_nav_fallback_payload(
+        payload,
+        requested_code=code,
+        exchange=exchange,
+    )
+
+
+def fetch_published_nav_fallback(
+    identities: Iterable[LofIdentity],
+    *,
+    as_of: date,
+    timeout: int = 10,
+    max_workers: int = 16,
+) -> list[OfficialNavRecord]:
+    rows = list(identities)
+    if not rows:
+        return []
+
+    results: dict[tuple[str, str], OfficialNavRecord] = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        future_map = {
+            pool.submit(
+                fetch_published_nav_fallback_for_code,
+                item.code,
+                exchange=item.exchange,
+                as_of=as_of,
+                timeout=timeout,
+            ): item
+            for item in rows
+        }
+        for future in as_completed(future_map):
+            item = future_map[future]
+            key = (item.exchange, item.code)
+            try:
+                results[key] = future.result()
+            except Exception as exc:
+                results[key] = OfficialNavRecord(
+                    code=item.code,
+                    exchange=item.exchange,
+                    nav=None,
+                    nav_date=None,
+                    fetched_at=datetime.now(timezone.utc),
+                    source=PUBLISHED_NAV_FALLBACK_SOURCE,
+                    error=f"FETCH_ERROR:{type(exc).__name__}",
+                )
+
+    return [
+        results[(item.exchange, item.code)]
+        for item in rows
+    ]
+
+
 def fetch_all_official_nav(
     universe: Iterable[LofIdentity],
     *,
     timeout: int = 15,
     szse_max_workers: int = 8,
     szse_relay_bundle: "SzseRelayBundle | None" = None,
+    expected_nav_date: date | None = None,
+    fallback_as_of_date: date | None = None,
+    previous_records: Iterable[OfficialNavRecord] | None = None,
+    published_fallback_workers: int = 16,
 ) -> list[OfficialNavRecord]:
     rows = list(universe)
     sse_codes = {row.code for row in rows if row.exchange == "SSE"}
@@ -436,6 +555,59 @@ def fetch_all_official_nav(
     by_key: dict[tuple[str, str], OfficialNavRecord] = {
         (row.exchange, row.code): row for row in [*sse_rows, *szse_rows]
     }
+
+    if expected_nav_date is not None:
+        previous_by_key = {
+            (row.exchange, row.code): row
+            for row in (previous_records or [])
+            if row.available
+        }
+        fallback_needed: list[LofIdentity] = []
+
+        for item in rows:
+            key = (item.exchange, item.code)
+            primary = by_key.get(key)
+            primary_date = primary.nav_date if primary is not None else None
+            if (
+                primary_date is not None
+                and primary_date >= expected_nav_date
+            ):
+                continue
+
+            previous = previous_by_key.get(key)
+            previous_date = (
+                previous.nav_date if previous is not None else None
+            )
+            if (
+                previous is not None
+                and previous.source == PUBLISHED_NAV_FALLBACK_SOURCE
+                and previous_date is not None
+                and previous_date >= expected_nav_date
+            ):
+                by_key[key] = previous
+                continue
+            fallback_needed.append(item)
+
+        fallback_rows = fetch_published_nav_fallback(
+            fallback_needed,
+            as_of=fallback_as_of_date or expected_nav_date,
+            timeout=min(timeout, 10),
+            max_workers=published_fallback_workers,
+        )
+        for fallback in fallback_rows:
+            if not fallback.available:
+                continue
+            key = (fallback.exchange, fallback.code)
+            primary = by_key.get(key)
+            if (
+                primary is None
+                or primary.nav_date is None
+                or (
+                    fallback.nav_date is not None
+                    and fallback.nav_date > primary.nav_date
+                )
+            ):
+                by_key[key] = fallback
 
     # Preserve explicit missing records for every universe member.
     result: list[OfficialNavRecord] = []
