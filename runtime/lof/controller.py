@@ -3,6 +3,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
+from pathlib import Path
 
 from .classification import (
     FundTypeRecord,
@@ -42,6 +43,7 @@ def collect_market_snapshot(
     trade_states_override: list[FundTradeStateRecord] | None = None,
     szse_relay_bundle: "SzseRelayBundle | None" = None,
     snapshot_id: str | None = None,
+    runtime_data_root: str | Path | None = None,
 ) -> dict[str, Any]:
     """Collect one all-market LOF snapshot.
 
@@ -134,6 +136,7 @@ def collect_market_snapshot(
                 context=estimated_nav_context,
                 as_of=market_cutoff,
                 timeout=timeout,
+                runtime_data_root=runtime_data_root,
             )
         except Exception as exc:
             lane_errors["estimated_nav"] = _error_name(exc)
