@@ -109,7 +109,11 @@ def resolve_estimated_nav_lane(
                 results[code] = _unavailable(
                     code=code,
                     resolver_class=decision.resolver_class,
-                    error="R2_NOT_PROMOTED_OR_INPUT_UNAVAILABLE",
+                    error=(
+                        "R2_NOT_PROMOTED_OR_INPUT_UNAVAILABLE"
+                        if runtime_data_root is not None
+                        else "RESOLVER_CLASS_NOT_IMPLEMENTED"
+                    ),
                 )
             continue
 
