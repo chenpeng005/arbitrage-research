@@ -170,6 +170,8 @@ def build_market_snapshot(
             estimated_nav_proxy_time = None
             estimated_nav_proxy_return = None
             estimated_nav_fx_return = None
+            estimated_nav_fx_time = None
+            estimated_nav_fx_source = None
             estimated_nav_exposure_ratio = None
             estimated_nav_tracking_adjustment = None
             estimated_premium = None
@@ -191,6 +193,8 @@ def build_market_snapshot(
             estimated_nav_proxy_time = estimated.proxy_time
             estimated_nav_proxy_return = estimated.proxy_return
             estimated_nav_fx_return = estimated.fx_return
+            estimated_nav_fx_time = estimated.fx_time
+            estimated_nav_fx_source = estimated.fx_source
             estimated_nav_exposure_ratio = estimated.exposure_ratio_used
             estimated_nav_tracking_adjustment = estimated.tracking_adjustment_used
             if estimated_nav_time is None:
@@ -299,6 +303,8 @@ def build_market_snapshot(
             "estimated_nav_proxy_time": estimated_nav_proxy_time,
             "estimated_nav_proxy_return": estimated_nav_proxy_return,
             "estimated_nav_fx_return": estimated_nav_fx_return,
+            "estimated_nav_fx_time": estimated_nav_fx_time,
+            "estimated_nav_fx_source": estimated_nav_fx_source,
             "estimated_nav_exposure_ratio": estimated_nav_exposure_ratio,
             "estimated_nav_tracking_adjustment": estimated_nav_tracking_adjustment,
             "bid1_estimated_premium_rate": (
