@@ -11,6 +11,11 @@ from typing import Any, Iterable
 from .estimate_model_registry import estimate_model_id, estimate_model_version
 from .estimate_persistence import write_model_registry_snapshot
 from .estimate_reliability import is_reliable_available_estimate
+from .snapshot_archive import (
+    iter_snapshot_paths,
+    read_snapshot_text,
+    write_snapshot_gzip,
+)
 from .snapshot_retention import maybe_apply_snapshot_retention
 from .estimate_validation import (
     record_estimate_history,
@@ -74,8 +79,8 @@ class LofSnapshotStore:
         self.root.mkdir(parents=True, exist_ok=True)
 
         payload = snapshot_to_json(snapshot) + "\n"
-        archive_path = self.snapshots_dir / f"{snapshot_id}.json"
-        self._atomic_write(archive_path, payload)
+        archive_path = self.snapshots_dir / f"{snapshot_id}.json.gz"
+        write_snapshot_gzip(archive_path, payload)
         self._atomic_write(self.latest_path, payload)
         try:
             self.update_last_estimates(snapshot)
@@ -247,7 +252,7 @@ class LofSnapshotStore:
         paths = (
             [Path(p) for p in snapshot_paths]
             if snapshot_paths is not None
-            else sorted(self.snapshots_dir.glob("runtime-*.json"))
+            else iter_snapshot_paths(self.root)
         )
         state = {
             "version": LAST_ESTIMATE_VERSION,
@@ -257,7 +262,7 @@ class LofSnapshotStore:
         for path in paths:
             try:
                 snapshot = snapshot_from_json(
-                    path.read_text(encoding="utf-8")
+                    read_snapshot_text(path)
                 )
             except (OSError, ValueError, json.JSONDecodeError):
                 continue
