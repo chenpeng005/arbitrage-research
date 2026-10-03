@@ -220,7 +220,7 @@ def _path_day(path: Path) -> date | None:
 def _fresh_quote_count(snapshot: dict, day: date) -> int:
     count = 0
     for row in snapshot.get("rows") or []:
-        if row.get("quote_status") != "AVAILABLE":
+        if row.get("quote_status") != "FRESH":
             continue
         parsed = _parse_datetime(row.get("quote_time"))
         if parsed is not None and parsed.date() == day:
