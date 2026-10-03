@@ -182,7 +182,11 @@ class LofProductionSourcePreflightTest(unittest.TestCase):
             expect_fresh_quotes=False,
             application_commit_sha="abc",
             checked_at=datetime(2026, 10, 3, 11, 0, tzinfo=TZ),
-            source_transport={"expected_nav_date": "2026-09-30"},
+            source_transport={
+                "expected_nav_date": "2026-09-30",
+                "szse_universe_transport": "DIRECT_OFFICIAL",
+                "szse_nav_transport": "DIRECT_OFFICIAL",
+            },
         )
         self.assertEqual(result["status"], "FAIL")
         check = next(
@@ -208,7 +212,11 @@ class LofProductionSourcePreflightTest(unittest.TestCase):
             expect_fresh_quotes=False,
             application_commit_sha="abc",
             checked_at=datetime(2026, 10, 3, 11, 0, tzinfo=TZ),
-            source_transport={"expected_nav_date": "2026-09-30"},
+            source_transport={
+                "expected_nav_date": "2026-09-30",
+                "szse_universe_transport": "DIRECT_OFFICIAL",
+                "szse_nav_transport": "DIRECT_OFFICIAL",
+            },
         )
         self.assertEqual(result["status"], "PASS")
 
