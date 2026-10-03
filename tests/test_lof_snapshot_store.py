@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import tempfile
 import unittest
 from datetime import date, datetime
@@ -35,6 +36,10 @@ class LofSnapshotStoreTest(unittest.TestCase):
             store = LofSnapshotStore(td)
             archive = store.persist(snapshot)
             self.assertTrue(archive.exists())
+            self.assertTrue(archive.name.endswith(".json.gz"))
+            with gzip.open(archive, "rt", encoding="utf-8") as handle:
+                archived = snapshot_from_json(handle.read())
+            self.assertEqual(archived["snapshot_id"], "lof-test")
             self.assertTrue((Path(td) / "latest_market_snapshot.json").exists())
 
             loaded = store.load_latest()
@@ -237,6 +242,36 @@ class LofSnapshotStoreTest(unittest.TestCase):
             self.assertEqual(
                 row["last_estimated_nav_time"],
                 "2026-09-30T14:59:20+08:00",
+            )
+
+    def test_rebuild_last_estimates_reads_compressed_archives(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            store = LofSnapshotStore(td)
+            snapshot = {
+                "snapshot_id": "runtime-20260930T145900",
+                "generated_at": "2026-09-30T14:59:00+08:00",
+                "rows": [
+                    {
+                        "code": "501016",
+                        "name": "券商基金LOF",
+                        "price": 1.01,
+                        "quote_time": "2026-09-30T14:58:50+08:00",
+                        "estimated_nav": 1.0,
+                        "estimated_nav_time": "2026-09-30T14:58:50+08:00",
+                        "estimated_nav_status": "AVAILABLE",
+                        "estimated_nav_method": "INDEX_PROXY_PREV_CLOSE",
+                        "estimated_premium_rate": 1.0,
+                    }
+                ],
+            }
+            archive = store.persist(snapshot)
+            self.assertTrue(archive.name.endswith(".json.gz"))
+            store.last_estimates_path.unlink()
+            rebuilt = store.rebuild_last_estimates()
+            self.assertEqual(len(rebuilt["rows"]), 1)
+            self.assertAlmostEqual(
+                rebuilt["rows"]["501016"]["estimated_nav"],
+                1.0,
             )
 
     def test_snapshot_id_is_required(self) -> None:
