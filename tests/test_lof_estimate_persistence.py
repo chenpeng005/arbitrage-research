@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+import gzip
 import json
 from pathlib import Path
 import tempfile
@@ -20,6 +21,8 @@ from runtime.lof.estimate_persistence import (
     audit_estimate_history,
     history_validation_eligible,
 )
+from runtime.lof.snapshot_archive import read_snapshot_json
+from runtime.lof.snapshot_compression import apply_snapshot_compression
 from runtime.lof.snapshot_retention import plan_snapshot_retention
 
 
@@ -237,6 +240,63 @@ class SnapshotRetentionTest(unittest.TestCase):
                 2,
             )
             self.assertGreater(len(delete), 0)
+
+
+class SnapshotCompressionTest(unittest.TestCase):
+    def test_existing_raw_snapshots_are_migrated_without_losing_content(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            directory = root / "snapshots"
+            directory.mkdir(parents=True, exist_ok=True)
+            payloads = {}
+            for stamp in ("20261001T100000", "20261001T100030"):
+                payload = {
+                    "snapshot_id": f"runtime-{stamp}",
+                    "generated_at": "2026-10-01T10:00:00+08:00",
+                    "rows": [{"code": "501016", "estimated_nav": 1.0}],
+                }
+                path = directory / f"runtime-{stamp}.json"
+                text = json.dumps(payload, ensure_ascii=False)
+                path.write_text(text, encoding="utf-8")
+                payloads[path.stem] = payload
+
+            result = apply_snapshot_compression(root)
+            self.assertEqual(result["migrated_count"], 2)
+            self.assertEqual(result["after"]["raw_count"], 0)
+            self.assertEqual(result["after"]["compressed_count"], 2)
+            self.assertLess(result["compression_ratio"], 1.0)
+
+            for snapshot_id, payload in payloads.items():
+                raw = directory / f"{snapshot_id}.json"
+                compressed = directory / f"{snapshot_id}.json.gz"
+                self.assertFalse(raw.exists())
+                self.assertTrue(compressed.exists())
+                self.assertEqual(read_snapshot_json(compressed), payload)
+
+    def test_retention_understands_compressed_snapshot_names_and_pins(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            directory = root / "snapshots"
+            directory.mkdir(parents=True, exist_ok=True)
+            ids = [
+                "runtime-20260701T100000",
+                "runtime-20260701T150000",
+            ]
+            for snapshot_id in ids:
+                path = directory / f"{snapshot_id}.json.gz"
+                with gzip.open(path, "wt", encoding="utf-8") as handle:
+                    json.dump({"snapshot_id": snapshot_id}, handle)
+            (root / "snapshot_retention_pins.json").write_text(
+                json.dumps({"snapshot_ids": [ids[0]]}),
+                encoding="utf-8",
+            )
+            plan = plan_snapshot_retention(
+                root,
+                as_of=date(2026, 10, 3),
+            )
+            keep = {Path(value).name for value in plan["keep_paths"]}
+            self.assertIn(f"{ids[0]}.json.gz", keep)
+            self.assertIn(f"{ids[1]}.json.gz", keep)
 
 
 if __name__ == "__main__":
