@@ -376,13 +376,19 @@
       ? row.estimated_nav_time
       : row.last_estimated_nav_time;
     const validation = validationProfile(row);
+    const anchorNav = currentEstimateAvailable(row)
+      ? row.official_nav
+      : row.last_estimated_anchor_nav;
+    const anchorDate = currentEstimateAvailable(row)
+      ? row.official_nav_date
+      : row.last_estimated_anchor_nav_date;
 
     const title = document.createElement("strong");
     title.textContent = `估值方法：${method}`;
     const facts = document.createElement("div");
     facts.className = "estimate-detail-facts";
     const items = [
-      `基准NAV ${fmt(row.official_nav, 4)}（${row.official_nav_date || "未知"}）`,
+      `基准NAV ${fmt(anchorNav, 4)}（${anchorDate || "未知"}）`,
       proxy ? `代理 ${proxy}` : "",
       proxyReturn === null || proxyReturn === undefined ? "" : `代理变动 ${fmtRatioPct(proxyReturn)}`,
       fxReturn === null || fxReturn === undefined ? "" : `汇率变动 ${fmtRatioPct(fxReturn)}`,
@@ -450,6 +456,17 @@
     }
     if (key === "_estimate_premium_display") {
       return displayedEstimatedPremium(row);
+    }
+    if (key === "_validation") {
+      return validationProfile(row)?.mae_pct ?? null;
+    }
+    if (key === "_execution") {
+      return row.subscription_to_sell_days
+        ?? row.subscription_confirmation_days
+        ?? null;
+    }
+    if (key === "_depth") {
+      return row.bid1_price;
     }
     const value = row[key];
     const n = num(value);
