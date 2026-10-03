@@ -137,7 +137,7 @@ def run_runtime_loop(
         signal.signal(signal.SIGINT, request_stop)
 
     now = now_fn()
-    session = LofRuntimeSession.build(as_of=now, timeout=timeout)
+    session = LofRuntimeSession.build(as_of=now, timeout=timeout, runtime_data_root=data_root)
     nav_cache = _refresh_nav(
         session,
         timeout=timeout,
@@ -166,6 +166,7 @@ def run_runtime_loop(
                 new_session = LofRuntimeSession.build(
                     as_of=now,
                     timeout=timeout,
+                    runtime_data_root=data_root,
                 )
                 new_nav = _refresh_nav(
                     new_session,
