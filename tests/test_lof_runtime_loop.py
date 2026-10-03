@@ -21,6 +21,10 @@ class _ContextBuild:
     r1_unresolved_count = 0
 
 
+class _EstimatedContext:
+    previous_trading_day = __import__("datetime").date(2026, 9, 28)
+
+
 class _FakeSession:
     def __init__(self) -> None:
         self.universe = [
@@ -31,6 +35,7 @@ class _FakeSession:
             )
         ]
         self.context_build = _ContextBuild()
+        self.estimated_nav_context = _EstimatedContext()
         self.szse_transport = "DIRECT_OFFICIAL"
         self.szse_relay_bundle = None
         self.collect_calls = []
