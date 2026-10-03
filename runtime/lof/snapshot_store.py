@@ -175,6 +175,8 @@ class LofSnapshotStore:
                     "estimated_nav_tracking_adjustment"
                 ),
                 "resolver_class": row.get("resolver_class"),
+                "anchor_official_nav": row.get("official_nav"),
+                "anchor_official_nav_date": row.get("official_nav_date"),
                 "price": price,
                 "quote_time": row.get("quote_time"),
                 "source_snapshot_id": snapshot_id,
@@ -268,6 +270,12 @@ class LofSnapshotStore:
                     ),
                     "last_estimated_resolver_class": last.get(
                         "resolver_class"
+                    ),
+                    "last_estimated_anchor_nav": last.get(
+                        "anchor_official_nav"
+                    ),
+                    "last_estimated_anchor_nav_date": last.get(
+                        "anchor_official_nav_date"
                     ),
                     "last_estimated_price": last.get("price"),
                     "last_estimated_quote_time": last.get("quote_time"),
