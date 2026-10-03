@@ -641,7 +641,7 @@
     $("shadowCount").textContent =
       state.shadowSummary.active_shadow_fund_count ?? "—";
     $("validationCount").textContent =
-      state.estimateValidationSummary.fund_count ?? "—";
+      state.estimateValidationSummary.current_version_validated_fund_count ?? "—";
     const navFreshness = snapshot.nav_freshness || {};
     const navTotal = Number(navFreshness.r1_total || 0);
     const navT1 = Number(navFreshness.r1_t1_count || 0);
