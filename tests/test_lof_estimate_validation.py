@@ -101,6 +101,29 @@ class LofEstimateValidationTest(unittest.TestCase):
                 json.dumps(ledger),
                 encoding="utf-8",
             )
+            history_dir = root / "estimate_history"
+            history_dir.mkdir(parents=True, exist_ok=True)
+            history = {
+                "version": "LOF_ESTIMATE_HISTORY_V1",
+                "date": "2026-09-30",
+                "updated_at": "2026-09-30T15:00:00+08:00",
+                "rows": {
+                    "501016": {
+                        "code": "501016",
+                        "name": "券商基金LOF",
+                        "resolver_class": "R1_DOMESTIC_INDEX",
+                        "estimated_nav": 1.001,
+                        "estimated_nav_time": "2026-09-30T15:00:00+08:00",
+                        "estimated_nav_method": "INDEX_PROXY_PREV_CLOSE",
+                        "estimated_nav_proxy": "399707",
+                        "source_snapshot_id": "legacy-estimate",
+                    }
+                },
+            }
+            (history_dir / "2026-09-30.json").write_text(
+                json.dumps(history),
+                encoding="utf-8",
+            )
             latest = {
                 "snapshot_id": "latest",
                 "generated_at": "2026-10-03T17:00:00+08:00",
@@ -109,6 +132,8 @@ class LofEstimateValidationTest(unittest.TestCase):
                         "code": "501016",
                         "name": "券商基金LOF",
                         "resolver_class": "R1_DOMESTIC_INDEX",
+                        "official_nav": 1.0,
+                        "official_nav_date": "2026-09-30",
                         "estimated_nav_method": "INDEX_PROXY_PREV_CLOSE",
                     }
                 ],
@@ -117,6 +142,7 @@ class LofEstimateValidationTest(unittest.TestCase):
                 json.dumps(latest),
                 encoding="utf-8",
             )
+            update_estimate_validation_ledger(td, latest)
             summary = load_estimate_validation_summary(td)
             row = summary["rows"]["501016"]
             self.assertEqual(row["current_model_version"], "R1_INDEX_PROXY_V1")
