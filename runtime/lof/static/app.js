@@ -128,8 +128,12 @@
 
   const executionText = (row) => {
     const sell = num(row.subscription_to_sell_days);
+    const referenceSell = num(row.onsite_subscription_to_sell_days_reference);
     const confirm = num(row.subscription_confirmation_days);
     if (sell !== null) return `T申购 → T+${sell}可卖`;
+    if (referenceSell !== null) {
+      return `场内参考 T+${referenceSell}可卖`;
+    }
     if (confirm !== null) return `T+${confirm}确认 · 可卖待核`;
     return "可卖待核";
   };
@@ -462,6 +466,7 @@
     }
     if (key === "_execution") {
       return row.subscription_to_sell_days
+        ?? row.onsite_subscription_to_sell_days_reference
         ?? row.subscription_confirmation_days
         ?? null;
     }
@@ -556,7 +561,11 @@
       cell(tr, fmtLimit(row.daily_subscription_limit, row.subscription_status), "num");
       const executionCell = cell(tr, executionText(row), "execution");
       if (num(row.subscription_to_sell_days) === null) {
-        executionCell.title = "已展示申购确认 T+N；确认日不等于真正可卖日，后者尚需按场内登记/转托管/券商执行链核实。";
+        const confirm = num(row.subscription_confirmation_days);
+        const refSell = num(row.onsite_subscription_to_sell_days_reference);
+        executionCell.title = refSell === null
+          ? "确认日不等于真正可卖日；尚需按场内登记、转托管和券商执行链核实。"
+          : `场内申购规则参考：T+${confirm ?? "?"}确认，确认日次日起份额可卖，因此参考 T+${refSell}。这是场内申购路径参考，不代表所有券商/场外转托管路径均已逐只核实。`;
       }
       cell(tr, statusLabels[row.redemption_status] || row.redemption_status || "未知");
       cell(tr, row.quote_time ? String(row.quote_time).replace("T", " ").slice(5, 19) : "—", "mono");
