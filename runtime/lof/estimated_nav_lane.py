@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from pathlib import Path
 
 from .commodity_proxy_registry import CommodityProxyEntry
 from .csi_component_proxy import CsiComponentWeightSet
@@ -14,6 +15,7 @@ from .r3_pipeline import resolve_r3_one
 from .r5_pipeline import resolve_r5_commodity_one
 from .resolver import EstimatedNavResult
 from .resolver_classification import ResolverClassDecision
+from .r2_promotion import load_promoted_r2_results
 
 
 @dataclass(frozen=True)
@@ -61,9 +63,19 @@ def resolve_estimated_nav_lane(
     context: EstimatedNavContext,
     as_of: datetime,
     timeout: int = 10,
+    runtime_data_root: str | Path | None = None,
 ) -> list[EstimatedNavResult]:
     nav_map = {row.code: row for row in official_navs}
     results: dict[str, EstimatedNavResult] = {}
+
+    promoted_r2: dict[str, EstimatedNavResult] = {}
+    if runtime_data_root is not None:
+        promoted_r2 = load_promoted_r2_results(
+            data_root=runtime_data_root,
+            expected_anchor_date=context.previous_trading_day,
+            as_of=as_of,
+            max_proxy_age_seconds=120,
+        )
 
     r1_codes = [
         code
@@ -87,6 +99,18 @@ def resolve_estimated_nav_lane(
 
     for code, decision in context.resolver_classes.items():
         if code not in nav_map or code in results:
+            continue
+
+        if decision.resolver_class == "R2_DOMESTIC_OTHER":
+            promoted = promoted_r2.get(code)
+            if promoted is not None:
+                results[code] = promoted
+            else:
+                results[code] = _unavailable(
+                    code=code,
+                    resolver_class=decision.resolver_class,
+                    error="R2_NOT_PROMOTED_OR_INPUT_UNAVAILABLE",
+                )
             continue
 
         if decision.resolver_class == "R3_QDII_INDEX":
