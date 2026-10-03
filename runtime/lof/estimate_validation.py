@@ -22,6 +22,7 @@ from .estimate_persistence import (
     runtime_history_row,
 )
 from .estimate_reliability import is_reliable_available_estimate
+from .snapshot_archive import iter_snapshot_paths, read_snapshot_json
 
 
 HISTORY_VERSION = "LOF_ESTIMATE_HISTORY_V3"
@@ -598,11 +599,11 @@ def load_estimate_validation_summary(data_root: str | Path) -> dict:
 def rebuild_estimate_history(data_root: str | Path) -> dict:
     root = Path(data_root)
     day_states: dict[str, dict] = {}
-    paths = sorted((root / "snapshots").glob("runtime-*.json"))
+    paths = iter_snapshot_paths(root)
     read_count = 0
     for path in paths:
         try:
-            snapshot = json.loads(path.read_text(encoding="utf-8"))
+            snapshot = read_snapshot_json(path)
         except (OSError, ValueError, json.JSONDecodeError):
             continue
         if not isinstance(snapshot, dict):
