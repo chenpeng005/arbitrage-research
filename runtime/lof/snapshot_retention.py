@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Iterable
 from zoneinfo import ZoneInfo
 
+from .snapshot_archive import iter_snapshot_paths, snapshot_id_from_path
+
 
 SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
 RETENTION_VERSION = "LOF_SNAPSHOT_RETENTION_V1"
@@ -22,7 +24,7 @@ LONGTERM_CHECKPOINTS = (clock_time(15, 0),)
 
 
 def _parse_snapshot_time(path: Path) -> datetime | None:
-    name = path.stem
+    name = snapshot_id_from_path(path)
     if not name.startswith("runtime-"):
         return None
     raw = name.removeprefix("runtime-")
@@ -97,7 +99,7 @@ def plan_snapshot_retention(
     grouped: dict[date, list[tuple[Path, datetime]]] = {}
     unparsed: list[Path] = []
 
-    for path in snapshots_dir.glob("runtime-*.json"):
+    for path in iter_snapshot_paths(root):
         ts = _parse_snapshot_time(path)
         if ts is None:
             unparsed.append(path)
@@ -114,7 +116,7 @@ def plan_snapshot_retention(
         pinned_paths = {
             path
             for path, _ in items
-            if path.stem in pinned
+            if snapshot_id_from_path(path) in pinned
         }
 
         if age_days <= FULL_RETENTION_DAYS:
