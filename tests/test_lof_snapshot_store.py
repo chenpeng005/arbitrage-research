@@ -191,6 +191,54 @@ class LofSnapshotStoreTest(unittest.TestCase):
                 "2026-09-30T14:59:50+08:00",
             )
 
+    def test_component_post_close_recompute_does_not_replace_last_reliable(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            store = LofSnapshotStore(td)
+            valid = {
+                "snapshot_id": "s-valid",
+                "generated_at": "2026-09-30T14:59:30+08:00",
+                "rows": [
+                    {
+                        "code": "501089",
+                        "name": "消费红利增强LOF",
+                        "price": 1.05,
+                        "quote_time": "2026-09-30T14:59:20+08:00",
+                        "estimated_nav": 1.04,
+                        "estimated_nav_time": "2026-09-30T14:59:20+08:00",
+                        "estimated_nav_status": "AVAILABLE",
+                        "estimated_nav_method": "CSI_COMPONENT_WEIGHT_PREV_CLOSE",
+                        "estimated_nav_quality": "MEDIUM",
+                        "estimated_premium_rate": 0.96,
+                    }
+                ],
+            }
+            post_close = {
+                "snapshot_id": "s-post",
+                "generated_at": "2026-09-30T23:55:10+08:00",
+                "rows": [
+                    {
+                        "code": "501089",
+                        "name": "消费红利增强LOF",
+                        "price": 1.05,
+                        "quote_time": "2026-09-30T16:14:20+08:00",
+                        "estimated_nav": 1.03,
+                        "estimated_nav_time": "2026-09-30T23:55:10+08:00",
+                        "estimated_nav_status": "AVAILABLE",
+                        "estimated_nav_method": "CSI_COMPONENT_WEIGHT_PREV_CLOSE",
+                        "estimated_nav_quality": "MEDIUM",
+                        "estimated_premium_rate": 1.94,
+                    }
+                ],
+            }
+            store.persist(valid)
+            store.persist(post_close)
+            row = store.enrich_with_last_estimates(post_close)["rows"][0]
+            self.assertAlmostEqual(row["last_estimated_nav"], 1.04)
+            self.assertEqual(
+                row["last_estimated_nav_time"],
+                "2026-09-30T14:59:20+08:00",
+            )
+
     def test_snapshot_id_is_required(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             with self.assertRaises(ValueError):
