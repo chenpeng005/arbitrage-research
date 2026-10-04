@@ -163,7 +163,7 @@ def collect_feed_refs(
 
 def _question_author(document: str) -> str | None:
     match = re.search(
-        r"<h3>\s*发起人\s*</h3>.*?<a class="aw-user-name"[^>]*>(.*?)</a>",
+        r'<h3>\s*发起人\s*</h3>.*?<a class="aw-user-name"[^>]*>(.*?)</a>',
         document, re.S,
     )
     return _clean_fragment(match.group(1), 120) if match else None
