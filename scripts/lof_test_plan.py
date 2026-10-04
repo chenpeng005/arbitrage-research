@@ -201,6 +201,7 @@ RULES = [
             "scripts/lof_test_plan.py",
             "scripts/lof_golden_replay.py",
             "scripts/lof_historical_replay.py",
+            "scripts/lof_targeted_live_probe.py",
             "tests/fixtures/lof_golden_replay_v1.json",
             "tests/test_lof_test_governance.py",
             ".github/workflows/lof-runtime-tests.yml",
@@ -218,7 +219,7 @@ FULL_LIVE_PATTERNS = [
     "runtime/lof/http_json.py",
 ]
 
-TARGETED_LIVE_DOMAINS = {"r1", "r3_fx", "r5"}
+TARGETED_LIVE_DOMAINS = {"r3_fx"}
 GOLDEN_DOMAINS = {"r1", "r3_fx", "r5", "runtime_core", "freshness"}
 HISTORICAL_REPLAY_DOMAINS = {
     "r1",
@@ -228,6 +229,10 @@ HISTORICAL_REPLAY_DOMAINS = {
     "storage",
     "freshness",
     "runtime_core",
+}
+
+TARGETED_LIVE_PROBES = {
+    "r3_fx": ["fx"],
 }
 
 AFFECTED_RESOLVERS = {
@@ -346,6 +351,13 @@ def build_plan(changed_files: Iterable[str], *, force_full: bool = False) -> dic
         source_domains & HISTORICAL_REPLAY_DOMAINS
     )
 
+    targeted_live_probes: list[str] = []
+    for domain in sorted(source_domains):
+        targeted_live_probes.extend(
+            TARGETED_LIVE_PROBES.get(domain, [])
+        )
+    targeted_live_probes = list(dict.fromkeys(targeted_live_probes))
+
     # Full regression is a release barrier, not a development-commit default.
     # The targeted workflow reports this flag; release workflow/manual release
     # performs the full suite once for the exact candidate SHA.
@@ -368,6 +380,7 @@ def build_plan(changed_files: Iterable[str], *, force_full: bool = False) -> dic
         "historical_replay_required": historical_replay_required,
         "live_scope": live_scope,
         "affected_resolver_classes": affected_resolvers,
+        "targeted_live_probe_domains": targeted_live_probes,
         "full_regression_required_before_release": bool(
             runtime_logic_changed or full_regression_required
         ),
@@ -391,6 +404,9 @@ def _write_github_output(path: Path, plan: dict) -> None:
         "live_scope": plan["live_scope"],
         "affected_resolvers": ",".join(
             plan["affected_resolver_classes"]
+        ),
+        "targeted_live_probes": ",".join(
+            plan["targeted_live_probe_domains"]
         ),
         "full_regression_required": str(
             plan["full_regression_required_before_release"]
