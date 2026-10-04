@@ -121,10 +121,15 @@ def _configured_unavailable_reason(row: dict) -> str:
         "HK_LIVE_INDEX_FX_BRIDGE",
         "US_FUTURES_FX_BRIDGE",
         "US_LAST_CLOSE_FX_BRIDGE",
+        "US_FUTURES_CNH_FALLBACK_BRIDGE",
+        "US_LAST_CLOSE_CNH_FALLBACK_BRIDGE",
     }:
         return "QDII_BRIDGE_INPUT_UNAVAILABLE"
     if method in {
         "COMMODITY_FX_BRIDGE",
+        "COMMODITY_BASKET_FX_BRIDGE",
+        "COMMODITY_CNH_FALLBACK_BRIDGE",
+        "COMMODITY_BASKET_CNH_FALLBACK_BRIDGE",
         "DOMESTIC_FUTURES_PREV_SETTLEMENT",
     }:
         return "SPECIAL_PROXY_INPUT_UNAVAILABLE"
@@ -135,13 +140,20 @@ def _diagnostic_flags(row: dict, *, context: dict) -> list[str]:
     flags: list[str] = []
     estimate_time = _parse_datetime(row.get("estimated_nav_time"))
     proxy_time = _parse_datetime(row.get("estimated_nav_proxy_time"))
-    if estimate_time is not None and proxy_time is not None:
-        lag = (proxy_time - estimate_time).total_seconds()
+    fx_time = _parse_datetime(row.get("estimated_nav_fx_time"))
+    fx_source = str(row.get("estimated_nav_fx_source") or "")
+    if proxy_time is not None and fx_time is not None:
+        lag = (proxy_time - fx_time).total_seconds()
         if lag > 90:
-            if row.get("resolver_class") == "R3_QDII_INDEX":
-                flags.append("FX_OLDER_THAN_PROXY_LIMITS_FRESHNESS")
-            else:
-                flags.append("PROXY_NEWER_THAN_ESTIMATE")
+            flags.append("FX_OLDER_THAN_PROXY_LIMITS_FRESHNESS")
+    elif estimate_time is not None and proxy_time is not None:
+        # Backward compatibility for pre-V1 snapshots without explicit
+        # estimated_nav_fx_time.
+        lag = (proxy_time - estimate_time).total_seconds()
+        if lag > 90 and row.get("resolver_class") == "R3_QDII_INDEX":
+            flags.append("FX_OLDER_THAN_PROXY_LIMITS_FRESHNESS")
+    if fx_source == "TENCENT_CNY_ANCHOR_WSCN_CNH_RETURN":
+        flags.append("CNH_FALLBACK_ACTIVE")
     quote_time = _parse_datetime(row.get("quote_time"))
     if (
         context.get("state") == "DOMESTIC_MARKET_REFRESH_WINDOW"
@@ -234,6 +246,8 @@ def classify_row(
         "estimated_nav_age_seconds": row.get("estimated_nav_age_seconds"),
         "estimated_nav_proxy": row.get("estimated_nav_proxy"),
         "estimated_nav_proxy_time": row.get("estimated_nav_proxy_time"),
+        "estimated_nav_fx_time": row.get("estimated_nav_fx_time"),
+        "estimated_nav_fx_source": row.get("estimated_nav_fx_source"),
         "quote_status": row.get("quote_status"),
         "quote_time": row.get("quote_time"),
         "quote_age_seconds": row.get("quote_age_seconds"),
