@@ -8,13 +8,15 @@ Runtime chain:
 1. Read the latest-activity feed and the new-topic feed.
 2. Fetch candidate question detail pages.
 3. Keep the original post as context and extract target-day replies as daily increments.
-4. Run broad AI screening in small batches.
-5. Persist one replaceable source/date snapshot in SQLite.
-6. Serve the daily record through /radar and /api/radar/*.
+4. Run a deliberately broad AI screen in small batches.
+5. Run a second final gate that selects only items worth appearing in the user's daily page.
+6. Persist only the final daily record in SQLite.
+7. Serve the daily record through /radar and /api/radar/*.
 
 Persistence:
-- The durable product is the daily record.
-- A successful scan with zero findings is still persisted.
+- The durable product is the final daily record.
+- Broad-screen intermediate findings are not persisted.
+- A successful scan with zero final findings is still persisted.
 - Raw web pages, all comments, images and attachments are not mirrored.
 - Re-running the same source/date replaces that day's snapshot.
 

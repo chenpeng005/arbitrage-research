@@ -1,4 +1,7 @@
+import unittest
+
 from runtime.intelligence_radar.jisilu import parse_feed, parse_question_daily
+
 
 FEED = """
 <div class="aw-item">
@@ -42,30 +45,37 @@ DETAIL = """
 """
 
 
-def test_parse_feed_latest_activity() -> None:
-    rows = parse_feed(FEED, feed_mode="activity")
-    assert len(rows) == 1
-    row = rows[0]
-    assert row.question_id == "525689"
-    assert row.activity_at == "2026-10-04 20:44"
-    assert row.reply_count == 27
-    assert row.view_count == 2202
-    assert row.actor == "甲"
+class IntelligenceRadarJisiluTest(unittest.TestCase):
+    def test_parse_feed_latest_activity(self) -> None:
+        rows = parse_feed(FEED, feed_mode="activity")
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row.question_id, "525689")
+        self.assertEqual(row.activity_at, "2026-10-04 20:44")
+        self.assertEqual(row.reply_count, 27)
+        self.assertEqual(row.view_count, 2202)
+        self.assertEqual(row.actor, "甲")
+
+    def test_parse_question_keeps_only_target_day_activity(self) -> None:
+        packet = parse_question_daily(
+            DETAIL,
+            target_date="2026-10-04",
+            fallback_title="fallback",
+            url="https://www.jisilu.cn/question/1",
+            question_id="1",
+            activity_at="2026-10-04 20:21",
+            category="基金",
+        )
+        self.assertEqual(packet["title"], "测试主题")
+        self.assertEqual(packet["question_author"], "楼主")
+        self.assertEqual(len(packet["daily_segments"]), 1)
+        self.assertEqual(
+            packet["daily_segments"][0]["segment_id"],
+            "answer_10",
+        )
+        self.assertIn("20分钟", packet["daily_segments"][0]["text"])
+        self.assertFalse(packet["context_segments"][0]["is_daily"])
 
 
-def test_parse_question_keeps_only_target_day_activity() -> None:
-    packet = parse_question_daily(
-        DETAIL,
-        target_date="2026-10-04",
-        fallback_title="fallback",
-        url="https://www.jisilu.cn/question/1",
-        question_id="1",
-        activity_at="2026-10-04 20:21",
-        category="基金",
-    )
-    assert packet["title"] == "测试主题"
-    assert packet["question_author"] == "楼主"
-    assert len(packet["daily_segments"]) == 1
-    assert packet["daily_segments"][0]["segment_id"] == "answer_10"
-    assert "20分钟" in packet["daily_segments"][0]["text"]
-    assert packet["context_segments"][0]["is_daily"] is False
+if __name__ == "__main__":
+    unittest.main()

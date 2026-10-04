@@ -9,6 +9,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from runtime.intelligence_radar.filtering import build_provider_from_env, filter_batch
+from runtime.intelligence_radar.final_gate import select_final_findings
 from runtime.intelligence_radar.jisilu import collect_daily_candidates
 from runtime.intelligence_radar.storage import radar_db_path, save_daily_result
 
@@ -34,7 +35,8 @@ def run_jisilu_daily(
 ) -> dict[str, Any]:
     scanned_at = china_now().isoformat()
     note_parts: list[str] = []
-    findings: list[dict[str, Any]] = []
+    broad_findings: list[dict[str, Any]] = []
+
     try:
         scan = collect_daily_candidates(
             run_date,
@@ -59,6 +61,7 @@ def run_jisilu_daily(
             "run_date": run_date,
             "source": "jisilu",
             "candidate_count": 0,
+            "broad_finding_count": 0,
             "finding_count": 0,
             "error": f"{type(exc).__name__}: {exc}",
         }
@@ -72,27 +75,50 @@ def run_jisilu_daily(
 
     candidates = scan["candidates"]
     errors: list[str] = []
+    provider_instance = None
+    effective_model = model or os.environ.get("AI_MODEL") or "deepseek-chat"
+
     if candidates:
-        provider = provider or build_provider_from_env()
-        model = model or os.environ.get("AI_MODEL") or "deepseek-chat"
+        provider_instance = provider or build_provider_from_env()
         for idx, batch in enumerate(_chunk(candidates, batch_size), start=1):
             batch_id = f"{run_date}:jisilu:{idx:03d}"
             try:
-                findings.extend(
+                broad_findings.extend(
                     filter_batch(
                         run_date=run_date,
                         source="jisilu",
                         batch_id=batch_id,
                         candidates=batch,
-                        provider=provider,
-                        model=model,
+                        provider=provider_instance,
+                        model=effective_model,
                     )
                 )
             except Exception as exc:
                 errors.append(f"{batch_id} {type(exc).__name__}: {exc}")
 
+    findings: list[dict[str, Any]] = []
+    if not errors and broad_findings:
+        try:
+            findings = select_final_findings(
+                run_date=run_date,
+                source="jisilu",
+                broad_findings=broad_findings,
+                provider=provider_instance or provider or build_provider_from_env(),
+                model=effective_model,
+            )
+        except Exception as exc:
+            errors.append(
+                f"FINAL_GATE {type(exc).__name__}: {exc}"
+            )
+
+    note_parts.append(
+        f"宽筛 {len(broad_findings)} 条 → 今日发现 {len(findings)} 条"
+    )
     if errors:
-        note_parts.append(f"AI筛选失败 {len(errors)} 批；结果可能不完整")
+        note_parts.append(
+            f"AI处理失败 {len(errors)} 处；最终结果不视为完整"
+        )
+
     status = "FAILED" if errors else "OK"
     completed_at = china_now().isoformat()
     saved = save_daily_result(
@@ -111,6 +137,7 @@ def run_jisilu_daily(
         "run_date": run_date,
         "source": "jisilu",
         "candidate_count": len(candidates),
+        "broad_finding_count": len(broad_findings),
         "finding_count": len(findings),
         "question_ref_count": scan["question_ref_count"],
         "feed_meta": scan["feed_meta"],
@@ -122,7 +149,9 @@ def run_jisilu_daily(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run one manual daily intelligence-radar scan.")
+    parser = argparse.ArgumentParser(
+        description="Run one manual daily intelligence-radar scan."
+    )
     parser.add_argument(
         "--date",
         default=china_now().date().isoformat(),
@@ -150,7 +179,11 @@ def main() -> None:
         )
         print(
             json.dumps(
-                {key: value for key, value in scan.items() if key != "candidates"},
+                {
+                    key: value
+                    for key, value in scan.items()
+                    if key != "candidates"
+                },
                 ensure_ascii=False,
                 indent=2,
             )
