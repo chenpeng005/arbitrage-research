@@ -215,6 +215,12 @@ class LofSnapshotStore:
                 "estimated_nav_fx_return": row.get(
                     "estimated_nav_fx_return"
                 ),
+                "estimated_nav_fx_time": row.get(
+                    "estimated_nav_fx_time"
+                ),
+                "estimated_nav_fx_source": row.get(
+                    "estimated_nav_fx_source"
+                ),
                 "estimated_nav_exposure_ratio": row.get(
                     "estimated_nav_exposure_ratio"
                 ),
@@ -314,6 +320,12 @@ class LofSnapshotStore:
                     ),
                     "last_estimated_nav_fx_return": last.get(
                         "estimated_nav_fx_return"
+                    ),
+                    "last_estimated_nav_fx_time": last.get(
+                        "estimated_nav_fx_time"
+                    ),
+                    "last_estimated_nav_fx_source": last.get(
+                        "estimated_nav_fx_source"
                     ),
                     "last_estimated_nav_exposure_ratio": last.get(
                         "estimated_nav_exposure_ratio"
