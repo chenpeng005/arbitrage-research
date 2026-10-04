@@ -22,6 +22,8 @@ from runtime.lof.r2a_holdings import (
 from runtime.lof.r2a_shadow import (
     LiveQuote,
     PROFILES,
+    _load_or_refresh_low_frequency,
+    _market_probe_window,
     calculate_rows,
     holdings_need_refresh,
     parse_quote_response,
@@ -98,6 +100,72 @@ def _distribution_schedule(
 
 
 class R2AShadowTest(unittest.TestCase):
+    def test_market_probe_window_covers_reopen_edges(self):
+        self.assertTrue(
+            _market_probe_window(
+                datetime(2026, 10, 8, 9, 25, tzinfo=TZ)
+            )
+        )
+        self.assertTrue(
+            _market_probe_window(
+                datetime(2026, 10, 8, 15, 5, tzinfo=TZ)
+            )
+        )
+        self.assertFalse(
+            _market_probe_window(
+                datetime(2026, 10, 8, 8, 59, tzinfo=TZ)
+            )
+        )
+        self.assertFalse(
+            _market_probe_window(
+                datetime(2026, 10, 10, 10, 0, tzinfo=TZ)
+            )
+        )
+
+    @patch("runtime.lof.r2a_shadow.schedules_need_refresh")
+    @patch("runtime.lof.r2a_shadow.holdings_need_refresh")
+    @patch("runtime.lof.r2a_shadow.DistributionStore")
+    @patch("runtime.lof.r2a_shadow.HoldingsStore")
+    def test_off_market_low_frequency_preheat_refreshes_when_due(
+        self,
+        holdings_store_cls,
+        distribution_store_cls,
+        holdings_need_refresh_mock,
+        schedules_need_refresh_mock,
+    ):
+        now = datetime(2026, 10, 4, 10, 0, tzinfo=TZ)
+        holdings_store = holdings_store_cls.return_value
+        distribution_store = distribution_store_cls.return_value
+        holdings_store.load.return_value = {"old": "holdings"}
+        distribution_store.load.return_value = {"old": "distribution"}
+        holdings_need_refresh_mock.return_value = True
+        schedules_need_refresh_mock.return_value = True
+        holdings_store.refresh.return_value = (
+            {"new": "holdings"},
+            {},
+        )
+        distribution_store.refresh.return_value = (
+            {"new": "distribution"},
+            {},
+        )
+
+        holdings, distributions, h_errors, d_errors = (
+            _load_or_refresh_low_frequency(
+                data_root="/tmp/test",
+                now=now,
+                timeout=1,
+                holdings_refresh_seconds=21600,
+                distribution_refresh_seconds=21600,
+            )
+        )
+
+        self.assertEqual(holdings, {"new": "holdings"})
+        self.assertEqual(distributions, {"new": "distribution"})
+        self.assertEqual(h_errors, {})
+        self.assertEqual(d_errors, {})
+        holdings_store.refresh.assert_called_once()
+        distribution_store.refresh.assert_called_once()
+
     def test_quote_parser_reads_current_prev_close_and_time(self):
         fields = ["0"] * 40
         fields[3] = "110"
