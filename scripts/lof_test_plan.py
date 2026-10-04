@@ -202,6 +202,7 @@ RULES = [
             "scripts/lof_golden_replay.py",
             "scripts/lof_historical_replay.py",
             "scripts/lof_targeted_live_probe.py",
+            "scripts/lof_r2_reopen_acceptance.py",
             "tests/fixtures/lof_golden_replay_v1.json",
             "tests/test_lof_test_governance.py",
             ".github/workflows/lof-runtime-tests.yml",
