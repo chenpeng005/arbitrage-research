@@ -26,6 +26,7 @@ test_plan = _load_script("lof_test_plan.py")
 golden = _load_script("lof_golden_replay.py")
 historical = _load_script("lof_historical_replay.py")
 targeted_live = _load_script("lof_targeted_live_probe.py")
+reopen_acceptance = _load_script("lof_r2_reopen_acceptance.py")
 
 
 class LofTestImpactPlannerTest(unittest.TestCase):
@@ -168,6 +169,151 @@ class LofTargetedLiveProbeTest(unittest.TestCase):
         self.assertEqual(len(result["checks"]), 2)
         usd_mock.assert_called_once()
         hkd_daily_mock.assert_called_once()
+
+
+class LofR2ReopenAcceptanceTest(unittest.TestCase):
+    def _write_snapshot(
+        self,
+        root: Path,
+        *,
+        stamp: str,
+        generated_at: str,
+        market_fresh: bool,
+        available_codes: set[str],
+        expected_anchor: str,
+    ) -> None:
+        from runtime.lof.snapshot_archive import write_snapshot_gzip
+
+        rows = []
+        for code in reopen_acceptance.promoted_codes():
+            method = reopen_acceptance.promoted_r2_method(code)[1]
+            rows.append(
+                {
+                    "code": code,
+                    "name": f"F-{code}",
+                    "quote_status": (
+                        "FRESH" if market_fresh else "STALE"
+                    ),
+                    "official_nav_date": expected_anchor,
+                    "estimated_nav_status": (
+                        "AVAILABLE"
+                        if code in available_codes
+                        else "UNAVAILABLE"
+                    ),
+                    "estimated_nav_method": method,
+                    "estimated_nav_error": (
+                        None
+                        if code in available_codes
+                        else "R2_PROMOTED_INPUT_UNAVAILABLE"
+                    ),
+                    "estimated_nav_time": (
+                        generated_at
+                        if code in available_codes
+                        else None
+                    ),
+                }
+            )
+
+        payload = {
+            "snapshot_id": f"runtime-{stamp}",
+            "generated_at": generated_at,
+            "universe_count": len(rows),
+            "quality_summary": {
+                "quote_fresh_count": (
+                    len(rows) if market_fresh else 0
+                )
+            },
+            "rows": rows,
+        }
+        directory = root / "snapshots"
+        directory.mkdir(parents=True, exist_ok=True)
+        write_snapshot_gzip(
+            directory / f"runtime-{stamp}.json.gz",
+            json.dumps(payload),
+        )
+
+    def test_reopen_acceptance_measures_end_to_end_lag(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            codes = reopen_acceptance.promoted_codes()
+            first_half = set(codes[:9])
+            all_codes = set(codes)
+            anchor = "2026-09-30"
+
+            self._write_snapshot(
+                root,
+                stamp="20261008T092959",
+                generated_at="2026-10-08T09:29:59+08:00",
+                market_fresh=False,
+                available_codes=set(),
+                expected_anchor=anchor,
+            )
+            self._write_snapshot(
+                root,
+                stamp="20261008T093000",
+                generated_at="2026-10-08T09:30:00+08:00",
+                market_fresh=True,
+                available_codes=set(),
+                expected_anchor=anchor,
+            )
+            self._write_snapshot(
+                root,
+                stamp="20261008T093030",
+                generated_at="2026-10-08T09:30:30+08:00",
+                market_fresh=True,
+                available_codes=first_half,
+                expected_anchor=anchor,
+            )
+            self._write_snapshot(
+                root,
+                stamp="20261008T093100",
+                generated_at="2026-10-08T09:31:00+08:00",
+                market_fresh=True,
+                available_codes=all_codes,
+                expected_anchor=anchor,
+            )
+
+            result = reopen_acceptance.analyze_reopen(
+                root,
+                day=date(2026, 10, 8),
+                expected_anchor_date=date(2026, 9, 30),
+            )
+
+            self.assertEqual(result["status"], "PASS")
+            self.assertEqual(result["promoted_count"], 18)
+            self.assertEqual(result["available_count"], 18)
+            self.assertEqual(result["available_within_60s"], 18)
+            self.assertEqual(result["available_within_120s"], 18)
+            self.assertEqual(result["max_lag_seconds"], 60)
+            self.assertEqual(result["missing_available_codes"], [])
+            self.assertEqual(result["anchor_mismatch_codes"], [])
+
+    def test_reopen_acceptance_remains_incomplete_if_one_never_recovers(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            codes = reopen_acceptance.promoted_codes()
+            missing = codes[-1]
+            available = set(codes[:-1])
+            anchor = "2026-09-30"
+
+            self._write_snapshot(
+                root,
+                stamp="20261008T093000",
+                generated_at="2026-10-08T09:30:00+08:00",
+                market_fresh=True,
+                available_codes=available,
+                expected_anchor=anchor,
+            )
+
+            result = reopen_acceptance.analyze_reopen(
+                root,
+                day=date(2026, 10, 8),
+                expected_anchor_date=date(2026, 9, 30),
+            )
+
+            self.assertEqual(result["status"], "INCOMPLETE")
+            self.assertEqual(result["available_count"], 17)
+            self.assertEqual(result["missing_available_codes"], [missing])
 
 
 class LofGoldenReplayTest(unittest.TestCase):
