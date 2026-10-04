@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 import importlib.util
 import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +25,7 @@ def _load_script(name: str):
 test_plan = _load_script("lof_test_plan.py")
 golden = _load_script("lof_golden_replay.py")
 historical = _load_script("lof_historical_replay.py")
+targeted_live = _load_script("lof_targeted_live_probe.py")
 
 
 class LofTestImpactPlannerTest(unittest.TestCase):
@@ -54,6 +57,7 @@ class LofTestImpactPlannerTest(unittest.TestCase):
         )
         self.assertIn("R3_QDII_INDEX", plan["affected_resolver_classes"])
         self.assertIn("R5_SPECIAL", plan["affected_resolver_classes"])
+        self.assertEqual(plan["targeted_live_probe_domains"], ["fx"])
 
     def test_common_collector_change_requires_full_live_preflight(self):
         plan = test_plan.build_plan(
@@ -95,6 +99,75 @@ class LofTestImpactPlannerTest(unittest.TestCase):
             "tests.test_lof_fx_fallback",
             plan["selected_test_modules"],
         )
+
+
+class LofTargetedLiveProbeTest(unittest.TestCase):
+    def test_infer_fx_anchor_date_uses_most_common_fx_dependent_nav(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            rows = [
+                {
+                    "code": "161125",
+                    "estimated_nav_method": "US_LAST_CLOSE_CNH_FALLBACK_BRIDGE",
+                    "official_nav_date": "2026-09-29",
+                },
+                {
+                    "code": "501018",
+                    "estimated_nav_method": "COMMODITY_BASKET_CNH_FALLBACK_BRIDGE",
+                    "official_nav_date": "2026-09-29",
+                },
+                {
+                    "code": "160717",
+                    "estimated_nav_method": "HK_LIVE_INDEX_FX_BRIDGE",
+                    "official_nav_date": "2026-09-30",
+                },
+            ]
+            (root / "latest_market_snapshot.json").write_text(
+                json.dumps({"rows": rows}),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                targeted_live.infer_nav_date(root),
+                date(2026, 9, 29),
+            )
+
+    @patch.object(targeted_live, "fetch_tencent_fx_quote")
+    @patch.object(targeted_live, "fx_close_on")
+    @patch.object(targeted_live, "fetch_tencent_fx_daily")
+    @patch.object(targeted_live, "resolve_usdcny_input")
+    def test_fx_targeted_probe_checks_existing_resolvers_only(
+        self,
+        usd_mock,
+        hkd_daily_mock,
+        hkd_close_mock,
+        hkd_quote_mock,
+    ):
+        now = datetime.fromisoformat("2026-10-04T10:00:00+08:00")
+        usd_mock.return_value = SimpleNamespace(
+            anchor=1,
+            current=1,
+            quote_time=now,
+            error=None,
+            status="STALE",
+            source="TENCENT_CNY_ANCHOR_WSCN_CNH_RETURN",
+            calibration=SimpleNamespace(status="PASS"),
+        )
+        hkd_daily_mock.return_value = [object()]
+        hkd_close_mock.return_value = 1
+        hkd_quote_mock.return_value = SimpleNamespace(
+            current=1,
+            quote_time=now,
+            error=None,
+            source="TENCENT_FX",
+        )
+        result = targeted_live.probe_fx(
+            date(2026, 9, 29),
+            timeout=1,
+        )
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(len(result["checks"]), 2)
+        usd_mock.assert_called_once()
+        hkd_daily_mock.assert_called_once()
 
 
 class LofGoldenReplayTest(unittest.TestCase):
