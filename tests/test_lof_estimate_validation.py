@@ -281,6 +281,128 @@ class LofEstimateValidationTest(unittest.TestCase):
             self.assertEqual(summary["summary"]["current_version_validated_fund_count"], 0)
 
 
+    def test_r2_promoted_methods_enter_current_version_validation(self):
+        with tempfile.TemporaryDirectory() as td:
+            methods = [
+                (
+                    "501219",
+                    "DISCLOSED_HOLDINGS_BASKET",
+                    "R2A_HOLDINGS_BASKET_V1",
+                    1.010,
+                    1.012,
+                ),
+                (
+                    "160916",
+                    "R2B2_CASH_HEAVY_HOLDINGS_BASKET",
+                    "R2B2_CASH_HEAVY_V1",
+                    1.020,
+                    1.019,
+                ),
+                (
+                    "160621",
+                    "RISK_ASSET_OVERLAY",
+                    "R2C_RISK_OVERLAY_V1",
+                    1.030,
+                    1.031,
+                ),
+            ]
+
+            estimate_rows = []
+            for code, method, _version, estimated, _truth in methods:
+                estimate_rows.append(
+                    {
+                        "code": code,
+                        "name": code,
+                        "resolver_class": "R2_DOMESTIC_OTHER",
+                        "official_nav": 1.0,
+                        "official_nav_date": "2026-09-30",
+                        "estimated_nav": estimated,
+                        "estimated_nav_time": (
+                            "2026-10-08T14:59:30+08:00"
+                        ),
+                        "estimated_nav_status": "AVAILABLE",
+                        "estimated_nav_method": method,
+                        "estimated_nav_quality": "MEDIUM",
+                        "estimated_nav_proxy": (
+                            "PROMOTED_SHADOW:TEST"
+                        ),
+                        "estimated_nav_proxy_time": (
+                            "2026-10-08T14:59:20+08:00"
+                        ),
+                        "quote_time": "2026-10-08T14:59:25+08:00",
+                    }
+                )
+
+            record_estimate_history(
+                td,
+                {
+                    "snapshot_id": "r2-estimate",
+                    "generated_at": "2026-10-08T14:59:30+08:00",
+                    "rows": estimate_rows,
+                },
+            )
+
+            truth_rows = []
+            for code, method, _version, _estimated, truth in methods:
+                truth_rows.append(
+                    {
+                        "code": code,
+                        "name": code,
+                        "resolver_class": "R2_DOMESTIC_OTHER",
+                        "official_nav": truth,
+                        "official_nav_date": "2026-10-08",
+                        "estimated_nav_method": method,
+                    }
+                )
+
+            ledger = update_estimate_validation_ledger(
+                td,
+                {
+                    "snapshot_id": "r2-truth",
+                    "generated_at": "2026-10-09T09:00:00+08:00",
+                    "rows": truth_rows,
+                },
+            )
+
+            self.assertEqual(
+                ledger["summary"]["observation_count"],
+                3,
+            )
+            self.assertEqual(
+                ledger["summary"][
+                    "current_version_validated_fund_count"
+                ],
+                3,
+            )
+
+            for code, method, version, _estimated, _truth in methods:
+                row = ledger["rows"][code]
+                self.assertEqual(row["current_method"], method)
+                self.assertEqual(
+                    row["current_model_version"],
+                    version,
+                )
+                self.assertEqual(
+                    row["current_version"]["sample_count"],
+                    1,
+                )
+                self.assertEqual(
+                    row["windows"]["1"]["sample_count"],
+                    1,
+                )
+                self.assertEqual(
+                    row["windows"]["3"]["sample_count"],
+                    1,
+                )
+                self.assertEqual(
+                    row["windows"]["5"]["sample_count"],
+                    1,
+                )
+                self.assertEqual(
+                    row["windows"]["10"]["sample_count"],
+                    1,
+                )
+
     def test_rebuild_history_reads_gzip_snapshots(self):
         import gzip
         with tempfile.TemporaryDirectory() as td:
