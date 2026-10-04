@@ -12,7 +12,7 @@ LOCK_DIR="${LOCK_DIR:-/tmp/arbitrage-github-autodeploy.lock.d}"
 mkdir -p "$STATE_ROOT" "$STAGING_ROOT"
 acquire_lock() {
   if mkdir "$LOCK_DIR" 2>/dev/null; then
-    printf '%s\n' "$" > "$LOCK_DIR/pid"
+    printf '%s\n' "$$" > "$LOCK_DIR/pid"
     return 0
   fi
 
@@ -25,7 +25,7 @@ acquire_lock() {
 
   rm -rf "$LOCK_DIR"
   mkdir "$LOCK_DIR"
-  printf '%s\n' "$" > "$LOCK_DIR/pid"
+  printf '%s\n' "$$" > "$LOCK_DIR/pid"
 }
 if ! acquire_lock; then
   exit 0

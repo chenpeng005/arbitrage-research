@@ -24,11 +24,18 @@ if grep -R "$needle"   "$STAGE_ROOT/runtime" "$STAGE_ROOT/scripts/production"   
   exit 3
 fi
 
-PYTHONPATH="$STAGE_ROOT" "$PY" -m py_compile   "$STAGE_ROOT/runtime/opportunity/research_trigger.py"   "$STAGE_ROOT/runtime/opportunity/full_runtime_controller.py"   "$STAGE_ROOT/runtime/opportunity/incremental_information_controller.py"   "$STAGE_ROOT/runtime/web/app.py"
+PYTHONPATH="$STAGE_ROOT" "$PY" -m py_compile   "$STAGE_ROOT/runtime/opportunity/research_trigger.py"   "$STAGE_ROOT/runtime/opportunity/full_runtime_controller.py"   "$STAGE_ROOT/runtime/opportunity/incremental_information_controller.py"   "$STAGE_ROOT/runtime/web/app.py" \
+  "$STAGE_ROOT/runtime/intelligence_radar/daily.py" \
+  "$STAGE_ROOT/runtime/intelligence_radar/jisilu.py" \
+  "$STAGE_ROOT/runtime/intelligence_radar/filtering.py" \
+  "$STAGE_ROOT/runtime/intelligence_radar/final_gate.py" \
+  "$STAGE_ROOT/runtime/intelligence_radar/storage.py"
 
 for pattern in test_daily_research_decoupling_v1.py test_token_cost_gate_v1.py test_reminder_policy_v2.py test_information_change_source_fk_v1.py; do
   PYTHONPATH="$STAGE_ROOT" "$PY" -m unittest discover -s "$STAGE_ROOT/tests" -p "$pattern" -v
 done
+PYTHONPATH="$STAGE_ROOT" "$PY" -m unittest discover \
+  -s "$STAGE_ROOT/tests" -p 'test_intelligence_radar_*.py' -v
 
 ts=$(date -u +%Y%m%dT%H%M%SZ)
 backup="$BACKUP_ROOT/$ts-$APP_COMMIT_SHA"
