@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import date, datetime
+from datetime import date, datetime, time as clock_time
 from decimal import Decimal, InvalidOperation
 import json
 import os
@@ -89,6 +89,20 @@ def _age_seconds(
 def _market_is_fresh(snapshot: dict) -> bool:
     quality = snapshot.get("quality_summary") or {}
     return int(quality.get("quote_fresh_count") or 0) > 0
+
+
+def _market_probe_window(now: datetime) -> bool:
+    local = now
+    if local.tzinfo is None:
+        local = local.replace(tzinfo=SHANGHAI_TZ)
+    local = local.astimezone(SHANGHAI_TZ)
+    if local.weekday() >= 5:
+        return False
+    value = local.time()
+    return (
+        clock_time(9, 25) <= value <= clock_time(11, 35)
+        or clock_time(12, 55) <= value <= clock_time(15, 5)
+    )
 
 
 def _schedule_is_fresh(
@@ -743,12 +757,14 @@ def run_loop(
             main_snapshot = (
                 main_store.load_latest()
             )
-            if (
-                main_snapshot is None
-                or not _market_is_fresh(
-                    main_snapshot
-                )
-            ):
+            market_fresh = (
+                main_snapshot is not None
+                and _market_is_fresh(main_snapshot)
+            )
+            if market_fresh or _market_probe_window(now):
+                interval = quote_interval_seconds
+
+            if not market_fresh:
                 print(
                     json.dumps(
                         {
@@ -764,6 +780,9 @@ def run_loop(
                             ),
                             "distribution_refresh_errors": (
                                 distribution_errors
+                            ),
+                            "market_probe_window": (
+                                _market_probe_window(now)
                             ),
                         },
                         ensure_ascii=False,
@@ -782,7 +801,6 @@ def run_loop(
                         low_frequency_refresh_seconds
                     ),
                 )
-                interval = quote_interval_seconds
                 print(
                     json.dumps(
                         {
