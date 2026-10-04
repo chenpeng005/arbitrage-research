@@ -122,6 +122,70 @@ class EstimateFreshnessAuditTest(unittest.TestCase):
             audit["rows"][0]["diagnostic_flags"],
         )
 
+    def test_intentional_fail_closed_proxy_is_not_runtime_defect(self):
+        snapshot = {
+            "snapshot_id": "runtime-20261004T130000",
+            "generated_at": "2026-10-04T13:00:00+08:00",
+            "rows": [
+                {
+                    "code": "160216",
+                    "name": "国泰商品LOF",
+                    "resolver_class": "R5_SPECIAL",
+                    "quote_status": "STALE",
+                    "quote_time": "2026-09-30T15:00:00+08:00",
+                    "estimated_nav_status": "UNAVAILABLE",
+                    "estimated_nav_method": "COMMODITY_FX_BRIDGE",
+                    "estimated_nav_error": (
+                        "NO_AUDITED_LIVE_PROXY_FOR_"
+                        "GUOTAI_COMMODITY_ALLOCATION_INDEX"
+                    ),
+                },
+                {
+                    "code": "161119",
+                    "name": "易方达新综债LOF",
+                    "resolver_class": "R1_DOMESTIC_INDEX",
+                    "quote_status": "STALE",
+                    "quote_time": "2026-09-30T15:00:00+08:00",
+                    "estimated_nav_status": "UNAVAILABLE",
+                    "estimated_nav_method": "INDEX_PROXY_PREV_CLOSE",
+                    "estimated_nav_error": (
+                        "UNRESOLVED_INDEX_PROXY:"
+                        "UNSUPPORTED_INDEX_CODE_PATTERN"
+                    ),
+                },
+                {
+                    "code": "161124",
+                    "name": "港股小盘LOF",
+                    "resolver_class": "R3_QDII_INDEX",
+                    "quote_status": "STALE",
+                    "quote_time": "2026-09-30T15:00:00+08:00",
+                    "estimated_nav_status": "UNAVAILABLE",
+                    "estimated_nav_method": "MULTIDAY_PROXY_FX_BRIDGE",
+                    "estimated_nav_error": (
+                        "NO_LIVE_HSSI_SOURCE_IN_CURRENT_RUNTIME"
+                    ),
+                },
+            ],
+        }
+        audit = build_freshness_audit(snapshot=snapshot)
+        self.assertEqual(
+            audit["summary"][
+                "intentional_fail_closed_no_audited_proxy_count"
+            ],
+            3,
+        )
+        self.assertEqual(
+            audit["summary"]["configured_but_unavailable_count"],
+            0,
+        )
+        self.assertTrue(
+            all(
+                row["update_state"]
+                == "INTENTIONAL_FAIL_CLOSED_NO_AUDITED_PROXY"
+                for row in audit["rows"]
+            )
+        )
+
     def test_r2_promoted_off_market_waits_for_next_active_session(self):
         snapshot = {
             "snapshot_id": "runtime-20261004T051800",
