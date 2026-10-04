@@ -1,0 +1,197 @@
+{
+  "version": "LOF_GOLDEN_REPLAY_V1",
+  "captured_from": "production-runtime-20261004",
+  "description": "Normalized resolver inputs derived from real production Estimated NAV rows. No network access is required.",
+  "cases": [
+    {
+      "code": "501005",
+      "name": "精准医疗LOF",
+      "domain": "R1",
+      "resolver_class": "R1_DOMESTIC_INDEX",
+      "method": "INDEX_PROXY_PREV_CLOSE",
+      "input": {
+        "official_nav": "1.1237",
+        "proxy_anchor_value": "1",
+        "proxy_current_value": "1.033933436579310715",
+        "proxy_anchor_time": "2026-09-29T15:00:00+08:00",
+        "proxy_current_time": "2026-09-30T16:29:57+08:00",
+        "as_of": "2026-09-30T16:30:27+08:00",
+        "max_proxy_age_seconds": 120,
+        "exposure_ratio": "1",
+        "fx_anchor": null,
+        "fx_current": null,
+        "tracking_adjustment": "1",
+        "quality": "MEDIUM"
+      },
+      "expected": {
+        "estimated_nav": "1.1618310026841714",
+        "status": "AVAILABLE",
+        "quality": "MEDIUM"
+      }
+    },
+    {
+      "code": "501029",
+      "name": "红利基金LOF",
+      "domain": "R1",
+      "resolver_class": "R1_DOMESTIC_INDEX",
+      "method": "TARGET_ETF_PREV_CLOSE",
+      "input": {
+        "official_nav": "1.7425",
+        "proxy_anchor_value": "1",
+        "proxy_current_value": "1.009884678747940691",
+        "proxy_anchor_time": "2026-09-29T15:00:00+08:00",
+        "proxy_current_time": "2026-09-30T16:14:41+08:00",
+        "as_of": "2026-09-30T16:15:11+08:00",
+        "max_proxy_age_seconds": 120,
+        "exposure_ratio": "0.95",
+        "fx_anchor": null,
+        "fx_current": null,
+        "tracking_adjustment": "1",
+        "quality": "MEDIUM"
+      },
+      "expected": {
+        "estimated_nav": "1.7588628500823724",
+        "status": "AVAILABLE",
+        "quality": "MEDIUM"
+      }
+    },
+    {
+      "code": "160717",
+      "name": "H股LOF",
+      "domain": "R3",
+      "resolver_class": "R3_QDII_INDEX",
+      "method": "HK_LIVE_INDEX_FX_BRIDGE",
+      "input": {
+        "official_nav": "0.7036",
+        "proxy_anchor_value": "1",
+        "proxy_current_value": "0.976941830249827253",
+        "proxy_anchor_time": "2026-09-30T16:00:00+08:00",
+        "proxy_current_time": "2026-10-02T16:08:32+08:00",
+        "as_of": "2026-10-02T16:09:02+08:00",
+        "max_proxy_age_seconds": 120,
+        "exposure_ratio": "1",
+        "fx_anchor": "1",
+        "fx_current": "1.00011708230886313078",
+        "tracking_adjustment": "1",
+        "quality": "HIGH",
+        "fx_current_time": "2026-10-03T04:56:32+08:00",
+        "fx_source": "TENCENT_FX"
+      },
+      "expected": {
+        "estimated_nav": "0.6874567513647343",
+        "status": "AVAILABLE",
+        "quality": "HIGH"
+      }
+    },
+    {
+      "code": "161125",
+      "name": "标普500LOF",
+      "domain": "R3",
+      "resolver_class": "R3_QDII_INDEX",
+      "method": "US_LAST_CLOSE_CNH_FALLBACK_BRIDGE",
+      "input": {
+        "official_nav": "3.1328",
+        "proxy_anchor_value": "1",
+        "proxy_current_value": "1.007118555352002094",
+        "proxy_anchor_time": "2026-09-29T04:00:00+08:00",
+        "proxy_current_time": "2026-10-03T04:00:00+08:00",
+        "as_of": "2026-10-03T04:00:30+08:00",
+        "max_proxy_age_seconds": 120,
+        "exposure_ratio": "1",
+        "fx_anchor": "1",
+        "fx_current": "0.9997465637019589135",
+        "tracking_adjustment": "1",
+        "quality": "LOW",
+        "fx_current_time": "2026-10-03T04:59:58+08:00",
+        "fx_source": "TENCENT_CNY_ANCHOR_WSCN_CNH_RETURN"
+      },
+      "expected": {
+        "estimated_nav": "3.15430139308678",
+        "status": "AVAILABLE",
+        "quality": "LOW"
+      }
+    },
+    {
+      "code": "501018",
+      "name": "南方原油LOF",
+      "domain": "R5",
+      "resolver_class": "R5_SPECIAL",
+      "method": "COMMODITY_BASKET_CNH_FALLBACK_BRIDGE",
+      "input": {
+        "official_nav": "2.027",
+        "proxy_anchor_value": "1",
+        "proxy_current_value": "1.04464697200023827",
+        "proxy_anchor_time": "2026-09-29T05:00:00+08:00",
+        "proxy_current_time": "2026-10-03T05:00:00+08:00",
+        "as_of": "2026-10-03T05:00:30+08:00",
+        "max_proxy_age_seconds": 120,
+        "exposure_ratio": "1",
+        "fx_anchor": "1",
+        "fx_current": "0.9997465637019589135",
+        "tracking_adjustment": "1",
+        "quality": "LOW",
+        "fx_current_time": "2026-10-03T04:59:58+08:00",
+        "fx_source": "TENCENT_CNY_ANCHOR_WSCN_CNH_RETURN"
+      },
+      "expected": {
+        "estimated_nav": "2.1169627610323394",
+        "status": "AVAILABLE",
+        "quality": "LOW"
+      }
+    },
+    {
+      "code": "160719",
+      "name": "嘉实黄金LOF",
+      "domain": "R5",
+      "resolver_class": "R5_SPECIAL",
+      "method": "COMMODITY_CNH_FALLBACK_BRIDGE",
+      "input": {
+        "official_nav": "1.841",
+        "proxy_anchor_value": "1",
+        "proxy_current_value": "0.989869032931574452",
+        "proxy_anchor_time": "2026-09-29T05:00:00+08:00",
+        "proxy_current_time": "2026-10-03T05:00:00+08:00",
+        "as_of": "2026-10-03T05:00:30+08:00",
+        "max_proxy_age_seconds": 120,
+        "exposure_ratio": "1",
+        "fx_anchor": "1",
+        "fx_current": "0.9997465637019589135",
+        "tracking_adjustment": "1",
+        "quality": "MEDIUM",
+        "fx_current_time": "2026-10-03T04:59:58+08:00",
+        "fx_source": "TENCENT_CNY_ANCHOR_WSCN_CNH_RETURN"
+      },
+      "expected": {
+        "estimated_nav": "1.8218870402707021",
+        "status": "AVAILABLE",
+        "quality": "MEDIUM"
+      }
+    },
+    {
+      "code": "161226",
+      "name": "国投白银LOF",
+      "domain": "R5",
+      "resolver_class": "R5_SPECIAL",
+      "method": "DOMESTIC_FUTURES_PREV_SETTLEMENT",
+      "input": {
+        "official_nav": "1.6838",
+        "proxy_anchor_value": "1",
+        "proxy_current_value": "1.004964443848114853",
+        "proxy_anchor_time": "2026-09-29T15:00:00+08:00",
+        "proxy_current_time": "2026-09-30T15:25:19+08:00",
+        "as_of": "2026-09-30T15:25:49+08:00",
+        "max_proxy_age_seconds": 120,
+        "exposure_ratio": "1",
+        "fx_anchor": null,
+        "fx_current": null,
+        "tracking_adjustment": "1",
+        "quality": "LOW"
+      },
+      "expected": {
+        "estimated_nav": "1.6921591305514558",
+        "status": "AVAILABLE",
+        "quality": "LOW"
+      }
+    }
+  ]
+}
