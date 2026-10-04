@@ -7,7 +7,11 @@ from runtime.lof.r2_asset_allocation import AssetAllocationSnapshot
 from runtime.lof.r2_fund_events import DistributionSchedule
 from runtime.lof.r2a_holdings import Holding, HoldingsSnapshot
 from runtime.lof.r2a_shadow import LiveQuote
-from runtime.lof.r2b2_cash_shadow import PROFILES, calculate_shadow_row
+from runtime.lof.r2b2_cash_shadow import (
+    PROFILES,
+    _market_probe_window,
+    calculate_shadow_row,
+)
 
 
 SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
@@ -93,6 +97,28 @@ def _quotes(now):
 
 
 class R2B2CashShadowTests(unittest.TestCase):
+    def test_market_probe_window_covers_reopen_edges(self):
+        self.assertTrue(
+            _market_probe_window(
+                datetime(2026, 10, 8, 9, 25, tzinfo=SHANGHAI_TZ)
+            )
+        )
+        self.assertTrue(
+            _market_probe_window(
+                datetime(2026, 10, 8, 15, 5, tzinfo=SHANGHAI_TZ)
+            )
+        )
+        self.assertFalse(
+            _market_probe_window(
+                datetime(2026, 10, 8, 8, 59, tzinfo=SHANGHAI_TZ)
+            )
+        )
+        self.assertFalse(
+            _market_probe_window(
+                datetime(2026, 10, 10, 10, 0, tzinfo=SHANGHAI_TZ)
+            )
+        )
+
     def test_registry_contains_three_economic_candidates(self):
         self.assertEqual(set(PROFILES), {"160916", "164403", "501077"})
 
