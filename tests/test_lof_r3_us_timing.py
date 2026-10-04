@@ -5,6 +5,7 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from runtime.lof.fx import FxDailyClose, FxQuote
+from runtime.lof.fx_resolver import ResolvedFxInput
 from runtime.lof.futures_overlay import FuturesOverlayQuote
 from runtime.lof.mapping import ResolverMappingCandidate
 from runtime.lof.nav import OfficialNavRecord
@@ -47,16 +48,17 @@ class R3UsTimingTest(unittest.TestCase):
 
     @patch("runtime.lof.r3_pipeline.fetch_eastmoney_global_futures")
     @patch("runtime.lof.r3_pipeline.fetch_tencent_us_daily")
-    @patch("runtime.lof.r3_pipeline.fetch_tencent_fx_quote")
-    @patch("runtime.lof.r3_pipeline.fetch_tencent_fx_daily")
+    @patch("runtime.lof.r3_pipeline.resolve_usdcny_input")
     def test_fresh_futures_and_fx_are_available(
-        self,fx_daily,fx_quote,us_daily,fut
+        self,fx_resolver,us_daily,fut
     ):
         now,nav,mapping,proxy=self._inputs(futures=True)
-        fx_daily.return_value=[FxDailyClose(date(2026,9,29),Decimal("6.70"))]
-        fx_quote.return_value=FxQuote(
-            symbol="whUSDCNY", current=Decimal("6.71"),
-            quote_time=now-timedelta(seconds=20), source="TEST"
+        fx_resolver.return_value=ResolvedFxInput(
+            pair="USD/CNY", anchor_date=date(2026,9,29),
+            anchor=Decimal("6.70"), current=Decimal("6.71"),
+            quote_time=now-timedelta(seconds=20),
+            source="TENCENT_USDCNY_PRIMARY",
+            status="AVAILABLE", quote_age_seconds=20
         )
         us_daily.return_value=[
             DailyClose(date(2026,9,29),Decimal("700")),
@@ -71,19 +73,22 @@ class R3UsTimingTest(unittest.TestCase):
         self.assertEqual(row.estimated_nav_status,"AVAILABLE")
         self.assertEqual(row.resolver_method,"US_FUTURES_FX_BRIDGE")
         self.assertEqual(row.estimated_nav_time,now-timedelta(seconds=20))
+        self.assertEqual(row.fx_time,now-timedelta(seconds=20))
+        self.assertEqual(row.fx_source,"TENCENT_USDCNY_PRIMARY")
 
     @patch("runtime.lof.r3_pipeline.fetch_eastmoney_global_futures")
     @patch("runtime.lof.r3_pipeline.fetch_tencent_us_daily")
-    @patch("runtime.lof.r3_pipeline.fetch_tencent_fx_quote")
-    @patch("runtime.lof.r3_pipeline.fetch_tencent_fx_daily")
+    @patch("runtime.lof.r3_pipeline.resolve_usdcny_input")
     def test_stale_fx_makes_futures_bridge_stale(
-        self,fx_daily,fx_quote,us_daily,fut
+        self,fx_resolver,us_daily,fut
     ):
         now,nav,mapping,proxy=self._inputs(futures=True)
-        fx_daily.return_value=[FxDailyClose(date(2026,9,29),Decimal("6.70"))]
-        fx_quote.return_value=FxQuote(
-            symbol="whUSDCNY", current=Decimal("6.71"),
-            quote_time=now-timedelta(hours=8), source="TEST"
+        fx_resolver.return_value=ResolvedFxInput(
+            pair="USD/CNY", anchor_date=date(2026,9,29),
+            anchor=Decimal("6.70"), current=Decimal("6.71"),
+            quote_time=now-timedelta(hours=8),
+            source="TENCENT_USDCNY_PRIMARY",
+            status="STALE", quote_age_seconds=8*3600
         )
         us_daily.return_value=[
             DailyClose(date(2026,9,29),Decimal("700")),
@@ -98,18 +103,20 @@ class R3UsTimingTest(unittest.TestCase):
         self.assertEqual(row.estimated_nav_status,"STALE")
         self.assertEqual(row.resolver_method,"US_FUTURES_FX_BRIDGE")
         self.assertEqual(row.estimated_nav_time,now-timedelta(hours=8))
+        self.assertEqual(row.fx_time,now-timedelta(hours=8))
 
     @patch("runtime.lof.r3_pipeline.fetch_tencent_us_daily")
-    @patch("runtime.lof.r3_pipeline.fetch_tencent_fx_quote")
-    @patch("runtime.lof.r3_pipeline.fetch_tencent_fx_daily")
+    @patch("runtime.lof.r3_pipeline.resolve_usdcny_input")
     def test_cash_only_is_cross_session_stale(
-        self,fx_daily,fx_quote,us_daily
+        self,fx_resolver,us_daily
     ):
         now,nav,mapping,proxy=self._inputs(futures=False)
-        fx_daily.return_value=[FxDailyClose(date(2026,9,29),Decimal("6.70"))]
-        fx_quote.return_value=FxQuote(
-            symbol="whUSDCNY", current=Decimal("6.71"),
-            quote_time=now-timedelta(seconds=20), source="TEST"
+        fx_resolver.return_value=ResolvedFxInput(
+            pair="USD/CNY", anchor_date=date(2026,9,29),
+            anchor=Decimal("6.70"), current=Decimal("6.71"),
+            quote_time=now-timedelta(seconds=20),
+            source="TENCENT_USDCNY_PRIMARY",
+            status="AVAILABLE", quote_age_seconds=20
         )
         us_daily.return_value=[
             DailyClose(date(2026,9,29),Decimal("700")),
@@ -119,6 +126,7 @@ class R3UsTimingTest(unittest.TestCase):
         self.assertEqual(row.estimated_nav_status,"STALE")
         self.assertEqual(row.resolver_method,"US_LAST_CLOSE_FX_BRIDGE")
         self.assertEqual(row.estimated_nav_time,datetime(2026,10,1,4,0,tzinfo=TZ))
+        self.assertEqual(row.fx_time,now-timedelta(seconds=20))
         self.assertEqual(row.estimated_nav_quality,"LOW")
 
 if __name__=="__main__":
