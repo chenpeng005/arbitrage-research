@@ -45,9 +45,21 @@ MODEL_REGISTRY = {
         "resolver_class": "R3_QDII_INDEX",
         "lifecycle": "MAIN",
     },
+    "US_FUTURES_CNH_FALLBACK_BRIDGE": {
+        "model_id": "R3_US_FUTURES_CNH_FALLBACK",
+        "model_version": "R3_US_FUTURES_CNH_FALLBACK_V1",
+        "resolver_class": "R3_QDII_INDEX",
+        "lifecycle": "MAIN",
+    },
     "US_LAST_CLOSE_FX_BRIDGE": {
         "model_id": "R3_US_LAST_CLOSE_FX",
         "model_version": "R3_US_LAST_CLOSE_FX_V1",
+        "resolver_class": "R3_QDII_INDEX",
+        "lifecycle": "MAIN",
+    },
+    "US_LAST_CLOSE_CNH_FALLBACK_BRIDGE": {
+        "model_id": "R3_US_LAST_CLOSE_CNH_FALLBACK",
+        "model_version": "R3_US_LAST_CLOSE_CNH_FALLBACK_V1",
         "resolver_class": "R3_QDII_INDEX",
         "lifecycle": "MAIN",
     },
@@ -60,6 +72,18 @@ MODEL_REGISTRY = {
     "COMMODITY_BASKET_FX_BRIDGE": {
         "model_id": "R5_COMMODITY_BASKET_FX",
         "model_version": "R5_COMMODITY_BASKET_FX_V1",
+        "resolver_class": "R5_SPECIAL",
+        "lifecycle": "MAIN",
+    },
+    "COMMODITY_CNH_FALLBACK_BRIDGE": {
+        "model_id": "R5_COMMODITY_CNH_FALLBACK",
+        "model_version": "R5_COMMODITY_CNH_FALLBACK_V1",
+        "resolver_class": "R5_SPECIAL",
+        "lifecycle": "MAIN",
+    },
+    "COMMODITY_BASKET_CNH_FALLBACK_BRIDGE": {
+        "model_id": "R5_COMMODITY_BASKET_CNH_FALLBACK",
+        "model_version": "R5_COMMODITY_BASKET_CNH_FALLBACK_V1",
         "resolver_class": "R5_SPECIAL",
         "lifecycle": "MAIN",
     },
