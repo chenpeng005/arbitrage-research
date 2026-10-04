@@ -26,6 +26,8 @@ class CommodityProxyEntry:
     exposure_ratio: Decimal | None = None
     proxy_quality: str = "UNKNOWN"
     anchor_mode: str = "HISTORY_CLOSE"
+    resolver_method: str | None = None
+    evidence_as_of: str | None = None
     components: tuple[CommodityProxyComponent, ...] = ()
     unresolved_reason: str | None = None
 
@@ -59,6 +61,8 @@ def load_commodity_proxy_registry(
             ),
             proxy_quality=str(row.get("proxy_quality") or "UNKNOWN"),
             anchor_mode=str(row.get("anchor_mode") or "HISTORY_CLOSE"),
+            resolver_method=row.get("resolver_method"),
+            evidence_as_of=row.get("evidence_as_of"),
             components=components,
             unresolved_reason=row.get("unresolved_reason"),
         )
