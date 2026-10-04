@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime
+from datetime import datetime, time as clock_time
 from decimal import Decimal, InvalidOperation
 import json
 import os
@@ -81,6 +81,20 @@ def _quote_age(quote_time: datetime | None, as_of: datetime) -> int | None:
             as_of.astimezone(SHANGHAI_TZ)
             - quote_time.astimezone(SHANGHAI_TZ)
         ).total_seconds()
+    )
+
+
+def _market_probe_window(now: datetime) -> bool:
+    local = now
+    if local.tzinfo is None:
+        local = local.replace(tzinfo=SHANGHAI_TZ)
+    local = local.astimezone(SHANGHAI_TZ)
+    if local.weekday() >= 5:
+        return False
+    value = local.time()
+    return (
+        clock_time(9, 25) <= value <= clock_time(11, 35)
+        or clock_time(12, 55) <= value <= clock_time(15, 5)
     )
 
 
@@ -642,32 +656,49 @@ def run_loop(
             ).get("quote_status") == "FRESH"
             for code in PROFILES
         )
+        probe_window = _market_probe_window(now)
         interval = (
             quote_interval_seconds
-            if active
+            if active or probe_window
             else off_hours_interval_seconds
         )
         try:
-            snapshot = collect_once(
-                main_data_root=main_data_root,
-                state_root=state_root,
-                now=now,
-                timeout=timeout,
-                max_quote_age_seconds=max_quote_age_seconds,
-            )
-            print(
-                json.dumps(
-                    {
-                        "event": "r2b2_cash_shadow_persisted",
-                        "time": now.isoformat(),
-                        "snapshot_id": snapshot["snapshot_id"],
-                        "summary": snapshot["summary"],
-                        "active_sampling": active,
-                    },
-                    ensure_ascii=False,
-                ),
-                flush=True,
-            )
+            if active or not probe_window:
+                snapshot = collect_once(
+                    main_data_root=main_data_root,
+                    state_root=state_root,
+                    now=now,
+                    timeout=timeout,
+                    max_quote_age_seconds=max_quote_age_seconds,
+                )
+                print(
+                    json.dumps(
+                        {
+                            "event": "r2b2_cash_shadow_persisted",
+                            "time": now.isoformat(),
+                            "snapshot_id": snapshot["snapshot_id"],
+                            "summary": snapshot["summary"],
+                            "active_sampling": active,
+                            "market_probe_window": probe_window,
+                        },
+                        ensure_ascii=False,
+                    ),
+                    flush=True,
+                )
+            else:
+                print(
+                    json.dumps(
+                        {
+                            "event": "r2b2_cash_shadow_idle",
+                            "time": now.isoformat(),
+                            "reason": "WAITING_FOR_MAIN_MARKET_FRESH",
+                            "active_sampling": False,
+                            "market_probe_window": True,
+                        },
+                        ensure_ascii=False,
+                    ),
+                    flush=True,
+                )
         except Exception as exc:
             print(
                 json.dumps(
