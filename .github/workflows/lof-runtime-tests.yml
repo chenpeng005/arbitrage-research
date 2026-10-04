@@ -2,6 +2,8 @@ name: LOF Runtime Tests
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "runtime/lof/**"
       - "runtime/deployment_gate.py"
@@ -16,6 +18,10 @@ on:
       - "tests/test_deployment_gate.py"
       - ".github/workflows/lof-runtime-tests.yml"
   workflow_dispatch:
+
+concurrency:
+  group: lof-runtime-tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
