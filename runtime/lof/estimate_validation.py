@@ -154,6 +154,12 @@ def _history_row(snapshot: dict, row: dict) -> dict | None:
             "estimated_nav_proxy_return"
         ),
         "estimated_nav_fx_return": row.get("estimated_nav_fx_return"),
+        "estimated_nav_fx_time": _iso_text(
+            row.get("estimated_nav_fx_time")
+        ),
+        "estimated_nav_fx_source": row.get(
+            "estimated_nav_fx_source"
+        ),
         "estimated_nav_exposure_ratio": row.get(
             "estimated_nav_exposure_ratio"
         ),
