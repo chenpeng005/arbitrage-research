@@ -150,12 +150,15 @@ def resolve_r5_commodity_one(
     timeout: int = 12,
 ) -> EstimatedNavResult:
     method = (
-        "COMMODITY_BASKET_FX_BRIDGE"
-        if proxy.components
-        else (
-            "DOMESTIC_FUTURES_PREV_SETTLEMENT"
-            if proxy.anchor_mode == "PREVIOUS_SETTLEMENT"
-            else "COMMODITY_FX_BRIDGE"
+        proxy.resolver_method
+        or (
+            "COMMODITY_BASKET_FX_BRIDGE"
+            if proxy.components
+            else (
+                "DOMESTIC_FUTURES_PREV_SETTLEMENT"
+                if proxy.anchor_mode == "PREVIOUS_SETTLEMENT"
+                else "COMMODITY_FX_BRIDGE"
+            )
         )
     )
 
@@ -277,6 +280,9 @@ def resolve_r5_commodity_one(
                 "COMMODITY_FX_BRIDGE": "COMMODITY_CNH_FALLBACK_BRIDGE",
                 "COMMODITY_BASKET_FX_BRIDGE": (
                     "COMMODITY_BASKET_CNH_FALLBACK_BRIDGE"
+                ),
+                "DISCLOSED_GOLD_EXPOSURE_FX_BRIDGE": (
+                    "DISCLOSED_GOLD_EXPOSURE_CNH_FALLBACK_BRIDGE"
                 ),
             }.get(method, method)
     elif proxy.currency in {None, "CNY"}:
