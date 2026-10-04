@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, time as clock_time
 from decimal import Decimal, InvalidOperation
 import json
 import os
@@ -702,20 +702,33 @@ def _main_snapshot_has_fresh_market(snapshot: dict) -> bool:
     return int(quality.get("quote_fresh_count") or 0) > 0
 
 
-def collect_once(
+def _market_probe_window(now: datetime) -> bool:
+    local = now
+    if local.tzinfo is None:
+        local = local.replace(tzinfo=SHANGHAI_TZ)
+    local = local.astimezone(SHANGHAI_TZ)
+    if local.weekday() >= 5:
+        return False
+    value = local.time()
+    return (
+        clock_time(9, 25) <= value <= clock_time(11, 35)
+        or clock_time(12, 55) <= value <= clock_time(15, 5)
+    )
+
+
+def _load_or_refresh_low_frequency(
     *,
     data_root: str | Path,
-    now: datetime | None = None,
-    timeout: int = 6,
-    max_quote_age_seconds: int = 120,
-    holdings_refresh_seconds: int = 21600,
-    distribution_refresh_seconds: int = 21600,
-) -> dict:
-    now = now or datetime.now(SHANGHAI_TZ)
-    main_snapshot = LofSnapshotStore(data_root).load_latest()
-    if main_snapshot is None:
-        raise RuntimeError("MAIN_SNAPSHOT_UNAVAILABLE")
-
+    now: datetime,
+    timeout: int,
+    holdings_refresh_seconds: int,
+    distribution_refresh_seconds: int,
+) -> tuple[
+    dict[str, HoldingsSnapshot],
+    dict[str, DistributionSchedule],
+    dict[str, str],
+    dict[str, str],
+]:
     holdings_store = HoldingsStore(data_root)
     holdings = holdings_store.load()
     holdings_errors: dict[str, str] = {}
@@ -739,13 +752,46 @@ def collect_once(
         now=now,
         refresh_seconds=distribution_refresh_seconds,
     ):
-        distributions, distribution_errors = (
-            distribution_store.refresh(
-                PROFILES.keys(),
-                now=now,
-                timeout=timeout,
-            )
+        distributions, distribution_errors = distribution_store.refresh(
+            PROFILES.keys(),
+            now=now,
+            timeout=timeout,
         )
+
+    return (
+        holdings,
+        distributions,
+        holdings_errors,
+        distribution_errors,
+    )
+
+
+def collect_once(
+    *,
+    data_root: str | Path,
+    now: datetime | None = None,
+    timeout: int = 6,
+    max_quote_age_seconds: int = 120,
+    holdings_refresh_seconds: int = 21600,
+    distribution_refresh_seconds: int = 21600,
+) -> dict:
+    now = now or datetime.now(SHANGHAI_TZ)
+    main_snapshot = LofSnapshotStore(data_root).load_latest()
+    if main_snapshot is None:
+        raise RuntimeError("MAIN_SNAPSHOT_UNAVAILABLE")
+
+    (
+        holdings,
+        distributions,
+        holdings_errors,
+        distribution_errors,
+    ) = _load_or_refresh_low_frequency(
+        data_root=data_root,
+        now=now,
+        timeout=timeout,
+        holdings_refresh_seconds=holdings_refresh_seconds,
+        distribution_refresh_seconds=distribution_refresh_seconds,
+    )
 
     symbols = {
         item.symbol
@@ -869,10 +915,14 @@ def run_loop(
         interval = off_hours_interval_seconds
         try:
             main_snapshot = main_store.load_latest()
-            if (
+            market_fresh = (
                 main_snapshot is not None
                 and _main_snapshot_has_fresh_market(main_snapshot)
-            ):
+            )
+            if market_fresh or _market_probe_window(now):
+                interval = quote_interval_seconds
+
+            if market_fresh:
                 snapshot = collect_once(
                     data_root=data_root,
                     now=now,
@@ -881,7 +931,6 @@ def run_loop(
                     holdings_refresh_seconds=holdings_refresh_seconds,
                     distribution_refresh_seconds=distribution_refresh_seconds,
                 )
-                interval = quote_interval_seconds
                 print(
                     json.dumps(
                         {
@@ -895,12 +944,27 @@ def run_loop(
                     flush=True,
                 )
             else:
+                (
+                    _holdings,
+                    _distributions,
+                    holdings_errors,
+                    distribution_errors,
+                ) = _load_or_refresh_low_frequency(
+                    data_root=data_root,
+                    now=now,
+                    timeout=timeout,
+                    holdings_refresh_seconds=holdings_refresh_seconds,
+                    distribution_refresh_seconds=distribution_refresh_seconds,
+                )
                 print(
                     json.dumps(
                         {
                             "event": "r2a_shadow_idle",
                             "time": now.isoformat(),
                             "reason": "MAIN_MARKET_NOT_FRESH",
+                            "market_probe_window": _market_probe_window(now),
+                            "holdings_refresh_errors": holdings_errors,
+                            "distribution_refresh_errors": distribution_errors,
                         },
                         ensure_ascii=False,
                     ),
