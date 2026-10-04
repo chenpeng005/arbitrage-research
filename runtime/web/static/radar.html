@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>今日发现 · 套利情报雷达</title>
+  <link rel="stylesheet" href="/static/radar.css">
+</head>
+<body>
+  <main class="page">
+    <header class="top">
+      <div>
+        <div class="kicker">套利情报雷达</div>
+        <h1>今日发现</h1>
+      </div>
+      <div class="date-nav">
+        <button id="prevDay" aria-label="前一天">←</button>
+        <input id="dateInput" type="date">
+        <button id="nextDay" aria-label="后一天">→</button>
+      </div>
+    </header>
+
+    <section class="runline" id="runline">读取中…</section>
+    <section id="findings" class="findings"></section>
+    <section id="empty" class="empty" hidden>
+      今日已完成扫描，没有值得保留的新发现。
+    </section>
+
+    <footer><span id="historyHint"></span></footer>
+  </main>
+  <script src="/static/radar.js"></script>
+</body>
+</html>

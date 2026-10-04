@@ -41,6 +41,11 @@ from runtime.opportunity.incremental_notification_delivery import (
 from runtime.opportunity.incremental_storage import connect as connect_incremental_storage
 from runtime.opportunity.incremental_storage_cutover import evaluate_cutover_readiness
 from runtime.opportunity.view_contract import build_opportunity_list, build_opportunity_view
+from runtime.intelligence_radar.storage import (
+    get_daily_view as get_radar_daily_view,
+    list_daily_dates as list_radar_daily_dates,
+    radar_db_path,
+)
 
 ROOT = Path(os.environ.get("RUNTIME_ROOT", Path(__file__).resolve().parents[2]))
 DATA_ROOT = Path(os.environ.get("RUNTIME_DATA_ROOT", ROOT / "runtime_data"))
@@ -133,6 +138,9 @@ PUBLIC_READ_PATHS = {
     "/opportunities",
     "/notifications",
     "/market-map",
+    "/radar",
+    "/api/radar/daily",
+    "/api/radar/dates",
     "/api/market-map/view",
     "/api/opportunity/view/latest",
     "/api/opportunity/notifications",
@@ -1363,6 +1371,31 @@ def run_center_page() -> HTMLResponse:
 @app.get("/notifications", response_class=HTMLResponse)
 def notifications_page() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "workbench.html").read_text(encoding="utf-8"))
+
+
+@app.get("/radar", response_class=HTMLResponse)
+def radar_page():
+    return (STATIC_DIR / "radar.html").read_text(encoding="utf-8")
+
+
+@app.get("/api/radar/daily")
+def radar_daily(date: str | None = None):
+    if date is not None:
+        try:
+            datetime.strptime(date, "%Y-%m-%d")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD") from exc
+    return get_radar_daily_view(radar_db_path(DATA_ROOT), date)
+
+
+@app.get("/api/radar/dates")
+def radar_dates(limit: int = 90):
+    return {
+        "dates": list_radar_daily_dates(
+            radar_db_path(DATA_ROOT),
+            limit=max(1, min(limit, 3660)),
+        )
+    }
 
 
 @app.get("/market-map", response_class=HTMLResponse)

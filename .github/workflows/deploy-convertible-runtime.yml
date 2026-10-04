@@ -49,7 +49,7 @@ jobs:
 
       - name: Compile critical runtime
         run: |
-          python -m py_compile             runtime/opportunity/research_trigger.py             runtime/opportunity/full_runtime_controller.py             runtime/opportunity/incremental_information_controller.py             runtime/market_map/acquisition.py             runtime/market_map/calculation.py             runtime/web/app.py
+          python -m py_compile             runtime/opportunity/research_trigger.py             runtime/opportunity/full_runtime_controller.py             runtime/opportunity/incremental_information_controller.py             runtime/market_map/acquisition.py             runtime/market_map/calculation.py             runtime/web/app.py             runtime/intelligence_radar/daily.py             runtime/intelligence_radar/jisilu.py             runtime/intelligence_radar/filtering.py             runtime/intelligence_radar/storage.py
 
       - name: Run convertible deployment tests
         shell: bash
@@ -58,4 +58,5 @@ jobs:
           do
             python -m unittest discover -s tests -p "$pattern" -v
           done
+          python -m unittest discover -s tests -p 'test_intelligence_radar_*.py' -v
 
