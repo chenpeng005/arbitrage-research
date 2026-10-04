@@ -2,6 +2,8 @@ name: LOF SZSE Official Relay
 
 on:
   push:
+    branches:
+      - main
     paths:
       - ".github/workflows/lof-szse-official-relay.yml"
       - "runtime/lof/http_json.py"
