@@ -136,6 +136,15 @@ def _configured_unavailable_reason(row: dict) -> str:
     return "MODEL_INPUT_UNAVAILABLE"
 
 
+def _intentional_fail_closed(row: dict) -> bool:
+    error = str(row.get("estimated_nav_error") or "")
+    return (
+        error.startswith("NO_AUDITED_LIVE_PROXY_")
+        or error == "NO_LIVE_HSSI_SOURCE_IN_CURRENT_RUNTIME"
+        or error == "UNRESOLVED_INDEX_PROXY:UNSUPPORTED_INDEX_CODE_PATTERN"
+    )
+
+
 def _diagnostic_flags(row: dict, *, context: dict) -> list[str]:
     flags: list[str] = []
     estimate_time = _parse_datetime(row.get("estimated_nav_time"))
@@ -218,7 +227,10 @@ def classify_row(
                 )
             )
     else:
-        if _r2_shadow_waiting_next_session(
+        if _intentional_fail_closed(row):
+            update_state = "INTENTIONAL_FAIL_CLOSED_NO_AUDITED_PROXY"
+            blocker = _configured_unavailable_reason(row)
+        elif _r2_shadow_waiting_next_session(
             row,
             shadow_row,
             context=context,
@@ -561,6 +573,12 @@ def build_freshness_audit(
             ),
             "configured_but_unavailable_count": update_states.get(
                 "CONFIGURED_BUT_UNAVAILABLE", 0
+            ),
+            "intentional_fail_closed_no_audited_proxy_count": (
+                update_states.get(
+                    "INTENTIONAL_FAIL_CLOSED_NO_AUDITED_PROXY",
+                    0,
+                )
             ),
             "waiting_next_active_session_count": update_states.get(
                 "WAITING_NEXT_ACTIVE_SESSION", 0
