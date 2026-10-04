@@ -86,6 +86,8 @@ class LofMarketSnapshotTest(unittest.TestCase):
                 fx_return=None,
                 exposure_ratio_used=Decimal("1"),
                 tracking_adjustment_used=Decimal("1"),
+                fx_time=self.cutoff,
+                fx_source="TEST_FX",
             )
         ]
 
@@ -119,6 +121,14 @@ class LofMarketSnapshotTest(unittest.TestCase):
         self.assertEqual(
             by_code["501001"]["estimated_nav_proxy_return"],
             Decimal("0.01"),
+        )
+        self.assertEqual(
+            by_code["501001"]["estimated_nav_fx_time"],
+            self.cutoff,
+        )
+        self.assertEqual(
+            by_code["501001"]["estimated_nav_fx_source"],
+            "TEST_FX",
         )
 
         # Missing source data must not delete the LOF from the all-market table.
