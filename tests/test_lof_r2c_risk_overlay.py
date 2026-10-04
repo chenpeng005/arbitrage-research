@@ -16,6 +16,7 @@ from runtime.lof.r2c_risk_holdings import (
     parse_bond_tables,
 )
 from runtime.lof.r2c_risk_overlay import (
+    _market_probe_window,
     calculate_rows,
     load_registry,
 )
@@ -96,6 +97,28 @@ def schedule(now: datetime, cash: Decimal = Decimal("0")):
 
 
 class R2CRiskOverlayTest(unittest.TestCase):
+    def test_market_probe_window_covers_reopen_edges(self):
+        self.assertTrue(
+            _market_probe_window(
+                datetime(2026, 10, 8, 9, 25, tzinfo=TZ)
+            )
+        )
+        self.assertTrue(
+            _market_probe_window(
+                datetime(2026, 10, 8, 15, 5, tzinfo=TZ)
+            )
+        )
+        self.assertFalse(
+            _market_probe_window(
+                datetime(2026, 10, 8, 8, 59, tzinfo=TZ)
+            )
+        )
+        self.assertFalse(
+            _market_probe_window(
+                datetime(2026, 10, 10, 10, 0, tzinfo=TZ)
+            )
+        )
+
     def test_registry_excludes_rejected_fund(self):
         rows = load_registry()
         self.assertEqual(len(rows), 17)
