@@ -8,6 +8,7 @@ from runtime.lof.commodity_proxy_registry import CommodityProxyComponent, Commod
 from runtime.lof.commodity_history import CommodityDailyClose
 from runtime.lof.commodity_quote import CommodityLiveQuote
 from runtime.lof.fx import FxQuote
+from runtime.lof.fx_resolver import ResolvedFxInput
 from runtime.lof.nav import OfficialNavRecord
 from runtime.lof.r5_pipeline import resolve_r5_commodity_one
 
@@ -103,18 +104,14 @@ class R5PipelineTest(unittest.TestCase):
         self.assertEqual(r.error,"NAV_DATE_NOT_PREVIOUS_TRADING_DAY")
 
 
-    @patch("runtime.lof.r5_pipeline.fx_close_on")
-    @patch("runtime.lof.r5_pipeline.fetch_tencent_fx_quote")
-    @patch("runtime.lof.r5_pipeline.fetch_tencent_fx_daily")
+    @patch("runtime.lof.r5_pipeline.resolve_usdcny_input")
     @patch("runtime.lof.r5_pipeline.fetch_sina_global_futures_daily")
     @patch("runtime.lof.r5_pipeline.fetch_eastmoney_commodity_quote")
     def test_weighted_wti_brent_basket(
         self,
         qmock,
         hmock,
-        fx_daily_mock,
-        fx_quote_mock,
-        fx_close_mock,
+        fx_resolver_mock,
     ):
         now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
         nav = OfficialNavRecord(
@@ -169,14 +166,15 @@ class R5PipelineTest(unittest.TestCase):
             [CommodityDailyClose(date=date(2026, 9, 30), close=Decimal("100"))],
             [CommodityDailyClose(date=date(2026, 9, 30), close=Decimal("200"))],
         ]
-        fx_daily_mock.return_value = []
-        fx_close_mock.return_value = Decimal("7")
-        fx_quote_mock.return_value = FxQuote(
-            symbol="whUSDCNY",
+        fx_resolver_mock.return_value = ResolvedFxInput(
+            pair="USD/CNY",
+            anchor_date=date(2026, 9, 30),
+            anchor=Decimal("7"),
             current=Decimal("7.07"),
             quote_time=now - timedelta(seconds=10),
-            source="TEST",
-            error=None,
+            source="TENCENT_USDCNY_PRIMARY",
+            status="AVAILABLE",
+            quote_age_seconds=10,
         )
 
         r = resolve_r5_commodity_one(
@@ -189,6 +187,8 @@ class R5PipelineTest(unittest.TestCase):
         self.assertEqual(r.resolver_method, "COMMODITY_BASKET_FX_BRIDGE")
         self.assertEqual(r.proxy_id, "CL00Y:0.60+B00Y:0.40")
         self.assertEqual(r.proxy_time, now - timedelta(seconds=30))
+        self.assertEqual(r.fx_time, now - timedelta(seconds=10))
+        self.assertEqual(r.fx_source, "TENCENT_USDCNY_PRIMARY")
         self.assertEqual(r.estimated_nav, Decimal("1.63620"))
 
     def test_weighted_basket_requires_weights_to_sum_to_one(self):
