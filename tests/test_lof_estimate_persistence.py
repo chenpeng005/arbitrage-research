@@ -42,6 +42,16 @@ class EstimateModelRegistryTest(unittest.TestCase):
         snapshot = registry_snapshot()
         self.assertEqual(snapshot["registry_version"], REGISTRY_VERSION)
         self.assertGreaterEqual(snapshot["model_count"], 12)
+        self.assertEqual(
+            estimate_model_id("DISCLOSED_GOLD_EXPOSURE_FX_BRIDGE"),
+            "R5_DISCLOSED_GOLD_EXPOSURE_FX",
+        )
+        self.assertEqual(
+            estimate_model_version(
+                "DISCLOSED_GOLD_EXPOSURE_CNH_FALLBACK_BRIDGE"
+            ),
+            "R5_DISCLOSED_GOLD_EXPOSURE_CNH_FALLBACK_V1",
+        )
 
 
 class EstimatePersistenceAuditTest(unittest.TestCase):

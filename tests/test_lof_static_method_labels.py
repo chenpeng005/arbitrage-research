@@ -18,6 +18,8 @@ class LofStaticMethodLabelsTest(unittest.TestCase):
             "US_FUTURES_FX_BRIDGE": "美股期货桥接",
             "US_LAST_CLOSE_FX_BRIDGE": "美股隔夜收盘",
             "COMMODITY_FX_BRIDGE": "商品+汇率",
+            "DISCLOSED_GOLD_EXPOSURE_FX_BRIDGE": "披露黄金暴露+汇率",
+            "DISCLOSED_GOLD_EXPOSURE_CNH_FALLBACK_BRIDGE": "披露黄金暴露+离岸人民币回退",
             "DOMESTIC_FUTURES_PREV_SETTLEMENT": "国内期货主连",
         }
         for method, label in expected.items():

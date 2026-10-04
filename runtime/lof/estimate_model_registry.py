@@ -87,6 +87,18 @@ MODEL_REGISTRY = {
         "resolver_class": "R5_SPECIAL",
         "lifecycle": "MAIN",
     },
+    "DISCLOSED_GOLD_EXPOSURE_FX_BRIDGE": {
+        "model_id": "R5_DISCLOSED_GOLD_EXPOSURE_FX",
+        "model_version": "R5_DISCLOSED_GOLD_EXPOSURE_FX_V1",
+        "resolver_class": "R5_SPECIAL",
+        "lifecycle": "MAIN",
+    },
+    "DISCLOSED_GOLD_EXPOSURE_CNH_FALLBACK_BRIDGE": {
+        "model_id": "R5_DISCLOSED_GOLD_EXPOSURE_CNH_FALLBACK",
+        "model_version": "R5_DISCLOSED_GOLD_EXPOSURE_CNH_FALLBACK_V1",
+        "resolver_class": "R5_SPECIAL",
+        "lifecycle": "MAIN",
+    },
     "DOMESTIC_FUTURES_PREV_SETTLEMENT": {
         "model_id": "R5_DOMESTIC_FUTURES",
         "model_version": "R5_DOMESTIC_FUTURES_V1",

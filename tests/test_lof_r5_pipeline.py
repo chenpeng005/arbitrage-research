@@ -191,6 +191,152 @@ class R5PipelineTest(unittest.TestCase):
         self.assertEqual(r.fx_source, "TENCENT_USDCNY_PRIMARY")
         self.assertEqual(r.estimated_nav, Decimal("1.63620"))
 
+    @patch("runtime.lof.r5_pipeline.resolve_usdcny_input")
+    @patch("runtime.lof.r5_pipeline.fetch_sina_global_futures_daily")
+    @patch("runtime.lof.r5_pipeline.fetch_eastmoney_commodity_quote")
+    def test_disclosed_gold_exposure_keeps_distinct_model_identity(
+        self,
+        qmock,
+        hmock,
+        fx_resolver_mock,
+    ):
+        now = datetime(2026, 10, 8, 10, 0, tzinfo=TZ)
+        nav = OfficialNavRecord(
+            code="165513",
+            exchange="SZSE",
+            nav=Decimal("1"),
+            nav_date=date(2026, 9, 30),
+            fetched_at=now,
+            source="TEST",
+        )
+        proxy = CommodityProxyEntry(
+            fund_code="165513",
+            benchmark="2026Q2 disclosed gold exposure",
+            status="RESOLVED",
+            commodity_history_symbol="GC",
+            commodity_live_market="101",
+            commodity_live_code="GC00Y",
+            currency="USD",
+            exposure_ratio=Decimal("0.9499"),
+            proxy_quality="LOW",
+            anchor_mode="HISTORY_CLOSE",
+            resolver_method="DISCLOSED_GOLD_EXPOSURE_FX_BRIDGE",
+            evidence_as_of="2026-06-30",
+        )
+        qmock.return_value = CommodityLiveQuote(
+            code="GC00Y",
+            current=Decimal("105"),
+            previous_settlement=Decimal("104"),
+            quote_time=now - timedelta(seconds=20),
+            source="TEST",
+            error=None,
+        )
+        hmock.return_value = [
+            CommodityDailyClose(
+                date=date(2026, 9, 30),
+                close=Decimal("100"),
+            )
+        ]
+        fx_resolver_mock.return_value = ResolvedFxInput(
+            pair="USD/CNY",
+            anchor_date=date(2026, 9, 30),
+            anchor=Decimal("7"),
+            current=Decimal("7.07"),
+            quote_time=now - timedelta(seconds=10),
+            source="TENCENT_USDCNY_PRIMARY",
+            status="AVAILABLE",
+            quote_age_seconds=10,
+        )
+
+        r = resolve_r5_commodity_one(
+            nav=nav,
+            proxy=proxy,
+            as_of=now,
+        )
+
+        self.assertEqual(r.estimated_nav_status, "AVAILABLE")
+        self.assertEqual(
+            r.resolver_method,
+            "DISCLOSED_GOLD_EXPOSURE_FX_BRIDGE",
+        )
+        self.assertEqual(r.proxy_id, "GC00Y")
+        self.assertEqual(
+            r.exposure_ratio_used,
+            Decimal("0.9499"),
+        )
+        self.assertEqual(r.estimated_nav_quality, "LOW")
+
+    @patch("runtime.lof.r5_pipeline.resolve_usdcny_input")
+    @patch("runtime.lof.r5_pipeline.fetch_sina_global_futures_daily")
+    @patch("runtime.lof.r5_pipeline.fetch_eastmoney_commodity_quote")
+    def test_disclosed_gold_exposure_has_distinct_cnh_fallback_method(
+        self,
+        qmock,
+        hmock,
+        fx_resolver_mock,
+    ):
+        now = datetime(2026, 10, 8, 10, 0, tzinfo=TZ)
+        nav = OfficialNavRecord(
+            code="165513",
+            exchange="SZSE",
+            nav=Decimal("1"),
+            nav_date=date(2026, 9, 30),
+            fetched_at=now,
+            source="TEST",
+        )
+        proxy = CommodityProxyEntry(
+            fund_code="165513",
+            benchmark="2026Q2 disclosed gold exposure",
+            status="RESOLVED",
+            commodity_history_symbol="GC",
+            commodity_live_market="101",
+            commodity_live_code="GC00Y",
+            currency="USD",
+            exposure_ratio=Decimal("0.9499"),
+            proxy_quality="LOW",
+            resolver_method="DISCLOSED_GOLD_EXPOSURE_FX_BRIDGE",
+        )
+        qmock.return_value = CommodityLiveQuote(
+            code="GC00Y",
+            current=Decimal("105"),
+            previous_settlement=Decimal("104"),
+            quote_time=now - timedelta(seconds=20),
+            source="TEST",
+            error=None,
+        )
+        hmock.return_value = [
+            CommodityDailyClose(
+                date=date(2026, 9, 30),
+                close=Decimal("100"),
+            )
+        ]
+        fx_resolver_mock.return_value = ResolvedFxInput(
+            pair="USD/CNY",
+            anchor_date=date(2026, 9, 30),
+            anchor=Decimal("7"),
+            current=Decimal("7.07"),
+            quote_time=now - timedelta(seconds=10),
+            source="TENCENT_CNY_ANCHOR_WSCN_CNH_RETURN",
+            status="AVAILABLE",
+            quote_age_seconds=10,
+        )
+
+        r = resolve_r5_commodity_one(
+            nav=nav,
+            proxy=proxy,
+            as_of=now,
+        )
+
+        self.assertEqual(r.estimated_nav_status, "AVAILABLE")
+        self.assertEqual(
+            r.resolver_method,
+            "DISCLOSED_GOLD_EXPOSURE_CNH_FALLBACK_BRIDGE",
+        )
+        self.assertEqual(
+            r.fx_source,
+            "TENCENT_CNY_ANCHOR_WSCN_CNH_RETURN",
+        )
+
     def test_weighted_basket_requires_weights_to_sum_to_one(self):
         now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
         nav = OfficialNavRecord(

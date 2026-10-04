@@ -1,5 +1,5 @@
 {
-  "version": "COMMODITY_PROXY_REGISTRY_V0.2",
+  "version": "COMMODITY_PROXY_REGISTRY_V0.3",
   "as_of": "2026-10-04",
   "entries": [
     {
@@ -83,9 +83,18 @@
     },
     {
       "fund_code": "165513",
-      "benchmark": "全球商品QDII",
-      "status": "UNRESOLVED",
-      "unresolved_reason": "NO_AUDITED_LIVE_BROAD_COMMODITY_PROXY"
+      "benchmark": "中信保诚全球商品主题LOF；当前模型基于2026Q2披露的黄金主导持仓",
+      "status": "RESOLVED",
+      "commodity_history_symbol": "GC",
+      "commodity_live_market": "101",
+      "commodity_live_code": "GC00Y",
+      "currency": "USD",
+      "exposure_ratio": "0.9499",
+      "proxy_quality": "LOW",
+      "anchor_mode": "HISTORY_CLOSE",
+      "resolver_method": "DISCLOSED_GOLD_EXPOSURE_FX_BRIDGE",
+      "evidence_as_of": "2026-06-30",
+      "evidence_note": "2025Q4→2026Q2连续披露黄金主导；2026Q2有效黄金暴露约94.99%，2026-07-21至09-29真实日级回测MAE约0.238%、P90约0.510%、Corr约0.975"
     },
     {
       "fund_code": "501018",

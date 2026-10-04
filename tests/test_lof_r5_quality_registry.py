@@ -15,6 +15,22 @@ class R5QualityRegistryTest(unittest.TestCase):
             self.assertEqual(registry[code].proxy_quality, "LOW")
 
 
+    def test_165513_uses_disclosed_gold_exposure_model(self) -> None:
+        registry = load_commodity_proxy_registry(DEFAULT_COMMODITY_PROXY_REGISTRY)
+        row = registry["165513"]
+        self.assertEqual(row.status, "RESOLVED")
+        self.assertEqual(row.commodity_history_symbol, "GC")
+        self.assertEqual(row.commodity_live_market, "101")
+        self.assertEqual(row.commodity_live_code, "GC00Y")
+        self.assertEqual(row.currency, "USD")
+        self.assertEqual(str(row.exposure_ratio), "0.9499")
+        self.assertEqual(row.proxy_quality, "LOW")
+        self.assertEqual(
+            row.resolver_method,
+            "DISCLOSED_GOLD_EXPOSURE_FX_BRIDGE",
+        )
+        self.assertEqual(row.evidence_as_of, "2026-06-30")
+
     def test_501018_uses_audited_wti_brent_basket(self) -> None:
         registry = load_commodity_proxy_registry(DEFAULT_COMMODITY_PROXY_REGISTRY)
         row = registry["501018"]
