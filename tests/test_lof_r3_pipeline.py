@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 
 from runtime.lof.foreign_quote import IndexQuote
 from runtime.lof.fx import FxDailyClose, FxQuote
+from runtime.lof.fx_resolver import ResolvedFxInput
 from runtime.lof.hk_history import HkDailyClose
 from runtime.lof.mapping import ResolverMappingCandidate
 from runtime.lof.nav import OfficialNavRecord
@@ -90,12 +91,10 @@ class LofR3PipelineTest(unittest.TestCase):
         self.assertEqual(row.estimated_nav_quality, "HIGH")
 
     @patch("runtime.lof.r3_pipeline.fetch_tencent_us_daily")
-    @patch("runtime.lof.r3_pipeline.fetch_tencent_fx_quote")
-    @patch("runtime.lof.r3_pipeline.fetch_tencent_fx_daily")
+    @patch("runtime.lof.r3_pipeline.resolve_usdcny_input")
     def test_us_etf_proxy_is_medium_quality(
         self,
-        fx_daily_mock,
-        fx_quote_mock,
+        fx_resolver_mock,
         us_daily_mock,
     ) -> None:
         nav = OfficialNavRecord(
@@ -122,14 +121,15 @@ class LofR3PipelineTest(unittest.TestCase):
             currency="USD",
             quality="MEDIUM",
         )
-        fx_daily_mock.return_value = [
-            FxDailyClose(date(2026, 9, 24), Decimal("6.7114"))
-        ]
-        fx_quote_mock.return_value = FxQuote(
-            symbol="whUSDCNY",
+        fx_resolver_mock.return_value = ResolvedFxInput(
+            pair="USD/CNY",
+            anchor_date=date(2026, 9, 24),
+            anchor=Decimal("6.7114"),
             current=Decimal("6.7053"),
             quote_time=self.now,
-            source="TENCENT_FX",
+            source="TENCENT_USDCNY_PRIMARY",
+            status="AVAILABLE",
+            quote_age_seconds=0,
         )
         us_daily_mock.return_value = [
             DailyClose(date(2026, 9, 24), Decimal("194.71")),
@@ -149,6 +149,8 @@ class LofR3PipelineTest(unittest.TestCase):
             row.estimated_nav_time,
             datetime(2026, 9, 29, 4, 0, tzinfo=TZ),
         )
+        self.assertEqual(row.fx_time, self.now)
+        self.assertEqual(row.fx_source, "TENCENT_USDCNY_PRIMARY")
 
     def test_unresolved_proxy_fails_closed(self) -> None:
         nav = OfficialNavRecord(
