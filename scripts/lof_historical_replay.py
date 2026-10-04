@@ -133,26 +133,87 @@ def run_replay(
     if sample_every > 1:
         paths = paths[::sample_every]
 
-    rows_checked = 0
+    schema_rows_checked = 0
+    formula_rows_checked = 0
+    formula_rows_skipped = 0
     failures: list[dict] = []
     method_counts: Counter[str] = Counter()
     code_counts: Counter[str] = Counter()
 
     for path in paths:
         snapshot = read_snapshot_json(path)
-        for row in snapshot.get("rows") or []:
+        rows = snapshot.get("rows") or []
+        universe = snapshot.get("universe_count")
+        if universe is not None and int(universe) != len(rows):
+            failures.append(
+                {
+                    "snapshot": path.name,
+                    "code": None,
+                    "name": None,
+                    "method": None,
+                    "reasons": [
+                        f"row_count={len(rows)} != universe_count={universe}"
+                    ],
+                }
+            )
+
+        seen_codes: set[str] = set()
+        for row in rows:
             code = str(row.get("code") or "")
             resolver_class = str(row.get("resolver_class") or "")
             if resolver_classes and resolver_class not in resolver_classes:
                 continue
             if codes and code not in codes:
                 continue
+
+            schema_rows_checked += 1
+            schema_reasons: list[str] = []
+
+            if not code:
+                schema_reasons.append("missing_code")
+            elif code in seen_codes:
+                schema_reasons.append("duplicate_code")
+            else:
+                seen_codes.add(code)
+
+            status = str(row.get("estimated_nav_status") or "")
+            if status and status not in {
+                "AVAILABLE",
+                "STALE",
+                "UNAVAILABLE",
+            }:
+                schema_reasons.append(
+                    f"invalid_estimated_nav_status={status}"
+                )
+
+            if status in {"AVAILABLE", "STALE"}:
+                if row.get("estimated_nav") is None:
+                    schema_reasons.append(
+                        f"{status}_without_estimated_nav"
+                    )
+                if row.get("estimated_nav_time") is None:
+                    schema_reasons.append(
+                        f"{status}_without_estimated_nav_time"
+                    )
+
+            if schema_reasons and len(failures) < 100:
+                failures.append(
+                    {
+                        "snapshot": path.name,
+                        "code": code,
+                        "name": row.get("name"),
+                        "method": row.get("estimated_nav_method"),
+                        "reasons": schema_reasons,
+                    }
+                )
+
             if not _eligible(row):
+                formula_rows_skipped += 1
                 continue
 
             expected = _decimal(row.get("estimated_nav"))
             actual, error = _replay_row(row)
-            rows_checked += 1
+            formula_rows_checked += 1
             method_counts[str(row.get("estimated_nav_method"))] += 1
             code_counts[code] += 1
 
@@ -190,10 +251,13 @@ def run_replay(
         "day": day,
         "sample_every": sample_every,
         "snapshot_files_read": len(paths),
-        "rows_checked": rows_checked,
+        "schema_rows_checked": schema_rows_checked,
+        "formula_rows_checked": formula_rows_checked,
+        "formula_rows_skipped_missing_inputs": formula_rows_skipped,
         "failed": len(failures),
         "method_counts": dict(method_counts),
-        "unique_codes_checked": len(code_counts),
+        "unique_formula_codes_checked": len(code_counts),
+        "formula_replay_available": formula_rows_checked > 0,
         "failures": failures,
     }
 
@@ -201,8 +265,9 @@ def run_replay(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Replay normalized Estimated NAV arithmetic from persisted "
-            "historical gzip snapshots without network access."
+            "Replay historical LOF snapshot schema/invariants and, where "
+            "persisted inputs exist, normalized Estimated NAV arithmetic "
+            "without network access."
         )
     )
     parser.add_argument("--data-root", required=True)
