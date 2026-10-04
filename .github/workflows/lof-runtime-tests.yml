@@ -1,4 +1,4 @@
-name: LOF Runtime Tests
+name: LOF Targeted Tests
 
 on:
   push:
@@ -7,28 +7,47 @@ on:
     paths:
       - "runtime/lof/**"
       - "runtime/deployment_gate.py"
+      - "scripts/lof_*.py"
       - "tests/test_lof_*.py"
       - "tests/test_deployment_gate.py"
+      - "tests/fixtures/lof_golden_replay_v1.json"
       - ".github/workflows/lof-runtime-tests.yml"
+      - ".github/workflows/lof-release-bundle.yml"
   pull_request:
     paths:
       - "runtime/lof/**"
       - "runtime/deployment_gate.py"
+      - "scripts/lof_*.py"
       - "tests/test_lof_*.py"
       - "tests/test_deployment_gate.py"
+      - "tests/fixtures/lof_golden_replay_v1.json"
       - ".github/workflows/lof-runtime-tests.yml"
+      - ".github/workflows/lof-release-bundle.yml"
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "targeted = impact scoped; full = all LOF tests"
+        required: true
+        default: targeted
+        type: choice
+        options:
+          - targeted
+          - full
 
 concurrency:
-  group: lof-runtime-tests-${{ github.ref }}
+  group: lof-targeted-tests-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,8 +57,79 @@ jobs:
       - name: Install LOF lightweight test dependency
         run: python -m pip install "xlrd>=2.0,<3"
 
-      - name: Run LOF unit tests
+      - name: Resolve changed files
+        id: changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > /tmp/lof-changed-files.txt
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+            git diff --name-only "$BASE" "$HEAD" > /tmp/lof-changed-files.txt
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            BASE="${{ github.event.before }}"
+            HEAD="${{ github.sha }}"
+            if [[ -n "$BASE" && "$BASE" != "0000000000000000000000000000000000000000" ]]; then
+              git diff --name-only "$BASE" "$HEAD" > /tmp/lof-changed-files.txt
+            else
+              git show --pretty="" --name-only "$HEAD" > /tmp/lof-changed-files.txt
+            fi
+          else
+            git show --pretty="" --name-only HEAD > /tmp/lof-changed-files.txt
+          fi
+
+          echo "Changed files:"
+          cat /tmp/lof-changed-files.txt
+
+      - name: Build impact-scoped test plan
+        id: plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXTRA=()
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.mode }}" == "full" ]]; then
+            EXTRA+=(--force-full)
+          fi
+          python scripts/lof_test_plan.py \
+            --changed-files-file /tmp/lof-changed-files.txt \
+            --github-output "$GITHUB_OUTPUT" \
+            "${EXTRA[@]}" | tee /tmp/lof-test-plan.json
+
+      - name: Run full LOF regression
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'full' }}
         run: python -m unittest discover -s tests -p "test_lof_*.py" -v
 
+      - name: Run impact-scoped LOF tests
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.mode == 'full') && steps.plan.outputs.has_tests == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest ${{ steps.plan.outputs.test_modules }} -v
+
+      - name: Run deterministic golden replay
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.mode == 'full') || steps.plan.outputs.golden_required == 'true' }}
+        run: python scripts/lof_golden_replay.py
+
       - name: Run shared deployment gate regression tests
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.mode == 'full') || steps.plan.outputs.run_shared_gate == 'true' }}
         run: python -m unittest tests.test_deployment_gate -v
+
+      - name: Publish test-scope summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## LOF test scope"
+            echo ""
+            echo "- Tier: `${{ steps.plan.outputs.tier }}`"
+            echo "- Live scope: `${{ steps.plan.outputs.live_scope }}`"
+            echo "- Affected resolvers: `${{ steps.plan.outputs.affected_resolvers }}`"
+            echo "- Historical replay before release: `${{ steps.plan.outputs.historical_replay_required }}`"
+            echo "- Full regression before release: `${{ steps.plan.outputs.full_regression_required }}`"
+            echo "- Full live preflight before release: `${{ steps.plan.outputs.full_live_preflight_required }}`"
+            echo ""
+            echo "Development CI intentionally does not run full live 404-source preflight."
+            echo "Exact release candidates still require the release barrier selected by this plan."
+          } >> "$GITHUB_STEP_SUMMARY"
