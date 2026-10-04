@@ -24,6 +24,9 @@ jobs:
       - name: Run shared deployment gate regression tests
         run: python -m unittest tests.test_deployment_gate -v
 
+      - name: Run deterministic golden replay
+        run: python scripts/lof_golden_replay.py
+
       - name: Build LOF application bundle
         shell: bash
         run: |
