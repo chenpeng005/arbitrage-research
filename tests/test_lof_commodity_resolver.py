@@ -31,7 +31,8 @@ class CommodityResolverTest(unittest.TestCase):
         )
         self.assertEqual(result.estimated_nav_status, "STALE")
         self.assertEqual(result.estimated_nav_time, fx_time)
-        self.assertEqual(result.proxy_time, fx_time)
+        self.assertEqual(result.proxy_time, commodity_time)
+        self.assertEqual(result.fx_time, fx_time)
 
     def test_fresh_commodity_and_fx_are_available(self) -> None:
         now = datetime(2026, 10, 1, 10, 0, tzinfo=TZ)
