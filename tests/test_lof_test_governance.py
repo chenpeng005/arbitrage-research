@@ -148,7 +148,47 @@ class LofHistoricalReplayTest(unittest.TestCase):
                 day="2026-09-30",
             )
             self.assertEqual(result["snapshot_files_read"], 1)
-            self.assertEqual(result["rows_checked"], 1)
+            self.assertEqual(result["schema_rows_checked"], 1)
+            self.assertEqual(result["formula_rows_checked"], 1)
+            self.assertTrue(result["formula_replay_available"])
+            self.assertEqual(result["failed"], 0)
+
+
+    def test_legacy_snapshot_without_formula_inputs_still_replays_schema(self):
+        from runtime.lof.snapshot_archive import write_snapshot_gzip
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            directory = root / "snapshots"
+            directory.mkdir(parents=True, exist_ok=True)
+            snapshot = {
+                "snapshot_id": "runtime-20260930T145010",
+                "generated_at": "2026-09-30T14:50:10+08:00",
+                "universe_count": 1,
+                "rows": [
+                    {
+                        "code": "501005",
+                        "name": "精准医疗LOF",
+                        "resolver_class": "R1_DOMESTIC_INDEX",
+                        "estimated_nav_method": "CSI_COMPONENT_WEIGHT_PREV_CLOSE",
+                        "estimated_nav_status": "AVAILABLE",
+                        "official_nav": 1.089,
+                        "estimated_nav": 1.1265,
+                        "estimated_nav_time": "2026-09-30T14:50:00+08:00",
+                    }
+                ],
+            }
+            write_snapshot_gzip(
+                directory / "runtime-20260930T145010.json.gz",
+                json.dumps(snapshot),
+            )
+            result = historical.run_replay(
+                root,
+                day="2026-09-30",
+            )
+            self.assertEqual(result["schema_rows_checked"], 1)
+            self.assertEqual(result["formula_rows_checked"], 0)
+            self.assertFalse(result["formula_replay_available"])
             self.assertEqual(result["failed"], 0)
 
 
