@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .deepseek_provider import DeepSeekProvider
+from .evidence_store import compact_completed_job_evidence
 from .mock_provider import MockProvider
 from .provider import AIProvider
 from .tasks import get_task_spec
@@ -309,6 +310,20 @@ def run_ai_job(
         metadata["completed_at"] = now_utc()
         metadata["validation_status"] = validation.get("status")
         write_json(job_dir / "ai_job_metadata.json", metadata)
+
+        if metadata["status"] == "PASS":
+            try:
+                metadata["storage_compaction"] = compact_completed_job_evidence(
+                    job_dir=job_dir,
+                    data_root=data_root,
+                )
+            except Exception as exc:
+                metadata["storage_compaction"] = {
+                    "status": "ERROR",
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+            write_json(job_dir / "ai_job_metadata.json", metadata)
+
         return metadata
 
     except Exception as exc:
