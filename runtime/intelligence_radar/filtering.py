@@ -396,4 +396,10 @@ def filter_batch(
             raise ValueError(
                 "AI filter validation failed after retry: " + "; ".join(errors)
             )
-    return enrich_findings(input_payload, response.structured_output)
+    rows = enrich_findings(input_payload, response.structured_output)
+    source_candidate_map = {str(row["question_id"]): row for row in candidates}
+    for row in rows:
+        candidate = source_candidate_map.get(str(row.get("question_id") or ""), {})
+        row["discovery_paths"] = list(candidate.get("discovery_paths", []))
+        row["author_lane_authors"] = list(candidate.get("author_lane_authors", []))
+    return rows
