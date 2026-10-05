@@ -71,6 +71,91 @@ class MeteredProvider:
         }
 
 
+def _author_lane_audit_path(data_root: Path, run_date: str) -> Path:
+    year, month, _ = run_date.split("-")
+    return (
+        data_root
+        / "intelligence_radar"
+        / "author_lane"
+        / year
+        / month
+        / f"{run_date}.json"
+    )
+
+
+def _write_author_lane_audit(
+    data_root: Path,
+    run_date: str,
+    *,
+    scan: dict[str, Any],
+    broad_findings: list[dict[str, Any]],
+    findings: list[dict[str, Any]],
+) -> Path:
+    def slim_candidate(row: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "question_id": row.get("question_id"),
+            "title": row.get("title"),
+            "discovery_paths": list(row.get("discovery_paths", [])),
+            "author_lane_authors": list(row.get("author_lane_authors", [])),
+            "author_lane_hits": list(row.get("author_lane_hits", [])),
+        }
+
+    def slim_finding(row: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "question_id": row.get("question_id"),
+            "object_name": row.get("object_name"),
+            "node_title": row.get("node_title"),
+            "finding_type": row.get("finding_type"),
+            "discovery_paths": list(row.get("discovery_paths", [])),
+            "author_lane_authors": list(row.get("author_lane_authors", [])),
+        }
+
+    candidates = [
+        slim_candidate(row)
+        for row in scan.get("candidates", [])
+        if "AUTHOR_LANE" in row.get("discovery_paths", [])
+    ]
+    broad = [
+        slim_finding(row)
+        for row in broad_findings
+        if "AUTHOR_LANE" in row.get("discovery_paths", [])
+    ]
+    final = [
+        slim_finding(row)
+        for row in findings
+        if "AUTHOR_LANE" in row.get("discovery_paths", [])
+    ]
+    payload = {
+        "schema_version": 1,
+        "run_date": run_date,
+        "author_lane_meta": scan.get("author_lane_meta", {}),
+        "candidate_count": len(candidates),
+        "author_only_candidate_count": sum(
+            1 for row in candidates if row.get("discovery_paths") == ["AUTHOR_LANE"]
+        ),
+        "broad_count": len(broad),
+        "author_only_broad_count": sum(
+            1 for row in broad if row.get("discovery_paths") == ["AUTHOR_LANE"]
+        ),
+        "final_count": len(final),
+        "author_only_final_count": sum(
+            1 for row in final if row.get("discovery_paths") == ["AUTHOR_LANE"]
+        ),
+        "candidates": candidates,
+        "broad_findings": broad,
+        "final_findings": final,
+    }
+    path = _author_lane_audit_path(data_root, run_date)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+    return path
+
+
 def _chunk(rows: list[dict[str, Any]], size: int) -> list[list[dict[str, Any]]]:
     safe = max(1, int(size))
     return [rows[i:i + safe] for i in range(0, len(rows), safe)]
@@ -158,6 +243,11 @@ def run_jisilu_daily(
         note_parts.append(f"回复覆盖警告 {scan['coverage_warning_count']} 条")
     if scan["truncated_question_count"]:
         note_parts.append(f"候选上限截断 {scan['truncated_question_count']} 条")
+    author_lane_meta = scan.get("author_lane_meta", {})
+    if author_lane_meta.get("error_count"):
+        note_parts.append(
+            f"重点作者Lane采集异常 {author_lane_meta['error_count']} 处"
+        )
 
     candidates = scan["candidates"]
     errors: list[str] = []
@@ -236,6 +326,13 @@ def run_jisilu_daily(
         ai_usage=ai_usage,
     )
     archive_path = write_daily_archive(data_root, run_date)
+    author_lane_audit_path = _write_author_lane_audit(
+        data_root,
+        run_date,
+        scan=scan,
+        broad_findings=broad_findings,
+        findings=findings,
+    )
     return {
         "status": status,
         "run_date": run_date,
@@ -246,6 +343,8 @@ def run_jisilu_daily(
         "finding_count": len(findings),
         "question_ref_count": scan["question_ref_count"],
         "feed_meta": scan["feed_meta"],
+        "author_lane_meta": scan.get("author_lane_meta", {}),
+        "author_lane_audit_path": str(author_lane_audit_path),
         "detail_error_count": scan["detail_error_count"],
         "coverage_warning_count": scan["coverage_warning_count"],
         "errors": errors,
