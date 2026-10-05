@@ -23,6 +23,54 @@ def china_now() -> datetime:
     return datetime.now(ZoneInfo("Asia/Shanghai"))
 
 
+class MeteredProvider:
+    USAGE_KEYS = (
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "prompt_cache_hit_tokens",
+        "prompt_cache_miss_tokens",
+    )
+
+    def __init__(self, delegate):
+        self.delegate = delegate
+        self.request_count = 0
+        self.provider_name = None
+        self.model_name = None
+        self.totals = {key: 0 for key in self.USAGE_KEYS}
+
+    def complete(self, **kwargs):
+        self.request_count += 1
+        response = self.delegate.complete(**kwargs)
+        self.provider_name = response.provider or self.provider_name
+        self.model_name = response.model or self.model_name
+        usage = response.usage or {}
+        for key in self.USAGE_KEYS:
+            try:
+                self.totals[key] += max(0, int(usage.get(key) or 0))
+            except (TypeError, ValueError):
+                continue
+        return response
+
+    def snapshot(
+        self,
+        *,
+        default_provider: str | None = None,
+        default_model: str | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "metered": True,
+            "provider": self.provider_name or default_provider,
+            "model": self.model_name or default_model,
+            "request_count": self.request_count,
+            "prompt_tokens": self.totals["prompt_tokens"],
+            "completion_tokens": self.totals["completion_tokens"],
+            "total_tokens": self.totals["total_tokens"],
+            "cache_hit_tokens": self.totals["prompt_cache_hit_tokens"],
+            "cache_miss_tokens": self.totals["prompt_cache_miss_tokens"],
+        }
+
+
 def _chunk(rows: list[dict[str, Any]], size: int) -> list[list[dict[str, Any]]]:
     safe = max(1, int(size))
     return [rows[i:i + safe] for i in range(0, len(rows), safe)]
@@ -53,6 +101,9 @@ def run_jisilu_daily(
     effective_run_mode = _effective_run_mode(run_date, run_mode)
     note_parts: list[str] = []
     broad_findings: list[dict[str, Any]] = []
+    effective_model = model or os.environ.get("AI_MODEL") or "deepseek-chat"
+    default_provider_name = os.environ.get("AI_PROVIDER") or None
+    meter: MeteredProvider | None = None
 
     try:
         scan = collect_daily_candidates(
@@ -62,6 +113,17 @@ def run_jisilu_daily(
         )
     except Exception as exc:
         completed_at = china_now().isoformat()
+        failed_usage = {
+            "metered": True,
+            "provider": default_provider_name,
+            "model": effective_model,
+            "request_count": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "cache_hit_tokens": 0,
+            "cache_miss_tokens": 0,
+        }
         save_daily_result(
             radar_db_path(data_root),
             run_date=run_date,
@@ -74,6 +136,7 @@ def run_jisilu_daily(
             note=f"采集失败：{type(exc).__name__}: {exc}",
             run_mode=effective_run_mode,
             extractor_version=extractor_version,
+            ai_usage=failed_usage,
         )
         archive_path = write_daily_archive(data_root, run_date)
         return {
@@ -84,6 +147,7 @@ def run_jisilu_daily(
             "candidate_count": 0,
             "broad_finding_count": 0,
             "finding_count": 0,
+            "ai_usage": failed_usage,
             "archive_path": str(archive_path),
             "error": f"{type(exc).__name__}: {exc}",
         }
@@ -98,10 +162,10 @@ def run_jisilu_daily(
     candidates = scan["candidates"]
     errors: list[str] = []
     provider_instance = None
-    effective_model = model or os.environ.get("AI_MODEL") or "deepseek-chat"
 
     if candidates:
-        provider_instance = provider or build_provider_from_env()
+        meter = MeteredProvider(provider or build_provider_from_env())
+        provider_instance = meter
         for idx, batch in enumerate(_chunk(candidates, batch_size), start=1):
             batch_id = f"{run_date}:jisilu:{idx:03d}"
             try:
@@ -125,7 +189,7 @@ def run_jisilu_daily(
                 run_date=run_date,
                 source="jisilu",
                 broad_findings=broad_findings,
-                provider=provider_instance or provider or build_provider_from_env(),
+                provider=provider_instance,
                 model=effective_model,
             )
         except Exception as exc:
@@ -139,6 +203,24 @@ def run_jisilu_daily(
 
     status = "FAILED" if errors else "OK"
     completed_at = china_now().isoformat()
+    ai_usage = (
+        meter.snapshot(
+            default_provider=default_provider_name,
+            default_model=effective_model,
+        )
+        if meter is not None
+        else {
+            "metered": True,
+            "provider": default_provider_name,
+            "model": effective_model,
+            "request_count": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "cache_hit_tokens": 0,
+            "cache_miss_tokens": 0,
+        }
+    )
     saved = save_daily_result(
         radar_db_path(data_root),
         run_date=run_date,
@@ -151,6 +233,7 @@ def run_jisilu_daily(
         note="；".join(note_parts) or None,
         run_mode=effective_run_mode,
         extractor_version=extractor_version,
+        ai_usage=ai_usage,
     )
     archive_path = write_daily_archive(data_root, run_date)
     return {
@@ -166,6 +249,7 @@ def run_jisilu_daily(
         "detail_error_count": scan["detail_error_count"],
         "coverage_warning_count": scan["coverage_warning_count"],
         "errors": errors,
+        "ai_usage": ai_usage,
         "saved": saved,
         "archive_path": str(archive_path),
     }
