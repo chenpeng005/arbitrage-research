@@ -10,11 +10,44 @@ const typeLabels = {
   OTHER: "其他"
 };
 
+// 9/28–10/4 historical sample: display-only object prototype.
+// This is intentionally NOT persisted to SQLite yet.
+const objectPrototypeByFindingId = {
+  RDF_e3815ffa74c8550eee4b: "康佳主动退市现金选择权",
+  RDF_976ad2dd0114f8971135: "康佳主动退市现金选择权",
+  RDF_ba35bbf7bcc1a525e6d5: "纳指科技ETF（159509）高溢价",
+  RDF_58a0adc1103e5882dd83: "南航转债盘中极端成交",
+  RDF_064234506e78f82c8fe8: "圣晖集成配债",
+  RDF_0dab7a66fac93e6bdea4: "中金三兄弟吸收合并 / 换股",
+  RDF_9ab28e7f0aa7662a60b6: "消费贷资金投资低波资产",
+  RDF_6256bce806f8ebd13e23: "消费贷资金投资低波资产",
+  RDF_297fe33210ba69ce4ea8: "纳指ETF节前高溢价",
+  RDF_6b383a5c2b2c1b55f21c: "岭南转债退市后兑付",
+  RDF_eb73b871afc0d37ff137: "券商智能条件单 / 网格",
+  RDF_d455d2d0a4c37797dc34: "002667 要约收购",
+  RDF_d308e8f1cafba0184583: "江山转债下修博弈",
+  RDF_0bd08c00b111915da456: "绿茵转债下修",
+  RDF_f2bf8db082bfe924c93d: "渝水转债下修触发数据",
+  RDF_315e27c40baf72c8798b: "康佳主动退市现金选择权",
+  RDF_a627bdd1741fe91d9f56: "弱者体系 / 规则型资产配置",
+  RDF_46dc88fed01532468d34: "康佳主动退市现金选择权",
+  RDF_f055f173729bc2918311: "康佳主动退市现金选择权",
+  RDF_adcce26d5799ab30d544: "货币ETF（511800）节前异常波动",
+  RDF_b0692e5125a40d4939f8: "港股ETF申赎",
+  RDF_b2f0d3f08d1134c62f5c: "侨银转债下修前正股博弈",
+  RDF_a3505fb4fa6293146488: "跨境QDII ETF申购套利",
+  RDF_c37223833c4fccba68f7: "中金三兄弟现金选择权 / 换股套利",
+  RDF_7658b1db0e6ba3656ef2: "IM跨期套利"
+};
+
 const dateInput = document.getElementById("dateInput");
 const findingsEl = document.getElementById("findings");
 const emptyEl = document.getElementById("empty");
 const runlineEl = document.getElementById("runline");
 const historyHint = document.getElementById("historyHint");
+const prevDayButton = document.getElementById("prevDay");
+const nextDayButton = document.getElementById("nextDay");
+let navigationLocked = false;
 
 function escapeHtml(value) {
   const div = document.createElement("div");
@@ -46,16 +79,6 @@ function shortDateTime(value) {
 function broadCountFromNote(note) {
   const match = String(note || "").match(/宽筛\s*(\d+)\s*条/);
   return match ? Number(match[1]) : null;
-}
-
-function compactText(value, maxLength) {
-  const text = String(value || "").replace(/\s+/g, " ").trim();
-  if (text.length <= maxLength) return text;
-  const sentenceMatch = text.match(/^(.{28,}?[。！？；])/);
-  if (sentenceMatch && sentenceMatch[1].length <= maxLength) {
-    return sentenceMatch[1];
-  }
-  return text.slice(0, maxLength).replace(/[，、；：\s]+$/, "") + "…";
 }
 
 function renderRunStatus(dateValue, runs) {
@@ -93,51 +116,72 @@ function renderRunStatus(dateValue, runs) {
     '<div class="run-date">' + escapeHtml(dateValue) + "</div>" + blocks.join("");
 }
 
-function renderFinding(row, index) {
-  const meta = [
-    row.source === "jisilu" ? "集思录" : row.source,
-    row.author || null,
-    row.observed_at || null
-  ].filter(Boolean).map(escapeHtml).join(" · ");
-  const focus = compactText(row.what_happened, 132);
-  const why = compactText(row.ai_understanding, 118);
-  const evidence = row.evidence_excerpt
-    ? '<div class="detail-evidence"><div class="detail-label">原始证据</div><div>' +
-        escapeHtml(row.evidence_excerpt) + "</div></div>"
-    : "";
+function objectForFinding(row) {
+  const label = objectPrototypeByFindingId[row.finding_id];
+  if (label) return {key: label, label: label, mapped: true};
+  return {
+    key: "unmapped:" + row.finding_id,
+    label: "待归类",
+    mapped: false
+  };
+}
+
+function groupFindingsByObject(findings) {
+  const groups = [];
+  const index = new Map();
+  findings.forEach(function(row) {
+    const object = objectForFinding(row);
+    if (!index.has(object.key)) {
+      const group = {object: object, rows: []};
+      index.set(object.key, group);
+      groups.push(group);
+    }
+    index.get(object.key).rows.push(row);
+  });
+  return groups;
+}
+
+function renderNode(row) {
+  const source = row.source === "jisilu" ? "集思录" : row.source;
+  const meta = [source, row.author || null, row.observed_at || null]
+    .filter(Boolean).map(escapeHtml).join(" · ");
   return (
-    '<article class="finding">' +
-      '<div class="meta"><span class="type">' +
+    '<div class="object-node">' +
+      '<div class="node-meta"><span class="type">' +
         escapeHtml(typeLabels[row.finding_type] || row.finding_type) +
       "</span><span>" + meta + "</span></div>" +
-      '<h2><a href="' + escapeHtml(row.url) + '" target="_blank" rel="noopener">' +
-        escapeHtml((index + 1) + ". " + row.title) +
-      "</a></h2>" +
-      '<div class="focus-block"><div class="focus-label">一句话焦点</div><div class="focus-text">' +
-        escapeHtml(focus) + "</div></div>" +
-      '<div class="quick-grid">' +
-        '<div class="quick-item"><div class="quick-label">为什么值得看</div><div>' +
-          escapeHtml(why) + "</div></div>" +
-        '<div class="quick-item judgment-card"><div class="quick-label">当前判断</div><div>' +
-          escapeHtml(row.current_judgment) + "</div></div>" +
+      '<h3><a href="' + escapeHtml(row.url) + '" target="_blank" rel="noopener">' +
+        escapeHtml(row.title) + "</a></h3>" +
+      '<div class="node-fact">' + escapeHtml(row.what_happened) + "</div>" +
+      '<div class="node-judgment"><span>当前判断</span>' +
+        escapeHtml(row.current_judgment) + "</div>" +
+      '<div class="node-source"><a href="' + escapeHtml(row.url) + '" target="_blank" rel="noopener">原帖 ↗</a></div>' +
+    "</div>"
+  );
+}
+
+function renderObjectGroup(group, index) {
+  const types = Array.from(new Set(group.rows.map(function(row) {
+    return typeLabels[row.finding_type] || row.finding_type;
+  })));
+  const typeTags = types.map(function(label) {
+    return '<span class="object-type-tag">' + escapeHtml(label) + "</span>";
+  }).join("");
+  const mappingLabel = group.object.mapped ? "对象 · 试验归类" : "对象 · 待归类";
+  return (
+    '<article class="object-card">' +
+      '<div class="object-head">' +
+        '<div><div class="object-kicker">' + mappingLabel + '</div>' +
+        '<h2>' + escapeHtml((index + 1) + ". " + group.object.label) + "</h2></div>" +
+        '<div class="object-types">' + typeTags + "</div>" +
       "</div>" +
-      '<details class="finding-details">' +
-        '<summary>展开详情</summary>' +
-        '<div class="detail-body">' +
-          '<div class="detail-row"><div class="detail-label">发生了什么</div><div>' +
-            escapeHtml(row.what_happened) + "</div></div>" +
-          '<div class="detail-row"><div class="detail-label">AI理解</div><div>' +
-            escapeHtml(row.ai_understanding) + "</div></div>" +
-          evidence +
-          '<div class="source-link"><a href="' + escapeHtml(row.url) + '" target="_blank" rel="noopener">打开原帖 ↗</a></div>' +
-        "</div>" +
-      "</details>" +
+      '<div class="object-nodes">' + group.rows.map(renderNode).join("") + "</div>" +
     "</article>"
   );
 }
 
 async function loadDates() {
-  const response = await fetch("/api/radar/dates?limit=120");
+  const response = await fetch("/api/radar/dates?limit=120", {cache: "no-store"});
   if (!response.ok) return [];
   const data = await response.json();
   return data.dates || [];
@@ -148,7 +192,8 @@ async function loadDay(dateValue) {
   emptyEl.hidden = true;
   runlineEl.textContent = "读取中…";
   const response = await fetch(
-    "/api/radar/daily?date=" + encodeURIComponent(dateValue)
+    "/api/radar/daily?date=" + encodeURIComponent(dateValue),
+    {cache: "no-store"}
   );
   if (!response.ok) {
     runlineEl.textContent = "读取失败";
@@ -168,34 +213,50 @@ async function loadDay(dateValue) {
     emptyEl.hidden = false;
     emptyEl.textContent = "今日已完成扫描，没有值得保留的新发现。";
   } else {
-    findingsEl.innerHTML = findings.map(renderFinding).join("");
+    const groups = groupFindingsByObject(findings);
+    findingsEl.innerHTML = groups.map(renderObjectGroup).join("");
   }
 }
 
+function navigateToDate(value) {
+  if (navigationLocked || !value) return;
+  navigationLocked = true;
+  prevDayButton.disabled = true;
+  nextDayButton.disabled = true;
+  dateInput.disabled = true;
+  const url = new URL(window.location.href);
+  url.pathname = "/radar";
+  url.search = "";
+  url.searchParams.set("date", value);
+  url.searchParams.set("ui", "object-v1-nav-v2");
+  window.location.assign(url.toString());
+}
+
 async function init() {
-  const dates = await loadDates();
   const params = new URLSearchParams(location.search);
   const requested = params.get("date");
+  if (requested) dateInput.value = requested;
+  const dates = await loadDates();
   const selected = requested || dates[0] || localToday();
   dateInput.value = selected;
   historyHint.textContent = dates.length
-    ? "已保存 " + dates.length + " 个日期，可直接切换日期回看。"
+    ? "已保存 " + dates.length + " 个日期。9/28–10/4 的“对象”为试验性归类，尚未写入底层模型。"
     : "尚无历史记录。";
   await loadDay(selected);
 }
 
 dateInput.addEventListener("change", function() {
-  const value = dateInput.value;
-  history.replaceState(null, "", "/radar?date=" + encodeURIComponent(value));
-  loadDay(value);
+  navigateToDate(dateInput.value);
 });
-document.getElementById("prevDay").addEventListener("click", function() {
-  dateInput.value = shiftDate(dateInput.value, -1);
-  dateInput.dispatchEvent(new Event("change"));
+prevDayButton.addEventListener("click", function(event) {
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  navigateToDate(shiftDate(dateInput.value, -1));
 });
-document.getElementById("nextDay").addEventListener("click", function() {
-  dateInput.value = shiftDate(dateInput.value, 1);
-  dateInput.dispatchEvent(new Event("change"));
+nextDayButton.addEventListener("click", function(event) {
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  navigateToDate(shiftDate(dateInput.value, 1));
 });
 
 init();
