@@ -48,6 +48,16 @@ function broadCountFromNote(note) {
   return match ? Number(match[1]) : null;
 }
 
+function compactText(value, maxLength) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) return text;
+  const sentenceMatch = text.match(/^(.{28,}?[。！？；])/);
+  if (sentenceMatch && sentenceMatch[1].length <= maxLength) {
+    return sentenceMatch[1];
+  }
+  return text.slice(0, maxLength).replace(/[，、；：\s]+$/, "") + "…";
+}
+
 function renderRunStatus(dateValue, runs) {
   const blocks = runs.map(function(run) {
     const source = run.source === "jisilu" ? "集思录" : run.source;
@@ -89,8 +99,11 @@ function renderFinding(row, index) {
     row.author || null,
     row.observed_at || null
   ].filter(Boolean).map(escapeHtml).join(" · ");
+  const focus = compactText(row.what_happened, 132);
+  const why = compactText(row.ai_understanding, 118);
   const evidence = row.evidence_excerpt
-    ? '<div class="evidence">' + escapeHtml(row.evidence_excerpt) + "</div>"
+    ? '<div class="detail-evidence"><div class="detail-label">原始证据</div><div>' +
+        escapeHtml(row.evidence_excerpt) + "</div></div>"
     : "";
   return (
     '<article class="finding">' +
@@ -100,14 +113,25 @@ function renderFinding(row, index) {
       '<h2><a href="' + escapeHtml(row.url) + '" target="_blank" rel="noopener">' +
         escapeHtml((index + 1) + ". " + row.title) +
       "</a></h2>" +
-      "<dl>" +
-        '<div class="row"><dt>发生了什么</dt><dd>' +
-          escapeHtml(row.what_happened) + "</dd></div>" +
-        '<div class="row"><dt>AI理解</dt><dd>' +
-          escapeHtml(row.ai_understanding) + "</dd></div>" +
-      "</dl>" +
-      '<div class="judgment">' + escapeHtml(row.current_judgment) + "</div>" +
-      evidence +
+      '<div class="focus-block"><div class="focus-label">一句话焦点</div><div class="focus-text">' +
+        escapeHtml(focus) + "</div></div>" +
+      '<div class="quick-grid">' +
+        '<div class="quick-item"><div class="quick-label">为什么值得看</div><div>' +
+          escapeHtml(why) + "</div></div>" +
+        '<div class="quick-item judgment-card"><div class="quick-label">当前判断</div><div>' +
+          escapeHtml(row.current_judgment) + "</div></div>" +
+      "</div>" +
+      '<details class="finding-details">' +
+        '<summary>展开详情</summary>' +
+        '<div class="detail-body">' +
+          '<div class="detail-row"><div class="detail-label">发生了什么</div><div>' +
+            escapeHtml(row.what_happened) + "</div></div>" +
+          '<div class="detail-row"><div class="detail-label">AI理解</div><div>' +
+            escapeHtml(row.ai_understanding) + "</div></div>" +
+          evidence +
+          '<div class="source-link"><a href="' + escapeHtml(row.url) + '" target="_blank" rel="noopener">打开原帖 ↗</a></div>' +
+        "</div>" +
+      "</details>" +
     "</article>"
   );
 }
