@@ -228,6 +228,8 @@ def parse_question_daily(
             "published_at": published_at,
             "text": question_text,
             "is_daily": bool(published_at and published_at[:10] == target_date),
+            "locator_id": question_id,
+            "locator_url": url,
         }
         context_segments.append(qseg)
         if qseg["is_daily"]:
@@ -259,6 +261,8 @@ def parse_question_daily(
             "published_at": answer_at,
             "text": _clean_fragment(content_match.group(1), 4000),
             "is_daily": answer_at[:10] == target_date,
+            "locator_id": answer_id,
+            "locator_url": f"{url}#answer_list_{answer_id}",
         }
         if answer["is_daily"]:
             daily_segments.append(answer)
