@@ -58,6 +58,17 @@ class IntelligenceRadarStorageTest(unittest.TestCase):
                 candidate_count=8,
                 findings=[first],
                 run_mode="LIVE",
+                ai_usage={
+                    "metered": True,
+                    "provider": "deepseek",
+                    "model": "deepseek-chat",
+                    "request_count": 6,
+                    "prompt_tokens": 42000,
+                    "completion_tokens": 3100,
+                    "total_tokens": 45100,
+                    "cache_hit_tokens": 18000,
+                    "cache_miss_tokens": 24000,
+                },
             )
             view = get_daily_view(db, "2026-10-04")
             self.assertEqual(view["finding_count"], 1)
@@ -67,6 +78,10 @@ class IntelligenceRadarStorageTest(unittest.TestCase):
                 view["findings"][0]["evidence"][0]["locator_id"], "10"
             )
             self.assertEqual(view["runs"][0]["run_mode"], "LIVE")
+            self.assertTrue(view["runs"][0]["ai_metered"])
+            self.assertEqual(view["runs"][0]["ai_request_count"], 6)
+            self.assertEqual(view["runs"][0]["ai_total_tokens"], 45100)
+            self.assertEqual(view["runs"][0]["ai_usage"]["cache_hit_tokens"], 18000)
 
             save_daily_result(
                 db,
@@ -145,6 +160,8 @@ class IntelligenceRadarStorageTest(unittest.TestCase):
             self.assertEqual(view["finding_count"], 1)
             self.assertEqual(view["runs"][0]["run_mode"], "BACKFILL")
             self.assertEqual(view["runs"][0]["extractor_version"], "legacy-v1")
+            self.assertFalse(view["runs"][0]["ai_metered"])
+            self.assertEqual(view["runs"][0]["ai_request_count"], 0)
             self.assertEqual(view["findings"][0]["node_title"], "旧标题")
 
     def test_daily_archive_is_small_rebuildable_json(self) -> None:
