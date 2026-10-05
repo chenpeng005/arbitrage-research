@@ -74,7 +74,16 @@ class IntelligenceRadarJisiluTest(unittest.TestCase):
             "answer_10",
         )
         self.assertIn("20分钟", packet["daily_segments"][0]["text"])
+        self.assertEqual(packet["daily_segments"][0]["locator_id"], "10")
+        self.assertEqual(
+            packet["daily_segments"][0]["locator_url"],
+            "https://www.jisilu.cn/question/1#answer_list_10",
+        )
         self.assertFalse(packet["context_segments"][0]["is_daily"])
+        self.assertEqual(
+            packet["context_segments"][0]["locator_url"],
+            "https://www.jisilu.cn/question/1",
+        )
 
 
 if __name__ == "__main__":
