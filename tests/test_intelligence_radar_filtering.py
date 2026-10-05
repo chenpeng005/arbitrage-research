@@ -2,8 +2,10 @@ import unittest
 
 from runtime.intelligence_radar.filtering import (
     enrich_findings,
+    filter_batch,
     validate_filter_output,
 )
+from runtime.ai_runtime.provider import ProviderResponse
 
 
 def _input():
@@ -62,6 +64,50 @@ class IntelligenceRadarFilteringTest(unittest.TestCase):
         enriched = enrich_findings(_input(), output)
         self.assertEqual(enriched[0]["title"], "到账时间实测")
         self.assertIn("20分钟", enriched[0]["evidence_excerpt"])
+
+    def test_filter_batch_retries_once_after_semantic_validation_error(self) -> None:
+        class RetryProvider:
+            def __init__(self):
+                self.calls = 0
+
+            def complete(self, **kwargs):
+                self.calls += 1
+                bad = {
+                    "run_date": "2026-10-04",
+                    "source": "jisilu",
+                    "batch_id": "b1",
+                    "findings": [{
+                        "question_id": "1",
+                        "finding_type": "EXECUTION_ISSUE",
+                        "what_happened": "申购份额到账比预期慢",
+                        "ai_understanding": "到账时间会形成未对冲的价格暴露",
+                        "current_judgment": "执行风险，值得继续跟踪",
+                        "worth_follow_up": True,
+                        "supporting_segment_ids": ["answer_other"],
+                    }],
+                }
+                good = {
+                    **bad,
+                    "findings": [{
+                        **bad["findings"][0],
+                        "supporting_segment_ids": ["answer_10"],
+                    }],
+                }
+                return ProviderResponse(
+                    provider="test", model="test", request_id=None,
+                    finish_reason="stop",
+                    structured_output=bad if self.calls == 1 else good,
+                    tool_calls=[], usage={}, raw_response={},
+                )
+
+        provider = RetryProvider()
+        rows = filter_batch(
+            run_date="2026-10-04", source="jisilu", batch_id="b1",
+            candidates=_input()["candidates"], provider=provider, model="test",
+        )
+        self.assertEqual(provider.calls, 2)
+        self.assertEqual(len(rows), 1)
+        self.assertIn("20分钟", rows[0]["evidence_excerpt"])
 
     def test_filter_validator_rejects_context_only_support(self) -> None:
         output = {
