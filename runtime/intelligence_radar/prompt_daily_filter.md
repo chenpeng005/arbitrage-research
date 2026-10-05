@@ -39,6 +39,7 @@
 ## 输出纪律
 
 - 每个 finding 必须由候选中的 segment 支持；
+- supporting_segment_ids 只能引用该 finding 对应 question_id 自己的 segment，禁止跨帖子引用；
 - supporting_segment_ids 至少包含一个 is_daily=true 的当天新增 segment；
 - 不得发明帖子没有说过的事实；
 - 一个问题最多输出 3 个彼此独立的 finding；
