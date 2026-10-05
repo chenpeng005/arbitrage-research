@@ -6,13 +6,14 @@ Current source: Jisilu public pages. The persistence model is source-agnostic so
 
 Runtime chain:
 1. Read the latest-activity feed and the new-topic feed.
-2. Fetch candidate question detail pages.
-3. Keep the original post as context and extract target-day replies as daily increments.
-4. Run a deliberately broad AI screen in small batches.
-5. Run a second final gate that selects only items worth appearing in the user's daily page.
-6. Persist final findings as Object → Information Node → Evidence in SQLite.
-7. Export one lightweight daily JSON archive after persistence.
-8. Serve the daily record through /radar and /api/radar/*.
+2. In parallel, read the Author Lane for a small explicit watchlist of seed authors. This lane is only for coverage and gives no AI priority or score boost.
+3. Merge/dedupe global-feed and author-lane question refs, then fetch each candidate detail page once.
+4. Keep the original post as context and extract target-day replies as daily increments.
+5. Run a deliberately broad AI screen in small batches.
+6. Run a second final gate that selects only items worth appearing in the user's daily page.
+7. Persist final findings as Object → Information Node → Evidence in SQLite.
+8. Export one lightweight daily JSON archive plus one Author Lane shadow audit.
+9. Serve the daily record through /radar and /api/radar/*.
 
 Persistence principles:
 - Object is a stable noun-like identity: a security/target or a stable strategy name.
@@ -25,6 +26,16 @@ Persistence principles:
 - Re-running the same source/date replaces that source/date snapshot.
 - Run mode is recorded as LIVE or BACKFILL.
 - Extractor/schema versions are recorded for future reinterpretation and migration.
+
+
+Author Lane Shadow:
+- Config: `runtime/intelligence_radar/author_watchlist.json`
+- Current seed authors: `gaigai777`, `东方龙2014`, `帅牛`.
+- It watches each author's newly published topics and newly posted answers, including answers added to old threads.
+- Author identity/discovery path is deliberately NOT included in the AI prompt, so being on the watchlist cannot make a candidate easier to pass Broad or Final Gate.
+- Author-only refs bypass the global-feed question cap and are merged/deduped by question ID before detail fetch.
+- Shadow audit: `runtime_data/intelligence_radar/author_lane/YYYY/MM/YYYY-MM-DD.json` records overlap, author-only candidates, Broad retention and Final retention without mirroring full raw pages.
+- The watchlist is intentionally small and editable; it is not a ranking of authors.
 
 Storage:
 - Runtime DB: `runtime_data/intelligence_radar/radar.sqlite3`
