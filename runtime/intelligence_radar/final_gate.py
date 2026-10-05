@@ -44,6 +44,8 @@ def _gate_input(
             {
                 "broad_id": f"B{idx:03d}",
                 "question_id": row.get("question_id"),
+                "object_name": row.get("object_name"),
+                "node_title": row.get("node_title"),
                 "title": row.get("title"),
                 "finding_type": row.get("finding_type"),
                 "what_happened": row.get("what_happened"),
