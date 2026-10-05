@@ -1,6 +1,11 @@
 import unittest
 
-from runtime.intelligence_radar.jisilu import parse_feed, parse_question_daily
+from runtime.intelligence_radar.jisilu import (
+    parse_author_answers,
+    parse_author_questions,
+    parse_feed,
+    parse_question_daily,
+)
 
 
 FEED = """
@@ -45,6 +50,24 @@ DETAIL = """
 """
 
 
+AUTHOR_ANSWERS = """
+<div class="aw-item"><div class="aw-mod"><div class="aw-mod-head"><h4>
+<a target="_blank" href="https://www.jisilu.cn/question/517247?show_all_answer-TRUE__item_id-5553841__answer_id-5553841__single-TRUE#!answer_5553841">看图说感想！2026年展望！</a>
+</h4></div><div class="aw-mod-body">
+<p class="aw-hide-txt">今天补充了券商开闸时间差异</p>
+<p class="aw-text-color-999">2026-10-05 19:18</p>
+</div></div></div>
+"""
+
+AUTHOR_QUESTIONS = """
+<div class="aw-item"><div class="aw-mod"><div class="aw-mod-head"><h4>
+<a style="" href="https://www.jisilu.cn/question/525700">新机会试探</a>
+</h4></div><div class="aw-mod-body">
+<p class="aw-text-color-999">3 回复 • 100 次浏览 • 2 个关注 • 2026-10-05 20:01</p>
+</div></div></div>
+"""
+
+
 class IntelligenceRadarJisiluTest(unittest.TestCase):
     def test_parse_feed_latest_activity(self) -> None:
         rows = parse_feed(FEED, feed_mode="activity")
@@ -55,6 +78,31 @@ class IntelligenceRadarJisiluTest(unittest.TestCase):
         self.assertEqual(row.reply_count, 27)
         self.assertEqual(row.view_count, 2202)
         self.assertEqual(row.actor, "甲")
+
+    def test_parse_author_answer_keeps_exact_answer_locator(self) -> None:
+        rows = parse_author_answers(
+            AUTHOR_ANSWERS,
+            author_name="gaigai777",
+            author_uid="1335908",
+        )
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row.question_id, "517247")
+        self.assertEqual(row.answer_id, "5553841")
+        self.assertEqual(row.activity_at, "2026-10-05 19:18")
+        self.assertIn("开闸时间", row.excerpt or "")
+
+    def test_parse_author_question_keeps_publish_time(self) -> None:
+        rows = parse_author_questions(
+            AUTHOR_QUESTIONS,
+            author_name="帅牛",
+            author_uid="7",
+        )
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row.question_id, "525700")
+        self.assertEqual(row.activity_kind, "AUTHOR_QUESTION")
+        self.assertEqual(row.activity_at, "2026-10-05 20:01")
 
     def test_parse_question_keeps_only_target_day_activity(self) -> None:
         packet = parse_question_daily(
