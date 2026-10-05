@@ -24,23 +24,46 @@ def _input():
                 "context_segments": [
                     {
                         "segment_id": "question",
+                        "kind": "QUESTION",
                         "is_daily": False,
                         "author": "甲",
+                        "published_at": "2026-10-03 20:00",
                         "text": "讨论ETF申购",
+                        "locator_id": "1",
+                        "locator_url": "https://www.jisilu.cn/question/1",
                     }
                 ],
                 "daily_segments": [
                     {
                         "segment_id": "answer_10",
+                        "kind": "ANSWER",
                         "is_daily": True,
                         "author": "乙",
                         "published_at": "2026-10-04 20:00",
                         "text": "今天实测到账慢了20分钟",
+                        "locator_id": "10",
+                        "locator_url": "https://www.jisilu.cn/question/1#answer_list_10",
                     }
                 ],
             }
         ],
     }
+
+
+def _finding(**overrides):
+    row = {
+        "question_id": "1",
+        "object_name": "跨境ETF申购套利",
+        "node_title": "到账时间比预期慢20分钟",
+        "finding_type": "EXECUTION_ISSUE",
+        "what_happened": "申购份额到账比预期慢",
+        "ai_understanding": "到账时间会形成未对冲的价格暴露",
+        "current_judgment": "执行风险，值得继续跟踪",
+        "worth_follow_up": True,
+        "supporting_segment_ids": ["answer_10"],
+    }
+    row.update(overrides)
+    return row
 
 
 class IntelligenceRadarFilteringTest(unittest.TestCase):
@@ -49,42 +72,46 @@ class IntelligenceRadarFilteringTest(unittest.TestCase):
             "run_date": "2026-10-04",
             "source": "jisilu",
             "batch_id": "b1",
-            "findings": [
-                {
-                    "question_id": "1",
-                    "finding_type": "EXECUTION_ISSUE",
-                    "what_happened": "申购份额到账比预期慢",
-                    "ai_understanding": "到账时间会形成未对冲的价格暴露",
-                    "current_judgment": "执行风险，值得继续跟踪",
-                    "worth_follow_up": True,
-                    "supporting_segment_ids": ["answer_10"],
-                }
-            ],
+            "findings": [_finding()],
         }
         self.assertEqual(validate_filter_output(_input(), output), [])
         enriched = enrich_findings(_input(), output)
         self.assertEqual(enriched[0]["title"], "到账时间实测")
+        self.assertEqual(enriched[0]["object_name"], "跨境ETF申购套利")
+        self.assertEqual(enriched[0]["node_title"], "到账时间比预期慢20分钟")
         self.assertIn("20分钟", enriched[0]["evidence_excerpt"])
+        self.assertEqual(enriched[0]["author"], "乙")
+        self.assertEqual(
+            enriched[0]["evidence"][0]["locator_url"],
+            "https://www.jisilu.cn/question/1#answer_list_10",
+        )
+        self.assertTrue(enriched[0]["evidence"][0]["is_primary"])
 
     def test_normalize_rebinds_qid_to_unambiguous_segment_owner(self) -> None:
         payload = _input()
-        payload["candidates"].append({
-            "question_id": "2",
-            "title": "相似主题",
-            "url": "https://www.jisilu.cn/question/2",
-            "context_segments": [],
-            "daily_segments": [{
-                "segment_id": "answer_20",
-                "is_daily": True,
-                "author": "丙",
-                "text": "另一条回复",
-            }],
-        })
-        output = {
-            "findings": [{
+        payload["candidates"].append(
+            {
                 "question_id": "2",
-                "supporting_segment_ids": ["answer_10"],
-            }]
+                "title": "相似主题",
+                "url": "https://www.jisilu.cn/question/2",
+                "context_segments": [],
+                "daily_segments": [
+                    {
+                        "segment_id": "answer_20",
+                        "is_daily": True,
+                        "author": "丙",
+                        "text": "另一条回复",
+                    }
+                ],
+            }
+        )
+        output = {
+            "findings": [
+                {
+                    "question_id": "2",
+                    "supporting_segment_ids": ["answer_10"],
+                }
+            ]
         }
         repairs = normalize_finding_question_ids(payload, output)
         self.assertEqual(output["findings"][0]["question_id"], "1")
@@ -102,38 +129,36 @@ class IntelligenceRadarFilteringTest(unittest.TestCase):
                     "run_date": "2026-10-04",
                     "source": "jisilu",
                     "batch_id": "b1",
-                    "findings": [{
-                        "question_id": "1",
-                        "finding_type": "EXECUTION_ISSUE",
-                        "what_happened": "申购份额到账比预期慢",
-                        "ai_understanding": "到账时间会形成未对冲的价格暴露",
-                        "current_judgment": "执行风险，值得继续跟踪",
-                        "worth_follow_up": True,
-                        "supporting_segment_ids": ["answer_other"],
-                    }],
+                    "findings": [_finding(supporting_segment_ids=["answer_other"])],
                 }
                 good = {
                     **bad,
-                    "findings": [{
-                        **bad["findings"][0],
-                        "supporting_segment_ids": ["answer_10"],
-                    }],
+                    "findings": [_finding(supporting_segment_ids=["answer_10"])],
                 }
                 return ProviderResponse(
-                    provider="test", model="test", request_id=None,
+                    provider="test",
+                    model="test",
+                    request_id=None,
                     finish_reason="stop",
                     structured_output=bad if self.calls == 1 else good,
-                    tool_calls=[], usage={}, raw_response={},
+                    tool_calls=[],
+                    usage={},
+                    raw_response={},
                 )
 
         provider = RetryProvider()
         rows = filter_batch(
-            run_date="2026-10-04", source="jisilu", batch_id="b1",
-            candidates=_input()["candidates"], provider=provider, model="test",
+            run_date="2026-10-04",
+            source="jisilu",
+            batch_id="b1",
+            candidates=_input()["candidates"],
+            provider=provider,
+            model="test",
         )
         self.assertEqual(provider.calls, 2)
         self.assertEqual(len(rows), 1)
         self.assertIn("20分钟", rows[0]["evidence_excerpt"])
+        self.assertEqual(rows[0]["object_name"], "跨境ETF申购套利")
 
     def test_filter_validator_rejects_context_only_support(self) -> None:
         output = {
@@ -141,19 +166,29 @@ class IntelligenceRadarFilteringTest(unittest.TestCase):
             "source": "jisilu",
             "batch_id": "b1",
             "findings": [
-                {
-                    "question_id": "1",
-                    "finding_type": "NEW_MECHANISM",
-                    "what_happened": "只是复述旧帖内容",
-                    "ai_understanding": "没有当天新增证据",
-                    "current_judgment": "不应作为今日发现",
-                    "worth_follow_up": False,
-                    "supporting_segment_ids": ["question"],
-                }
+                _finding(
+                    finding_type="NEW_MECHANISM",
+                    what_happened="只是复述旧帖内容",
+                    ai_understanding="没有当天新增证据",
+                    current_judgment="不应作为今日发现",
+                    worth_follow_up=False,
+                    supporting_segment_ids=["question"],
+                )
             ],
         }
         errors = validate_filter_output(_input(), output)
         self.assertTrue(any("daily segment" in item for item in errors))
+
+    def test_filter_validator_requires_object_and_node_title(self) -> None:
+        output = {
+            "run_date": "2026-10-04",
+            "source": "jisilu",
+            "batch_id": "b1",
+            "findings": [_finding(object_name="", node_title="")],
+        }
+        errors = validate_filter_output(_input(), output)
+        self.assertTrue(any("object_name" in item for item in errors))
+        self.assertTrue(any("node_title" in item for item in errors))
 
 
 if __name__ == "__main__":
