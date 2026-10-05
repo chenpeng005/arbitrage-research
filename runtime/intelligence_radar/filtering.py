@@ -96,6 +96,49 @@ def _candidate_input(candidate: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def normalize_finding_question_ids(
+    input_payload: dict[str, Any],
+    output: dict[str, Any],
+) -> list[dict[str, str]]:
+    """Repair a model qid only when cited segment ownership is unambiguous."""
+    segment_owners: dict[str, set[str]] = {}
+    for candidate in input_payload.get("candidates", []):
+        qid = str(candidate["question_id"])
+        segments = (
+            list(candidate.get("context_segments", []))
+            + list(candidate.get("daily_segments", []))
+        )
+        for segment in segments:
+            segment_owners.setdefault(str(segment["segment_id"]), set()).add(qid)
+
+    repairs: list[dict[str, str]] = []
+    for finding in output.get("findings", []):
+        if not isinstance(finding, dict):
+            continue
+        ids = finding.get("supporting_segment_ids")
+        if not isinstance(ids, list) or not ids:
+            continue
+        owners: set[str] = set()
+        resolvable = True
+        for segment_id in ids:
+            matches = segment_owners.get(str(segment_id), set())
+            if len(matches) != 1:
+                resolvable = False
+                break
+            owners.update(matches)
+        if not resolvable or len(owners) != 1:
+            continue
+        owner = next(iter(owners))
+        original = str(finding.get("question_id") or "")
+        if original != owner:
+            finding["question_id"] = owner
+            repairs.append({
+                "from_question_id": original,
+                "to_question_id": owner,
+            })
+    return repairs
+
+
 def validate_filter_output(
     input_payload: dict[str, Any],
     output: dict[str, Any],
@@ -250,6 +293,7 @@ def filter_batch(
     )
     if response.structured_output is None:
         raise RuntimeError("AI provider returned no structured output")
+    normalize_finding_question_ids(input_payload, response.structured_output)
     errors = validate_filter_output(input_payload, response.structured_output)
     if errors:
         retry_messages = messages + [
@@ -276,6 +320,7 @@ def filter_batch(
         )
         if response.structured_output is None:
             raise RuntimeError("AI provider returned no structured output on validation retry")
+        normalize_finding_question_ids(input_payload, response.structured_output)
         errors = validate_filter_output(input_payload, response.structured_output)
         if errors:
             raise ValueError(
