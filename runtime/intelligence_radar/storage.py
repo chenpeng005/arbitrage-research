@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 ARCHIVE_SCHEMA_VERSION = 1
 DEFAULT_EXTRACTOR_VERSION = "radar-v2-object-evidence"
 
@@ -158,6 +158,16 @@ def init_db(db_path: Path) -> None:
                 note TEXT,
                 run_mode TEXT NOT NULL DEFAULT 'LIVE',
                 extractor_version TEXT,
+                ai_metered INTEGER NOT NULL DEFAULT 0,
+                ai_provider TEXT,
+                ai_model TEXT,
+                ai_request_count INTEGER NOT NULL DEFAULT 0,
+                ai_prompt_tokens INTEGER NOT NULL DEFAULT 0,
+                ai_completion_tokens INTEGER NOT NULL DEFAULT 0,
+                ai_total_tokens INTEGER NOT NULL DEFAULT 0,
+                ai_cache_hit_tokens INTEGER NOT NULL DEFAULT 0,
+                ai_cache_miss_tokens INTEGER NOT NULL DEFAULT 0,
+                ai_usage_json TEXT,
                 PRIMARY KEY (run_date, source)
             );
             CREATE TABLE IF NOT EXISTS radar_object (
@@ -231,6 +241,22 @@ def init_db(db_path: Path) -> None:
             conn.execute(
                 "ALTER TABLE daily_run ADD COLUMN extractor_version TEXT"
             )
+        usage_columns = {
+            "ai_metered": "INTEGER NOT NULL DEFAULT 0",
+            "ai_provider": "TEXT",
+            "ai_model": "TEXT",
+            "ai_request_count": "INTEGER NOT NULL DEFAULT 0",
+            "ai_prompt_tokens": "INTEGER NOT NULL DEFAULT 0",
+            "ai_completion_tokens": "INTEGER NOT NULL DEFAULT 0",
+            "ai_total_tokens": "INTEGER NOT NULL DEFAULT 0",
+            "ai_cache_hit_tokens": "INTEGER NOT NULL DEFAULT 0",
+            "ai_cache_miss_tokens": "INTEGER NOT NULL DEFAULT 0",
+            "ai_usage_json": "TEXT",
+        }
+        run_columns = _table_columns(conn, "daily_run")
+        for column, sql_type in usage_columns.items():
+            if column not in run_columns:
+                conn.execute(f"ALTER TABLE daily_run ADD COLUMN {column} {sql_type}")
 
         finding_columns = _table_columns(conn, "daily_finding")
         if "object_id" not in finding_columns:
@@ -322,19 +348,31 @@ def save_daily_result(
     note: str | None = None,
     run_mode: str = "LIVE",
     extractor_version: str = DEFAULT_EXTRACTOR_VERSION,
+    ai_usage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Replace one source/date snapshot atomically."""
     init_db(db_path)
     normalized_run_mode = str(run_mode or "LIVE").upper()
     if normalized_run_mode not in {"LIVE", "BACKFILL"}:
         raise ValueError("run_mode must be LIVE or BACKFILL")
+    usage = dict(ai_usage or {})
+    ai_metered = bool(usage.get("metered"))
+
+    def _usage_int(key: str) -> int:
+        try:
+            return max(0, int(usage.get(key) or 0))
+        except (TypeError, ValueError):
+            return 0
 
     with connect(db_path) as conn:
         conn.execute(
             """INSERT INTO daily_run(
                    run_date,source,scan_status,scanned_at,completed_at,
-                   candidate_count,finding_count,note,run_mode,extractor_version
-               ) VALUES(?,?,?,?,?,?,?,?,?,?)
+                   candidate_count,finding_count,note,run_mode,extractor_version,
+                   ai_metered,ai_provider,ai_model,ai_request_count,
+                   ai_prompt_tokens,ai_completion_tokens,ai_total_tokens,
+                   ai_cache_hit_tokens,ai_cache_miss_tokens,ai_usage_json
+               ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                ON CONFLICT(run_date,source) DO UPDATE SET
                    scan_status=excluded.scan_status,
                    scanned_at=excluded.scanned_at,
@@ -343,7 +381,17 @@ def save_daily_result(
                    finding_count=excluded.finding_count,
                    note=excluded.note,
                    run_mode=excluded.run_mode,
-                   extractor_version=excluded.extractor_version""",
+                   extractor_version=excluded.extractor_version,
+                   ai_metered=excluded.ai_metered,
+                   ai_provider=excluded.ai_provider,
+                   ai_model=excluded.ai_model,
+                   ai_request_count=excluded.ai_request_count,
+                   ai_prompt_tokens=excluded.ai_prompt_tokens,
+                   ai_completion_tokens=excluded.ai_completion_tokens,
+                   ai_total_tokens=excluded.ai_total_tokens,
+                   ai_cache_hit_tokens=excluded.ai_cache_hit_tokens,
+                   ai_cache_miss_tokens=excluded.ai_cache_miss_tokens,
+                   ai_usage_json=excluded.ai_usage_json""",
             (
                 run_date,
                 source,
@@ -355,6 +403,18 @@ def save_daily_result(
                 note,
                 normalized_run_mode,
                 extractor_version,
+                1 if ai_metered else 0,
+                usage.get("provider"),
+                usage.get("model"),
+                _usage_int("request_count"),
+                _usage_int("prompt_tokens"),
+                _usage_int("completion_tokens"),
+                _usage_int("total_tokens"),
+                _usage_int("cache_hit_tokens"),
+                _usage_int("cache_miss_tokens"),
+                json.dumps(usage, ensure_ascii=False, sort_keys=True)
+                if ai_metered
+                else None,
             ),
         )
         conn.execute(
@@ -490,11 +550,24 @@ def get_daily_view(db_path: Path, run_date: str | None = None) -> dict[str, Any]
             for row in conn.execute(
                 """SELECT run_date,source,scan_status,scanned_at,completed_at,
                           candidate_count,finding_count,note,run_mode,
-                          extractor_version
+                          extractor_version,ai_metered,ai_provider,ai_model,
+                          ai_request_count,ai_prompt_tokens,ai_completion_tokens,
+                          ai_total_tokens,ai_cache_hit_tokens,ai_cache_miss_tokens,
+                          ai_usage_json
                    FROM daily_run WHERE run_date=? ORDER BY source""",
                 (selected,),
             ).fetchall()
         ]
+        for run in runs:
+            run["ai_metered"] = bool(run.get("ai_metered"))
+            raw_usage = run.get("ai_usage_json")
+            if raw_usage:
+                try:
+                    run["ai_usage"] = json.loads(raw_usage)
+                except json.JSONDecodeError:
+                    run["ai_usage"] = None
+            else:
+                run["ai_usage"] = None
         findings = [
             dict(row)
             for row in conn.execute(
