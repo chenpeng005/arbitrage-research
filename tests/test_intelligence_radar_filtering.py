@@ -3,6 +3,7 @@ import unittest
 from runtime.intelligence_radar.filtering import (
     enrich_findings,
     filter_batch,
+    normalize_finding_question_ids,
     validate_filter_output,
 )
 from runtime.ai_runtime.provider import ProviderResponse
@@ -64,6 +65,31 @@ class IntelligenceRadarFilteringTest(unittest.TestCase):
         enriched = enrich_findings(_input(), output)
         self.assertEqual(enriched[0]["title"], "到账时间实测")
         self.assertIn("20分钟", enriched[0]["evidence_excerpt"])
+
+    def test_normalize_rebinds_qid_to_unambiguous_segment_owner(self) -> None:
+        payload = _input()
+        payload["candidates"].append({
+            "question_id": "2",
+            "title": "相似主题",
+            "url": "https://www.jisilu.cn/question/2",
+            "context_segments": [],
+            "daily_segments": [{
+                "segment_id": "answer_20",
+                "is_daily": True,
+                "author": "丙",
+                "text": "另一条回复",
+            }],
+        })
+        output = {
+            "findings": [{
+                "question_id": "2",
+                "supporting_segment_ids": ["answer_10"],
+            }]
+        }
+        repairs = normalize_finding_question_ids(payload, output)
+        self.assertEqual(output["findings"][0]["question_id"], "1")
+        self.assertEqual(repairs[0]["from_question_id"], "2")
+        self.assertEqual(repairs[0]["to_question_id"], "1")
 
     def test_filter_batch_retries_once_after_semantic_validation_error(self) -> None:
         class RetryProvider:
