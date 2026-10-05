@@ -235,14 +235,15 @@ def filter_batch(
         "batch_id": batch_id,
         "candidates": [_candidate_input(x) for x in candidates],
     }
+    messages = [
+        {
+            "role": "user",
+            "content": json.dumps(input_payload, ensure_ascii=False),
+        }
+    ]
     response = provider.complete(
         system_prompt=PROMPT_PATH.read_text(encoding="utf-8"),
-        messages=[
-            {
-                "role": "user",
-                "content": json.dumps(input_payload, ensure_ascii=False),
-            }
-        ],
+        messages=messages,
         tools=[],
         output_schema=OUTPUT_SCHEMA,
         model_config={"model": model, "temperature": 0.1, "max_tokens": 8000},
@@ -251,5 +252,33 @@ def filter_batch(
         raise RuntimeError("AI provider returned no structured output")
     errors = validate_filter_output(input_payload, response.structured_output)
     if errors:
-        raise ValueError("AI filter validation failed: " + "; ".join(errors))
+        retry_messages = messages + [
+            {
+                "role": "assistant",
+                "content": json.dumps(response.structured_output, ensure_ascii=False),
+            },
+            {
+                "role": "user",
+                "content": (
+                    "上一轮输出未通过程序校验，请重新输出完整结果。"
+                    "每个 finding 的 supporting_segment_ids 必须来自该 finding "
+                    "对应 question_id 自己的 context_segments 或 daily_segments，"
+                    "且至少一个 is_daily=true。校验错误：" + "; ".join(errors)
+                ),
+            },
+        ]
+        response = provider.complete(
+            system_prompt=PROMPT_PATH.read_text(encoding="utf-8"),
+            messages=retry_messages,
+            tools=[],
+            output_schema=OUTPUT_SCHEMA,
+            model_config={"model": model, "temperature": 0.0, "max_tokens": 8000},
+        )
+        if response.structured_output is None:
+            raise RuntimeError("AI provider returned no structured output on validation retry")
+        errors = validate_filter_output(input_payload, response.structured_output)
+        if errors:
+            raise ValueError(
+                "AI filter validation failed after retry: " + "; ".join(errors)
+            )
     return enrich_findings(input_payload, response.structured_output)
