@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from runtime.intelligence_radar.filtering import (
@@ -159,6 +160,47 @@ class IntelligenceRadarFilteringTest(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertIn("20分钟", rows[0]["evidence_excerpt"])
         self.assertEqual(rows[0]["object_name"], "跨境ETF申购套利")
+
+    def test_author_lane_metadata_does_not_bias_ai_input(self) -> None:
+        class CaptureProvider:
+            def __init__(self):
+                self.payload = None
+
+            def complete(self, **kwargs):
+                self.payload = json.loads(kwargs["messages"][0]["content"])
+                return ProviderResponse(
+                    provider="test",
+                    model="test",
+                    request_id=None,
+                    finish_reason="stop",
+                    structured_output={
+                        "run_date": "2026-10-04",
+                        "source": "jisilu",
+                        "batch_id": "b1",
+                        "findings": [_finding()],
+                    },
+                    tool_calls=[],
+                    usage={},
+                    raw_response={},
+                )
+
+        candidates = _input()["candidates"]
+        candidates[0]["discovery_paths"] = ["AUTHOR_LANE"]
+        candidates[0]["author_lane_authors"] = ["gaigai777"]
+        provider = CaptureProvider()
+        rows = filter_batch(
+            run_date="2026-10-04",
+            source="jisilu",
+            batch_id="b1",
+            candidates=candidates,
+            provider=provider,
+            model="test",
+        )
+        ai_candidate = provider.payload["candidates"][0]
+        self.assertNotIn("discovery_paths", ai_candidate)
+        self.assertNotIn("author_lane_authors", ai_candidate)
+        self.assertEqual(rows[0]["discovery_paths"], ["AUTHOR_LANE"])
+        self.assertEqual(rows[0]["author_lane_authors"], ["gaigai777"])
 
     def test_filter_validator_rejects_context_only_support(self) -> None:
         output = {
