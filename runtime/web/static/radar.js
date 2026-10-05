@@ -28,6 +28,51 @@ function shiftDate(value, days) {
   return d.toISOString().slice(0, 10);
 }
 
+function shortDateTime(value) {
+  if (!value) return "";
+  return String(value).replace("T", " ").slice(0, 16);
+}
+
+function broadCountFromNote(note) {
+  const match = String(note || "").match(/宽筛\s*(\d+)\s*条/);
+  return match ? Number(match[1]) : null;
+}
+
+function renderRunStatus(dateValue, runs) {
+  const blocks = runs.map(function(run) {
+    const source = run.source === "jisilu" ? "集思录" : run.source;
+    const ok = run.scan_status === "OK";
+    const broad = broadCountFromNote(run.note);
+    const metrics = [
+      '<span class="metric"><span>原始候选</span><strong>' +
+        escapeHtml(run.candidate_count) + "</strong></span>",
+      broad == null ? "" :
+        '<span class="metric"><span>宽筛</span><strong>' +
+          escapeHtml(broad) + "</strong></span>",
+      '<span class="metric"><span>今日发现</span><strong>' +
+        escapeHtml(run.finding_count) + "</strong></span>"
+    ].filter(Boolean).join("");
+    const note = run.note
+      ? '<div class="run-note">' + escapeHtml(run.note) + "</div>"
+      : "";
+    return (
+      '<div class="run-status">' +
+        '<div class="run-status-top">' +
+          '<div class="run-status-title"><span class="status-dot ' +
+            (ok ? "ok" : "failed") + '"></span>' +
+            escapeHtml(source + " · " + (ok ? "扫描成功" : "扫描异常")) +
+          "</div>" +
+          '<div class="run-time">完成于 ' + escapeHtml(shortDateTime(run.completed_at)) + "</div>" +
+        "</div>" +
+        '<div class="run-metrics">' + metrics + "</div>" +
+        note +
+      "</div>"
+    );
+  });
+  runlineEl.innerHTML =
+    '<div class="run-date">' + escapeHtml(dateValue) + "</div>" + blocks.join("");
+}
+
 function renderFinding(row, index) {
   const meta = [
     row.source === "jisilu" ? "集思录" : row.source,
@@ -83,13 +128,7 @@ async function loadDay(dateValue) {
     emptyEl.textContent = "这一天没有保存的扫描记录。";
     return;
   }
-  const details = runs.map(function(run) {
-    const source = run.source === "jisilu" ? "集思录" : run.source;
-    const status = run.scan_status === "OK" ? "扫描完成" : "扫描异常";
-    return source + " · " + status + " · 候选 " +
-      run.candidate_count + " · 保留 " + run.finding_count;
-  });
-  runlineEl.textContent = dateValue + " · " + details.join(" ｜ ");
+  renderRunStatus(dateValue, runs);
   const findings = data.findings || [];
   if (!findings.length) {
     emptyEl.hidden = false;
