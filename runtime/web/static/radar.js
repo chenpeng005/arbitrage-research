@@ -56,6 +56,13 @@ function broadCountFromNote(note) {
   return match ? Number(match[1]) : null;
 }
 
+function formatInteger(value) {
+  const number = Number(value || 0);
+  return Number.isFinite(number)
+    ? Math.max(0, Math.trunc(number)).toLocaleString("zh-CN")
+    : "0";
+}
+
 function renderRunStatus(dateValue, runs) {
   const blocks = runs.map(function(run) {
     const source = sourceLabel(run.source);
@@ -71,7 +78,15 @@ function renderRunStatus(dateValue, runs) {
         '<span class="metric"><span>宽筛</span><strong>' +
           escapeHtml(broad) + "</strong></span>",
       '<span class="metric"><span>今日发现</span><strong>' +
-        escapeHtml(run.finding_count) + "</strong></span>"
+        escapeHtml(run.finding_count) + "</strong></span>",
+      run.ai_metered
+        ? '<span class="metric"><span>API请求</span><strong>' +
+            escapeHtml(formatInteger(run.ai_request_count)) + "</strong></span>"
+        : "",
+      run.ai_metered
+        ? '<span class="metric"><span>AI Token</span><strong>' +
+            escapeHtml(formatInteger(run.ai_total_tokens)) + "</strong></span>"
+        : ""
     ].filter(Boolean).join("");
     const note = run.note
       ? '<div class="run-note">' + escapeHtml(run.note) + "</div>"
