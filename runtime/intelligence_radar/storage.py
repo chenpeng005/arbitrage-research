@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import re
 import sqlite3
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+ARCHIVE_SCHEMA_VERSION = 1
+DEFAULT_EXTRACTOR_VERSION = "radar-v2-object-evidence"
 
 
 def now_utc() -> str:
@@ -17,6 +22,18 @@ def radar_db_path(data_root: Path) -> Path:
     return data_root / "intelligence_radar" / "radar.sqlite3"
 
 
+def radar_archive_path(data_root: Path, run_date: str) -> Path:
+    year, month, _ = run_date.split("-")
+    return (
+        data_root
+        / "intelligence_radar"
+        / "archive"
+        / year
+        / month
+        / f"{run_date}.json"
+    )
+
+
 def connect(db_path: Path) -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
@@ -24,6 +41,102 @@ def connect(db_path: Path) -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
+
+
+def _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
+    return {str(row["name"]) for row in conn.execute(f"PRAGMA table_info({table})")}
+
+
+def _schema_version(conn: sqlite3.Connection) -> int:
+    try:
+        row = conn.execute(
+            "SELECT value FROM radar_meta WHERE key='schema_version'"
+        ).fetchone()
+    except sqlite3.OperationalError:
+        return 0
+    if row is None:
+        return 0
+    try:
+        return int(row["value"])
+    except (TypeError, ValueError):
+        return 0
+
+
+def normalize_object_name(value: str) -> str:
+    text = unicodedata.normalize("NFKC", str(value or "")).strip().casefold()
+    return re.sub(r"\s+", "", text)
+
+
+def _object_id(object_name: str) -> str:
+    normalized = normalize_object_name(object_name)
+    return "OBJ_" + hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16]
+
+
+def ensure_object(
+    conn: sqlite3.Connection,
+    object_name: str,
+    *,
+    aliases: list[str] | None = None,
+) -> str:
+    name = str(object_name or "").strip()
+    if not name:
+        raise ValueError("object_name must not be empty")
+    normalized = normalize_object_name(name)
+    alias_row = conn.execute(
+        "SELECT object_id FROM radar_object_alias WHERE normalized_alias=?",
+        (normalized,),
+    ).fetchone()
+    if alias_row is not None:
+        object_id = str(alias_row["object_id"])
+        conn.execute(
+            "UPDATE radar_object SET updated_at=? WHERE object_id=?",
+            (now_utc(), object_id),
+        )
+    else:
+        direct = conn.execute(
+            "SELECT object_id FROM radar_object WHERE normalized_name=?",
+            (normalized,),
+        ).fetchone()
+        if direct is not None:
+            object_id = str(direct["object_id"])
+        else:
+            object_id = _object_id(name)
+            timestamp = now_utc()
+            conn.execute(
+                """INSERT INTO radar_object(
+                       object_id,object_name,normalized_name,created_at,updated_at
+                   ) VALUES(?,?,?,?,?)""",
+                (object_id, name, normalized, timestamp, timestamp),
+            )
+        conn.execute(
+            """INSERT INTO radar_object_alias(
+                   normalized_alias,alias,object_id,created_at
+               ) VALUES(?,?,?,?)
+               ON CONFLICT(normalized_alias) DO UPDATE SET
+                   alias=excluded.alias,
+                   object_id=excluded.object_id""",
+            (normalized, name, object_id, now_utc()),
+        )
+
+    for alias in aliases or []:
+        alias_text = str(alias or "").strip()
+        if not alias_text:
+            continue
+        conn.execute(
+            """INSERT INTO radar_object_alias(
+                   normalized_alias,alias,object_id,created_at
+               ) VALUES(?,?,?,?)
+               ON CONFLICT(normalized_alias) DO UPDATE SET
+                   alias=excluded.alias,
+                   object_id=excluded.object_id""",
+            (
+                normalize_object_name(alias_text),
+                alias_text,
+                object_id,
+                now_utc(),
+            ),
+        )
+    return object_id
 
 
 def init_db(db_path: Path) -> None:
@@ -43,7 +156,24 @@ def init_db(db_path: Path) -> None:
                 candidate_count INTEGER NOT NULL DEFAULT 0,
                 finding_count INTEGER NOT NULL DEFAULT 0,
                 note TEXT,
+                run_mode TEXT NOT NULL DEFAULT 'LIVE',
+                extractor_version TEXT,
                 PRIMARY KEY (run_date, source)
+            );
+            CREATE TABLE IF NOT EXISTS radar_object (
+                object_id TEXT PRIMARY KEY,
+                object_name TEXT NOT NULL,
+                normalized_name TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS radar_object_alias (
+                normalized_alias TEXT PRIMARY KEY,
+                alias TEXT NOT NULL,
+                object_id TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (object_id)
+                    REFERENCES radar_object(object_id) ON DELETE CASCADE
             );
             CREATE TABLE IF NOT EXISTS daily_finding (
                 finding_id TEXT PRIMARY KEY,
@@ -62,18 +192,76 @@ def init_db(db_path: Path) -> None:
                 worth_follow_up INTEGER NOT NULL DEFAULT 0,
                 evidence_excerpt TEXT,
                 created_at TEXT NOT NULL,
+                object_id TEXT,
+                node_title TEXT,
                 FOREIGN KEY (run_date, source)
                     REFERENCES daily_run(run_date, source) ON DELETE CASCADE
             );
+            CREATE TABLE IF NOT EXISTS finding_evidence (
+                evidence_id TEXT PRIMARY KEY,
+                finding_id TEXT NOT NULL,
+                source TEXT NOT NULL,
+                author TEXT,
+                published_at TEXT,
+                source_title TEXT,
+                source_url TEXT NOT NULL,
+                locator_kind TEXT,
+                locator_id TEXT,
+                locator_url TEXT,
+                excerpt TEXT,
+                is_primary INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (finding_id)
+                    REFERENCES daily_finding(finding_id) ON DELETE CASCADE
+            );
             CREATE INDEX IF NOT EXISTS idx_daily_finding_date
                 ON daily_finding(run_date, source);
+            CREATE INDEX IF NOT EXISTS idx_finding_evidence_finding
+                ON finding_evidence(finding_id, is_primary DESC, published_at);
             """
         )
+
+        previous_version = _schema_version(conn)
+        run_columns = _table_columns(conn, "daily_run")
+        if "run_mode" not in run_columns:
+            conn.execute(
+                "ALTER TABLE daily_run ADD COLUMN run_mode TEXT NOT NULL DEFAULT 'LIVE'"
+            )
+        if "extractor_version" not in run_columns:
+            conn.execute(
+                "ALTER TABLE daily_run ADD COLUMN extractor_version TEXT"
+            )
+
+        finding_columns = _table_columns(conn, "daily_finding")
+        if "object_id" not in finding_columns:
+            conn.execute("ALTER TABLE daily_finding ADD COLUMN object_id TEXT")
+        if "node_title" not in finding_columns:
+            conn.execute("ALTER TABLE daily_finding ADD COLUMN node_title TEXT")
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_daily_finding_object "
+            "ON daily_finding(object_id, run_date)"
+        )
+
+        if previous_version < 2:
+            conn.execute(
+                """UPDATE daily_run
+                   SET run_mode=CASE
+                       WHEN substr(scanned_at,1,10)=run_date THEN 'LIVE'
+                       ELSE 'BACKFILL'
+                   END"""
+            )
+            conn.execute(
+                """UPDATE daily_run
+                   SET extractor_version=COALESCE(extractor_version,'legacy-v1')"""
+            )
+
         conn.execute(
             """INSERT INTO radar_meta(key,value) VALUES('schema_version',?)
                ON CONFLICT(key) DO UPDATE SET value=excluded.value""",
             (str(SCHEMA_VERSION),),
         )
+        conn.commit()
 
 
 def _finding_id(
@@ -87,6 +275,40 @@ def _finding_id(
     return "RDF_" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
 
 
+def _evidence_id(finding_id: str, row: dict[str, Any]) -> str:
+    raw = "|".join(
+        [
+            finding_id,
+            str(row.get("source") or ""),
+            str(row.get("locator_kind") or ""),
+            str(row.get("locator_id") or ""),
+            str(row.get("published_at") or ""),
+            str(row.get("excerpt") or "")[:160],
+        ]
+    )
+    return "EVD_" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
+
+
+def _fallback_evidence(
+    source: str,
+    row: dict[str, Any],
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "source": source,
+            "author": row.get("author"),
+            "published_at": row.get("observed_at"),
+            "source_title": row.get("title"),
+            "source_url": row.get("url"),
+            "locator_kind": "QUESTION",
+            "locator_id": row.get("question_id"),
+            "locator_url": row.get("url"),
+            "excerpt": row.get("evidence_excerpt"),
+            "is_primary": True,
+        }
+    ]
+
+
 def save_daily_result(
     db_path: Path,
     *,
@@ -98,25 +320,41 @@ def save_daily_result(
     candidate_count: int,
     findings: list[dict[str, Any]],
     note: str | None = None,
+    run_mode: str = "LIVE",
+    extractor_version: str = DEFAULT_EXTRACTOR_VERSION,
 ) -> dict[str, Any]:
     """Replace one source/date snapshot atomically."""
     init_db(db_path)
+    normalized_run_mode = str(run_mode or "LIVE").upper()
+    if normalized_run_mode not in {"LIVE", "BACKFILL"}:
+        raise ValueError("run_mode must be LIVE or BACKFILL")
+
     with connect(db_path) as conn:
         conn.execute(
             """INSERT INTO daily_run(
                    run_date,source,scan_status,scanned_at,completed_at,
-                   candidate_count,finding_count,note
-               ) VALUES(?,?,?,?,?,?,?,?)
+                   candidate_count,finding_count,note,run_mode,extractor_version
+               ) VALUES(?,?,?,?,?,?,?,?,?,?)
                ON CONFLICT(run_date,source) DO UPDATE SET
                    scan_status=excluded.scan_status,
                    scanned_at=excluded.scanned_at,
                    completed_at=excluded.completed_at,
                    candidate_count=excluded.candidate_count,
                    finding_count=excluded.finding_count,
-                   note=excluded.note""",
+                   note=excluded.note,
+                   run_mode=excluded.run_mode,
+                   extractor_version=excluded.extractor_version""",
             (
-                run_date, source, scan_status, scanned_at, completed_at,
-                int(candidate_count), len(findings), note,
+                run_date,
+                source,
+                scan_status,
+                scanned_at,
+                completed_at,
+                int(candidate_count),
+                len(findings),
+                note,
+                normalized_run_mode,
+                extractor_version,
             ),
         )
         conn.execute(
@@ -129,27 +367,91 @@ def save_daily_result(
             fid = str(
                 row.get("finding_id")
                 or _finding_id(
-                    run_date, source, item_key,
-                    str(row["finding_type"]), str(row["what_happened"]),
+                    run_date,
+                    source,
+                    item_key,
+                    str(row["finding_type"]),
+                    str(row["what_happened"]),
                 )
             )
+            object_name = str(row.get("object_name") or "").strip()
+            object_id = ensure_object(
+                conn,
+                object_name,
+                aliases=[str(x) for x in row.get("object_aliases", [])],
+            ) if object_name else None
+            node_title = str(row.get("node_title") or row.get("title") or "").strip()
             conn.execute(
                 """INSERT INTO daily_finding(
                        finding_id,run_date,source,item_key,question_id,title,url,
                        author,observed_at,finding_type,what_happened,
                        ai_understanding,current_judgment,worth_follow_up,
-                       evidence_excerpt,created_at
-                   ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                       evidence_excerpt,created_at,object_id,node_title
+                   ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
-                    fid, run_date, source, item_key, row.get("question_id"),
-                    str(row["title"]), str(row["url"]), row.get("author"),
-                    row.get("observed_at"), str(row["finding_type"]),
-                    str(row["what_happened"]), str(row["ai_understanding"]),
+                    fid,
+                    run_date,
+                    source,
+                    item_key,
+                    row.get("question_id"),
+                    str(row["title"]),
+                    str(row["url"]),
+                    row.get("author"),
+                    row.get("observed_at"),
+                    str(row["finding_type"]),
+                    str(row["what_happened"]),
+                    str(row["ai_understanding"]),
                     str(row["current_judgment"]),
                     1 if row.get("worth_follow_up") else 0,
-                    row.get("evidence_excerpt"), created_at,
+                    row.get("evidence_excerpt"),
+                    created_at,
+                    object_id,
+                    node_title or None,
                 ),
             )
+
+            evidences = row.get("evidence")
+            if not isinstance(evidences, list) or not evidences:
+                evidences = _fallback_evidence(source, row)
+            for idx, evidence in enumerate(evidences):
+                evidence_row = dict(evidence)
+                evidence_row["source"] = str(evidence_row.get("source") or source)
+                evidence_row["source_title"] = str(
+                    evidence_row.get("source_title") or row.get("title") or ""
+                )
+                evidence_row["source_url"] = str(
+                    evidence_row.get("source_url") or row.get("url") or ""
+                )
+                evidence_row["locator_url"] = str(
+                    evidence_row.get("locator_url")
+                    or evidence_row.get("source_url")
+                    or ""
+                )
+                evidence_row["is_primary"] = bool(
+                    evidence_row.get("is_primary") or idx == 0
+                )
+                conn.execute(
+                    """INSERT INTO finding_evidence(
+                           evidence_id,finding_id,source,author,published_at,
+                           source_title,source_url,locator_kind,locator_id,
+                           locator_url,excerpt,is_primary,created_at
+                       ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (
+                        _evidence_id(fid, evidence_row),
+                        fid,
+                        evidence_row["source"],
+                        evidence_row.get("author"),
+                        evidence_row.get("published_at"),
+                        evidence_row["source_title"],
+                        evidence_row["source_url"],
+                        evidence_row.get("locator_kind"),
+                        evidence_row.get("locator_id"),
+                        evidence_row["locator_url"],
+                        evidence_row.get("excerpt"),
+                        1 if evidence_row["is_primary"] else 0,
+                        created_at,
+                    ),
+                )
         conn.commit()
     return get_daily_view(db_path, run_date)
 
@@ -174,32 +476,77 @@ def get_daily_view(db_path: Path, run_date: str | None = None) -> dict[str, Any]
     init_db(db_path)
     selected = run_date or latest_daily_date(db_path)
     if selected is None:
-        return {"date": None, "runs": [], "findings": [], "finding_count": 0, "status": "NO_DATA"}
+        return {
+            "date": None,
+            "runs": [],
+            "findings": [],
+            "finding_count": 0,
+            "status": "NO_DATA",
+        }
 
     with connect(db_path) as conn:
         runs = [
-            dict(row) for row in conn.execute(
+            dict(row)
+            for row in conn.execute(
                 """SELECT run_date,source,scan_status,scanned_at,completed_at,
-                          candidate_count,finding_count,note
+                          candidate_count,finding_count,note,run_mode,
+                          extractor_version
                    FROM daily_run WHERE run_date=? ORDER BY source""",
                 (selected,),
             ).fetchall()
         ]
         findings = [
-            dict(row) for row in conn.execute(
-                """SELECT finding_id,run_date,source,item_key,question_id,title,url,
-                          author,observed_at,finding_type,what_happened,
-                          ai_understanding,current_judgment,worth_follow_up,
-                          evidence_excerpt
-                   FROM daily_finding WHERE run_date=?
-                   ORDER BY COALESCE(observed_at,'') DESC,finding_id""",
+            dict(row)
+            for row in conn.execute(
+                """SELECT f.finding_id,f.run_date,f.source,f.item_key,
+                          f.question_id,f.title,f.url,f.author,f.observed_at,
+                          f.finding_type,f.what_happened,f.ai_understanding,
+                          f.current_judgment,f.worth_follow_up,
+                          f.evidence_excerpt,f.object_id,f.node_title,
+                          o.object_name
+                   FROM daily_finding f
+                   LEFT JOIN radar_object o ON o.object_id=f.object_id
+                   WHERE f.run_date=?
+                   ORDER BY COALESCE(f.observed_at,'') DESC,f.finding_id""",
                 (selected,),
             ).fetchall()
         ]
+        evidence_rows = [
+            dict(row)
+            for row in conn.execute(
+                """SELECT e.evidence_id,e.finding_id,e.source,e.author,
+                          e.published_at,e.source_title,e.source_url,
+                          e.locator_kind,e.locator_id,e.locator_url,e.excerpt,
+                          e.is_primary
+                   FROM finding_evidence e
+                   JOIN daily_finding f ON f.finding_id=e.finding_id
+                   WHERE f.run_date=?
+                   ORDER BY e.finding_id,e.is_primary DESC,
+                            COALESCE(e.published_at,''),e.evidence_id""",
+                (selected,),
+            ).fetchall()
+        ]
+
+    evidence_by_finding: dict[str, list[dict[str, Any]]] = {}
+    for evidence in evidence_rows:
+        evidence["is_primary"] = bool(evidence["is_primary"])
+        evidence_by_finding.setdefault(str(evidence["finding_id"]), []).append(evidence)
+
     for row in findings:
         row["worth_follow_up"] = bool(row["worth_follow_up"])
+        row["node_title"] = row.get("node_title") or row.get("title")
+        row["evidence"] = evidence_by_finding.get(str(row["finding_id"]), [])
+
     statuses = {str(row["scan_status"]) for row in runs}
-    overall = "NO_DATA" if not runs else ("OK" if statuses == {"OK"} else ("FAILED" if "FAILED" in statuses else "PARTIAL"))
+    overall = (
+        "NO_DATA"
+        if not runs
+        else (
+            "OK"
+            if statuses == {"OK"}
+            else ("FAILED" if "FAILED" in statuses else "PARTIAL")
+        )
+    )
     return {
         "date": selected,
         "runs": runs,
@@ -207,3 +554,37 @@ def get_daily_view(db_path: Path, run_date: str | None = None) -> dict[str, Any]
         "finding_count": len(findings),
         "status": overall,
     }
+
+
+def write_daily_archive(data_root: Path, run_date: str) -> Path:
+    db_path = radar_db_path(data_root)
+    view = get_daily_view(db_path, run_date)
+    objects: dict[str, dict[str, str]] = {}
+    for row in view["findings"]:
+        object_id = row.get("object_id")
+        object_name = row.get("object_name")
+        if object_id and object_name:
+            objects[str(object_id)] = {
+                "object_id": str(object_id),
+                "object_name": str(object_name),
+            }
+
+    payload = {
+        "archive_schema_version": ARCHIVE_SCHEMA_VERSION,
+        "radar_schema_version": SCHEMA_VERSION,
+        "exported_at": now_utc(),
+        "date": run_date,
+        "status": view["status"],
+        "runs": view["runs"],
+        "objects": sorted(objects.values(), key=lambda item: item["object_id"]),
+        "nodes": view["findings"],
+    }
+    path = radar_archive_path(data_root, run_date)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+    return path

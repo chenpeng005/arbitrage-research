@@ -11,7 +11,12 @@ from zoneinfo import ZoneInfo
 from runtime.intelligence_radar.filtering import build_provider_from_env, filter_batch
 from runtime.intelligence_radar.final_gate import select_final_findings
 from runtime.intelligence_radar.jisilu import collect_daily_candidates
-from runtime.intelligence_radar.storage import radar_db_path, save_daily_result
+from runtime.intelligence_radar.storage import (
+    DEFAULT_EXTRACTOR_VERSION,
+    radar_db_path,
+    save_daily_result,
+    write_daily_archive,
+)
 
 
 def china_now() -> datetime:
@@ -23,6 +28,15 @@ def _chunk(rows: list[dict[str, Any]], size: int) -> list[list[dict[str, Any]]]:
     return [rows[i:i + safe] for i in range(0, len(rows), safe)]
 
 
+def _effective_run_mode(run_date: str, requested: str | None) -> str:
+    if requested:
+        value = requested.upper()
+        if value not in {"LIVE", "BACKFILL"}:
+            raise ValueError("run_mode must be LIVE or BACKFILL")
+        return value
+    return "LIVE" if run_date == china_now().date().isoformat() else "BACKFILL"
+
+
 def run_jisilu_daily(
     *,
     data_root: Path,
@@ -32,8 +46,11 @@ def run_jisilu_daily(
     batch_size: int = 12,
     provider=None,
     model: str | None = None,
+    run_mode: str | None = None,
+    extractor_version: str = DEFAULT_EXTRACTOR_VERSION,
 ) -> dict[str, Any]:
     scanned_at = china_now().isoformat()
+    effective_run_mode = _effective_run_mode(run_date, run_mode)
     note_parts: list[str] = []
     broad_findings: list[dict[str, Any]] = []
 
@@ -55,14 +72,19 @@ def run_jisilu_daily(
             candidate_count=0,
             findings=[],
             note=f"采集失败：{type(exc).__name__}: {exc}",
+            run_mode=effective_run_mode,
+            extractor_version=extractor_version,
         )
+        archive_path = write_daily_archive(data_root, run_date)
         return {
             "status": "FAILED",
             "run_date": run_date,
+            "run_mode": effective_run_mode,
             "source": "jisilu",
             "candidate_count": 0,
             "broad_finding_count": 0,
             "finding_count": 0,
+            "archive_path": str(archive_path),
             "error": f"{type(exc).__name__}: {exc}",
         }
 
@@ -107,17 +129,13 @@ def run_jisilu_daily(
                 model=effective_model,
             )
         except Exception as exc:
-            errors.append(
-                f"FINAL_GATE {type(exc).__name__}: {exc}"
-            )
+            errors.append(f"FINAL_GATE {type(exc).__name__}: {exc}")
 
     note_parts.append(
         f"宽筛 {len(broad_findings)} 条 → 今日发现 {len(findings)} 条"
     )
     if errors:
-        note_parts.append(
-            f"AI处理失败 {len(errors)} 处；最终结果不视为完整"
-        )
+        note_parts.append(f"AI处理失败 {len(errors)} 处；最终结果不视为完整")
 
     status = "FAILED" if errors else "OK"
     completed_at = china_now().isoformat()
@@ -131,10 +149,14 @@ def run_jisilu_daily(
         candidate_count=len(candidates),
         findings=findings,
         note="；".join(note_parts) or None,
+        run_mode=effective_run_mode,
+        extractor_version=extractor_version,
     )
+    archive_path = write_daily_archive(data_root, run_date)
     return {
         "status": status,
         "run_date": run_date,
+        "run_mode": effective_run_mode,
         "source": "jisilu",
         "candidate_count": len(candidates),
         "broad_finding_count": len(broad_findings),
@@ -145,6 +167,7 @@ def run_jisilu_daily(
         "coverage_warning_count": scan["coverage_warning_count"],
         "errors": errors,
         "saved": saved,
+        "archive_path": str(archive_path),
     }
 
 
@@ -165,6 +188,12 @@ def main() -> None:
     parser.add_argument("--max-questions", type=int, default=120)
     parser.add_argument("--batch-size", type=int, default=12)
     parser.add_argument(
+        "--run-mode",
+        choices=["AUTO", "LIVE", "BACKFILL"],
+        default="AUTO",
+        help="AUTO uses LIVE only for today's Asia/Shanghai date.",
+    )
+    parser.add_argument(
         "--collect-only",
         action="store_true",
         help="Only validate public Jisilu collection; do not call AI or persist.",
@@ -179,11 +208,7 @@ def main() -> None:
         )
         print(
             json.dumps(
-                {
-                    key: value
-                    for key, value in scan.items()
-                    if key != "candidates"
-                },
+                {key: value for key, value in scan.items() if key != "candidates"},
                 ensure_ascii=False,
                 indent=2,
             )
@@ -196,6 +221,7 @@ def main() -> None:
         max_pages=args.max_pages,
         max_questions=args.max_questions,
         batch_size=args.batch_size,
+        run_mode=None if args.run_mode == "AUTO" else args.run_mode,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
 

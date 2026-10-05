@@ -32,6 +32,8 @@ OUTPUT_SCHEMA: dict[str, Any] = {
                 "type": "object",
                 "required": [
                     "question_id",
+                    "object_name",
+                    "node_title",
                     "finding_type",
                     "what_happened",
                     "ai_understanding",
@@ -41,7 +43,12 @@ OUTPUT_SCHEMA: dict[str, Any] = {
                 ],
                 "properties": {
                     "question_id": {"type": "string"},
-                    "finding_type": {"type": "string", "enum": sorted(FINDING_TYPES)},
+                    "object_name": {"type": "string"},
+                    "node_title": {"type": "string"},
+                    "finding_type": {
+                        "type": "string",
+                        "enum": sorted(FINDING_TYPES),
+                    },
                     "what_happened": {"type": "string"},
                     "ai_understanding": {"type": "string"},
                     "current_judgment": {"type": "string"},
@@ -132,10 +139,12 @@ def normalize_finding_question_ids(
         original = str(finding.get("question_id") or "")
         if original != owner:
             finding["question_id"] = owner
-            repairs.append({
-                "from_question_id": original,
-                "to_question_id": owner,
-            })
+            repairs.append(
+                {
+                    "from_question_id": original,
+                    "to_question_id": owner,
+                }
+            )
     return repairs
 
 
@@ -173,6 +182,17 @@ def validate_filter_output(
         if finding.get("finding_type") not in FINDING_TYPES:
             errors.append(f"findings[{idx}] invalid finding_type")
 
+        object_name = str(finding.get("object_name") or "").strip()
+        node_title = str(finding.get("node_title") or "").strip()
+        if len(object_name) < 2:
+            errors.append(f"findings[{idx}] object_name too short")
+        if len(object_name) > 80:
+            errors.append(f"findings[{idx}] object_name too long")
+        if len(node_title) < 4:
+            errors.append(f"findings[{idx}] node_title too short")
+        if len(node_title) > 120:
+            errors.append(f"findings[{idx}] node_title too long")
+
         segment_map = {
             str(seg["segment_id"]): seg
             for seg in (
@@ -199,10 +219,12 @@ def validate_filter_output(
     return errors
 
 
-def _evidence_excerpt(
+def _evidence_rows(
+    *,
+    source: str,
     candidate: dict[str, Any],
     segment_ids: list[str],
-) -> str:
+) -> list[dict[str, Any]]:
     segment_map = {
         str(seg["segment_id"]): seg
         for seg in (
@@ -210,17 +232,49 @@ def _evidence_excerpt(
             + list(candidate.get("daily_segments", []))
         )
     }
-    excerpts = []
-    for segment_id in segment_ids:
-        segment = segment_map.get(str(segment_id))
-        if not segment:
-            continue
+    selected = [
+        segment_map[str(segment_id)]
+        for segment_id in segment_ids
+        if str(segment_id) in segment_map
+    ]
+    primary_index = 0
+    for idx, segment in enumerate(selected):
+        if bool(segment.get("is_daily")):
+            primary_index = idx
+            break
+
+    rows: list[dict[str, Any]] = []
+    for idx, segment in enumerate(selected):
         text = str(segment.get("text") or "").strip()
+        if len(text) > 900:
+            text = text[:900].rstrip() + "…"
+        rows.append(
+            {
+                "source": source,
+                "author": segment.get("author"),
+                "published_at": segment.get("published_at"),
+                "source_title": candidate.get("title"),
+                "source_url": candidate.get("url"),
+                "locator_kind": segment.get("kind"),
+                "locator_id": segment.get("locator_id") or segment.get("segment_id"),
+                "locator_url": segment.get("locator_url") or candidate.get("url"),
+                "excerpt": text or None,
+                "is_primary": idx == primary_index,
+            }
+        )
+    return rows
+
+
+def _evidence_excerpt(evidence: list[dict[str, Any]]) -> str:
+    excerpts = []
+    for row in evidence:
+        text = str(row.get("excerpt") or "").strip()
+        if not text:
+            continue
         if len(text) > 320:
             text = text[:320].rstrip() + "…"
-        if text:
-            who = str(segment.get("author") or "")
-            excerpts.append((who + "：" if who else "") + text)
+        who = str(row.get("author") or "")
+        excerpts.append((who + "：" if who else "") + text)
     return " / ".join(excerpts[:3])
 
 
@@ -241,23 +295,36 @@ def enrich_findings(
             for seg in candidate.get("daily_segments", [])
             if seg.get("published_at")
         ]
+        segment_ids = [str(x) for x in finding["supporting_segment_ids"]]
+        evidence = _evidence_rows(
+            source=str(input_payload["source"]),
+            candidate=candidate,
+            segment_ids=segment_ids,
+        )
+        primary = next(
+            (row for row in evidence if row.get("is_primary")),
+            evidence[0] if evidence else {},
+        )
         rows.append(
             {
                 "item_key": qid,
                 "question_id": qid,
+                "object_name": str(finding["object_name"]).strip(),
+                "node_title": str(finding["node_title"]).strip(),
                 "title": candidate["title"],
                 "url": candidate["url"],
-                "author": candidate.get("question_author") or candidate.get("feed_actor"),
-                "observed_at": max(daily_times) if daily_times else candidate.get("activity_at"),
+                "author": primary.get("author")
+                or candidate.get("question_author")
+                or candidate.get("feed_actor"),
+                "observed_at": primary.get("published_at")
+                or (max(daily_times) if daily_times else candidate.get("activity_at")),
                 "finding_type": finding["finding_type"],
                 "what_happened": finding["what_happened"].strip(),
                 "ai_understanding": finding["ai_understanding"].strip(),
                 "current_judgment": finding["current_judgment"].strip(),
                 "worth_follow_up": bool(finding["worth_follow_up"]),
-                "evidence_excerpt": _evidence_excerpt(
-                    candidate,
-                    [str(x) for x in finding["supporting_segment_ids"]],
-                ),
+                "evidence_excerpt": _evidence_excerpt(evidence),
+                "evidence": evidence,
             }
         )
     return rows
@@ -305,9 +372,10 @@ def filter_batch(
                 "role": "user",
                 "content": (
                     "上一轮输出未通过程序校验，请重新输出完整结果。"
-                    "每个 finding 的 supporting_segment_ids 必须来自该 finding "
-                    "对应 question_id 自己的 context_segments 或 daily_segments，"
-                    "且至少一个 is_daily=true。校验错误：" + "; ".join(errors)
+                    "每个 finding 必须给出稳定的 object_name 与聚焦当天新增的 node_title；"
+                    "supporting_segment_ids 必须来自该 finding 对应 question_id 自己的 "
+                    "context_segments 或 daily_segments，且至少一个 is_daily=true。"
+                    "校验错误：" + "; ".join(errors)
                 ),
             },
         ]
@@ -319,7 +387,9 @@ def filter_batch(
             model_config={"model": model, "temperature": 0.0, "max_tokens": 8000},
         )
         if response.structured_output is None:
-            raise RuntimeError("AI provider returned no structured output on validation retry")
+            raise RuntimeError(
+                "AI provider returned no structured output on validation retry"
+            )
         normalize_finding_question_ids(input_payload, response.structured_output)
         errors = validate_filter_output(input_payload, response.structured_output)
         if errors:
