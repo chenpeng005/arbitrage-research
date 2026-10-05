@@ -23,9 +23,19 @@ function escapeHtml(value) {
 }
 
 function shiftDate(value, days) {
-  const d = new Date(value + "T00:00:00");
-  d.setDate(d.getDate() + days);
+  const parts = String(value || "").split("-").map(Number);
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return value;
+  const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+  d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
+}
+
+function localToday() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
 }
 
 function shortDateTime(value) {
@@ -142,7 +152,7 @@ async function init() {
   const dates = await loadDates();
   const params = new URLSearchParams(location.search);
   const requested = params.get("date");
-  const selected = requested || dates[0] || new Date().toISOString().slice(0, 10);
+  const selected = requested || dates[0] || localToday();
   dateInput.value = selected;
   historyHint.textContent = dates.length
     ? "已保存 " + dates.length + " 个日期，可直接切换日期回看。"
