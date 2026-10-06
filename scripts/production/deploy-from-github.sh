@@ -34,7 +34,8 @@ fi
     "$STAGE_ROOT/runtime/intelligence_radar/jisilu.py" \
     "$STAGE_ROOT/runtime/intelligence_radar/filtering.py" \
     "$STAGE_ROOT/runtime/intelligence_radar/final_gate.py" \
-    "$STAGE_ROOT/runtime/intelligence_radar/storage.py"
+    "$STAGE_ROOT/runtime/intelligence_radar/storage.py" \
+    "$STAGE_ROOT/runtime/intelligence_radar/increments.py"
 
   for pattern in test_daily_research_decoupling_v1.py test_token_cost_gate_v1.py test_reminder_policy_v2.py test_information_change_source_fk_v1.py; do
     PYTHONPATH="$STAGE_ROOT" "$PY" -m unittest discover -s "$STAGE_ROOT/tests" -p "$pattern" -v
