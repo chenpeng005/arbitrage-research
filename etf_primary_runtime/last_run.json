@@ -1,5 +1,5 @@
 {
-  "status": "SAME_TRADE_DATE_REFRESHED",
+  "status": "SAME_TRADE_DATE_SCHEMA_MIGRATED",
   "trade_date": "20260930",
   "previous_trade_date": "20260930",
   "event_count": 0,
