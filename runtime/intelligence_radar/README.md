@@ -2,7 +2,7 @@
 
 Goal: scan a small set of high-value investment communities, use AI to keep meaningful daily information increments, persist the daily record, and show it through a stable web page.
 
-Current production AI source: Jisilu public pages. Xueqiu is now a collect-only Shadow Source: public anonymous Author Shadow + public Hot Exploration are normalized into the same source-agnostic Increment Ledger shape, but are not yet sent to Broad / Final or scheduled.
+Current production AI source: Jisilu public pages. Xueqiu is now a collect-only Shadow Source: public anonymous Author Shadow + public Hot Exploration are normalized into the same source-agnostic Increment Ledger shape, but are not yet sent to Broad / Final.
 
 Runtime chain:
 1. Read the latest-activity feed and the new-topic feed.
