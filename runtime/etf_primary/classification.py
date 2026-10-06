@@ -46,14 +46,16 @@ def classify_etf(
     else:
         asset_class = "OTHER"
 
-    if _contains(text, _MIXED_WORDS):
+    # SSE raw class 08 is the official mixed mainland/HK cross-market bucket;
+    # class 33 is the official cross-border ETF bucket.
+    if raw == "08" or _contains(text, _MIXED_WORDS):
         region_scope = "MIXED"
         qdii_flag: bool | None = None
-        region_reason = "name/index contains mainland-HK mixed-market marker"
-    elif _contains(text, _CROSS_BORDER_WORDS) or raw in {"04", "33"} or pcf == "2":
+        region_reason = "official mixed-market class or mainland-HK marker"
+    elif raw in {"04", "33"} or pcf == "2" or _contains(text, _CROSS_BORDER_WORDS):
         region_scope = "CROSS_BORDER"
         qdii_flag = True if not _contains(text, ("港股通", "沪港深", "沪深港")) else None
-        region_reason = "cross-border name/index or exchange PCF class"
+        region_reason = "official cross-border class/PCF type or cross-border marker"
     elif exchange in {"SSE", "SZSE"}:
         region_scope = "DOMESTIC"
         qdii_flag = False
