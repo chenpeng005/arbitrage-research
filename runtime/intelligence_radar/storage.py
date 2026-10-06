@@ -9,9 +9,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 ARCHIVE_SCHEMA_VERSION = 1
-DEFAULT_EXTRACTOR_VERSION = "radar-v2-object-evidence"
+DEFAULT_EXTRACTOR_VERSION = "radar-v3-increment-ledger"
 
 
 def now_utc() -> str:
@@ -224,10 +224,52 @@ def init_db(db_path: Path) -> None:
                 FOREIGN KEY (finding_id)
                     REFERENCES daily_finding(finding_id) ON DELETE CASCADE
             );
+            CREATE TABLE IF NOT EXISTS source_item_version (
+                source TEXT NOT NULL,
+                item_type TEXT NOT NULL,
+                item_id TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                parent_id TEXT,
+                published_at TEXT,
+                first_seen_at TEXT NOT NULL,
+                last_seen_at TEXT NOT NULL,
+                PRIMARY KEY (source,item_type,item_id,content_hash)
+            );
+            CREATE TABLE IF NOT EXISTS source_item_analysis (
+                source TEXT NOT NULL,
+                item_type TEXT NOT NULL,
+                item_id TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                analysis_version TEXT NOT NULL,
+                analyzed_at TEXT NOT NULL,
+                PRIMARY KEY (source,item_type,item_id,content_hash,analysis_version),
+                FOREIGN KEY (source,item_type,item_id,content_hash)
+                    REFERENCES source_item_version(
+                        source,item_type,item_id,content_hash
+                    ) ON DELETE CASCADE
+            );
+            CREATE TABLE IF NOT EXISTS thread_context_capsule (
+                source TEXT NOT NULL,
+                thread_id TEXT NOT NULL,
+                title TEXT,
+                capsule_text TEXT NOT NULL,
+                capsule_hash TEXT NOT NULL,
+                capsule_version TEXT NOT NULL,
+                derived_from_count INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (source,thread_id)
+            );
             CREATE INDEX IF NOT EXISTS idx_daily_finding_date
                 ON daily_finding(run_date, source);
             CREATE INDEX IF NOT EXISTS idx_finding_evidence_finding
                 ON finding_evidence(finding_id, is_primary DESC, published_at);
+            CREATE INDEX IF NOT EXISTS idx_source_item_parent
+                ON source_item_version(source,parent_id,published_at);
+            CREATE INDEX IF NOT EXISTS idx_source_item_analysis_version
+                ON source_item_analysis(source,analysis_version,analyzed_at);
+            CREATE INDEX IF NOT EXISTS idx_thread_capsule_updated
+                ON thread_context_capsule(source,updated_at);
             """
         )
 
