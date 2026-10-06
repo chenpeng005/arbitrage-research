@@ -1,0 +1,62 @@
+name: ETF Primary SZSE Official Relay
+
+on:
+  push:
+    branches:
+      - main
+      - feat/etf-primary-monitor-v0
+    paths:
+      - ".github/workflows/etf-primary-szse-relay.yml"
+      - "runtime/etf_primary/http.py"
+      - "runtime/etf_primary/models.py"
+      - "runtime/etf_primary/classification.py"
+      - "runtime/etf_primary/universe.py"
+      - "runtime/etf_primary/szse_relay.py"
+      - "runtime/etf_primary/szse_relay_publish.py"
+  workflow_dispatch:
+  schedule:
+    - cron: "10 0 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: etf-primary-szse-official-relay
+  cancel-in-progress: false
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout application source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fetch and validate official SZSE ETF universe
+        run: |
+          rm -rf /tmp/etf-primary-relay
+          python -m runtime.etf_primary.szse_relay_publish \
+            --output-dir /tmp/etf-primary-relay/etf_primary_relay \
+            --timeout 20 \
+            --throttle-seconds 0.20
+
+      - name: Publish last-good relay branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout --orphan etf-primary-relay-publish
+          git rm -rf .
+          mkdir -p etf_primary_relay
+          cp -a /tmp/etf-primary-relay/etf_primary_relay/. etf_primary_relay/
+
+          git add etf_primary_relay
+          git commit -m "ETF primary relay: update SZSE official universe"
+          git push --force origin HEAD:etf-primary-data-relay
