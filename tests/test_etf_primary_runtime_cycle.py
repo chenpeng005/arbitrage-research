@@ -1,6 +1,5 @@
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 
 import runtime.etf_primary.runtime_cycle as runtime_cycle
 from runtime.etf_primary.szse_relay import SzseEtfRelayBundle
@@ -50,7 +49,7 @@ def _bundle(trade_date: str, rows: list[dict]) -> SzseEtfRelayBundle:
     )
 
 
-def test_build_daily_diff_detects_capacity_jump():
+def test_build_daily_diff_detects_capacity_and_distribution_change():
     previous = [_row("159501", total_limit=5_000_000)]
     current = [_row("159501", total_limit=50_000_000)]
     _, events = runtime_cycle.build_daily_diff(
@@ -60,9 +59,14 @@ def test_build_daily_diff_detects_capacity_jump():
         source="SSE_OFFICIAL+SZSE_OFFICIAL",
         relay_fetched_at="2026-10-09T00:00:00+00:00",
     )
-    assert [event["event_type"] for event in events] == ["TOTAL_CAPACITY_JUMP"]
+    assert [event["event_type"] for event in events] == [
+        "TOTAL_CAPACITY_JUMP",
+        "ACCOUNT_DISTRIBUTION_IMPROVED",
+    ]
     assert events[0]["previous_value"] == 5.0
     assert events[0]["current_value"] == 50.0
+    assert events[1]["previous_value"] == 5
+    assert events[1]["current_value"] == 50
 
 
 def test_run_cycle_bootstrap_then_diff(tmp_path, monkeypatch):
@@ -91,9 +95,12 @@ def test_run_cycle_bootstrap_then_diff(tmp_path, monkeypatch):
         now=datetime(2026, 10, 9, 1, 0, tzinfo=timezone.utc),
     )
     assert diff["status"] == "DIFF_COMPLETED"
-    assert diff["event_count"] == 1
+    assert diff["event_count"] == 2
     events = json.loads((tmp_path / "events" / "20261009.json").read_text(encoding="utf-8"))
-    assert events["events"][0]["event_type"] == "TOTAL_CAPACITY_JUMP"
+    assert [event["event_type"] for event in events["events"]] == [
+        "TOTAL_CAPACITY_JUMP",
+        "ACCOUNT_DISTRIBUTION_IMPROVED",
+    ]
 
 
 def test_same_trade_date_is_refresh_not_false_event(tmp_path, monkeypatch):
