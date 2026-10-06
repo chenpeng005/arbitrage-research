@@ -5,12 +5,19 @@ import runtime.etf_primary.runtime_cycle as runtime_cycle
 from runtime.etf_primary.szse_relay import SzseEtfRelayBundle
 
 
-def _row(code: str, *, total_limit: int, account_limit: int = 1000000) -> dict:
+def _row(
+    code: str,
+    *,
+    total_limit: int,
+    account_limit: int = 1000000,
+    trade_date: str = "20261009",
+    creation_allowed: bool = True,
+) -> dict:
     return {
         "code": code,
         "exchange": "SZSE",
-        "trade_date": "20261009",
-        "creation_allowed": True,
+        "trade_date": trade_date,
+        "creation_allowed": creation_allowed,
         "redemption_allowed": True,
         "creation_redemption_unit": 1000000,
         "creation_limit": total_limit,
@@ -50,12 +57,13 @@ def _bundle(trade_date: str, rows: list[dict]) -> SzseEtfRelayBundle:
 
 
 def test_build_daily_diff_detects_capacity_and_distribution_change():
-    previous = [_row("159501", total_limit=5_000_000)]
-    current = [_row("159501", total_limit=50_000_000)]
+    previous = [_row("159501", total_limit=5_000_000, trade_date="20261008")]
+    current = [_row("159501", total_limit=50_000_000, trade_date="20261009")]
     _, events = runtime_cycle.build_daily_diff(
         previous_rows=previous,
         current_rows=current,
         trade_date="20261009",
+        previous_trade_date="20261008",
         source="SSE_OFFICIAL+SZSE_OFFICIAL",
         relay_fetched_at="2026-10-09T00:00:00+00:00",
     )
@@ -67,6 +75,63 @@ def test_build_daily_diff_detects_capacity_and_distribution_change():
     assert events[0]["current_value"] == 50.0
     assert events[1]["previous_value"] == 5
     assert events[1]["current_value"] == 50
+
+
+def test_current_stale_pcf_is_retained_but_not_used_for_market_event():
+    previous = [
+        _row(
+            "512390",
+            total_limit=5_000_000,
+            trade_date="20261008",
+            creation_allowed=False,
+        )
+    ]
+    current = [
+        _row(
+            "512390",
+            total_limit=50_000_000,
+            trade_date="20260904",
+            creation_allowed=True,
+        )
+    ]
+    normalized, events = runtime_cycle.build_daily_diff(
+        previous_rows=previous,
+        current_rows=current,
+        trade_date="20261009",
+        previous_trade_date="20261008",
+        source="SSE_OFFICIAL+SZSE_OFFICIAL",
+        relay_fetched_at="2026-10-09T00:00:00+00:00",
+    )
+    assert normalized[0]["trade_date"] == "20260904"
+    assert events == []
+
+
+def test_previous_stale_pcf_is_not_treated_as_valid_history():
+    previous = [
+        _row(
+            "512390",
+            total_limit=5_000_000,
+            trade_date="20260904",
+            creation_allowed=False,
+        )
+    ]
+    current = [
+        _row(
+            "512390",
+            total_limit=50_000_000,
+            trade_date="20261009",
+            creation_allowed=True,
+        )
+    ]
+    _, events = runtime_cycle.build_daily_diff(
+        previous_rows=previous,
+        current_rows=current,
+        trade_date="20261009",
+        previous_trade_date="20261008",
+        source="SSE_OFFICIAL+SZSE_OFFICIAL",
+        relay_fetched_at="2026-10-09T00:00:00+00:00",
+    )
+    assert events == []
 
 
 def test_run_cycle_bootstrap_then_diff(tmp_path, monkeypatch):
