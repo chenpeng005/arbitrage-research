@@ -31,6 +31,8 @@ def _to_float(value: Any) -> float | None:
 def _to_positive_int(value: Any) -> int | None:
     number = _to_float(value)
     if number is None or number <= 0:
+        # PCF uses blank/zero for many "not set" limit fields. Treat these as
+        # unknown/unlimited instead of creating a false zero-capacity alert.
         return None
     return int(number)
 
@@ -49,39 +51,104 @@ def _pick(mapping: dict[str, Any], *keys: str) -> Any:
 
 def _parse_sse_switch(value: Any) -> tuple[bool | None, bool | None]:
     text = str(value or "").strip()
-    if text == "1": return True, True
-    if text == "2": return True, False
-    if text == "3": return False, True
-    if text == "0": return False, False
-    if "申购和赎回皆允许" in text or "申购赎回皆允许" in text: return True, True
-    if "仅允许申购" in text: return True, False
-    if "仅允许赎回" in text: return False, True
-    if "禁止" in text: return False, False
+    if text == "1":
+        return True, True
+    if text == "2":
+        return True, False
+    if text == "3":
+        return False, True
+    if text == "0":
+        return False, False
+    if "申购和赎回皆允许" in text or "申购赎回皆允许" in text:
+        return True, True
+    if "仅允许申购" in text:
+        return True, False
+    if "仅允许赎回" in text:
+        return False, True
+    if "禁止" in text:
+        return False, False
     return None, None
 
 
-def parse_sse_basic_row(code: str, row: dict[str, Any], *, source_url: str | None = None, fetched_at: str | None = None) -> PcfSnapshot:
+def parse_sse_basic_row(
+    code: str,
+    row: dict[str, Any],
+    *,
+    source_url: str | None = None,
+    fetched_at: str | None = None,
+) -> PcfSnapshot:
+    # SSE's live query currently returns upper-snake-case field names, while
+    # downloaded/newer PCF formats use CamelCase. Support both and preserve raw.
     creation_allowed, redemption_allowed = _parse_sse_switch(
-        _pick(row, "CreationRedemptionSwitch", "CREATION_REDEMPTION_SWITCH")
+        _pick(
+            row,
+            "CREATION_REDEMPTION",
+            "CreationRedemptionSwitch",
+            "CREATION_REDEMPTION_SWITCH",
+        )
     )
     return PcfSnapshot(
         code=code,
         exchange="SSE",
-        trade_date=str(_pick(row, "TradingDay", "TRADING_DAY") or "") or None,
+        trade_date=str(_pick(row, "TRADING_DAY", "TradingDay") or "") or None,
         creation_allowed=creation_allowed,
         redemption_allowed=redemption_allowed,
-        creation_redemption_unit=_to_positive_int(_pick(row, "CreationRedemptionUnit", "CREATION_REDEMPTION_UNIT")),
-        nav_per_cu=_to_float(_pick(row, "NAVperCU", "NAVPERCU")),
+        creation_redemption_unit=_to_positive_int(
+            _pick(row, "CREATION_REDEMPTION_UNIT", "CreationRedemptionUnit")
+        ),
+        nav_per_cu=_to_float(_pick(row, "NAVPERCU", "NAVperCU")),
         nav_per_share=_to_float(_pick(row, "NAV")),
-        creation_limit=_to_positive_int(_pick(row, "CreationLimit")),
-        redemption_limit=_to_positive_int(_pick(row, "RedemptionLimit")),
-        net_creation_limit=_to_positive_int(_pick(row, "NetCreationLimit")),
-        net_redemption_limit=_to_positive_int(_pick(row, "NetRedemptionLimit")),
-        account_creation_limit=_to_positive_int(_pick(row, "CreationLimitPerAcct", "CreationLimitPerUser")),
-        account_redemption_limit=_to_positive_int(_pick(row, "RedemptionLimitPerAcct", "RedemptionLimitPerUser")),
-        account_net_creation_limit=_to_positive_int(_pick(row, "NetCreationLimitPerAcct", "NetCreationLimitPerUser")),
-        account_net_redemption_limit=_to_positive_int(_pick(row, "NetRedemptionLimitPerAcct", "NetRedemptionLimitPerUser")),
-        creation_redemption_mode=str(_pick(row, "CreationRedemptionMechanism") or "").strip() or None,
+        creation_limit=_to_positive_int(_pick(row, "CREATION_LIMIT", "CreationLimit")),
+        redemption_limit=_to_positive_int(_pick(row, "REDEMPTION_LIMIT", "RedemptionLimit")),
+        net_creation_limit=_to_positive_int(
+            _pick(row, "NET_CREATION_LIMIT", "NetCreationLimit")
+        ),
+        net_redemption_limit=_to_positive_int(
+            _pick(row, "NET_REDEMPTION_LIMIT", "NetRedemptionLimit")
+        ),
+        account_creation_limit=_to_positive_int(
+            _pick(
+                row,
+                "CREATION_LIMIT_PER_ACCT",
+                "CreationLimitPerAcct",
+                "CreationLimitPerUser",
+            )
+        ),
+        account_redemption_limit=_to_positive_int(
+            _pick(
+                row,
+                "REDEMPTION_LIMIT_PER_ACCT",
+                "RedemptionLimitPerAcct",
+                "RedemptionLimitPerUser",
+            )
+        ),
+        account_net_creation_limit=_to_positive_int(
+            _pick(
+                row,
+                "NET_CREATION_LIMIT_PER_ACCT",
+                "NetCreationLimitPerAcct",
+                "NetCreationLimitPerUser",
+            )
+        ),
+        account_net_redemption_limit=_to_positive_int(
+            _pick(
+                row,
+                "NET_REDEMPTION_LIMIT_PER_ACCT",
+                "NetRedemptionLimitPerAcct",
+                "NetRedemptionLimitPerUser",
+            )
+        ),
+        creation_redemption_mode=(
+            str(
+                _pick(
+                    row,
+                    "CREATION_REDEMPTION_MECHANISM",
+                    "CreationRedemptionMechanism",
+                )
+                or ""
+            ).strip()
+            or None
+        ),
         source_url=source_url,
         fetched_at=fetched_at,
         raw_header=dict(row),
@@ -126,12 +193,20 @@ def _flatten_xml_header(root: ET.Element) -> dict[str, str]:
 
 def _parse_szse_bool(value: Any) -> bool | None:
     text = str(value or "").strip().upper()
-    if text in {"Y", "1", "TRUE", "允许", "开放"}: return True
-    if text in {"N", "0", "FALSE", "禁止", "不允许"}: return False
+    if text in {"Y", "1", "TRUE", "允许", "开放"}:
+        return True
+    if text in {"N", "0", "FALSE", "禁止", "不允许"}:
+        return False
     return None
 
 
-def parse_szse_xml(code: str, xml_text: str, *, source_url: str | None = None, fetched_at: str | None = None) -> PcfSnapshot:
+def parse_szse_xml(
+    code: str,
+    xml_text: str,
+    *,
+    source_url: str | None = None,
+    fetched_at: str | None = None,
+) -> PcfSnapshot:
     root = ET.fromstring(xml_text.encode("utf-8"))
     header = _flatten_xml_header(root)
     return PcfSnapshot(
@@ -149,8 +224,12 @@ def parse_szse_xml(code: str, xml_text: str, *, source_url: str | None = None, f
         net_redemption_limit=_to_positive_int(_pick(header, "NetRedemptionLimit")),
         account_creation_limit=_to_positive_int(_pick(header, "CreationLimitPerUser")),
         account_redemption_limit=_to_positive_int(_pick(header, "RedemptionLimitPerUser")),
-        account_net_creation_limit=_to_positive_int(_pick(header, "NetCreationLimitPerUser")),
-        account_net_redemption_limit=_to_positive_int(_pick(header, "NetRedemptionLimitPerUser")),
+        account_net_creation_limit=_to_positive_int(
+            _pick(header, "NetCreationLimitPerUser")
+        ),
+        account_net_redemption_limit=_to_positive_int(
+            _pick(header, "NetRedemptionLimitPerUser")
+        ),
         creation_redemption_mode=str(_pick(header, "Type") or "").strip() or None,
         source_url=source_url,
         fetched_at=fetched_at,
@@ -158,7 +237,12 @@ def parse_szse_xml(code: str, xml_text: str, *, source_url: str | None = None, f
     )
 
 
-def fetch_szse_pcf(code: str, *, trade_date: date | str | None = None, timeout: int = 20) -> PcfSnapshot:
+def fetch_szse_pcf(
+    code: str,
+    *,
+    trade_date: date | str | None = None,
+    timeout: int = 20,
+) -> PcfSnapshot:
     if trade_date is None:
         day = date.today().strftime("%Y%m%d")
     elif isinstance(trade_date, date):
@@ -175,7 +259,13 @@ def fetch_szse_pcf(code: str, *, trade_date: date | str | None = None, timeout: 
     )
 
 
-def fetch_pcf(code: str, exchange: str, *, trade_date: date | str | None = None, timeout: int = 20) -> PcfSnapshot:
+def fetch_pcf(
+    code: str,
+    exchange: str,
+    *,
+    trade_date: date | str | None = None,
+    timeout: int = 20,
+) -> PcfSnapshot:
     if exchange == "SSE":
         return fetch_sse_pcf(code, timeout=timeout)
     if exchange == "SZSE":
