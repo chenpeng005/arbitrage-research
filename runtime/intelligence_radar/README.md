@@ -1,4 +1,4 @@
-# Intelligence Radar V0.2
+# Intelligence Radar V0.3
 
 Goal: scan a small set of high-value investment communities, use AI to keep meaningful daily information increments, persist the daily record, and show it through a stable web page.
 
@@ -15,6 +15,14 @@ Runtime chain:
 8. Export one lightweight daily JSON archive plus one Author Lane shadow audit.
 9. Serve the daily record through /radar and /api/radar/*.
 
+Increment / token-control layer:
+- `source_item_version` is a source-agnostic ledger keyed by `source + item_type + item_id + content_hash`. It stores fingerprints and timing metadata, not full raw pages.
+- `source_item_analysis` records which exact content version has already been processed by a named `analysis_version`. Same version + same hash is never sent to Broad AI again. A content edit or an intentional analysis-version change is eligible again.
+- LIVE reruns merge new Final nodes into the existing same-day snapshot instead of erasing earlier nodes. AI usage is accumulated for the day, while `run_ai_usage` still reports the current invocation only.
+- `thread_context_capsule` is a small reusable context layer derived from retained Final nodes with no extra AI call. When present, Broad receives the capsule + only new daily segments instead of resending the long original post.
+- BACKFILL keeps full historical semantics and bypasses incremental skipping.
+- Raw candidate bodies are not permanently mirrored; the durable ledger stores hashes/IDs/times, and Final Evidence remains the long-term factual record.
+
 Persistence principles:
 - Object is a stable noun-like identity: a security/target or a stable strategy name.
 - Node is the dated increment about that object; one node should normally have one main object.
@@ -23,7 +31,7 @@ Persistence principles:
 - Broad-screen intermediate findings are not persisted.
 - A successful scan with zero final findings is still persisted.
 - Raw web pages, all comments, images and attachments are not mirrored.
-- Re-running the same source/date replaces that source/date snapshot.
+- LIVE reruns merge only genuinely new Final nodes into the same-day snapshot; BACKFILL retains replace-style historical rebuild semantics.
 - Run mode is recorded as LIVE or BACKFILL.
 - Extractor/schema versions are recorded for future reinterpretation and migration.
 
@@ -61,4 +69,4 @@ One-time reviewed V2 history seed:
 
     .venv/bin/python scripts/backfill_radar_v2_history.py --data-root runtime_data
 
-No scheduler is enabled in V0.2.
+No scheduler is enabled in V0.3.
