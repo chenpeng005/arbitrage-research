@@ -2,7 +2,7 @@
 
 Goal: scan a small set of high-value investment communities, use AI to keep meaningful daily information increments, persist the daily record, and show it through a stable web page.
 
-Current source: Jisilu public pages. The persistence model is source-agnostic so later sources such as Xueqiu, forums, stock boards and individual self-media can feed the same Object → Node → Evidence structure.
+Current production AI source: Jisilu public pages. Xueqiu is now a collect-only Shadow Source: public anonymous Author Shadow + public Hot Exploration are normalized into the same source-agnostic Increment Ledger shape, but are not yet sent to Broad / Final or scheduled.
 
 Runtime chain:
 1. Read the latest-activity feed and the new-topic feed.
@@ -35,6 +35,17 @@ Persistence principles:
 - Run mode is recorded as LIVE or BACKFILL.
 - Extractor/schema versions are recorded for future reinterpretation and migration.
 
+Xueqiu Shadow Source V0:
+- Adapter: `runtime/intelligence_radar/xueqiu.py`; watchlist: `runtime/intelligence_radar/xueqiu_watchlist.json` (initially empty; probe accounts are never promoted automatically).
+- Uses normal anonymous public `www.xueqiu.com` sessions; it does not attempt to solve or bypass WAF challenges.
+- `XUEQIU_AUTHOR_SHADOW` reads watched-user timelines and distinguishes POST / REPLY / REPOST using stable source identity fields.
+- `XUEQIU_HOT_EXPLORATION` is a non-keyword discovery lane based on the public hot feed; it is explicitly biased by platform ranking and is NOT full-site coverage.
+- Public comments expose stable comment IDs / parent relationships; bounded comment scanning exists but is off by default.
+- Timeline/hot rows marked `truncated=true` are hydrated through the public status-detail endpoint before hashing.
+- Reply items prefer `commentId` as the durable item identity while retaining the standalone status URL; edits are handled later by the existing content hash.
+- Same item found by multiple Xueqiu lanes is deduplicated once while preserving all discovery paths.
+- The adapter maps directly to the existing Increment Ledger candidate shape. No Xueqiu-specific persistence schema is introduced.
+- V0 is collect-only: no AI, no production DB writes, no Scheduler.
 
 Author Lane Shadow:
 - Config: `runtime/intelligence_radar/author_watchlist.json`
@@ -64,6 +75,10 @@ Historical backfill run:
 Collector-only smoke test:
 
     .venv/bin/python -m runtime.intelligence_radar.daily --date YYYY-MM-DD --collect-only
+
+Xueqiu collect-only Shadow smoke test:
+
+    .venv/bin/python -m runtime.intelligence_radar.xueqiu --date YYYY-MM-DD
 
 One-time reviewed V2 history seed:
 
