@@ -16,6 +16,7 @@ on:
       - "runtime/etf_primary/pcf_shard.py"
       - "runtime/etf_primary/relay_prepare.py"
       - "runtime/etf_primary/relay_merge.py"
+      - "runtime/etf_primary/runtime_cycle.py"
       - "runtime/etf_primary/szse_relay.py"
       - "tests/test_etf_primary_classification.py"
       - "tests/test_etf_primary_monitor.py"
@@ -23,6 +24,7 @@ on:
       - "tests/test_etf_primary_pcf_bulk.py"
       - "tests/test_etf_primary_pcf_shard.py"
       - "tests/test_etf_primary_relay_merge.py"
+      - "tests/test_etf_primary_runtime_cycle.py"
   workflow_dispatch:
   schedule:
     - cron: "10 0 * * *"
@@ -58,7 +60,8 @@ jobs:
             tests/test_etf_primary_universe.py \
             tests/test_etf_primary_pcf_bulk.py \
             tests/test_etf_primary_pcf_shard.py \
-            tests/test_etf_primary_relay_merge.py
+            tests/test_etf_primary_relay_merge.py \
+            tests/test_etf_primary_runtime_cycle.py
 
       - name: Prepare universe, audit, and exchange PCF indexes
         run: |
