@@ -1,0 +1,14 @@
+[Unit]
+Description=Collect Xueqiu Shadow observations four times daily
+
+[Timer]
+OnCalendar=*-*-* 07:30:00 Asia/Shanghai
+OnCalendar=*-*-* 12:30:00 Asia/Shanghai
+OnCalendar=*-*-* 17:00:00 Asia/Shanghai
+OnCalendar=*-*-* 21:20:00 Asia/Shanghai
+Persistent=true
+AccuracySec=1min
+Unit=arbitrage-xueqiu-shadow.service
+
+[Install]
+WantedBy=timers.target
