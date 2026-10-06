@@ -1,9 +1,9 @@
 {
-  "status": "SAME_TRADE_DATE_SCHEMA_MIGRATED",
+  "status": "SAME_TRADE_DATE_REFRESHED",
   "trade_date": "20260930",
   "previous_trade_date": "20260930",
   "event_count": 0,
-  "snapshot_sha256": "c30f9bdac891730af685e00fae6b6c1d06c18053b3dcb438d709aa8ea3c7dc7d",
+  "snapshot_sha256": "fefe2ac80c738b5e278d130961b1a1fc54aca997e2dd23ddb513ca2297ef508e",
   "pcf_found_count": 1693,
   "stale_count": 1,
   "missing_count": 0,
