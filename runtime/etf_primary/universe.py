@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import datetime, timezone
 import html
 import re
 from typing import Any
@@ -9,6 +10,12 @@ from urllib.parse import unquote
 from .classification import classify_etf
 from .http import fetch_json
 from .models import EtfIdentity
+from .szse_relay import (
+    DEFAULT_MAX_AGE_SECONDS,
+    DEFAULT_RELAY_BASE_URL,
+    fetch_szse_etf_relay_bundle,
+    validate_relay_freshness,
+)
 
 
 SSE_LIST_API = "https://query.sse.com.cn/commonSoaQuery.do"
@@ -138,6 +145,33 @@ def _parse_szse_page(payload: list[dict[str, Any]]) -> tuple[list[dict[str, Any]
     return rows, int(meta.get("pagecount") or 1)
 
 
+def _build_szse_identity(
+    *,
+    code: str,
+    name: str,
+    manager: str | None,
+    tracking_index: str | None,
+    listing_date: str | None = None,
+) -> EtfIdentity:
+    cls = classify_etf(
+        name=name,
+        tracking_index=tracking_index,
+        exchange="SZSE",
+    )
+    return EtfIdentity(
+        code=code,
+        name=name,
+        exchange="SZSE",
+        manager=manager,
+        tracking_index=tracking_index,
+        listing_date=listing_date,
+        raw_exchange_class=None,
+        universe_source_url=SZSE_LIST_PAGE,
+        pcf_page_url=SZSE_PCF_PAGE,
+        **cls,
+    )
+
+
 def fetch_szse_etf_universe(*, timeout: int = 20, throttle_seconds: float = 0.0) -> list[EtfIdentity]:
     import time
 
@@ -179,26 +213,77 @@ def fetch_szse_etf_universe(*, timeout: int = 20, throttle_seconds: float = 0.0)
         name = _extract_szse_name(row.get("kzjcurl"))
         if not code or not name:
             continue
-        tracking = _plain(row.get("nhzs")) or None
-        cls = classify_etf(name=name, tracking_index=tracking, exchange="SZSE")
-        result[code] = EtfIdentity(
+        result[code] = _build_szse_identity(
             code=code,
             name=name,
-            exchange="SZSE",
             manager=_plain(row.get("glrmc")) or None,
-            tracking_index=tracking,
-            raw_exchange_class=None,
-            universe_source_url=SZSE_LIST_PAGE,
-            pcf_page_url=SZSE_PCF_PAGE,
-            **cls,
+            tracking_index=_plain(row.get("nhzs")) or None,
         )
 
+    if len(result) < 400:
+        raise ValueError(f"SZSE official ETF universe sanity floor failed: {len(result)}")
     return sorted(result.values(), key=lambda item: item.code)
 
 
-def fetch_all_etf_universe(*, timeout: int = 20, szse_throttle_seconds: float = 0.0) -> list[EtfIdentity]:
-    rows = [
-        *fetch_sse_etf_universe(timeout=timeout),
-        *fetch_szse_etf_universe(timeout=timeout, throttle_seconds=szse_throttle_seconds),
-    ]
+def load_szse_etf_universe_from_relay(
+    *,
+    base_url: str = DEFAULT_RELAY_BASE_URL,
+    timeout: int = 20,
+    as_of: datetime | None = None,
+    max_age_seconds: int = DEFAULT_MAX_AGE_SECONDS,
+) -> list[EtfIdentity]:
+    bundle = fetch_szse_etf_relay_bundle(base_url, timeout=timeout)
+    resolved_as_of = as_of or datetime.now(timezone.utc)
+    if resolved_as_of.tzinfo is None:
+        resolved_as_of = resolved_as_of.replace(tzinfo=timezone.utc)
+    validate_relay_freshness(
+        bundle,
+        as_of=resolved_as_of,
+        max_age_seconds=max_age_seconds,
+    )
+
+    result: dict[str, EtfIdentity] = {}
+    for row in bundle.universe.get("rows") or []:
+        code = str(row.get("code") or "").strip()
+        name = str(row.get("name") or "").strip()
+        if not code or not name:
+            continue
+        if code in result:
+            raise ValueError(f"duplicate SZSE ETF relay code: {code}")
+        result[code] = _build_szse_identity(
+            code=code,
+            name=name,
+            manager=str(row.get("manager") or "").strip() or None,
+            tracking_index=str(row.get("tracking_index") or "").strip() or None,
+            listing_date=str(row.get("listing_date") or "").strip() or None,
+        )
+
+    if len(result) < 400:
+        raise ValueError(f"SZSE ETF relay universe sanity floor failed: {len(result)}")
+    return sorted(result.values(), key=lambda item: item.code)
+
+
+def fetch_all_etf_universe(
+    *,
+    timeout: int = 20,
+    szse_throttle_seconds: float = 0.0,
+    szse_relay_base_url: str | None = DEFAULT_RELAY_BASE_URL,
+    as_of: datetime | None = None,
+) -> list[EtfIdentity]:
+    sse_rows = fetch_sse_etf_universe(timeout=timeout)
+    try:
+        szse_rows = fetch_szse_etf_universe(
+            timeout=timeout,
+            throttle_seconds=szse_throttle_seconds,
+        )
+    except Exception:
+        if not szse_relay_base_url:
+            raise
+        szse_rows = load_szse_etf_universe_from_relay(
+            base_url=szse_relay_base_url,
+            timeout=timeout,
+            as_of=as_of,
+        )
+
+    rows = [*sse_rows, *szse_rows]
     return sorted(rows, key=lambda item: (item.exchange, item.code))
