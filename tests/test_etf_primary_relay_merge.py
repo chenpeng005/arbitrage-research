@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from runtime.etf_primary.models import PcfSnapshot
+import runtime.etf_primary.relay_merge as relay_merge
 from runtime.etf_primary.relay_merge import merge_relay_snapshot
 
 
@@ -83,3 +85,38 @@ def test_merge_relay_snapshot_combines_sse_and_szse(tmp_path):
     }
     assert snapshot["stale"] == []
     assert snapshot["missing_reasons"] == {"SSE": {}, "SZSE": {}}
+
+
+def test_sparse_szse_recovery_uses_official_index_url(monkeypatch):
+    seen = []
+
+    def fake_fetch(url, **kwargs):
+        seen.append(url)
+        return "<PCFFile/>"
+
+    def fake_parse(code, text, **kwargs):
+        return PcfSnapshot(
+            code=code,
+            exchange="SZSE",
+            trade_date="20260930",
+            creation_allowed=True,
+            creation_redemption_unit=1_000_000,
+        )
+
+    monkeypatch.setattr(relay_merge, "fetch_text", fake_fetch)
+    monkeypatch.setattr(relay_merge, "parse_szse_xml", fake_parse)
+    recovered, errors = relay_merge._recover_sparse_szse_misses(
+        missing_codes=["159102"],
+        index_payload={
+            "rows": [
+                {
+                    "code": "159102",
+                    "xml_candidate_urls": ["https://example.invalid/159102.xml"],
+                }
+            ]
+        },
+        target_trade_date="20260930",
+    )
+    assert errors == {}
+    assert recovered["159102"]["trade_date"] == "20260930"
+    assert seen == ["https://example.invalid/159102.xml"]
