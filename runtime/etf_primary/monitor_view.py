@@ -3,11 +3,15 @@ from __future__ import annotations
 import argparse
 import json
 from collections import Counter
+from dataclasses import fields
 from pathlib import Path
 from typing import Any
 
+from .models import PcfSnapshot
 
-VIEW_SCHEMA_VERSION = 1
+
+VIEW_SCHEMA_VERSION = 2
+_PCF_MODEL_FIELDS = {field.name for field in fields(PcfSnapshot)}
 
 
 def _read_json(path: str | Path) -> dict[str, Any]:
@@ -24,14 +28,10 @@ def _key(row: dict[str, Any]) -> tuple[str, str]:
     return str(row.get("exchange") or ""), str(row.get("code") or "")
 
 
-def _capacity_kind(pcf: dict[str, Any]) -> str | None:
-    creation_limit = pcf.get("creation_limit")
-    if isinstance(creation_limit, (int, float)) and creation_limit > 0:
-        return "CUMULATIVE"
-    net_creation_limit = pcf.get("net_creation_limit")
-    if isinstance(net_creation_limit, (int, float)) and net_creation_limit > 0:
-        return "NET"
-    return None
+def _normalized_pcf(row: dict[str, Any]) -> dict[str, Any]:
+    """Recompute derived capacity semantics from raw official PCF fields."""
+    payload = {key: value for key, value in row.items() if key in _PCF_MODEL_FIELDS}
+    return PcfSnapshot(**payload).to_dict()
 
 
 def build_monitor_view(
@@ -46,7 +46,7 @@ def build_monitor_view(
     """
     target_trade_date = str(pcf_snapshot.get("target_trade_date") or "")
     pcf_by_key = {
-        _key(row): dict(row)
+        _key(row): _normalized_pcf(dict(row))
         for row in pcf_snapshot.get("rows") or []
         if isinstance(row, dict) and all(_key(row))
     }
@@ -95,7 +95,12 @@ def build_monitor_view(
             "account_net_creation_limit": pcf.get("account_net_creation_limit") if pcf else None,
             "market_creation_limit": pcf.get("market_creation_limit") if pcf else None,
             "account_creation_cap": pcf.get("account_creation_cap") if pcf else None,
-            "capacity_kind": _capacity_kind(pcf) if pcf else None,
+            # capacity_kind remains as a compatibility alias for the market binding kind.
+            "capacity_kind": pcf.get("capacity_kind") if pcf else None,
+            "market_capacity_kind": pcf.get("market_capacity_kind") if pcf else None,
+            "account_capacity_kind": pcf.get("account_capacity_kind") if pcf else None,
+            "market_limit_basket_equivalent": pcf.get("market_limit_basket_equivalent") if pcf else None,
+            "account_limit_basket_equivalent": pcf.get("account_limit_basket_equivalent") if pcf else None,
             "total_baskets": pcf.get("total_baskets") if pcf else None,
             "account_baskets": pcf.get("account_baskets") if pcf else None,
             "minimum_accounts_to_fill": pcf.get("minimum_accounts_to_fill") if pcf else None,
