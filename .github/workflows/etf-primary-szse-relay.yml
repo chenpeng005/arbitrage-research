@@ -21,6 +21,7 @@ on:
       - "tests/test_etf_primary_monitor.py"
       - "tests/test_etf_primary_universe.py"
       - "tests/test_etf_primary_pcf_bulk.py"
+      - "tests/test_etf_primary_pcf_shard.py"
       - "tests/test_etf_primary_relay_merge.py"
   workflow_dispatch:
   schedule:
@@ -56,9 +57,10 @@ jobs:
             tests/test_etf_primary_monitor.py \
             tests/test_etf_primary_universe.py \
             tests/test_etf_primary_pcf_bulk.py \
+            tests/test_etf_primary_pcf_shard.py \
             tests/test_etf_primary_relay_merge.py
 
-      - name: Prepare universe, audit, and SSE PCF snapshot
+      - name: Prepare universe, audit, and exchange PCF indexes
         run: |
           rm -rf /tmp/etf-primary-prepare
           python -m runtime.etf_primary.relay_prepare \
@@ -104,6 +106,7 @@ jobs:
           python -m runtime.etf_primary.pcf_shard \
             --full-universe /tmp/etf-primary-prepare/full_universe.json \
             --prepare-manifest /tmp/etf-primary-prepare/prepare_manifest.json \
+            --szse-pcf-index /tmp/etf-primary-prepare/szse_pcf_index.json \
             --output /tmp/etf-primary-shard/shard-${{ matrix.shard }}.json \
             --shard-index ${{ matrix.shard }} \
             --shard-count 12 \
