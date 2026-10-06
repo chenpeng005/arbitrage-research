@@ -15,6 +15,7 @@ on:
       - "runtime/etf_primary/pcf.py"
       - "runtime/etf_primary/pcf_shard.py"
       - "runtime/etf_primary/relay_prepare.py"
+      - "runtime/etf_primary/monitor_view.py"
       - "runtime/etf_primary/relay_merge.py"
       - "runtime/etf_primary/runtime_cycle.py"
       - "runtime/etf_primary/szse_relay.py"
