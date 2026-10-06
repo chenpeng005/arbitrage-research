@@ -1,0 +1,11 @@
+[Unit]
+Description=Run formal Intelligence Radar daily at 21:20 Asia/Shanghai
+
+[Timer]
+OnCalendar=*-*-* 21:20:00 Asia/Shanghai
+Persistent=true
+AccuracySec=1min
+Unit=arbitrage-radar-daily.service
+
+[Install]
+WantedBy=timers.target
