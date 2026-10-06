@@ -1,5 +1,6 @@
 from runtime.etf_primary.models import PcfSnapshot
 from runtime.etf_primary.monitor import detect_events
+from runtime.etf_primary.monitor_view import build_monitor_view
 from runtime.etf_primary.pcf import parse_sse_basic_row, parse_szse_xml
 
 
@@ -72,3 +73,100 @@ def test_szse_limit_fields_are_normalized():
     assert snapshot.total_baskets() == 180
     assert snapshot.account_baskets() == 1
     assert snapshot.minimum_accounts_to_fill() == 180
+
+
+def test_monitor_view_joins_identity_and_pcf_with_freshness_gate():
+    universe = {
+        "rows": [
+            {
+                "exchange": "SZSE",
+                "code": "159501",
+                "name": "纳指ETF",
+                "region_scope": "CROSS_BORDER",
+                "asset_class": "EQUITY",
+                "strategy_style": "INDEX",
+                "qdii_flag": True,
+                "pcf_page_url": "https://example.invalid/159501-page",
+            },
+            {
+                "exchange": "SSE",
+                "code": "512390",
+                "name": "中国低波ETF平安",
+                "region_scope": "DOMESTIC",
+                "asset_class": "EQUITY",
+                "strategy_style": "INDEX",
+                "qdii_flag": False,
+                "pcf_page_url": "https://example.invalid/512390-page",
+            },
+            {
+                "exchange": "SSE",
+                "code": "510001",
+                "name": "Missing ETF",
+                "region_scope": "DOMESTIC",
+                "asset_class": "EQUITY",
+                "strategy_style": "INDEX",
+                "qdii_flag": False,
+                "pcf_page_url": "https://example.invalid/510001-page",
+            },
+        ]
+    }
+    pcf = {
+        "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+        "target_trade_date": "20260930",
+        "rows": [
+            {
+                "exchange": "SZSE",
+                "code": "159501",
+                "trade_date": "20260930",
+                "creation_allowed": True,
+                "redemption_allowed": True,
+                "creation_redemption_unit": 1_000_000,
+                "creation_limit": 180_000_000,
+                "account_creation_limit": 1_000_000,
+                "market_creation_limit": 180_000_000,
+                "account_creation_cap": 1_000_000,
+                "total_baskets": 180.0,
+                "account_baskets": 1.0,
+                "minimum_accounts_to_fill": 180,
+                "basket_value": 1_914_600.0,
+                "source_url": "https://example.invalid/159501.xml",
+            },
+            {
+                "exchange": "SSE",
+                "code": "512390",
+                "trade_date": "20260904",
+                "creation_allowed": True,
+                "redemption_allowed": True,
+                "creation_redemption_unit": 3_000_000,
+                "source_url": "https://example.invalid/512390",
+            },
+        ],
+    }
+
+    view = build_monitor_view(full_universe=universe, pcf_snapshot=pcf)
+    assert view["universe_count"] == 3
+    assert view["fresh_count"] == 1
+    assert view["stale_count"] == 1
+    assert view["missing_count"] == 1
+
+    rows = {(row["exchange"], row["code"]): row for row in view["rows"]}
+    fresh = rows[("SZSE", "159501")]
+    assert fresh["pcf_status"] == "FRESH"
+    assert fresh["event_eligible"] is True
+    assert fresh["capacity_kind"] == "CUMULATIVE"
+    assert fresh["total_baskets"] == 180.0
+    assert fresh["account_baskets"] == 1.0
+    assert fresh["minimum_accounts_to_fill"] == 180
+    assert fresh["official_pcf_page_url"].endswith("159501-page")
+    assert fresh["official_pcf_source_url"].endswith("159501.xml")
+
+    stale = rows[("SSE", "512390")]
+    assert stale["pcf_status"] == "STALE"
+    assert stale["event_eligible"] is False
+    assert stale["pcf_trade_date"] == "20260904"
+
+    missing = rows[("SSE", "510001")]
+    assert missing["pcf_status"] == "MISSING"
+    assert missing["event_eligible"] is False
+    assert missing["creation_allowed"] is None
+    assert missing["total_baskets"] is None
