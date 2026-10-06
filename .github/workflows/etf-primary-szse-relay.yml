@@ -26,7 +26,7 @@ permissions:
 
 concurrency:
   group: etf-primary-szse-official-relay
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   relay:
