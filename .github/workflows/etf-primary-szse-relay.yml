@@ -1,4 +1,4 @@
-name: ETF Primary SZSE Official Relay
+name: ETF Primary Official Relay
 
 on:
   push:
@@ -13,12 +13,15 @@ on:
       - "runtime/etf_primary/universe.py"
       - "runtime/etf_primary/audit_universe.py"
       - "runtime/etf_primary/pcf.py"
+      - "runtime/etf_primary/pcf_shard.py"
+      - "runtime/etf_primary/relay_prepare.py"
+      - "runtime/etf_primary/relay_merge.py"
       - "runtime/etf_primary/szse_relay.py"
-      - "runtime/etf_primary/szse_relay_publish.py"
       - "tests/test_etf_primary_classification.py"
       - "tests/test_etf_primary_monitor.py"
       - "tests/test_etf_primary_universe.py"
       - "tests/test_etf_primary_pcf_bulk.py"
+      - "tests/test_etf_primary_relay_merge.py"
   workflow_dispatch:
   schedule:
     - cron: "10 0 * * *"
@@ -27,13 +30,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: etf-primary-szse-official-relay
+  group: etf-primary-official-relay
   cancel-in-progress: true
 
 jobs:
-  relay:
+  prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 12
     steps:
       - name: Checkout application source
         uses: actions/checkout@v4
@@ -52,16 +55,102 @@ jobs:
             tests/test_etf_primary_classification.py \
             tests/test_etf_primary_monitor.py \
             tests/test_etf_primary_universe.py \
-            tests/test_etf_primary_pcf_bulk.py
+            tests/test_etf_primary_pcf_bulk.py \
+            tests/test_etf_primary_relay_merge.py
 
-      - name: Fetch, audit, and normalize official ETF data
+      - name: Prepare universe, audit, and SSE PCF snapshot
+        run: |
+          rm -rf /tmp/etf-primary-prepare
+          python -m runtime.etf_primary.relay_prepare \
+            --output-dir /tmp/etf-primary-prepare \
+            --timeout 20 \
+            --szse-throttle-seconds 0.20
+
+      - name: Upload prepared official data
+        uses: actions/upload-artifact@v4
+        with:
+          name: etf-primary-prepare
+          path: /tmp/etf-primary-prepare
+          retention-days: 1
+
+  szse_pcf:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    steps:
+      - name: Checkout application source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download prepared official data
+        uses: actions/download-artifact@v4
+        with:
+          name: etf-primary-prepare
+          path: /tmp/etf-primary-prepare
+
+      - name: Fetch SZSE official PCF shard
+        run: |
+          rm -rf /tmp/etf-primary-shard
+          mkdir -p /tmp/etf-primary-shard
+          python -m runtime.etf_primary.pcf_shard \
+            --full-universe /tmp/etf-primary-prepare/full_universe.json \
+            --prepare-manifest /tmp/etf-primary-prepare/prepare_manifest.json \
+            --output /tmp/etf-primary-shard/shard-${{ matrix.shard }}.json \
+            --shard-index ${{ matrix.shard }} \
+            --shard-count 12 \
+            --timeout 20 \
+            --workers 3
+
+      - name: Upload SZSE PCF shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: etf-primary-szse-pcf-${{ matrix.shard }}
+          path: /tmp/etf-primary-shard/shard-${{ matrix.shard }}.json
+          retention-days: 1
+
+  merge_publish:
+    needs: [prepare, szse_pcf]
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout application source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download prepared official data
+        uses: actions/download-artifact@v4
+        with:
+          name: etf-primary-prepare
+          path: /tmp/etf-primary-prepare
+
+      - name: Download all SZSE PCF shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: etf-primary-szse-pcf-*
+          path: /tmp/etf-primary-shards
+          merge-multiple: true
+
+      - name: Merge and validate official relay snapshot
         run: |
           rm -rf /tmp/etf-primary-relay
-          python -m runtime.etf_primary.szse_relay_publish \
+          python -m runtime.etf_primary.relay_merge \
+            --prepare-dir /tmp/etf-primary-prepare \
+            --shards-dir /tmp/etf-primary-shards \
             --output-dir /tmp/etf-primary-relay/etf_primary_relay \
-            --timeout 20 \
-            --throttle-seconds 0.20 \
-            --szse-pcf-workers 6
+            --minimum-szse-coverage 0.97
 
       - name: Publish last-good relay branch
         shell: bash
