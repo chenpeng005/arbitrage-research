@@ -45,7 +45,12 @@ Xueqiu Shadow Source V0:
 - Reply items prefer `commentId` as the durable item identity while retaining the standalone status URL; edits are handled later by the existing content hash.
 - Same item found by multiple Xueqiu lanes is deduplicated once while preserving all discovery paths.
 - The adapter maps directly to the existing Increment Ledger candidate shape. No Xueqiu-specific persistence schema is introduced.
-- V0 is collect-only: no AI, no production DB writes, no Scheduler.
+- V0 is collect-only: no AI and no production Radar DB writes.
+- Shadow accumulation is enabled independently of the Radar AI Scheduler: a lightweight JSON observation archive runs at 07:30 / 12:30 / 17:00 / 21:20 Asia/Shanghai.
+- The 07:30 run also revisits the previous logical date so the 21:20 → 07:30 overnight gap can be recovered.
+- Archive: `runtime_data/intelligence_radar/xueqiu_shadow/YYYY/MM/YYYY-MM-DD.json`. It keeps IDs, author/time/link, content SHA-256, short excerpt, discovery paths and seen/edit counts; it does not mirror full candidate bodies.
+- Repeated observations update `seen_count`; edits update the hash/excerpt and retain a small prior-hash trail.
+- The Xueqiu Shadow timer is separate from the still-disabled Radar Daily AI Scheduler.
 
 Author Lane Shadow:
 - Config: `runtime/intelligence_radar/author_watchlist.json`
@@ -80,8 +85,12 @@ Xueqiu collect-only Shadow smoke test:
 
     .venv/bin/python -m runtime.intelligence_radar.xueqiu --date YYYY-MM-DD
 
+Xueqiu Shadow accumulation run:
+
+    .venv/bin/python -m runtime.intelligence_radar.xueqiu_shadow_archive
+
 One-time reviewed V2 history seed:
 
     .venv/bin/python scripts/backfill_radar_v2_history.py --data-root runtime_data
 
-No scheduler is enabled in V0.3.
+Radar Daily AI Scheduler remains disabled. Only the Xueqiu Shadow collect-only timer is enabled in V0.3.
