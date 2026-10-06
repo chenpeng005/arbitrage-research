@@ -89,6 +89,7 @@ def build_provider_from_env() -> DeepSeekProvider:
 
 
 def _candidate_input(candidate: dict[str, Any]) -> dict[str, Any]:
+    capsule = str(candidate.get("context_capsule") or "").strip()
     return {
         "question_id": candidate["question_id"],
         "title": candidate["title"],
@@ -98,7 +99,11 @@ def _candidate_input(candidate: dict[str, Any]) -> dict[str, Any]:
         "question_published_at": candidate.get("question_published_at"),
         "activity_at": candidate.get("activity_at"),
         "coverage_warning": candidate.get("coverage_warning"),
-        "context_segments": candidate.get("context_segments", []),
+        "context_capsule": capsule or None,
+        "context_capsule_version": candidate.get("context_capsule_version"),
+        # A capsule is derived from already-retained Final nodes and is context only.
+        # When present we avoid resending the long original post to Broad AI.
+        "context_segments": [] if capsule else candidate.get("context_segments", []),
         "daily_segments": candidate.get("daily_segments", []),
     }
 
