@@ -29,6 +29,7 @@ def test_merge_relay_snapshot_combines_sse_and_szse(tmp_path):
     )
     _write(prepare / "szse_etf_universe.json", {"rows": []})
     _write(prepare / "universe_audit.json", {"problem_counts": {}})
+    _write(prepare / "szse_pcf_index.json", {"target_trade_date": "20260930", "rows": []})
 
     _write(
         shards / "a" / "shard-0.json",
@@ -37,6 +38,7 @@ def test_merge_relay_snapshot_combines_sse_and_szse(tmp_path):
             "shard_index": 0,
             "shard_count": 2,
             "requested_count": 1,
+            "official_index_count": 1,
             "success_count": 1,
             "error_count": 0,
             "snapshots": [
@@ -52,6 +54,7 @@ def test_merge_relay_snapshot_combines_sse_and_szse(tmp_path):
             "shard_index": 1,
             "shard_count": 2,
             "requested_count": 1,
+            "official_index_count": 1,
             "success_count": 1,
             "error_count": 0,
             "snapshots": [
@@ -69,6 +72,8 @@ def test_merge_relay_snapshot_combines_sse_and_szse(tmp_path):
 
     assert result["full_universe_count"] == 3
     assert result["pcf_found_count"] == 3
+    assert result["stale_count"] == 0
+    assert result["missing_count"] == 0
     assert result["coverage"]["SZSE"]["found"] == 2
     snapshot = json.loads((output / "pcf_snapshot.json").read_text(encoding="utf-8"))
     assert {(row["exchange"], row["code"]) for row in snapshot["rows"]} == {
@@ -76,3 +81,5 @@ def test_merge_relay_snapshot_combines_sse_and_szse(tmp_path):
         ("SZSE", "159001"),
         ("SZSE", "159002"),
     }
+    assert snapshot["stale"] == []
+    assert snapshot["missing_reasons"] == {"SSE": {}, "SZSE": {}}
