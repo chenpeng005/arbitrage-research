@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.error import HTTPError
 
 from .http import fetch_text
+from .monitor_view import build_monitor_view
 from .pcf import SZSE_PCF_PAGE, parse_szse_xml
 
 
@@ -264,12 +265,18 @@ def merge_relay_snapshot(
         "rows": combined_rows,
     }
     pcf_hash = _write_json(output_dir / "pcf_snapshot.json", pcf_snapshot)
+    monitor_view = build_monitor_view(
+        full_universe=full_universe,
+        pcf_snapshot=pcf_snapshot,
+    )
+    monitor_view_hash = _write_json(output_dir / "monitor_view.json", monitor_view)
 
     files: dict[str, dict[str, str]] = {}
     for filename in prepared_files:
         raw = (output_dir / filename).read_bytes()
         files[filename] = {"sha256": hashlib.sha256(raw).hexdigest()}
     files["pcf_snapshot.json"] = {"sha256": pcf_hash}
+    files["monitor_view.json"] = {"sha256": monitor_view_hash}
 
     manifest = {
         "relay_version": "etf-primary-official-relay-v2",
@@ -282,6 +289,12 @@ def merge_relay_snapshot(
         "stale_count": len(stale_rows),
         "missing_count": len(missing_sse) + len(missing_szse),
         "recovered_szse_count": len(recovered_rows),
+        "monitor_view": {
+            "universe_count": monitor_view["universe_count"],
+            "fresh_count": monitor_view["fresh_count"],
+            "stale_count": monitor_view["stale_count"],
+            "missing_count": monitor_view["missing_count"],
+        },
         "coverage": pcf_snapshot["coverage"],
         "shards": sorted(shard_summaries, key=lambda row: row["shard_index"]),
         "files": files,
