@@ -9,24 +9,15 @@ const typeLabels = {
   ANOMALY: "异常观察",
   OTHER: "其他"
 };
-const securityObjectNames = new Set([
-  "*ST康佳A", "岭南转债", "罗博特科", "002667", "Sigma Lithium",
-  "Summit Therapeutics", "会稽山", "侨银转债", "兴业银行可转债", "兴业银锡",
-  "南航转债", "圣晖集成", "宁德时代（300750.SZ）", "山西焦煤", "康佳B",
-  "彤程新材", "新城吾悦REIT(SH508610)", "普冉股份", "江山转债", "浪潮信息",
-  "渝水转债", "纳指科技ETF（159509）", "纳斯达克100场外A类基金", "绿茵转债",
-  "美光科技", "老铺黄金", "英伟达", "蔚来能源", "货币ETF（511800）",
-  "金川国际", "飞鹤（06186.HK）"
-]);
-
-const strategyObjectNames = new Set([
-  "中金三兄弟换股套利", "消费贷资金投资低波资产", "IM跨期套利", "内地身份港股账户",
-  "券商网格条件单", "券商返佣", "打新分账户策略", "港股ETF申赎",
-  "港股通与A股休市日历错配", "短融ETF季末融资套利", "纳指ETF溢价交易",
-  "纳指ETF溢价套利", "纳斯达克100场外A类基金申购限额", "茅台申购黄牛生态",
-  "规则型资产配置", "跨境QDII ETF申购套利", "跨境QDII ETF盘前申购套利",
-  "跨境QDII ETF高溢价", "面值退市股"
-]);
+const attentionObjectTitles = {
+  "*ST康佳A": "*ST康佳A现金选择权",
+  "康佳B": "康佳B现金选择权",
+  "南航转债": "南航转债乌龙成交机会",
+  "兴业银锡": "兴业银锡要约收购",
+  "纳指科技ETF（159509）": "159509高溢价交易机会",
+  "货币ETF（511800）": "511800节前预埋单机会",
+  "内地身份港股账户": "内地身份港股账户交易限制"
+};
 
 const dateInput = document.getElementById("dateInput");
 const findingsEl = document.getElementById("findings");
@@ -146,12 +137,6 @@ function groupFindingsByObject(findings) {
   return groups;
 }
 
-function objectKindLabel(name) {
-  if (securityObjectNames.has(name)) return {label: "标的", cls: "security"};
-  if (strategyObjectNames.has(name)) return {label: "策略", cls: "strategy"};
-  return {label: "待整理", cls: "pending"};
-}
-
 function nodeDateLabel(row) {
   const value = String(row.run_date || activeDate || "");
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.slice(5).replace("-", "/") : "";
@@ -212,14 +197,11 @@ function renderNode(row) {
 }
 
 function renderObjectGroup(group) {
-  const kind = objectKindLabel(group.label);
+  const displayTitle = attentionObjectTitles[group.label] || group.label;
   return (
     '<article class="object-card">' +
       '<div class="object-head">' +
-        '<div class="object-identity">' +
-          '<span class="object-kind ' + kind.cls + '">' + escapeHtml(kind.label) + "</span>" +
-          '<h2>' + escapeHtml(group.label) + "</h2>" +
-        "</div>" +
+        '<h2>' + escapeHtml(displayTitle) + "</h2>" +
       "</div>" +
       '<div class="object-nodes">' + group.rows.map(renderNode).join("") + "</div>" +
     "</article>"
@@ -275,7 +257,7 @@ function navigateToDate(value) {
   url.pathname = "/radar";
   url.search = "";
   url.searchParams.set("date", value);
-  url.searchParams.set("ui", "attention-object-v1");
+  url.searchParams.set("ui", "attention-title-v1");
   window.location.assign(url.toString());
 }
 
@@ -287,7 +269,7 @@ async function init() {
   const selected = requested || dates[0] || localToday();
   dateInput.value = selected;
   historyHint.textContent = dates.length
-    ? "已保存 " + dates.length + " 个日期；观察对象、节点与来源证据由 Runtime 持久化。"
+    ? "已保存 " + dates.length + " 个日期；关注主题、节点与来源证据由 Runtime 持久化。"
     : "尚无历史记录。";
   await loadDay(selected);
 }
