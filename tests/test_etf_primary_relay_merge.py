@@ -86,6 +86,25 @@ def test_merge_relay_snapshot_combines_sse_and_szse(tmp_path):
     assert snapshot["stale"] == []
     assert snapshot["missing_reasons"] == {"SSE": {}, "SZSE": {}}
 
+    view = json.loads((output / "monitor_view.json").read_text(encoding="utf-8"))
+    assert view["universe_count"] == 3
+    assert view["fresh_count"] == 3
+    assert view["stale_count"] == 0
+    assert view["missing_count"] == 0
+    assert {(row["exchange"], row["code"]) for row in view["rows"]} == {
+        ("SSE", "510001"),
+        ("SZSE", "159001"),
+        ("SZSE", "159002"),
+    }
+    assert result["monitor_view"] == {
+        "universe_count": 3,
+        "fresh_count": 3,
+        "stale_count": 0,
+        "missing_count": 0,
+    }
+    assert "monitor_view.json" in result["files"]
+    assert len(result["files"]["monitor_view.json"]["sha256"]) == 64
+
 
 def test_sparse_szse_recovery_uses_official_index_url(monkeypatch):
     seen = []
