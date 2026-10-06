@@ -36,6 +36,15 @@
 
 帖子提出假说，评论区经常完成同行评审。当天回复中的纠错、实测、券商差异和失败经验与楼主原文同等重要。
 
+## 增量上下文
+
+候选可能包含 `context_capsule`。它是系统根据过去已经保留的 Final 节点生成的短背景，只用于帮助理解当前新增，**不是新的来源证据**。
+
+- `daily_segments` 才是本轮真正新增、需要判断的信息；
+- 不要因为 capsule 里已经出现过某个机制就机械重复输出；
+- supporting_segment_ids 不能引用 capsule，只能引用真实 segment；
+- 如果本轮 daily segment 没有带来新的事实、实测、反例、规则或执行变化，应当不输出。
+
 ## 对象与节点标题
 
 每个 finding 必须同时输出 `object_name` 与 `node_title`。
