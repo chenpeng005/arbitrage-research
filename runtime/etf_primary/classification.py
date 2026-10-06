@@ -12,8 +12,10 @@ _CROSS_BORDER_WORDS = (
 _MIXED_WORDS = ("沪港深", "沪深港", "港股通")
 _BOND_WORDS = ("债", "国开", "国债", "政金", "信用", "可转债", "城投", "同业存单")
 _MONEY_WORDS = ("货币", "现金", "添益", "理财金")
-_COMMODITY_WORDS = ("黄金", "金ETF", "上海金", "有色金属", "商品", "豆粕", "能源化工", "原油")
-_ACTIVE_WORDS = ("主动", "增强策略", "精选")
+# Do not classify equity-sector ETFs such as "有色金属ETF" as commodity ETFs.
+# Exchange PCF/raw class is authoritative when available; keywords are only a fallback.
+_COMMODITY_WORDS = ("黄金ETF", "黄金基金", "上海金", "商品期货", "豆粕ETF", "原油ETF")
+_ACTIVE_WORDS = ("主动ETF", "主动管理ETF")
 
 
 def _contains(text: str, words: tuple[str, ...]) -> bool:
