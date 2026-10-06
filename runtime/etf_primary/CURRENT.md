@@ -88,25 +88,39 @@ prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实
 
 不把“某只 ETF 一直有很多篮子”本身当成事件。
 
-## 日快照与 diff
+## 日快照、diff 与持久化
 
-`runtime_cycle.py` 已形成 V0 日运行闭环：
+`runtime_cycle.py` 已形成 V0 日运行闭环，并于 2026-10-06 首次真实落盘：
 
 - 首次运行只建立 baseline，不制造历史事件；
-- 每个新交易日保存压缩 PCF 摘要；
-- 与上一有效交易日做 diff；
-- 同一交易日重复运行只刷新快照，不制造跨日事件；
+- 每个新交易日保存一份压缩 PCF 摘要；
+- 与上一有效交易日做 diff，事件单独落盘；
+- 同一交易日、同一事实摘要再次运行时返回 `SAME_TRADE_DATE_NO_CHANGE`，不重写 gzip / current / last_run，也不产生无意义 commit；
+- 同一交易日若官方数据发生修正，则更新该日快照，状态为 `SAME_TRADE_DATE_REFRESHED`，但不制造跨日事件；
 - 交易日倒退 fail-closed；
 - `missing` / `stale` / coverage 一并进入运行快照。
 
-当前还没有把该 cycle 接入生产服务器定时任务，因此尚未产生第一批真实跨交易日 Runtime History 事件。
+运行状态独立持久化在 GitHub 分支 `etf-primary-runtime-data`，与代码分支、relay 分支分开。当前 baseline：
 
-## 下一阶段顺序
+- trade date：`20260930`
+- PCF：1693 / 1693
+- stale：1
+- missing：0
+- event：0（baseline 按规则不回造事件）
 
-1. 将 V0 合入主干并部署日运行 baseline；
-2. 等下一个真实交易日验证第一轮跨日 diff；
-3. 稳定后再接二级市场层：溢价、成交承接、`exit_load`；
-4. 最后才把券商实测命中率和可执行性并入机会排序。
+定时抓取调整为**工作日 08:40（Asia/Shanghai）**，在官方盘前 PCF 披露窗口之后、开盘之前运行。中国法定休市工作日仍可能触发 workflow，但同交易日无变化不会形成新的 runtime data commit。
+
+## 当前阶段与下一步
+
+事实层已从“能抓”进入“真实持久运行”阶段，但还没有经历下一真实交易日，因此 V0 尚缺最后一个关键验收：**真实跨交易日 diff。**
+
+下一阶段顺序：
+
+1. 等下一真实交易日，验证 `20260930 → 新交易日` 的第一轮真实 diff 与事件文件；
+2. 对真实事件做一次人工复核，确认字段语义和事件噪音；
+3. 再处理功能分支与当前 `main` 的安全整合，不在已经明显分叉的情况下直接硬合并；
+4. 事实层稳定后接二级市场层：溢价、成交承接、`exit_load`；
+5. 最后才把券商实测命中率和可执行性并入机会排序。
 
 在一级市场事实层稳定前，不进入自动交易。
 
@@ -115,3 +129,4 @@ prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实
 - 当前有效认识：`CURRENT.md`
 - 演化与决策：`DEVELOPMENT_LOG.md`
 - 真实运行历史：`runtime_history/`
+- 真实运行数据分支：`etf-primary-runtime-data`
