@@ -1,0 +1,13 @@
+[Unit]
+Description=Arbitrage Radar Xueqiu Shadow Collector
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=admin
+WorkingDirectory=/home/admin/projects/arbitrage-runtime
+Environment=ARBITRAGE_RUNTIME_ROOT=/home/admin/projects/arbitrage-runtime
+Environment=RUNTIME_DATA_ROOT=/home/admin/projects/arbitrage-runtime/runtime_data
+ExecStart=/home/admin/bin/xueqiu-shadow-collect.sh
+TimeoutStartSec=180
