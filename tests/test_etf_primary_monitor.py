@@ -27,6 +27,48 @@ def test_capacity_jump_and_account_limit():
     assert current.minimum_accounts_to_fill() == 100
 
 
+def test_net_limit_below_one_creation_unit_is_not_half_an_executable_basket():
+    snapshot = _snap(
+        creation_limit=None,
+        net_creation_limit=250_000,
+        account_creation_limit=None,
+        account_net_creation_limit=250_000,
+    )
+    assert snapshot.market_capacity_kind() == "NET"
+    assert snapshot.account_capacity_kind() == "NET"
+    assert snapshot.market_creation_limit() == 250_000
+    assert snapshot.market_limit_basket_equivalent() == 0.5
+    assert snapshot.account_limit_basket_equivalent() == 0.5
+    assert snapshot.total_baskets() == 0
+    assert snapshot.account_baskets() == 0
+    assert snapshot.minimum_accounts_to_fill() is None
+
+
+def test_smaller_of_cumulative_and_net_rules_is_binding_for_no_offset_creation():
+    snapshot = _snap(
+        creation_limit=5_000_000,
+        net_creation_limit=1_000_000,
+        account_creation_limit=2_500_000,
+        account_net_creation_limit=500_000,
+    )
+    assert snapshot.market_capacity_kind() == "NET"
+    assert snapshot.account_capacity_kind() == "NET"
+    assert snapshot.market_creation_limit() == 1_000_000
+    assert snapshot.account_creation_cap() == 500_000
+    assert snapshot.total_baskets() == 2
+    assert snapshot.account_baskets() == 1
+    assert snapshot.minimum_accounts_to_fill() == 2
+
+
+def test_capacity_rule_change_is_not_misreported_as_capacity_jump():
+    previous = _snap(creation_limit=2_500_000, net_creation_limit=None)
+    current = _snap(creation_limit=None, net_creation_limit=50_000_000)
+    events = detect_events(previous, current)
+    event_types = {event.event_type for event in events}
+    assert "CAPACITY_RULE_CHANGED" in event_types
+    assert "TOTAL_CAPACITY_JUMP" not in event_types
+
+
 def test_sse_live_upper_snake_fields_are_normalized():
     # Shape observed from the official SSE commonQuery endpoint for 513100.
     snapshot = parse_sse_basic_row(
@@ -46,6 +88,7 @@ def test_sse_live_upper_snake_fields_are_normalized():
     )
     assert snapshot.creation_allowed is True
     assert snapshot.redemption_allowed is True
+    assert snapshot.market_capacity_kind() == "CUMULATIVE"
     assert snapshot.total_baskets() == 5
     assert snapshot.account_baskets() == 1
     assert snapshot.basket_value() == 1016765.94
@@ -70,6 +113,7 @@ def test_szse_limit_fields_are_normalized():
     </PCF>
     """
     snapshot = parse_szse_xml("159501", xml)
+    assert snapshot.market_capacity_kind() == "CUMULATIVE"
     assert snapshot.total_baskets() == 180
     assert snapshot.account_baskets() == 1
     assert snapshot.minimum_accounts_to_fill() == 180
@@ -123,11 +167,12 @@ def test_monitor_view_joins_identity_and_pcf_with_freshness_gate():
                 "creation_redemption_unit": 1_000_000,
                 "creation_limit": 180_000_000,
                 "account_creation_limit": 1_000_000,
-                "market_creation_limit": 180_000_000,
-                "account_creation_cap": 1_000_000,
-                "total_baskets": 180.0,
-                "account_baskets": 1.0,
-                "minimum_accounts_to_fill": 180,
+                # Deliberately stale legacy derived fields: the view must recompute them.
+                "market_creation_limit": 1,
+                "account_creation_cap": 1,
+                "total_baskets": 0.000001,
+                "account_baskets": 0.000001,
+                "minimum_accounts_to_fill": 1,
                 "basket_value": 1_914_600.0,
                 "source_url": "https://example.invalid/159501.xml",
             },
@@ -144,6 +189,7 @@ def test_monitor_view_joins_identity_and_pcf_with_freshness_gate():
     }
 
     view = build_monitor_view(full_universe=universe, pcf_snapshot=pcf)
+    assert view["schema_version"] == 2
     assert view["universe_count"] == 3
     assert view["fresh_count"] == 1
     assert view["stale_count"] == 1
@@ -154,8 +200,9 @@ def test_monitor_view_joins_identity_and_pcf_with_freshness_gate():
     assert fresh["pcf_status"] == "FRESH"
     assert fresh["event_eligible"] is True
     assert fresh["capacity_kind"] == "CUMULATIVE"
-    assert fresh["total_baskets"] == 180.0
-    assert fresh["account_baskets"] == 1.0
+    assert fresh["market_capacity_kind"] == "CUMULATIVE"
+    assert fresh["total_baskets"] == 180
+    assert fresh["account_baskets"] == 1
     assert fresh["minimum_accounts_to_fill"] == 180
     assert fresh["official_pcf_page_url"].endswith("159501-page")
     assert fresh["official_pcf_source_url"].endswith("159501.xml")
