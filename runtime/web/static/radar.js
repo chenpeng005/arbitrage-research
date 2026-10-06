@@ -48,6 +48,7 @@ function shortDateTime(value) {
 
 function sourceLabel(value) {
   if (value === "jisilu") return "集思录";
+  if (value === "xueqiu") return "雪球";
   return value || "未知来源";
 }
 
