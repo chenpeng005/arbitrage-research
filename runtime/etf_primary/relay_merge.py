@@ -81,6 +81,7 @@ def merge_relay_snapshot(
             {
                 "shard_index": current_index,
                 "requested_count": int(payload.get("requested_count") or 0),
+                "official_index_count": int(payload.get("official_index_count") or 0),
                 "success_count": int(payload.get("success_count") or 0),
                 "error_count": int(payload.get("error_count") or 0),
             }
@@ -113,17 +114,29 @@ def merge_relay_snapshot(
     combined_rows = [sse_rows[code] for code in sorted(sse_rows)] + [
         szse_rows[code] for code in sorted(szse_rows)
     ]
-    latest_trade_date_count = sum(
-        1 for row in combined_rows if str(row.get("trade_date") or "") == target_trade_date
+    stale_rows = sorted(
+        (
+            {
+                "exchange": str(row.get("exchange") or ""),
+                "code": str(row.get("code") or ""),
+                "trade_date": str(row.get("trade_date") or ""),
+            }
+            for row in combined_rows
+            if str(row.get("trade_date") or "") != target_trade_date
+        ),
+        key=lambda row: (row["exchange"], row["code"]),
     )
+    latest_trade_date_count = len(combined_rows) - len(stale_rows)
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    for filename in (
+    prepared_files = (
         "szse_etf_universe.json",
         "full_universe.json",
         "universe_audit.json",
         "sse_pcf.json",
-    ):
+        "szse_pcf_index.json",
+    )
+    for filename in prepared_files:
         shutil.copy2(prepare_dir / filename, output_dir / filename)
 
     pcf_snapshot = {
@@ -133,6 +146,7 @@ def merge_relay_snapshot(
         "universe_count": len(expected_sse) + len(expected_szse),
         "pcf_found_count": len(combined_rows),
         "latest_trade_date_count": latest_trade_date_count,
+        "stale_count": len(stale_rows),
         "coverage": {
             "SSE": {
                 "universe": len(expected_sse),
@@ -150,17 +164,17 @@ def merge_relay_snapshot(
             "SSE": missing_sse,
             "SZSE": missing_szse,
         },
+        "missing_reasons": {
+            "SSE": {code: "missing_from_official_bulk_table" for code in missing_sse},
+            "SZSE": {code: shard_errors.get(code, "missing") for code in missing_szse},
+        },
+        "stale": stale_rows,
         "rows": combined_rows,
     }
     pcf_hash = _write_json(output_dir / "pcf_snapshot.json", pcf_snapshot)
 
     files: dict[str, dict[str, str]] = {}
-    for filename in (
-        "szse_etf_universe.json",
-        "full_universe.json",
-        "universe_audit.json",
-        "sse_pcf.json",
-    ):
+    for filename in prepared_files:
         raw = (output_dir / filename).read_bytes()
         files[filename] = {"sha256": hashlib.sha256(raw).hexdigest()}
     files["pcf_snapshot.json"] = {"sha256": pcf_hash}
@@ -173,6 +187,8 @@ def merge_relay_snapshot(
         "full_universe_count": len(expected_sse) + len(expected_szse),
         "pcf_found_count": len(combined_rows),
         "latest_trade_date_count": latest_trade_date_count,
+        "stale_count": len(stale_rows),
+        "missing_count": len(missing_sse) + len(missing_szse),
         "coverage": pcf_snapshot["coverage"],
         "shards": sorted(shard_summaries, key=lambda row: row["shard_index"]),
         "files": files,
