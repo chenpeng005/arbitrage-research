@@ -9,9 +9,10 @@ _CROSS_BORDER_WORDS = (
     "德国", "法国", "英国", "沙特", "印度", "韩国", "越南", "新加坡",
     "海外", "全球", "恒生", "香港", "港股", "中概", "亚洲", "东南亚",
 )
-_MIXED_WORDS = ("沪港深", "沪深港", "港股通")
+_MIXED_WORDS = ("沪港深", "沪深港")
+_CONNECT_WORDS = ("港股通",)
 _BOND_WORDS = ("债", "国开", "国债", "政金", "信用", "可转债", "城投", "同业存单")
-_MONEY_WORDS = ("货币", "现金", "添益", "理财金")
+_MONEY_WORDS = ("货币", "现金", "添益", "理财金", "快线", "快钱")
 # Do not classify equity-sector ETFs such as "有色金属ETF" as commodity ETFs.
 # Exchange PCF/raw class is authoritative when available; keywords are only a fallback.
 _COMMODITY_WORDS = ("黄金ETF", "黄金基金", "上海金", "商品期货", "豆粕ETF", "原油ETF")
@@ -30,31 +31,39 @@ def classify_etf(
     raw_exchange_class: str | None = None,
     pcf_type: str | None = None,
 ) -> dict[str, Any]:
-    """Conservative, multi-dimensional ETF classification."""
+    """Conservative, multi-dimensional ETF classification.
+
+    Region and asset dimensions are intentionally orthogonal. In particular,
+    a pure 港股通 ETF is cross-border exposure but is not automatically QDII;
+    only 沪港深 / 沪深港 products are treated as mixed mainland-HK exposure.
+    """
     text = f"{name} {tracking_index or ''}".strip()
     raw = str(raw_exchange_class or "")
+    raw_classes = {item for item in raw.split(",") if item}
     pcf = str(pcf_type or "")
 
-    if pcf == "4" or raw == "05" or _contains(text, _MONEY_WORDS):
+    if pcf == "4" or "05" in raw_classes or _contains(text, _MONEY_WORDS):
         asset_class = "MONEY_MARKET"
-    elif pcf in {"6", "7"} or raw in {"02", "32", "37"} or _contains(text, _BOND_WORDS):
+    elif pcf in {"6", "7"} or raw_classes & {"02", "32", "37"} or _contains(text, _BOND_WORDS):
         asset_class = "BOND"
-    elif pcf == "5" or raw == "06" or _contains(text, _COMMODITY_WORDS):
+    elif pcf == "5" or "06" in raw_classes or _contains(text, _COMMODITY_WORDS):
         asset_class = "COMMODITY"
-    elif raw or re.search(r"ETF", text, flags=re.I):
+    elif raw_classes or re.search(r"ETF", text, flags=re.I):
         asset_class = "EQUITY"
     else:
         asset_class = "OTHER"
 
-    # SSE raw class 08 is the official mixed mainland/HK cross-market bucket;
-    # class 33 is the official cross-border ETF bucket.
-    if raw == "08" or _contains(text, _MIXED_WORDS):
+    if "08" in raw_classes or _contains(text, _MIXED_WORDS):
         region_scope = "MIXED"
         qdii_flag: bool | None = None
-        region_reason = "official mixed-market class or mainland-HK marker"
-    elif raw in {"04", "33"} or pcf == "2" or _contains(text, _CROSS_BORDER_WORDS):
+        region_reason = "official mixed-market class or mainland-HK mixed marker"
+    elif _contains(text, _CONNECT_WORDS):
         region_scope = "CROSS_BORDER"
-        qdii_flag = True if not _contains(text, ("港股通", "沪港深", "沪深港")) else None
+        qdii_flag = False
+        region_reason = "Hong Kong exposure through Stock Connect marker"
+    elif raw_classes & {"04", "33"} or pcf == "2" or _contains(text, _CROSS_BORDER_WORDS):
+        region_scope = "CROSS_BORDER"
+        qdii_flag = True
         region_reason = "official cross-border class/PCF type or cross-border marker"
     elif exchange in {"SSE", "SZSE"}:
         region_scope = "DOMESTIC"
