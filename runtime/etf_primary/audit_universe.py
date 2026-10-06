@@ -13,10 +13,6 @@ from .universe import fetch_all_etf_universe
 SSE_BOND_CLASSES = {"02", "32", "37"}
 
 
-def _contains_raw_class(row: EtfIdentity, target: str) -> bool:
-    return target in {item for item in (row.raw_exchange_class or "").split(",") if item}
-
-
 def _raw_classes(row: EtfIdentity) -> set[str]:
     return {item for item in (row.raw_exchange_class or "").split(",") if item}
 
@@ -29,8 +25,10 @@ def _problem_tags(row: EtfIdentity) -> list[str]:
         tags.append("asset_other")
     if row.region_scope == "UNKNOWN":
         tags.append("region_unknown")
-    if row.strategy_style == "UNKNOWN":
-        tags.append("style_unknown")
+    # For money / commodity ETFs, INDEX vs ACTIVE can be structurally inapplicable
+    # or absent from the exchange master. Do not treat that as a classification error.
+    if row.asset_class == "EQUITY" and row.strategy_style == "UNKNOWN":
+        tags.append("equity_style_unknown")
 
     if row.exchange == "SSE":
         if raw & SSE_BOND_CLASSES and row.asset_class != "BOND":
