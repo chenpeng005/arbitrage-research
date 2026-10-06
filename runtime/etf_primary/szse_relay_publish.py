@@ -6,8 +6,10 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .audit_universe import audit_rows
+from .models import EtfIdentity
 from .szse_relay import RELAY_VERSION
-from .universe import fetch_szse_etf_universe
+from .universe import fetch_sse_etf_universe, fetch_szse_etf_universe
 
 
 def _write_json(path: Path, payload: dict) -> str:
@@ -16,7 +18,11 @@ def _write_json(path: Path, payload: dict) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def build_universe_payload(*, timeout: int = 20, throttle_seconds: float = 0.20) -> tuple[dict, datetime]:
+def build_universe_payload(
+    *,
+    timeout: int = 20,
+    throttle_seconds: float = 0.20,
+) -> tuple[dict, datetime, list[EtfIdentity]]:
     fetched_at = datetime.now(timezone.utc)
     rows = fetch_szse_etf_universe(
         timeout=timeout,
@@ -51,6 +57,7 @@ def build_universe_payload(*, timeout: int = 20, throttle_seconds: float = 0.20)
             "rows": normalized,
         },
         fetched_at,
+        rows,
     )
 
 
@@ -60,28 +67,45 @@ def publish_relay_snapshot(
     timeout: int = 20,
     throttle_seconds: float = 0.20,
 ) -> dict:
-    universe, fetched_at = build_universe_payload(
+    universe, fetched_at, szse_rows = build_universe_payload(
         timeout=timeout,
         throttle_seconds=throttle_seconds,
     )
+    sse_rows = fetch_sse_etf_universe(timeout=timeout)
+    audit = audit_rows([*sse_rows, *szse_rows])
+    if audit["duplicate_keys"]:
+        raise ValueError(f"ETF universe duplicate keys found: {audit['duplicate_keys'][:5]}")
+
     output_dir.mkdir(parents=True, exist_ok=True)
 
     universe_name = "szse_etf_universe.json"
+    audit_name = "universe_audit.json"
     universe_hash = _write_json(output_dir / universe_name, universe)
+    audit_hash = _write_json(output_dir / audit_name, audit)
     manifest = {
         "relay_version": RELAY_VERSION,
         "source": "SZSE_OFFICIAL",
         "fetched_at": fetched_at.isoformat(),
         "universe_count": len(universe["rows"]),
+        "full_market_audit_count": audit["total"],
         "files": {
             "universe": {
                 "filename": universe_name,
                 "sha256": universe_hash,
-            }
+            },
+            "audit": {
+                "filename": audit_name,
+                "sha256": audit_hash,
+            },
         },
     }
     manifest_hash = _write_json(output_dir / "manifest.json", manifest)
-    return {"manifest_sha256": manifest_hash, **manifest}
+    return {
+        "manifest_sha256": manifest_hash,
+        **manifest,
+        "audit_summary": audit["counts"],
+        "problem_counts": audit["problem_counts"],
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
