@@ -45,7 +45,14 @@
 - `strategy_style`：INDEX / ACTIVE / UNKNOWN；
 - `qdii_flag`：True / False / Unknown。
 
-2026-10-06 全市场分类审计为 **problem_rows = 0**。前台仍可按阅读需要重组成“境内 / 跨境 → 股票 / 债券 / 商品”等结构，但底层不牺牲原始维度。
+2026-10-06 全市场分类审计为 **problem_rows = 0**。人工边界审计同时确认：
+
+- 252 只 `CROSS_BORDER` 中，121 只是 QDII，131 只不是 QDII，主要是港股通路径，因此“跨境”不能等同于“QDII”；
+- 32 只 `MIXED` 的沪港深 / 沪深港混合暴露语义自然；
+- 35 只 `strategy_style=UNKNOWN` 均来自货币 ETF 或商品 ETF，不是股票 ETF 漏判；
+- 约 55 只名称含“增强”的 ETF 暂继续归为 `INDEX`，V0 不为 taxonomy 完整度增加额外复杂度。
+
+前台仍可按阅读需要重组成“境内 / 跨境 → 股票 / 债券 / 商品”等结构，但底层不牺牲原始维度。
 
 ## PCF 摘要层
 
@@ -61,13 +68,41 @@
 - 申赎机制；
 - 交易日与数据来源。
 
-派生字段至少包括：总篮子数、单账户最多篮子数、理论最低需要多少账户才能吃满、单篮子资金规模。
+### 容量语义
 
-累计申购上限与净申购上限语义不同，不相加。
+累计申购上限与净申购上限是不同规则，**原始字段始终分别保存，绝不相加。**
+
+对于“没有同日赎回抵消、直接发起一笔申购”的情形：
+
+- 若只有累计上限：`capacity_kind = CUMULATIVE`；
+- 若只有净申购上限：`capacity_kind = NET`；
+- 若两者同时存在：申购必须同时满足两条规则，取较小的正值作为当前 no-offset binding limit；
+- 两者相等时：`capacity_kind = BOTH`。
+
+`NET` 约束表示**净额 headroom**，不是“全天总共只能申购这么多”的绝对 gross ceiling；若当日存在赎回，gross creation 仍可能高于该净额。
+
+同样逻辑独立应用于单账户累计 / 单账户净申购上限。
+
+### 篮子派生
+
+同时保留两种表达：
+
+- `*_limit_basket_equivalent = binding_limit / creation_redemption_unit`：原始比例，可为小数；
+- `total_baskets` / `account_baskets`：在 no-offset binding limit 下能容纳的**完整最小申赎单位数量**，向下取整，只能为整数。
+
+因此若净申购上限为 50 万份、最小申购单位为 100 万份：
+
+- basket equivalent = 0.5；
+- 可执行完整篮子数 = 0；
+- 不能解释成“今天有 0.5 个篮子可抢”。
+
+`minimum_accounts_to_fill` 只在市场和单账户完整篮子数均大于 0 时计算。
+
+单篮子资金规模优先使用 `nav_per_cu`，否则使用 `nav_per_share × creation_redemption_unit`；它只是近似一级申购资金量，不等于最终结算成本。
 
 ## 统一事实视图
 
-relay 已正式生成并发布：
+relay 正式生成并发布：
 
 `etf_primary_relay/monitor_view.json`
 
@@ -76,12 +111,17 @@ relay 已正式生成并发布：
 - `pcf_status = FRESH / STALE / MISSING`；
 - `event_eligible`；
 - 申赎开关和最小申赎单位；
-- 累计/净容量及 `capacity_kind`；
-- 总篮子、单账户篮子、理论最低账户数；
+- 原始累计 / 净上限；
+- `market_capacity_kind` / `account_capacity_kind`；
+- binding no-offset limit；
+- basket equivalent 与完整可执行篮子数；
+- 理论最低账户数；
 - 单篮子资金规模；
 - 官方 PCF 页面与数据源链接。
 
-2026-10-06 首次正式发布：**1693 rows / fresh 1692 / stale 1 / missing 0**。
+`monitor_view` 会从原始 PCF 字段重新计算派生容量，不信任 relay 输入中可能残留的旧派生字段。
+
+2026-10-06 首次正式发布基线：**1693 rows / fresh 1692 / stale 1 / missing 0**。
 
 该视图只承担一级市场事实，不加入折溢价、成交承接、券商执行或机会评分。
 
@@ -101,12 +141,15 @@ prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实
 
 当前重点事件：
 
-- 暂停申购 → 恢复申购；
-- 总申购容量明显增加；
-- 单账户限制变得更有利于普通账户；
-- 理论需要参与的账户数明显增加；
-- 最小申赎单位下降；
-- 开放申购 → 暂停申购。
+- `CREATION_RESUMED`：暂停申购 → 恢复申购；
+- `TOTAL_CAPACITY_JUMP`：同一种 binding rule 下，完整 no-offset 可执行篮子明显增加；
+- `ACCOUNT_LIMIT_IMPROVED`：同一种单账户 binding rule 下，单账户完整篮子数明显下降，尤其下降至 1；
+- `ACCOUNT_DISTRIBUTION_IMPROVED`：同口径下理论最低参与账户数上升；
+- `CREATION_UNIT_REDUCED`：最小申赎单位下降；
+- `CREATION_SUSPENDED`：开放申购 → 暂停申购；
+- `CAPACITY_RULE_CHANGED` / `ACCOUNT_CAP_RULE_CHANGED`：binding rule 在累计 / 净 / BOTH / 无约束之间切换。
+
+**不同容量规则之间不直接比较篮子数。** 例如从累计上限切到净申购上限时，先报告规则切换，不能把两个不同经济含义的数字直接解释为“容量增加/减少”。
 
 不把“某只 ETF 一直有很多篮子”本身当成事件。
 
@@ -121,7 +164,8 @@ prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实
 - 与上一有效交易日做 diff，事件单独落盘；
 - 同一交易日、同一**市场事实摘要**再次运行返回 `SAME_TRADE_DATE_NO_CHANGE`，不重写 gzip / current / last_run，也不产生无意义 commit；
 - 同一交易日若官方真实修正关键市场字段，则更新该日快照为 `SAME_TRADE_DATE_REFRESHED`，但不制造跨日事件；
-- schema 规则变化使用一次显式 `SAME_TRADE_DATE_SCHEMA_MIGRATED`；
+- schema / 派生语义变化使用一次显式 `SAME_TRADE_DATE_SCHEMA_MIGRATED`；
+- 当前 snapshot schema 已升至 **V3**，用于固化新的 binding-capacity / whole-basket 语义；
 - 交易日倒退 fail-closed；
 - `missing` / `stale` / coverage 一并进入运行快照。
 
@@ -132,7 +176,7 @@ prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实
 - 市场事实字段 → 参与 digest；
 - `fetched_at`、source URL、workflow/relay 时间 → 保留用于审计，但不参与 digest。
 
-修复后再次完成全市场完整运行，relay 正常更新，而 `etf-primary-runtime-data` 仍停留在 `c593e9c...`，没有产生新的同日 refresh commit。事实去噪已通过真实端到端验证。
+修复后再次完成全市场完整运行，relay 正常更新，而运行历史没有因为新的 `fetched_at` 再产生同日 refresh commit，事实去噪已通过真实端到端验证。
 
 运行状态独立持久化在 GitHub 分支 `etf-primary-runtime-data`，与代码分支、relay 分支分开。当前 baseline：
 
@@ -146,16 +190,17 @@ prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实
 
 ## 当前阶段与下一步
 
-事实层内部链路已收口并经过同交易日真实复跑验证。目前 V0 尚缺最后一个关键验收：**真实跨交易日 diff。**
+分类、全市场 PCF、freshness、事实去噪与容量派生语义已经收口。当前正在完成容量语义 V3 的端到端 workflow 验收；通过后 V0 尚缺的唯一核心市场验收是：**真实跨交易日 diff。**
 
 下一阶段顺序：
 
-1. 下一真实交易日验证 `20260930 → 新交易日` 第一轮真实 diff 与事件文件；
-2. 人工复核真实事件，确认 PCF 字段语义和事件噪音；
-3. 建一个只读事实监控页，直接消费 `monitor_view.json`，先支持分类、申购状态、篮子/单户容量、freshness 和官方 PCF 跳转；
-4. 再处理功能分支与当前 `main` 的安全整合；
-5. 事实层稳定后才接二级市场折溢价、成交承接、`exit_load`；
-6. 最后把券商实测命中率和可执行性并入机会排序。
+1. 完成 V3 全量 workflow / runtime schema migration 验收；
+2. 下一真实交易日验证 `20260930 → 新交易日` 第一轮真实 diff 与事件文件；
+3. 人工复核真实事件，确认 PCF 字段语义和事件噪音；
+4. 建一个只读事实监控页，直接消费 `monitor_view.json`，先支持分类、申购状态、完整篮子 / 单户容量、capacity kind、freshness 和官方 PCF 跳转；
+5. 再处理功能分支与当前 `main` 的安全整合；
+6. 事实层稳定后才接二级市场折溢价、成交承接、`exit_load`；
+7. 最后把券商实测命中率和可执行性并入机会排序。
 
 在一级市场事实层稳定前，不进入自动交易。
 
