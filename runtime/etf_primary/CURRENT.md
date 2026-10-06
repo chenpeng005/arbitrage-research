@@ -32,7 +32,7 @@
 - SZSE：**749 / 749**，覆盖率 100%
 - SSE：944 / 944 找到，其中 1 只官方返回的 PCF 交易日落后于目标交易日，系统保留为 stale，不静默回填。
 
-唯一 stale 已定位为 **512390 中国低波ETF平安**。relay 中其最后 PCF 为 `2026-09-04`；基金管理人公开页面也显示最新申购赎回清单日期为 2026-09-04。该基金随后进入终止流程，2026-09-08 为最后运作日，2026-09-09 起进入清算，因此这里的 stale 是**产品生命周期导致的正常历史残留，不是抓取链异常**。
+唯一 stale 已定位为 **512390 中国低波ETF平安**。其最后 PCF 为 `2026-09-04`，随后进入终止清算生命周期，因此这里的 stale 是正常历史残留，不是抓取链异常。
 
 因此“文件存在”和“当日有效”是两个不同门控：**missing=0 不等于 current-day coverage=100%**。同时，stale PCF 中残留的历史“允许申购”等字段不能解释成当前市场状态。
 
@@ -65,15 +65,35 @@
 
 累计申购上限与净申购上限语义不同，不相加。
 
+## 统一事实视图
+
+relay 已正式生成并发布：
+
+`etf_primary_relay/monitor_view.json`
+
+它把稳定 ETF 身份/分类与当前 PCF 合成一张面向页面/API的事实表，统一输出：
+
+- `pcf_status = FRESH / STALE / MISSING`；
+- `event_eligible`；
+- 申赎开关和最小申赎单位；
+- 累计/净容量及 `capacity_kind`；
+- 总篮子、单账户篮子、理论最低账户数；
+- 单篮子资金规模；
+- 官方 PCF 页面与数据源链接。
+
+2026-10-06 首次正式发布：**1693 rows / fresh 1692 / stale 1 / missing 0**。
+
+该视图只承担一级市场事实，不加入折溢价、成交承接、券商执行或机会评分。
+
 ## 官方 relay 架构
 
 当前采用：
 
-**prepare → 12 个 SZSE PCF shard → merge 校验 → last-good relay。**
+**prepare → 12 个 SZSE PCF shard → merge 校验 → Monitor View → last-good relay。**
 
 prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实际给出的下载文件，而不是猜文件名。若只有极少数 shard 请求遭遇 CDN / WAF 边缘失败，merge 可从新的 runner 对最多 10 个缺口做一次受限重试；不能把 merge 退化为第二次全市场抓取。
 
-任何仍未恢复的数据都必须进入 `missing`；交易日落后的 PCF 必须进入 `stale`。
+任何仍未恢复的数据都必须进入 `missing`；交易日落后的 PCF 必须进入 `stale`。`monitor_view.json` 的 SHA256 已进入 relay manifest 完整性校验。
 
 ## 监控原则
 
@@ -90,42 +110,52 @@ prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实
 
 不把“某只 ETF 一直有很多篮子”本身当成事件。
 
-事件层新增一个硬门控：**只有 PCF 自身交易日等于该次目标交易日的 fresh row 才参与市场事件 diff。** stale / missing 仍完整保留用于数据质量与生命周期审计，但不参与申购恢复、容量跳升、单账户限制变化等策略事件。上一交易日若某只也是 stale，则该历史状态视为不可用于比较；以后 stale → fresh 也不会凭空制造“容量变化”。
+事件层硬门控：**只有 PCF 自身交易日等于该次目标交易日的 fresh row 才参与市场事件 diff。** stale / missing 仍完整保留用于数据质量与生命周期审计，但不参与策略事件。上一交易日若某只也是 stale，则该历史状态视为不可用于比较；以后 stale → fresh 也不会凭空制造“容量变化”。
 
 ## 日快照、diff 与持久化
 
-`runtime_cycle.py` 已形成 V0 日运行闭环，并于 2026-10-06 首次真实落盘：
+`runtime_cycle.py` 已形成 V0 日运行闭环：
 
 - 首次运行只建立 baseline，不制造历史事件；
 - 每个新交易日保存一份压缩 PCF 摘要；
 - 与上一有效交易日做 diff，事件单独落盘；
-- 同一交易日、同一事实摘要再次运行时返回 `SAME_TRADE_DATE_NO_CHANGE`，不重写 gzip / current / last_run，也不产生无意义 commit；
-- 同一交易日若官方数据发生修正，则更新该日快照，状态为 `SAME_TRADE_DATE_REFRESHED`，但不制造跨日事件；
+- 同一交易日、同一**市场事实摘要**再次运行返回 `SAME_TRADE_DATE_NO_CHANGE`，不重写 gzip / current / last_run，也不产生无意义 commit；
+- 同一交易日若官方真实修正关键市场字段，则更新该日快照为 `SAME_TRADE_DATE_REFRESHED`，但不制造跨日事件；
+- schema 规则变化使用一次显式 `SAME_TRADE_DATE_SCHEMA_MIGRATED`；
 - 交易日倒退 fail-closed；
-- `missing` / `stale` / coverage 一并进入运行快照；
-- stale / missing 属于数据质量状态，不伪装成市场规则变化。
+- `missing` / `stale` / coverage 一并进入运行快照。
+
+### Market Fact Digest
+
+真实复跑曾发现 1693 行全部被判断变化；逐字段核对后确认唯一变化字段均为 `fetched_at`。因此现已正式分离：
+
+- 市场事实字段 → 参与 digest；
+- `fetched_at`、source URL、workflow/relay 时间 → 保留用于审计，但不参与 digest。
+
+修复后再次完成全市场完整运行，relay 正常更新，而 `etf-primary-runtime-data` 仍停留在 `c593e9c...`，没有产生新的同日 refresh commit。事实去噪已通过真实端到端验证。
 
 运行状态独立持久化在 GitHub 分支 `etf-primary-runtime-data`，与代码分支、relay 分支分开。当前 baseline：
 
 - trade date：`20260930`
 - PCF：1693 / 1693
-- stale：1（512390，已解释为终止清算生命周期）
+- stale：1
 - missing：0
 - event：0（baseline 按规则不回造事件）
 
-定时抓取调整为**工作日 08:40（Asia/Shanghai）**，在官方盘前 PCF 披露窗口之后、开盘之前运行。中国法定休市工作日仍可能触发 workflow，但同交易日无变化不会形成新的 runtime data commit。
+定时抓取为**工作日 08:40（Asia/Shanghai）**。中国法定休市工作日仍可能触发 workflow，但同交易日市场事实无变化不会形成新的 runtime data commit。
 
 ## 当前阶段与下一步
 
-事实层已从“能抓”进入“真实持久运行”阶段，但还没有经历下一真实交易日，因此 V0 尚缺最后一个关键验收：**真实跨交易日 diff。**
+事实层内部链路已收口并经过同交易日真实复跑验证。目前 V0 尚缺最后一个关键验收：**真实跨交易日 diff。**
 
 下一阶段顺序：
 
-1. 等下一真实交易日，验证 `20260930 → 新交易日` 的第一轮真实 diff 与事件文件；
-2. 对真实事件做一次人工复核，确认字段语义和事件噪音；
-3. 再处理功能分支与当前 `main` 的安全整合，不在已经明显分叉的情况下直接硬合并；
-4. 事实层稳定后接二级市场层：溢价、成交承接、`exit_load`；
-5. 最后才把券商实测命中率和可执行性并入机会排序。
+1. 下一真实交易日验证 `20260930 → 新交易日` 第一轮真实 diff 与事件文件；
+2. 人工复核真实事件，确认 PCF 字段语义和事件噪音；
+3. 建一个只读事实监控页，直接消费 `monitor_view.json`，先支持分类、申购状态、篮子/单户容量、freshness 和官方 PCF 跳转；
+4. 再处理功能分支与当前 `main` 的安全整合；
+5. 事实层稳定后才接二级市场折溢价、成交承接、`exit_load`；
+6. 最后把券商实测命中率和可执行性并入机会排序。
 
 在一级市场事实层稳定前，不进入自动交易。
 
@@ -135,3 +165,4 @@ prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实
 - 演化与决策：`DEVELOPMENT_LOG.md`
 - 真实运行历史：`runtime_history/`
 - 真实运行数据分支：`etf-primary-runtime-data`
+- 官方事实 relay：`etf-primary-data-relay`
