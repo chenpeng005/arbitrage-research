@@ -2,7 +2,7 @@
 
 Goal: scan a small set of high-value investment communities, use AI to keep meaningful daily information increments, persist the daily record, and show it through a stable web page.
 
-Current production AI source: Jisilu public pages. Xueqiu is now a collect-only Shadow Source: public anonymous Author Shadow + public Hot Exploration are normalized into the same source-agnostic Increment Ledger shape, but are not yet sent to Broad / Final.
+Current production AI sources: Jisilu + Xueqiu. Both feed the same Broad → Final → Object / Node / Evidence pipeline while retaining source provenance. Xueqiu discovery currently combines public anonymous Author Shadow + public Hot Exploration; the Hot lane is explicitly platform-ranking-biased and is not full-site coverage.
 
 Runtime chain:
 1. Read the latest-activity feed and the new-topic feed.
@@ -35,8 +35,8 @@ Persistence principles:
 - Run mode is recorded as LIVE or BACKFILL.
 - Extractor/schema versions are recorded for future reinterpretation and migration.
 
-Xueqiu Shadow Source V0:
-- Adapter: `runtime/intelligence_radar/xueqiu.py`; watchlist: `runtime/intelligence_radar/xueqiu_watchlist.json` (initially empty; probe accounts are never promoted automatically).
+Xueqiu Source V1:
+- Adapter: `runtime/intelligence_radar/xueqiu.py`; formal daily adapter: `runtime/intelligence_radar/xueqiu_daily.py`; watchlist: `runtime/intelligence_radar/xueqiu_watchlist.json` (initially empty; probe accounts are never promoted automatically).
 - Uses normal anonymous public `www.xueqiu.com` sessions; it does not attempt to solve or bypass WAF challenges.
 - `XUEQIU_AUTHOR_SHADOW` reads watched-user timelines and distinguishes POST / REPLY / REPOST using stable source identity fields.
 - `XUEQIU_HOT_EXPLORATION` is a non-keyword discovery lane based on the public hot feed; it is explicitly biased by platform ranking and is NOT full-site coverage.
@@ -45,12 +45,13 @@ Xueqiu Shadow Source V0:
 - Reply items prefer `commentId` as the durable item identity while retaining the standalone status URL; edits are handled later by the existing content hash.
 - Same item found by multiple Xueqiu lanes is deduplicated once while preserving all discovery paths.
 - The adapter maps directly to the existing Increment Ledger candidate shape. No Xueqiu-specific persistence schema is introduced.
-- V0 is collect-only: no AI and no production Radar DB writes.
-- Shadow accumulation is enabled independently of the Radar AI Scheduler: a lightweight JSON observation archive runs at 07:30 / 12:30 / 17:00 / 21:20 Asia/Shanghai.
-- The 07:30 run also revisits the previous logical date so the 21:20 → 07:30 overnight gap can be recovered.
+- Xueqiu collection remains lightweight during the day; the 21:20 formal run sends only Increment-Ledger-eligible Xueqiu items into the same Broad / Final pipeline as Jisilu and persists Final nodes into the production Radar DB.
+- Shadow accumulation runs at 07:30 / 12:30 / 17:00 Asia/Shanghai. The 21:20 formal Radar run performs one fresh Xueqiu collection before AI, so there is no competing 21:20 collect-only process.
+- The 07:30 run also revisits the previous logical date so the 21:20 → 07:30 overnight gap can be recovered in the lightweight archive; late-catchup AI scheduling can be added separately if needed.
 - Archive: `runtime_data/intelligence_radar/xueqiu_shadow/YYYY/MM/YYYY-MM-DD.json`. It keeps IDs, author/time/link, content SHA-256, short excerpt, discovery paths and seen/edit counts; it does not mirror full candidate bodies.
 - Repeated observations update `seen_count`; edits update the hash/excerpt and retain a small prior-hash trail.
-- The Xueqiu Shadow timer is separate from the still-disabled Radar Daily AI Scheduler.
+- A formal Radar timer runs daily at 21:20 Asia/Shanghai and executes Jisilu + Xueqiu together. Same-version increments already analyzed are skipped by the shared Increment Ledger.
+- Explicit negative rule currently confirmed by the user: pure technical-indicator / price-chart timing (moving averages, MACD, KDJ, RSI, Bollinger bands, K-line patterns, support/resistance, breakout/pullback) is excluded. Institutional price/time rules such as delisting thresholds, abnormal-move windows, tender deadlines, index effective dates and settlement dates are not technical-analysis exclusions.
 
 Author Lane Shadow:
 - Config: `runtime/intelligence_radar/author_watchlist.json`
@@ -66,18 +67,26 @@ Storage:
 - Daily archive: `runtime_data/intelligence_radar/archive/YYYY/MM/YYYY-MM-DD.json`
 - HTML is only a view and can be rebuilt from the database/archive.
 
-Manual run:
+Manual unified formal run:
 
     set -a
     source .runtime_env
     set +a
+    .venv/bin/python -m runtime.intelligence_radar.run_all --date YYYY-MM-DD --run-mode LIVE
+
+Jisilu-only manual run:
+
     .venv/bin/python -m runtime.intelligence_radar.daily --date YYYY-MM-DD
 
-Historical backfill run:
+Xueqiu-only formal run from accumulated archive:
+
+    .venv/bin/python -m runtime.intelligence_radar.xueqiu_daily --date YYYY-MM-DD
+
+Historical Jisilu backfill run:
 
     .venv/bin/python -m runtime.intelligence_radar.daily --date YYYY-MM-DD --run-mode BACKFILL
 
-Collector-only smoke test:
+Collector-only Jisilu smoke test:
 
     .venv/bin/python -m runtime.intelligence_radar.daily --date YYYY-MM-DD --collect-only
 
@@ -89,8 +98,4 @@ Xueqiu Shadow accumulation run:
 
     .venv/bin/python -m runtime.intelligence_radar.xueqiu_shadow_archive
 
-One-time reviewed V2 history seed:
-
-    .venv/bin/python scripts/backfill_radar_v2_history.py --data-root runtime_data
-
-Radar Daily AI Scheduler remains disabled. Only the Xueqiu Shadow collect-only timer is enabled in V0.3.
+Formal Radar AI scheduling is enabled daily at 21:20 Asia/Shanghai for Jisilu + Xueqiu. Xueqiu collect-only observations remain enabled at 07:30 / 12:30 / 17:00.
