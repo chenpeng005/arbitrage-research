@@ -202,6 +202,46 @@ class IntelligenceRadarFilteringTest(unittest.TestCase):
         self.assertEqual(rows[0]["discovery_paths"], ["AUTHOR_LANE"])
         self.assertEqual(rows[0]["author_lane_authors"], ["gaigai777"])
 
+    def test_context_capsule_replaces_long_context_in_ai_input(self) -> None:
+        class CaptureProvider:
+            def __init__(self):
+                self.payload = None
+
+            def complete(self, **kwargs):
+                self.payload = json.loads(kwargs["messages"][0]["content"])
+                return ProviderResponse(
+                    provider="test",
+                    model="test",
+                    request_id=None,
+                    finish_reason="stop",
+                    structured_output={
+                        "run_date": "2026-10-04",
+                        "source": "jisilu",
+                        "batch_id": "b1",
+                        "findings": [_finding()],
+                    },
+                    tool_calls=[],
+                    usage={},
+                    raw_response={},
+                )
+
+        candidates = _input()["candidates"]
+        candidates[0]["context_capsule"] = "历史背景：此前已确认券商时点存在差异"
+        candidates[0]["context_capsule_version"] = "final-node-capsule-v1"
+        provider = CaptureProvider()
+        filter_batch(
+            run_date="2026-10-04",
+            source="jisilu",
+            batch_id="b1",
+            candidates=candidates,
+            provider=provider,
+            model="test",
+        )
+        ai_candidate = provider.payload["candidates"][0]
+        self.assertEqual(ai_candidate["context_segments"], [])
+        self.assertIn("券商时点", ai_candidate["context_capsule"])
+        self.assertEqual(len(ai_candidate["daily_segments"]), 1)
+
     def test_filter_validator_rejects_context_only_support(self) -> None:
         output = {
             "run_date": "2026-10-04",
