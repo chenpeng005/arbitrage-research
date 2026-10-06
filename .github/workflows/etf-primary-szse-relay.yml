@@ -11,8 +11,12 @@ on:
       - "runtime/etf_primary/models.py"
       - "runtime/etf_primary/classification.py"
       - "runtime/etf_primary/universe.py"
+      - "runtime/etf_primary/audit_universe.py"
       - "runtime/etf_primary/szse_relay.py"
       - "runtime/etf_primary/szse_relay_publish.py"
+      - "tests/test_etf_primary_classification.py"
+      - "tests/test_etf_primary_monitor.py"
+      - "tests/test_etf_primary_universe.py"
   workflow_dispatch:
   schedule:
     - cron: "10 0 * * *"
@@ -36,6 +40,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Install focused test dependency
+        run: python -m pip install pytest
+
+      - name: Run ETF primary focused tests
+        run: |
+          python -m pytest -q \
+            tests/test_etf_primary_classification.py \
+            tests/test_etf_primary_monitor.py \
+            tests/test_etf_primary_universe.py
 
       - name: Fetch and validate official SZSE ETF universe
         run: |
