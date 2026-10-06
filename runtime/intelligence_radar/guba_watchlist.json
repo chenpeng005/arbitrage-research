@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "bars": [
+    {"code": "000016", "name": "*ST康佳A", "reason": "historical_radar_case"},
+    {"code": "000426", "name": "兴业银锡", "reason": "historical_radar_case"},
+    {"code": "603159", "name": "上海亚虹", "reason": "historical_radar_case"}
+  ]
+}
