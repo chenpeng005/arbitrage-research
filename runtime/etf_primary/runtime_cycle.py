@@ -19,9 +19,10 @@ from .szse_relay import (
 )
 
 
-SNAPSHOT_SCHEMA_VERSION = 1
+SNAPSHOT_SCHEMA_VERSION = 2
 EVENT_SCHEMA_VERSION = 1
 _PCF_MODEL_FIELDS = {field.name for field in fields(PcfSnapshot)}
+_FACT_DIGEST_EXCLUDED_FIELDS = {"fetched_at", "source_url", "raw_header"}
 
 
 def _canonical_json_bytes(payload: Any) -> bytes:
@@ -59,9 +60,23 @@ def _normalized_rows(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _snapshot_digest(rows: list[dict[str, Any]]) -> str:
-    # Derived fields are deterministic and intentionally included: a schema or
-    # calculation change should produce a different digest and remain auditable.
-    return hashlib.sha256(_canonical_json_bytes(rows)).hexdigest()
+    """Hash market facts, not transport/provenance metadata.
+
+    A historical PCF can be fetched repeatedly during a long holiday. The
+    retrieval timestamp (and even an equivalent official source URL) may change
+    while the PCF itself does not. Those fields must not create a fake same-day
+    market refresh. Derived fields stay in the digest because a calculation or
+    schema change should remain auditable.
+    """
+    factual_rows = [
+        {
+            key: value
+            for key, value in row.items()
+            if key not in _FACT_DIGEST_EXCLUDED_FIELDS
+        }
+        for row in rows
+    ]
+    return hashlib.sha256(_canonical_json_bytes(factual_rows)).hexdigest()
 
 
 def _event_payload(
@@ -203,16 +218,21 @@ def run_cycle(
     baseline = previous_payload is None
     same_trade_date = previous_trade_date == trade_date and previous_payload is not None
 
-    # Normalize and hash the market facts before writing anything. During long
-    # holidays the relay can be refreshed every day while the underlying PCF is
-    # unchanged. Returning here keeps the runtime-data branch byte-for-byte
-    # stable and avoids meaningless gzip/current/last_run commits.
+    # Normalize and hash only market facts. Fetch/provenance metadata is retained
+    # in the archived rows, but cannot create a same-day market refresh.
     current_rows = _normalized_rows(rows)
     digest = _snapshot_digest(current_rows)
-    previous_digest = str((previous_payload or {}).get("snapshot_sha256") or "")
+    previous_candidate_rows = (previous_payload or {}).get("rows")
+    previous_fact_digest = (
+        _snapshot_digest(previous_candidate_rows)
+        if isinstance(previous_candidate_rows, list)
+        else str((previous_payload or {}).get("snapshot_sha256") or "")
+    )
+    previous_schema_version = int((previous_payload or {}).get("schema_version") or 0)
+    same_market_facts = same_trade_date and previous_fact_digest == digest
     archive_path = state_dir / "snapshots" / f"{trade_date}.json.gz"
 
-    if same_trade_date and previous_digest == digest:
+    if same_market_facts and previous_schema_version >= SNAPSHOT_SCHEMA_VERSION:
         return _summary(
             status="SAME_TRADE_DATE_NO_CHANGE",
             trade_date=trade_date,
@@ -265,10 +285,13 @@ def run_cycle(
     if baseline:
         status = "BASELINE_CREATED"
         events = []
+    elif same_trade_date and same_market_facts and previous_schema_version < SNAPSHOT_SCHEMA_VERSION:
+        status = "SAME_TRADE_DATE_SCHEMA_MIGRATED"
+        events = []
     elif same_trade_date:
         status = "SAME_TRADE_DATE_REFRESHED"
-        # Same-day corrections replace the stored snapshot but never fabricate a
-        # cross-day market event. The changed digest makes this refresh auditable.
+        # A same-day market-fact correction replaces the stored snapshot but
+        # never fabricates a cross-day market event.
         events = []
     else:
         status = "DIFF_COMPLETED"
