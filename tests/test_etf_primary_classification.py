@@ -55,3 +55,13 @@ def test_szse_fast_cash_etf_is_money_market():
     )
     assert result["asset_class"] == "MONEY_MARKET"
     assert result["region_scope"] == "DOMESTIC"
+
+
+def test_free_cash_flow_etf_remains_equity():
+    result = classify_etf(
+        name="自由现金流ETF华夏",
+        tracking_index="980092 CNIFCF",
+        exchange="SZSE",
+    )
+    assert result["asset_class"] == "EQUITY"
+    assert result["strategy_style"] == "INDEX"
