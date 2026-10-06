@@ -37,7 +37,9 @@ fi
     "$STAGE_ROOT/runtime/intelligence_radar/storage.py" \
     "$STAGE_ROOT/runtime/intelligence_radar/increments.py" \
     "$STAGE_ROOT/runtime/intelligence_radar/xueqiu.py" \
-    "$STAGE_ROOT/runtime/intelligence_radar/xueqiu_shadow_archive.py"
+    "$STAGE_ROOT/runtime/intelligence_radar/xueqiu_shadow_archive.py" \
+    "$STAGE_ROOT/runtime/intelligence_radar/xueqiu_daily.py" \
+    "$STAGE_ROOT/runtime/intelligence_radar/run_all.py"
 
   for pattern in test_daily_research_decoupling_v1.py test_token_cost_gate_v1.py test_reminder_policy_v2.py test_information_change_source_fk_v1.py; do
     PYTHONPATH="$STAGE_ROOT" "$PY" -m unittest discover -s "$STAGE_ROOT/tests" -p "$pattern" -v
@@ -85,6 +87,7 @@ install -m 0755 "$LIVE_ROOT/scripts/production/information-runtime-run.sh" /home
 install -m 0755 "$LIVE_ROOT/scripts/production/pretrade-unified-runtime-run.sh" /home/admin/bin/pretrade-unified-runtime-run.sh
 install -m 0755 "$LIVE_ROOT/scripts/production/arbitrage-github-autodeploy.sh" /home/admin/bin/arbitrage-github-autodeploy.sh
 install -m 0755 "$LIVE_ROOT/scripts/production/xueqiu-shadow-collect.sh" /home/admin/bin/xueqiu-shadow-collect.sh
+install -m 0755 "$LIVE_ROOT/scripts/production/radar-daily-run.sh" /home/admin/bin/radar-daily-run.sh
 
 sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-web-public.service" /etc/systemd/system/arbitrage-web-public.service
 sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-web-local.service" /etc/systemd/system/arbitrage-web-local.service
@@ -92,9 +95,11 @@ sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-github-
 sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-github-autodeploy.timer" /etc/systemd/system/arbitrage-github-autodeploy.timer
 sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-xueqiu-shadow.service" /etc/systemd/system/arbitrage-xueqiu-shadow.service
 sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-xueqiu-shadow.timer" /etc/systemd/system/arbitrage-xueqiu-shadow.timer
+sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-radar-daily.service" /etc/systemd/system/arbitrage-radar-daily.service
+sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-radar-daily.timer" /etc/systemd/system/arbitrage-radar-daily.timer
 sudo -n systemctl daemon-reload
 sudo -n systemctl enable arbitrage-web-public.service arbitrage-web-local.service arbitrage-github-autodeploy.timer >/dev/null
-sudo -n systemctl enable --now arbitrage-xueqiu-shadow.timer >/dev/null
+sudo -n systemctl enable --now arbitrage-xueqiu-shadow.timer arbitrage-radar-daily.timer >/dev/null
 
 "$PY" - <<'PY'
 import datetime, json, os, pathlib
