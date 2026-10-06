@@ -114,6 +114,34 @@ def build_daily_diff(
     return current_normalized, events
 
 
+def _summary(
+    *,
+    status: str,
+    trade_date: str,
+    previous_trade_date: str,
+    event_count: int,
+    digest: str,
+    snapshot_envelope: dict[str, Any],
+    relay_age_seconds: int,
+    archive_path: Path,
+) -> dict[str, Any]:
+    return {
+        "status": status,
+        "trade_date": trade_date,
+        "previous_trade_date": previous_trade_date or None,
+        "event_count": event_count,
+        "snapshot_sha256": digest,
+        "pcf_found_count": snapshot_envelope["pcf_found_count"],
+        "stale_count": snapshot_envelope["stale_count"],
+        "missing_count": sum(
+            len(value) for value in (snapshot_envelope["missing"] or {}).values()
+            if isinstance(value, list)
+        ),
+        "relay_age_seconds": relay_age_seconds,
+        "archive_path": str(archive_path),
+    }
+
+
 def run_cycle(
     *,
     state_dir: Path,
@@ -158,23 +186,44 @@ def run_cycle(
 
     source = str(relay_snapshot.get("source") or bundle.manifest.get("source") or "")
     relay_fetched_at = str(bundle.manifest.get("fetched_at") or "") or None
-
-    previous_rows: list[dict[str, Any]] | None = None
     baseline = previous_payload is None
     same_trade_date = previous_trade_date == trade_date and previous_payload is not None
+
+    # Normalize and hash the market facts before writing anything. During long
+    # holidays the relay can be refreshed every day while the underlying PCF is
+    # unchanged. Returning here keeps the runtime-data branch byte-for-byte
+    # stable and avoids meaningless gzip/current/last_run commits.
+    current_rows = _normalized_rows(rows)
+    digest = _snapshot_digest(current_rows)
+    previous_digest = str((previous_payload or {}).get("snapshot_sha256") or "")
+    archive_path = state_dir / "snapshots" / f"{trade_date}.json.gz"
+
+    if same_trade_date and previous_digest == digest:
+        return _summary(
+            status="SAME_TRADE_DATE_NO_CHANGE",
+            trade_date=trade_date,
+            previous_trade_date=previous_trade_date,
+            event_count=0,
+            digest=digest,
+            snapshot_envelope=previous_payload,
+            relay_age_seconds=relay_age_seconds,
+            archive_path=archive_path,
+        )
+
+    previous_rows: list[dict[str, Any]] | None = None
+    events: list[dict[str, Any]] = []
     if previous_payload is not None and not same_trade_date:
         candidate = previous_payload.get("rows")
         if isinstance(candidate, list):
             previous_rows = candidate
-
-    current_rows, events = build_daily_diff(
-        previous_rows=previous_rows,
-        current_rows=rows,
-        trade_date=trade_date,
-        source=source,
-        relay_fetched_at=relay_fetched_at,
-    )
-    digest = _snapshot_digest(current_rows)
+        current_rows, events = build_daily_diff(
+            previous_rows=previous_rows,
+            current_rows=current_rows,
+            trade_date=trade_date,
+            source=source,
+            relay_fetched_at=relay_fetched_at,
+        )
+        digest = _snapshot_digest(current_rows)
 
     snapshot_envelope = {
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
@@ -195,7 +244,6 @@ def run_cycle(
     }
 
     state_dir.mkdir(parents=True, exist_ok=True)
-    archive_path = state_dir / "snapshots" / f"{trade_date}.json.gz"
     _write_json_gz(archive_path, snapshot_envelope)
 
     status: str
@@ -204,8 +252,8 @@ def run_cycle(
         events = []
     elif same_trade_date:
         status = "SAME_TRADE_DATE_REFRESHED"
-        # A rerun of the same trading day is an idempotent refresh. We preserve
-        # the corrected snapshot but do not fabricate a cross-day market event.
+        # Same-day corrections replace the stored snapshot but never fabricate a
+        # cross-day market event. The changed digest makes this refresh auditable.
         events = []
     else:
         status = "DIFF_COMPLETED"
@@ -223,21 +271,16 @@ def run_cycle(
     # Keep one uncompressed pointer for the next diff. This avoids scanning the
     # archive while historical snapshots remain compressed and cheap to retain.
     _write_json(current_pointer_path, snapshot_envelope)
-    summary = {
-        "status": status,
-        "trade_date": trade_date,
-        "previous_trade_date": previous_trade_date or None,
-        "event_count": len(events),
-        "snapshot_sha256": digest,
-        "pcf_found_count": snapshot_envelope["pcf_found_count"],
-        "stale_count": snapshot_envelope["stale_count"],
-        "missing_count": sum(
-            len(value) for value in (snapshot_envelope["missing"] or {}).values()
-            if isinstance(value, list)
-        ),
-        "relay_age_seconds": relay_age_seconds,
-        "archive_path": str(archive_path),
-    }
+    summary = _summary(
+        status=status,
+        trade_date=trade_date,
+        previous_trade_date=previous_trade_date,
+        event_count=len(events),
+        digest=digest,
+        snapshot_envelope=snapshot_envelope,
+        relay_age_seconds=relay_age_seconds,
+        archive_path=archive_path,
+    )
     _write_json(state_dir / "last_run.json", summary)
     return summary
 
