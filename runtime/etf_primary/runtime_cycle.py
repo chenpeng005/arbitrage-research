@@ -89,18 +89,32 @@ def build_daily_diff(
     trade_date: str,
     source: str,
     relay_fetched_at: str | None,
+    previous_trade_date: str | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Normalize a daily snapshot and detect market-rule changes.
+
+    Stale PCF rows remain in the snapshot for provenance and coverage auditing,
+    but they are never eligible to create strategy events. Likewise, a stale
+    previous row is treated as unavailable history rather than as a valid market
+    state. Data-quality transitions must not masquerade as creation-capacity or
+    creation-status transitions.
+    """
     current_normalized = _normalized_rows(current_rows)
     if previous_rows is None:
         return current_normalized, []
 
-    previous = {
-        _snapshot_key(snapshot): snapshot
-        for snapshot in (_snapshot_from_row(dict(row)) for row in previous_rows)
-    }
+    previous: dict[tuple[str, str], PcfSnapshot] = {}
+    for row in previous_rows:
+        snapshot = _snapshot_from_row(dict(row))
+        if previous_trade_date is not None and snapshot.trade_date != previous_trade_date:
+            continue
+        previous[_snapshot_key(snapshot)] = snapshot
+
     events: list[dict[str, Any]] = []
     for row in current_normalized:
         current = _snapshot_from_row(row)
+        if current.trade_date != trade_date:
+            continue
         for event in detect_events(previous.get(_snapshot_key(current)), current):
             events.append(
                 _event_payload(
@@ -220,6 +234,7 @@ def run_cycle(
             previous_rows=previous_rows,
             current_rows=current_rows,
             trade_date=trade_date,
+            previous_trade_date=previous_trade_date,
             source=source,
             relay_fetched_at=relay_fetched_at,
         )
