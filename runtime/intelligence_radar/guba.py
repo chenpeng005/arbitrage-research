@@ -16,6 +16,7 @@ import requests
 from bs4 import BeautifulSoup
 
 BASE_URL = "https://guba.eastmoney.com"
+LIST_API = "https://gbapi.eastmoney.com/webarticlelist/api/Article/Articlelist"
 REPLY_API = "https://gbapi.eastmoney.com/reply/JSONP/ArticleNewReplyList"
 DEFAULT_WATCHLIST_PATH = Path(__file__).with_name("guba_watchlist.json")
 CHINA_TZ = ZoneInfo("Asia/Shanghai")
@@ -26,6 +27,10 @@ DEFAULT_USER_AGENT = (
 
 
 class GubaAccessError(RuntimeError):
+    pass
+
+
+class GubaAccessChallenge(GubaAccessError):
     pass
 
 
@@ -145,6 +150,10 @@ class GubaPublicClient:
         self.stats.requests += 1
         if response.status_code != 200:
             raise GubaAccessError(f"GET {url} HTTP {response.status_code}")
+        if "text/html" in str(response.headers.get("content-type") or "").lower():
+            response.encoding = "utf-8"
+            if "身份核实" in response.text[:8000]:
+                raise GubaAccessChallenge("Eastmoney identity-verification challenge")
         return response
 
     def index_html(self) -> str:
@@ -155,10 +164,26 @@ class GubaPublicClient:
 
     def bar_page(self, code: str, *, page: int = 1) -> dict[str, Any]:
         self.stats.bar_requests += 1
-        path = f"/list,{code}.html" if page <= 1 else f"/list,{code},f_{page}.html"
-        response = self._get(BASE_URL + path)
-        response.encoding = "utf-8"
-        return _json_after_marker(response.text, "var article_list=")
+        response = self._get(
+            LIST_API,
+            params={
+                "code": str(code),
+                "type": 0,
+                "index": int(page),
+                "pageSize": 20,
+                "deviceid": "100",
+                "version": "200",
+                "product": "Guba",
+                "plat": "Web",
+            },
+        )
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise GubaAccessError("invalid Guba bar-list JSON") from exc
+        if not isinstance(payload, dict):
+            raise GubaAccessError("unexpected Guba bar-list JSON type")
+        return payload
 
     def post_detail(self, code: str, post_id: str) -> dict[str, Any]:
         self.stats.detail_requests += 1
@@ -211,6 +236,31 @@ def normalize_post(detail: dict[str, Any], *, discovery_path: str) -> dict[str, 
         "locator_url": BASE_URL + f"/news,{code},{post_id}.html" if code and post_id else None,
         "reply_count": _safe_int(detail.get("post_comment_count")),
         "like_count": _safe_int(detail.get("post_like_count")),
+        "discovery_paths": [discovery_path],
+    }
+
+
+def normalize_post_from_list(row: dict[str, Any], *, discovery_path: str) -> dict[str, Any]:
+    post_id = str(row.get("post_id") or "").strip()
+    code = str(row.get("stockbar_code") or "").strip()
+    title = str(row.get("post_title") or "").strip()
+    return {
+        "source": "guba",
+        "item_type": "POST",
+        "item_id": post_id,
+        "post_id": post_id,
+        "parent_id": None,
+        "bar_code": code or None,
+        "bar_name": str(row.get("stockbar_name") or "").removesuffix("吧").strip() or None,
+        "author_id": str(row.get("user_id") or "").strip() or None,
+        "author_name": str(row.get("user_nickname") or "").strip() or None,
+        "published_at": str(row.get("post_publish_time") or "").strip() or None,
+        "edited_at": str(row.get("post_last_time") or "").strip() or None,
+        "title": title,
+        "content": title,
+        "locator_url": BASE_URL + f"/news,{code},{post_id}.html" if code and post_id else None,
+        "reply_count": _safe_int(row.get("post_comment_count")),
+        "like_count": 0,
         "discovery_paths": [discovery_path],
     }
 
@@ -326,14 +376,10 @@ def collect_object_followup(
                 continue
             post_title = str(row.get("post_title") or "").strip()
             if str(row.get("post_publish_time") or "")[:10] == run_date:
-                try:
-                    detail = client.post_detail(code, post_id)
-                    item = normalize_post(detail, discovery_path="GUBA_OBJECT_FOLLOWUP")
-                    item["bar_name"] = item.get("bar_name") or name
-                    items.append(item)
-                    new_posts += 1
-                except Exception as exc:
-                    errors.append(f"detail {code}/{post_id}: {type(exc).__name__}: {exc}")
+                item = normalize_post_from_list(row, discovery_path="GUBA_OBJECT_FOLLOWUP")
+                item["bar_name"] = item.get("bar_name") or name
+                items.append(item)
+                new_posts += 1
             if str(row.get("post_last_time") or "")[:10] != run_date or _safe_int(row.get("post_comment_count")) <= 0:
                 continue
             if reply_threads >= max_reply_threads_per_bar:
@@ -422,7 +468,7 @@ def collect_guba_shadow(
     run_date: str,
     bars: list[dict[str, str]],
     client: GubaPublicClient | None = None,
-    include_global: bool = True,
+    include_global: bool = False,
     global_max_posts: int = 12,
     max_reply_threads_per_bar: int = 8,
 ) -> dict[str, Any]:
@@ -474,7 +520,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Eastmoney Guba collect-only Shadow probe; no AI and no Radar DB writes.")
     parser.add_argument("--date", required=True)
     parser.add_argument("--watchlist", default=str(DEFAULT_WATCHLIST_PATH))
-    parser.add_argument("--no-global", action="store_true")
+    parser.add_argument("--include-global", action="store_true", help="Experimental HTML global lane; off by default")
     parser.add_argument("--global-max-posts", type=int, default=12)
     parser.add_argument("--max-reply-threads-per-bar", type=int, default=8)
     parser.add_argument("--show-items", action="store_true")
@@ -482,7 +528,7 @@ def main() -> None:
     result = collect_guba_shadow(
         run_date=args.date,
         bars=load_watchlist(Path(args.watchlist)),
-        include_global=not args.no_global,
+        include_global=args.include_global,
         global_max_posts=args.global_max_posts,
         max_reply_threads_per_bar=args.max_reply_threads_per_bar,
     )
