@@ -32,7 +32,9 @@
 - SZSE：**749 / 749**，覆盖率 100%
 - SSE：944 / 944 找到，其中 1 只官方返回的 PCF 交易日落后于目标交易日，系统保留为 stale，不静默回填。
 
-因此“文件存在”和“当日有效”是两个不同门控：**missing=0 不等于 current-day coverage=100%**。
+唯一 stale 已定位为 **512390 中国低波ETF平安**。relay 中其最后 PCF 为 `2026-09-04`；基金管理人公开页面也显示最新申购赎回清单日期为 2026-09-04。该基金随后进入终止流程，2026-09-08 为最后运作日，2026-09-09 起进入清算，因此这里的 stale 是**产品生命周期导致的正常历史残留，不是抓取链异常**。
+
+因此“文件存在”和“当日有效”是两个不同门控：**missing=0 不等于 current-day coverage=100%**。同时，stale PCF 中残留的历史“允许申购”等字段不能解释成当前市场状态。
 
 ## 标的分类
 
@@ -88,6 +90,8 @@ prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实
 
 不把“某只 ETF 一直有很多篮子”本身当成事件。
 
+事件层新增一个硬门控：**只有 PCF 自身交易日等于该次目标交易日的 fresh row 才参与市场事件 diff。** stale / missing 仍完整保留用于数据质量与生命周期审计，但不参与申购恢复、容量跳升、单账户限制变化等策略事件。上一交易日若某只也是 stale，则该历史状态视为不可用于比较；以后 stale → fresh 也不会凭空制造“容量变化”。
+
 ## 日快照、diff 与持久化
 
 `runtime_cycle.py` 已形成 V0 日运行闭环，并于 2026-10-06 首次真实落盘：
@@ -98,13 +102,14 @@ prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实
 - 同一交易日、同一事实摘要再次运行时返回 `SAME_TRADE_DATE_NO_CHANGE`，不重写 gzip / current / last_run，也不产生无意义 commit；
 - 同一交易日若官方数据发生修正，则更新该日快照，状态为 `SAME_TRADE_DATE_REFRESHED`，但不制造跨日事件；
 - 交易日倒退 fail-closed；
-- `missing` / `stale` / coverage 一并进入运行快照。
+- `missing` / `stale` / coverage 一并进入运行快照；
+- stale / missing 属于数据质量状态，不伪装成市场规则变化。
 
 运行状态独立持久化在 GitHub 分支 `etf-primary-runtime-data`，与代码分支、relay 分支分开。当前 baseline：
 
 - trade date：`20260930`
 - PCF：1693 / 1693
-- stale：1
+- stale：1（512390，已解释为终止清算生命周期）
 - missing：0
 - event：0（baseline 按规则不回造事件）
 
