@@ -11,7 +11,9 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 
-RELAY_VERSION = "etf-primary-szse-official-relay-v1"
+RELAY_VERSION = "etf-primary-official-relay-v2"
+LEGACY_RELAY_VERSION = "etf-primary-szse-official-relay-v1"
+SUPPORTED_RELAY_VERSIONS = {RELAY_VERSION, LEGACY_RELAY_VERSION}
 DEFAULT_RELAY_REF = "etf-primary-data-relay"
 DEFAULT_RELAY_DIR = "etf_primary_relay"
 DEFAULT_RELAY_BASE_URL = (
@@ -27,14 +29,24 @@ DEFAULT_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
 
 @dataclass(frozen=True)
 class SzseEtfRelayBundle:
+    # Name retained for compatibility with the original SZSE-only relay caller.
+    # V2 is a combined SSE+SZSE official relay and also exposes the normalized
+    # full-market PCF snapshot when available.
     base_url: str
     manifest: dict[str, Any]
     universe: dict[str, Any]
     manifest_sha256: str
+    full_universe: dict[str, Any] | None = None
+    pcf_snapshot: dict[str, Any] | None = None
 
     @property
     def fetched_at(self) -> str | None:
         value = self.manifest.get("fetched_at")
+        return str(value) if value else None
+
+    @property
+    def target_trade_date(self) -> str | None:
+        value = self.manifest.get("target_trade_date")
         return str(value) if value else None
 
 
@@ -128,6 +140,32 @@ def _json_object(raw: bytes, *, label: str) -> dict[str, Any]:
     return payload
 
 
+def _v2_file_hash(manifest: dict[str, Any], filename: str) -> str:
+    meta = (manifest.get("files") or {}).get(filename) or {}
+    return str(meta.get("sha256") or "")
+
+
+def _fetch_verified_json(
+    *,
+    base_url: str,
+    filename: str,
+    expected_hash: str,
+    timeout: int,
+    pinned_ref: str | None,
+    label: str,
+) -> dict[str, Any]:
+    raw = _fetch_relay_file(
+        base_url,
+        filename,
+        timeout=timeout,
+        pinned_ref=pinned_ref,
+    )
+    actual_hash = hashlib.sha256(raw).hexdigest()
+    if expected_hash and actual_hash != expected_hash:
+        raise ValueError(f"ETF primary relay {label} hash mismatch")
+    return _json_object(raw, label=f"relay {label}")
+
+
 def fetch_szse_etf_relay_bundle(
     base_url: str = DEFAULT_RELAY_BASE_URL,
     *,
@@ -145,27 +183,68 @@ def fetch_szse_etf_relay_bundle(
         pinned_ref=pinned_ref,
     )
     manifest = _json_object(manifest_bytes, label="relay manifest")
-    if manifest.get("relay_version") != RELAY_VERSION:
-        raise ValueError("unsupported ETF primary SZSE relay version")
-    if manifest.get("source") != "SZSE_OFFICIAL":
-        raise ValueError("ETF primary SZSE relay provenance mismatch")
+    version = str(manifest.get("relay_version") or "")
+    if version not in SUPPORTED_RELAY_VERSIONS:
+        raise ValueError("unsupported ETF primary relay version")
 
-    file_meta = (manifest.get("files") or {}).get("universe") or {}
-    filename = str(file_meta.get("filename") or "szse_etf_universe.json")
-    universe_bytes = _fetch_relay_file(
-        base_url,
-        filename,
-        timeout=timeout,
-        pinned_ref=pinned_ref,
-    )
-    actual_hash = hashlib.sha256(universe_bytes).hexdigest()
-    if actual_hash != str(file_meta.get("sha256") or ""):
-        raise ValueError("ETF primary SZSE relay universe hash mismatch")
+    if version == LEGACY_RELAY_VERSION:
+        if manifest.get("source") != "SZSE_OFFICIAL":
+            raise ValueError("ETF primary SZSE relay provenance mismatch")
+        file_meta = (manifest.get("files") or {}).get("universe") or {}
+        filename = str(file_meta.get("filename") or "szse_etf_universe.json")
+        universe = _fetch_verified_json(
+            base_url=base_url,
+            filename=filename,
+            expected_hash=str(file_meta.get("sha256") or ""),
+            timeout=timeout,
+            pinned_ref=pinned_ref,
+            label="universe",
+        )
+        rows = universe.get("rows") or []
+        if len(rows) != int(manifest.get("universe_count") or -1):
+            raise ValueError("ETF primary SZSE relay universe count mismatch")
+        full_universe = None
+        pcf_snapshot = None
+    else:
+        if manifest.get("source") != "SSE_OFFICIAL+SZSE_OFFICIAL":
+            raise ValueError("ETF primary combined relay provenance mismatch")
+        universe = _fetch_verified_json(
+            base_url=base_url,
+            filename="szse_etf_universe.json",
+            expected_hash=_v2_file_hash(manifest, "szse_etf_universe.json"),
+            timeout=timeout,
+            pinned_ref=pinned_ref,
+            label="SZSE universe",
+        )
+        full_universe = _fetch_verified_json(
+            base_url=base_url,
+            filename="full_universe.json",
+            expected_hash=_v2_file_hash(manifest, "full_universe.json"),
+            timeout=timeout,
+            pinned_ref=pinned_ref,
+            label="full universe",
+        )
+        pcf_snapshot = _fetch_verified_json(
+            base_url=base_url,
+            filename="pcf_snapshot.json",
+            expected_hash=_v2_file_hash(manifest, "pcf_snapshot.json"),
+            timeout=timeout,
+            pinned_ref=pinned_ref,
+            label="PCF snapshot",
+        )
+        rows = universe.get("rows") or []
+        full_rows = full_universe.get("rows") or []
+        if len(full_rows) != int(manifest.get("full_universe_count") or -1):
+            raise ValueError("ETF primary relay full-universe count mismatch")
+        if int(pcf_snapshot.get("pcf_found_count") or -1) != int(
+            manifest.get("pcf_found_count") or -2
+        ):
+            raise ValueError("ETF primary relay PCF count mismatch")
+        if str(pcf_snapshot.get("target_trade_date") or "") != str(
+            manifest.get("target_trade_date") or ""
+        ):
+            raise ValueError("ETF primary relay target trade date mismatch")
 
-    universe = _json_object(universe_bytes, label="relay universe")
-    rows = universe.get("rows") or []
-    if len(rows) != int(manifest.get("universe_count") or -1):
-        raise ValueError("ETF primary SZSE relay universe count mismatch")
     if len(rows) < 400:
         raise ValueError("ETF primary SZSE relay universe sanity floor failed")
 
@@ -174,7 +253,18 @@ def fetch_szse_etf_relay_bundle(
         manifest=manifest,
         universe=universe,
         manifest_sha256=hashlib.sha256(manifest_bytes).hexdigest(),
+        full_universe=full_universe,
+        pcf_snapshot=pcf_snapshot,
     )
+
+
+def fetch_etf_primary_relay_bundle(
+    base_url: str = DEFAULT_RELAY_BASE_URL,
+    *,
+    timeout: int = 20,
+) -> SzseEtfRelayBundle:
+    """Canonical name for the V2 combined official relay loader."""
+    return fetch_szse_etf_relay_bundle(base_url=base_url, timeout=timeout)
 
 
 def relay_fetched_at(bundle: SzseEtfRelayBundle) -> datetime:
@@ -205,6 +295,6 @@ def validate_relay_freshness(
         raise ValueError("ETF primary relay timestamp is unexpectedly in the future")
     if age_seconds > max_age_seconds:
         raise ValueError(
-            f"ETF primary SZSE relay is stale: age_seconds={age_seconds} max={max_age_seconds}"
+            f"ETF primary relay is stale: age_seconds={age_seconds} max={max_age_seconds}"
         )
     return max(0, age_seconds)
