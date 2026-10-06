@@ -26,27 +26,28 @@ def test_capacity_jump_and_account_limit():
     assert current.minimum_accounts_to_fill() == 100
 
 
-def test_sse_current_field_names_are_normalized():
+def test_sse_live_upper_snake_fields_are_normalized():
+    # Shape observed from the official SSE commonQuery endpoint for 513100.
     snapshot = parse_sse_basic_row(
         "513100",
         {
-            "TradingDay": "20260928",
-            "CreationRedemptionUnit": "500000",
-            "NAVperCU": "1024354.72",
-            "NAV": "2.0487",
-            "CreationLimit": "2500000",
-            "NetCreationLimit": "0",
-            "CreationLimitPerAcct": "500000",
-            "NetCreationLimitPerAcct": "0",
-            "CreationRedemptionSwitch": "1",
-            "CreationRedemptionMechanism": "0",
+            "TRADING_DAY": "20260930",
+            "CREATION_REDEMPTION_UNIT": "500000",
+            "NAVPERCU": "￥1016765.94",
+            "NAV": "￥2.0335",
+            "CREATION_LIMIT": "2500000",
+            "NET_CREATION_LIMIT": "-",
+            "CREATION_LIMIT_PER_ACCT": "500000",
+            "NET_CREATION_LIMIT_PER_ACCT": "-",
+            "CREATION_REDEMPTION": "申购和赎回皆允许",
+            "CREATION_REDEMPTION_MECHANISM": "0",
         },
     )
     assert snapshot.creation_allowed is True
     assert snapshot.redemption_allowed is True
     assert snapshot.total_baskets() == 5
     assert snapshot.account_baskets() == 1
-    assert snapshot.basket_value() == 1024354.72
+    assert snapshot.basket_value() == 1016765.94
 
 
 def test_szse_limit_fields_are_normalized():
