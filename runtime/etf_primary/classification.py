@@ -12,7 +12,8 @@ _CROSS_BORDER_WORDS = (
 _MIXED_WORDS = ("沪港深", "沪深港")
 _CONNECT_WORDS = ("港股通",)
 _BOND_WORDS = ("债", "国开", "国债", "政金", "信用", "可转债", "城投", "同业存单")
-_MONEY_WORDS = ("货币", "现金", "添益", "理财金", "快线", "快钱")
+# Generic "现金" is intentionally excluded: many equity ETFs track free-cash-flow indices.
+_MONEY_WORDS = ("货币", "添益", "理财金", "快线", "快钱")
 # Do not classify equity-sector ETFs such as "有色金属ETF" as commodity ETFs.
 # Exchange PCF/raw class is authoritative when available; keywords are only a fallback.
 _COMMODITY_WORDS = ("黄金ETF", "黄金基金", "上海金", "商品期货", "豆粕ETF", "原油ETF")
