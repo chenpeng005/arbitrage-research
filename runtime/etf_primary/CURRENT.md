@@ -169,6 +169,18 @@ prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实
 - 交易日倒退 fail-closed；
 - `missing` / `stale` / coverage 一并进入运行快照。
 
+### V3 端到端验收
+
+2026-10-06 已完成全市场 V3 workflow / runtime schema migration：
+
+- 全市场 PCF：1693 / 1693；
+- stale：1；missing：0；
+- status：`SAME_TRADE_DATE_SCHEMA_MIGRATED`；
+- trade date：`20260930`；
+- event count：0。
+
+这说明容量派生语义变化被明确记录为 schema migration，没有制造伪市场事件。
+
 ### Market Fact Digest
 
 真实复跑曾发现 1693 行全部被判断变化；逐字段核对后确认唯一变化字段均为 `fetched_at`。因此现已正式分离：
@@ -184,23 +196,26 @@ prepare 先取得 SZSE 官方当日 PCF 索引，因此 shard 使用交易所实
 - PCF：1693 / 1693
 - stale：1
 - missing：0
-- event：0（baseline 按规则不回造事件）
+- event：0（baseline / schema migration 均不回造跨日事件）
 
 定时抓取为**工作日 08:40（Asia/Shanghai）**。中国法定休市工作日仍可能触发 workflow，但同交易日市场事实无变化不会形成新的 runtime data commit。
 
 ## 当前阶段与下一步
 
-分类、全市场 PCF、freshness、事实去噪与容量派生语义已经收口。当前正在完成容量语义 V3 的端到端 workflow 验收；通过后 V0 尚缺的唯一核心市场验收是：**真实跨交易日 diff。**
+分类、全市场 PCF、freshness、事实去噪、容量派生语义以及 **Runtime V3 端到端验收均已收口**。
+
+V0 当前尚缺的唯一核心市场验收是：
+
+> **下一真实交易日完成 `20260930 → 新交易日` 的第一轮真实跨交易日 diff，并人工复核事件质量。**
 
 下一阶段顺序：
 
-1. 完成 V3 全量 workflow / runtime schema migration 验收；
-2. 下一真实交易日验证 `20260930 → 新交易日` 第一轮真实 diff 与事件文件；
-3. 人工复核真实事件，确认 PCF 字段语义和事件噪音；
-4. 建一个只读事实监控页，直接消费 `monitor_view.json`，先支持分类、申购状态、完整篮子 / 单户容量、capacity kind、freshness 和官方 PCF 跳转；
-5. 再处理功能分支与当前 `main` 的安全整合；
-6. 事实层稳定后才接二级市场折溢价、成交承接、`exit_load`；
-7. 最后把券商实测命中率和可执行性并入机会排序。
+1. 下一真实交易日验证 `20260930 → 新交易日` 第一轮真实 diff 与事件文件；
+2. 人工复核真实事件，确认 PCF 字段语义和事件噪音；
+3. 建一个只读事实监控页，直接消费 `monitor_view.json`，先支持分类、申购状态、完整篮子 / 单户容量、capacity kind、freshness 和官方 PCF 跳转；
+4. 再处理功能分支与当前 `main` 的安全整合；
+5. 事实层稳定后才接二级市场折溢价、成交承接、`exit_load`；
+6. 最后把券商实测命中率和可执行性并入机会排序。
 
 在一级市场事实层稳定前，不进入自动交易。
 
