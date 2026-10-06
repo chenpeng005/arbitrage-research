@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .audit_universe import audit_rows
 from .models import PcfSnapshot
-from .pcf import fetch_sse_pcf_bulk, latest_pcf_trade_date
+from .pcf import fetch_sse_pcf_bulk, fetch_szse_pcf_day_index, latest_pcf_trade_date
 from .universe import fetch_sse_etf_universe, fetch_szse_etf_universe
 
 
@@ -58,6 +58,20 @@ def prepare_snapshot(
     if target_trade_date is None:
         raise ValueError("SSE PCF table has no valid trading day")
 
+    # Persist the official SZSE day index once. Besides confirming which funds
+    # actually published a PCF for the target day, it carries the exact official
+    # download filenames. A few funds do not follow the generic pcf_CODE_DATE
+    # naming convention, so shard workers must consume this index rather than
+    # guess URLs independently.
+    szse_day_index = fetch_szse_pcf_day_index(
+        target_trade_date,
+        timeout=max(timeout, 30),
+    )
+    if len(szse_day_index) < 700:
+        raise ValueError(
+            f"SZSE PCF day-index sanity floor failed: {len(szse_day_index)}/{len(szse_rows)}"
+        )
+
     output_dir.mkdir(parents=True, exist_ok=True)
     szse_universe = {
         "source": "SZSE_OFFICIAL",
@@ -96,12 +110,29 @@ def prepare_snapshot(
             for code in sorted(sse_snapshots)
         ],
     }
+    szse_pcf_index = {
+        "source": "SZSE_OFFICIAL",
+        "fetched_at": fetched_at.isoformat(),
+        "target_trade_date": target_trade_date,
+        "count": len(szse_day_index),
+        "rows": [
+            {
+                "code": entry.code,
+                "trade_date": entry.trade_date,
+                "page_label": entry.page_label,
+                "source_page_url": entry.source_page_url,
+                "xml_candidate_urls": list(entry.xml_candidate_urls),
+            }
+            for entry in sorted(szse_day_index.values(), key=lambda item: item.code)
+        ],
+    }
 
     hashes = {
         "szse_universe": _write_json(output_dir / "szse_etf_universe.json", szse_universe),
         "full_universe": _write_json(output_dir / "full_universe.json", full_universe),
         "audit": _write_json(output_dir / "universe_audit.json", audit),
         "sse_pcf": _write_json(output_dir / "sse_pcf.json", sse_pcf),
+        "szse_pcf_index": _write_json(output_dir / "szse_pcf_index.json", szse_pcf_index),
     }
     manifest = {
         "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
@@ -109,6 +140,7 @@ def prepare_snapshot(
         "full_universe_count": len(all_rows),
         "sse_count": len(sse_rows),
         "szse_count": len(szse_rows),
+        "szse_pcf_index_count": len(szse_day_index),
         "target_trade_date": target_trade_date,
         "hashes": hashes,
         "audit_counts": audit["counts"],
