@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -65,6 +66,24 @@ OUTPUT_SCHEMA: dict[str, Any] = {
 }
 
 PROMPT_PATH = Path(__file__).with_name("prompt_daily_filter.md")
+
+_BARE_CODE_RE = re.compile(r"^\d{5,6}(?:\.[A-Z]{2})?$", re.IGNORECASE)
+_BARE_CONVERTIBLE_RE = re.compile(
+    r"^[\u4e00-\u9fffA-Za-z0-9*]+(?:转债|可转债)$"
+)
+_BARE_TICKER_IN_NAME_RE = re.compile(
+    r"^[^（）()]{1,40}[（(](?:(?:SH|SZ|BJ)?\d{5,6}(?:\.[A-Z]{2})?)[)）]$",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_bare_attention_object(value: str) -> bool:
+    name = str(value or "").strip()
+    return bool(
+        _BARE_CODE_RE.fullmatch(name)
+        or _BARE_CONVERTIBLE_RE.fullmatch(name)
+        or _BARE_TICKER_IN_NAME_RE.fullmatch(name)
+    )
 
 
 class Provider(Protocol):
@@ -193,6 +212,11 @@ def validate_filter_output(
             errors.append(f"findings[{idx}] object_name too short")
         if len(object_name) > 80:
             errors.append(f"findings[{idx}] object_name too long")
+        if _looks_like_bare_attention_object(object_name):
+            errors.append(
+                f"findings[{idx}] object_name is bare security/code; "
+                "use a concise attention theme with event/mechanism"
+            )
         if len(node_title) < 4:
             errors.append(f"findings[{idx}] node_title too short")
         if len(node_title) > 120:
@@ -377,7 +401,8 @@ def filter_batch(
                 "role": "user",
                 "content": (
                     "上一轮输出未通过程序校验，请重新输出完整结果。"
-                    "每个 finding 必须给出稳定的 object_name 与聚焦当天新增的 node_title；"
+                    "每个 finding 必须给出简洁的关注主题 object_name 与聚焦当天新增的 node_title；"
+                    "object_name 不能只写证券名、转债名或代码，必须带事件/机制/机会；"
                     "supporting_segment_ids 必须来自该 finding 对应 question_id 自己的 "
                     "context_segments 或 daily_segments，且至少一个 is_daily=true。"
                     "校验错误：" + "; ".join(errors)
