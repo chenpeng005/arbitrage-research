@@ -6,6 +6,10 @@ import json
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.error import HTTPError
+
+from .http import fetch_text
+from .pcf import SZSE_PCF_PAGE, parse_szse_xml
 
 
 def _read_json(path: Path) -> dict:
@@ -18,6 +22,81 @@ def _write_json(path: Path, payload: dict) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+def _compact_snapshot(snapshot) -> dict:
+    row = snapshot.to_dict()
+    row.pop("raw_header", None)
+    return row
+
+
+def _recover_sparse_szse_misses(
+    *,
+    missing_codes: list[str],
+    index_payload: dict,
+    target_trade_date: str,
+    timeout: int = 20,
+    maximum_retries: int = 10,
+) -> tuple[dict[str, dict], dict[str, str]]:
+    """Retry only a small number of shard misses from a fresh runner IP.
+
+    The normal path is the sharded collector. This recovery pass exists for
+    sparse CDN/WAF/edge failures and is deliberately capped so merge cannot
+    become another full-market crawler.
+    """
+    if not missing_codes or len(missing_codes) > maximum_retries:
+        return {}, {}
+
+    index = {
+        str(row.get("code") or ""): tuple(str(url) for url in row.get("xml_candidate_urls") or [])
+        for row in index_payload.get("rows") or []
+        if str(row.get("code") or "")
+    }
+    recovered: dict[str, dict] = {}
+    errors: dict[str, str] = {}
+    for code in missing_codes:
+        urls = index.get(code) or ()
+        if not urls:
+            errors[code] = "not_in_official_day_index"
+            continue
+        last_error: Exception | None = None
+        for position, url in enumerate(urls):
+            try:
+                text = fetch_text(
+                    url,
+                    referer=SZSE_PCF_PAGE,
+                    timeout=timeout,
+                    attempts=2,
+                    base_delay_seconds=0.5,
+                )
+                stripped = text.lstrip()
+                if not stripped.startswith("<") or "html" in stripped[:160].lower():
+                    raise ValueError("official PCF endpoint returned HTML instead of XML")
+                snapshot = parse_szse_xml(
+                    code,
+                    text,
+                    source_url=url,
+                    fetched_at=datetime.now(timezone.utc).isoformat(),
+                )
+                if snapshot.trade_date and snapshot.trade_date != target_trade_date:
+                    raise ValueError(
+                        f"PCF trading day mismatch: {snapshot.trade_date} != {target_trade_date}"
+                    )
+                recovered[code] = _compact_snapshot(snapshot)
+                break
+            except HTTPError as exc:
+                last_error = exc
+                if exc.code == 403:
+                    break
+                if exc.code != 404 or position + 1 >= len(urls):
+                    break
+            except Exception as exc:
+                last_error = exc
+                if position + 1 >= len(urls):
+                    break
+        if code not in recovered:
+            errors[code] = f"{type(last_error).__name__}: {last_error}"
+    return recovered, errors
+
+
 def merge_relay_snapshot(
     *,
     prepare_dir: Path,
@@ -28,6 +107,7 @@ def merge_relay_snapshot(
     prepare_manifest = _read_json(prepare_dir / "prepare_manifest.json")
     full_universe = _read_json(prepare_dir / "full_universe.json")
     sse_pcf = _read_json(prepare_dir / "sse_pcf.json")
+    szse_pcf_index = _read_json(prepare_dir / "szse_pcf_index.json")
     target_trade_date = str(prepare_manifest["target_trade_date"])
 
     expected_szse = sorted(
@@ -95,6 +175,17 @@ def merge_relay_snapshot(
     if unexpected_szse:
         raise ValueError(f"unexpected SZSE PCF codes: {unexpected_szse[:10]}")
 
+    pre_recovery_missing = sorted(set(expected_szse) - set(szse_rows))
+    recovered_rows, recovery_errors = _recover_sparse_szse_misses(
+        missing_codes=pre_recovery_missing,
+        index_payload=szse_pcf_index,
+        target_trade_date=target_trade_date,
+        timeout=20,
+    )
+    szse_rows.update(recovered_rows)
+    for code, message in recovery_errors.items():
+        shard_errors[code] = f"retry_failed: {message}; shard_error={shard_errors.get(code, 'missing')}"
+
     missing_szse = sorted(set(expected_szse) - set(szse_rows))
     szse_coverage = len(szse_rows) / len(expected_szse) if expected_szse else 1.0
     if szse_coverage < minimum_szse_coverage:
@@ -147,6 +238,7 @@ def merge_relay_snapshot(
         "pcf_found_count": len(combined_rows),
         "latest_trade_date_count": latest_trade_date_count,
         "stale_count": len(stale_rows),
+        "recovered_szse_count": len(recovered_rows),
         "coverage": {
             "SSE": {
                 "universe": len(expected_sse),
@@ -189,6 +281,7 @@ def merge_relay_snapshot(
         "latest_trade_date_count": latest_trade_date_count,
         "stale_count": len(stale_rows),
         "missing_count": len(missing_sse) + len(missing_szse),
+        "recovered_szse_count": len(recovered_rows),
         "coverage": pcf_snapshot["coverage"],
         "shards": sorted(shard_summaries, key=lambda row: row["shard_index"]),
         "files": files,
