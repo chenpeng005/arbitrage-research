@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
+from html.parser import HTMLParser
+from pathlib import Path
+import re
 import xml.etree.ElementTree as ET
-from typing import Any
+from typing import Any, Iterable
+from urllib.parse import parse_qs, urljoin, urlparse
 
 from .http import fetch_json, fetch_text
 from .models import PcfSnapshot
@@ -13,6 +19,9 @@ SSE_PCF_PAGE = "https://www.sse.com.cn/disclosure/fund/etflist/"
 SSE_PCF_BASIC_SQL = "COMMON_SSE_CP_JJLB_ETFJJGK_GGSGSHQD_JBXX_C"
 
 SZSE_PCF_PAGE = "https://www.szse.cn/disclosure/fund/currency/index.html"
+SZSE_PCF_LIST_API = "https://www.szse.cn/api/report/ShowReport/data"
+SZSE_PCF_LIST_CATALOG = "sgshqd"
+SZSE_REPORTDOCS_BASE = "https://reportdocs.static.szse.cn"
 SZSE_PCF_XML = "https://reportdocs.static.szse.cn/files/text/ETFDown/pcf_{code}_{day}.xml"
 
 
@@ -31,8 +40,9 @@ def _to_float(value: Any) -> float | None:
 def _to_positive_int(value: Any) -> int | None:
     number = _to_float(value)
     if number is None or number <= 0:
-        # PCF uses blank/zero for many "not set" limit fields. Treat these as
-        # unknown/unlimited instead of creating a false zero-capacity alert.
+        # PCFs commonly encode an unset/unlimited cap as blank, dash, or zero.
+        # Keep that distinct from a confirmed zero-capacity state; the creation
+        # switch carries the explicit open/closed fact.
         return None
     return int(number)
 
@@ -77,8 +87,6 @@ def parse_sse_basic_row(
     source_url: str | None = None,
     fetched_at: str | None = None,
 ) -> PcfSnapshot:
-    # SSE's live query currently returns upper-snake-case field names, while
-    # downloaded/newer PCF formats use CamelCase. Support both and preserve raw.
     creation_allowed, redemption_allowed = _parse_sse_switch(
         _pick(
             row,
@@ -173,6 +181,53 @@ def fetch_sse_pcf(code: str, *, timeout: int = 20) -> PcfSnapshot:
     )
 
 
+def fetch_sse_pcf_bulk(
+    *,
+    codes: Iterable[str] | None = None,
+    timeout: int = 30,
+) -> dict[str, PcfSnapshot]:
+    """Fetch the SSE PCF header table in one official query.
+
+    The same official SQL endpoint used by a single-fund query returns the full
+    PCF header table when FUNDID2 is omitted. The table includes historical or
+    delisted rows, so callers should pass the current official universe codes.
+    """
+    wanted = {str(code) for code in codes} if codes is not None else None
+    payload = fetch_json(
+        SSE_QUERY_API,
+        {"isPagination": "false", "sqlId": SSE_PCF_BASIC_SQL},
+        referer=SSE_PCF_PAGE,
+        timeout=timeout,
+    )
+    rows = payload.get("result") or []
+    fetched_at = datetime.now(timezone.utc).isoformat()
+    result: dict[str, PcfSnapshot] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        code = str(
+            _pick(row, "TRADE_CODE", "FundInstrumentID", "FUND_CODE", "FUNDID2")
+            or ""
+        ).strip()
+        if not code or (wanted is not None and code not in wanted):
+            continue
+        snapshot = parse_sse_basic_row(
+            code,
+            row,
+            source_url=f"{SSE_PCF_PAGE}detail.shtml?fundid={code}",
+            fetched_at=fetched_at,
+        )
+        previous = result.get(code)
+        if previous is None or str(snapshot.trade_date or "") >= str(previous.trade_date or ""):
+            result[code] = snapshot
+    return result
+
+
+def latest_pcf_trade_date(snapshots: Iterable[PcfSnapshot]) -> str | None:
+    dates = [str(item.trade_date) for item in snapshots if item.trade_date and re.fullmatch(r"\d{8}", str(item.trade_date))]
+    return max(dates) if dates else None
+
+
 def _local_name(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
 
@@ -180,7 +235,7 @@ def _local_name(tag: str) -> str:
 def _flatten_xml_header(root: ET.Element) -> dict[str, str]:
     result: dict[str, str] = {}
     for node in root.iter():
-        if _local_name(node.tag) == "Component":
+        if _local_name(node.tag) in {"Component", "Components", "ComponentList"}:
             continue
         if list(node):
             continue
@@ -257,6 +312,203 @@ def fetch_szse_pcf(
         source_url=url,
         fetched_at=datetime.now(timezone.utc).isoformat(),
     )
+
+
+class _AnchorCollector(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.anchors: list[dict[str, Any]] = []
+        self._current: dict[str, Any] | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() != "a":
+            return
+        self._current = {"attrs": dict(attrs), "text": []}
+        self.anchors.append(self._current)
+
+    def handle_data(self, data: str) -> None:
+        if self._current is not None:
+            self._current["text"].append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() == "a":
+            self._current = None
+
+
+@dataclass(frozen=True)
+class SzsePcfListEntry:
+    code: str
+    trade_date: str
+    page_label: str
+    source_page_url: str
+    xml_candidate_urls: tuple[str, ...]
+
+
+def _szse_xml_candidates(code: str, ymd: str) -> tuple[str, ...]:
+    return (
+        f"{SZSE_REPORTDOCS_BASE}/files/text/ETFDown/pcf_{code}_{ymd}.xml",
+        f"{SZSE_REPORTDOCS_BASE}/files/text/ETFDown/{code}ETF{ymd}.xml",
+    )
+
+
+def parse_szse_pcf_list_item(html_text: str, expected_day: str) -> SzsePcfListEntry:
+    expected_ymd = expected_day.replace("-", "")
+    parser = _AnchorCollector()
+    parser.feed(html_text)
+    if not parser.anchors:
+        raise ValueError("SZSE PCF list item has no anchor")
+
+    first = parser.anchors[0]
+    attrs = first.get("attrs") or {}
+    title = "".join(first.get("text") or []).strip()
+    page_label = re.sub(r"\(\d{4}-\d{2}-\d{2}\)$", "", title).strip()
+    opencode_path = str(attrs.get("encode-open") or "").strip()
+    opencode_name = Path(opencode_path).name
+    match = re.search(r"ETF(?P<code>\d{6})(?P<ymd>\d{8})\.txt$", opencode_name, re.I)
+    if not match:
+        raise ValueError("cannot extract SZSE ETF code/date from official PCF list item")
+    code = match.group("code")
+    ymd = match.group("ymd")
+    if ymd != expected_ymd:
+        raise ValueError(f"SZSE PCF list date mismatch: {ymd} != {expected_ymd}")
+
+    candidates: list[str] = []
+    source_page_url = SZSE_PCF_PAGE
+    if len(parser.anchors) > 1:
+        download_attrs = parser.anchors[1].get("attrs") or {}
+        href = str(download_attrs.get("href") or "").strip()
+        if href:
+            source_page_url = urljoin("https://www.szse.cn", href)
+            parsed = urlparse(source_page_url)
+            query = parse_qs(parsed.query)
+            base_path = str((query.get("path") or [""])[0] or "")
+            if base_path and not base_path.endswith("/"):
+                base_path += "/"
+            filenames = str((query.get("filename") or [""])[0] or "")
+            for name in [item for item in filenames.split(";") if item]:
+                candidates.append(urljoin(SZSE_REPORTDOCS_BASE, f"{base_path}{name}.xml"))
+
+    for url in _szse_xml_candidates(code, ymd):
+        if url not in candidates:
+            candidates.append(url)
+    return SzsePcfListEntry(
+        code=code,
+        trade_date=ymd,
+        page_label=page_label,
+        source_page_url=source_page_url,
+        xml_candidate_urls=tuple(candidates),
+    )
+
+
+def fetch_szse_pcf_day_index(
+    trade_date: date | str,
+    *,
+    timeout: int = 30,
+) -> dict[str, SzsePcfListEntry]:
+    if isinstance(trade_date, date):
+        iso_day = trade_date.isoformat()
+    else:
+        raw = str(trade_date)
+        iso_day = f"{raw[:4]}-{raw[4:6]}-{raw[6:8]}" if re.fullmatch(r"\d{8}", raw) else raw
+
+    params = {
+        "SHOWTYPE": "JSON",
+        "CATALOGID": SZSE_PCF_LIST_CATALOG,
+        "TABKEY": "tab1",
+        "txtStart": iso_day,
+        "txtEnd": iso_day,
+        "PAGENO": 1,
+    }
+    first = fetch_json(
+        SZSE_PCF_LIST_API,
+        params,
+        referer=SZSE_PCF_PAGE,
+        timeout=timeout,
+    )
+    if not isinstance(first, list) or not first:
+        return {}
+    metadata = first[0].get("metadata") or {}
+    page_count = int(metadata.get("pagecount") or 1)
+    result: dict[str, SzsePcfListEntry] = {}
+
+    for page_no in range(1, page_count + 1):
+        payload = first if page_no == 1 else fetch_json(
+            SZSE_PCF_LIST_API,
+            {**params, "PAGENO": page_no},
+            referer=SZSE_PCF_PAGE,
+            timeout=timeout,
+        )
+        for block in payload or []:
+            for row in (block or {}).get("data") or []:
+                html_text = str((row or {}).get("jjdm") or "")
+                if not html_text:
+                    continue
+                entry = parse_szse_pcf_list_item(html_text, iso_day)
+                result[entry.code] = entry
+    return result
+
+
+def _fetch_szse_entry(entry: SzsePcfListEntry, *, timeout: int) -> PcfSnapshot:
+    last_error: Exception | None = None
+    for url in entry.xml_candidate_urls:
+        try:
+            text = fetch_text(
+                url,
+                referer=SZSE_PCF_PAGE,
+                timeout=timeout,
+                attempts=2,
+                base_delay_seconds=0.2,
+            )
+            stripped = text.lstrip()
+            if not stripped.startswith("<") or "html" in stripped[:120].lower():
+                continue
+            snapshot = parse_szse_xml(
+                entry.code,
+                text,
+                source_url=url,
+                fetched_at=datetime.now(timezone.utc).isoformat(),
+            )
+            if snapshot.trade_date and snapshot.trade_date != entry.trade_date:
+                raise ValueError(
+                    f"SZSE PCF trading day mismatch for {entry.code}: "
+                    f"{snapshot.trade_date} != {entry.trade_date}"
+                )
+            return snapshot
+        except Exception as exc:
+            last_error = exc
+    raise RuntimeError(f"SZSE PCF fetch failed for {entry.code}: {last_error}")
+
+
+def fetch_szse_pcf_bulk(
+    *,
+    codes: Iterable[str],
+    trade_date: date | str,
+    timeout: int = 20,
+    max_workers: int = 6,
+) -> tuple[dict[str, PcfSnapshot], dict[str, str]]:
+    wanted = {str(code) for code in codes}
+    index = fetch_szse_pcf_day_index(trade_date, timeout=max(timeout, 30))
+    snapshots: dict[str, PcfSnapshot] = {}
+    errors: dict[str, str] = {}
+
+    available = {code: item for code, item in index.items() if code in wanted}
+    for code in sorted(wanted - set(available)):
+        errors[code] = "not_in_official_day_index"
+
+    workers = max(1, min(int(max_workers), 12))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {
+            pool.submit(_fetch_szse_entry, entry, timeout=timeout): code
+            for code, entry in available.items()
+        }
+        for future in as_completed(futures):
+            code = futures[future]
+            try:
+                snapshots[code] = future.result()
+            except Exception as exc:
+                errors[code] = f"{type(exc).__name__}: {exc}"
+
+    return snapshots, errors
 
 
 def fetch_pcf(
