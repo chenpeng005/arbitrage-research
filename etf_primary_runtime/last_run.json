@@ -1,0 +1,12 @@
+{
+  "status": "BASELINE_CREATED",
+  "trade_date": "20260930",
+  "previous_trade_date": null,
+  "event_count": 0,
+  "snapshot_sha256": "303f7231b6f5aa99d8bf1758a41747210f3f6d5862c52b98d42e454d49fe36ae",
+  "pcf_found_count": 1693,
+  "stale_count": 1,
+  "missing_count": 0,
+  "relay_age_seconds": 0,
+  "archive_path": "/tmp/etf-primary-runtime-state/etf_primary_runtime/snapshots/20260930.json.gz"
+}
