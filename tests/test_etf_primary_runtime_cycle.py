@@ -134,6 +134,16 @@ def test_previous_stale_pcf_is_not_treated_as_valid_history():
     assert events == []
 
 
+def test_snapshot_digest_ignores_fetch_and_source_metadata():
+    left = [_row("159501", total_limit=5_000_000)]
+    left[0]["fetched_at"] = "2026-10-09T00:00:00+00:00"
+    left[0]["source_url"] = "https://example.invalid/a.xml"
+    right = [dict(left[0])]
+    right[0]["fetched_at"] = "2026-10-09T00:10:00+00:00"
+    right[0]["source_url"] = "https://example.invalid/b.xml"
+    assert runtime_cycle._snapshot_digest(left) == runtime_cycle._snapshot_digest(right)
+
+
 def test_run_cycle_bootstrap_then_diff(tmp_path, monkeypatch):
     rows = [_row(f"159{i:03d}", total_limit=5_000_000) for i in range(1000)]
     first = _bundle("20261008", rows)
@@ -168,9 +178,16 @@ def test_run_cycle_bootstrap_then_diff(tmp_path, monkeypatch):
     ]
 
 
-def test_same_trade_date_unchanged_is_byte_stable(tmp_path, monkeypatch):
-    rows = [_row(f"159{i:03d}", total_limit=5_000_000) for i in range(1000)]
-    bundles = iter([_bundle("20261009", rows), _bundle("20261009", rows)])
+def test_same_trade_date_fetch_metadata_change_is_byte_stable(tmp_path, monkeypatch):
+    first_rows = [_row(f"159{i:03d}", total_limit=5_000_000) for i in range(1000)]
+    second_rows = [dict(row) for row in first_rows]
+    for row in first_rows:
+        row["fetched_at"] = "2026-10-09T00:00:00+00:00"
+        row["source_url"] = "https://example.invalid/a.xml"
+    for row in second_rows:
+        row["fetched_at"] = "2026-10-09T00:30:00+00:00"
+        row["source_url"] = "https://example.invalid/b.xml"
+    bundles = iter([_bundle("20261009", first_rows), _bundle("20261009", second_rows)])
 
     monkeypatch.setattr(runtime_cycle, "fetch_etf_primary_relay_bundle", lambda *args, **kwargs: next(bundles))
     monkeypatch.setattr(runtime_cycle, "validate_relay_freshness", lambda *args, **kwargs: 60)
@@ -198,7 +215,29 @@ def test_same_trade_date_unchanged_is_byte_stable(tmp_path, monkeypatch):
     assert not (tmp_path / "events" / "20261009.json").exists()
 
 
-def test_same_trade_date_changed_is_refresh_not_false_event(tmp_path, monkeypatch):
+def test_same_trade_date_old_schema_gets_one_explicit_migration(tmp_path, monkeypatch):
+    rows = [_row(f"159{i:03d}", total_limit=5_000_000) for i in range(1000)]
+    bundles = iter([_bundle("20261009", rows), _bundle("20261009", rows)])
+
+    monkeypatch.setattr(runtime_cycle, "fetch_etf_primary_relay_bundle", lambda *args, **kwargs: next(bundles))
+    monkeypatch.setattr(runtime_cycle, "validate_relay_freshness", lambda *args, **kwargs: 60)
+
+    runtime_cycle.run_cycle(state_dir=tmp_path, relay_base_url="https://example.invalid")
+    current_path = tmp_path / "current.json"
+    previous = json.loads(current_path.read_text(encoding="utf-8"))
+    previous["schema_version"] = 1
+    previous["snapshot_sha256"] = "legacy-full-row-digest"
+    current_path.write_text(json.dumps(previous), encoding="utf-8")
+
+    migrated = runtime_cycle.run_cycle(state_dir=tmp_path, relay_base_url="https://example.invalid")
+    assert migrated["status"] == "SAME_TRADE_DATE_SCHEMA_MIGRATED"
+    assert migrated["event_count"] == 0
+    stored = json.loads(current_path.read_text(encoding="utf-8"))
+    assert stored["schema_version"] == runtime_cycle.SNAPSHOT_SCHEMA_VERSION
+    assert stored["snapshot_sha256"] == migrated["snapshot_sha256"]
+
+
+def test_same_trade_date_changed_market_fact_is_refresh_not_false_event(tmp_path, monkeypatch):
     rows = [_row(f"159{i:03d}", total_limit=5_000_000) for i in range(1000)]
     first = _bundle("20261009", rows)
     corrected_rows = [dict(row) for row in rows]
