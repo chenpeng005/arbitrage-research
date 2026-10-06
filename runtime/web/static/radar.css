@@ -40,20 +40,22 @@ h1{margin:4px 0 0;font:600 38px/1.2 Georgia,"Noto Serif SC",serif}
   padding:23px 26px 8px;border:1px solid var(--line);border-radius:12px;
   background:var(--card);box-shadow:0 1px 2px rgba(24,40,34,.025)
 }
-.object-head{display:flex;justify-content:space-between;gap:22px;align-items:flex-start;padding-bottom:15px}
-.object-kicker{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em}
-.object-head h2{margin:4px 0 0;font-size:22px;line-height:1.4;font-weight:680}
-.object-types{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;padding-top:3px}
-.object-type-tag{
-  border:1px solid #d8e5df;background:var(--soft);border-radius:999px;
-  padding:3px 9px;color:#315a4e;font-size:12px;white-space:nowrap
+.object-head{padding-bottom:17px}
+.object-identity{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
+.object-kind{
+  display:inline-flex;align-items:center;justify-content:center;min-width:42px;
+  padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.04em;
+  border:1px solid var(--line);background:#fff;color:var(--muted)
 }
+.object-kind.security{border-color:#d7e3de;background:var(--soft);color:#315a4e}
+.object-kind.strategy{border-color:#dedbcf;background:#f5f3eb;color:#6b6245}
+.object-kind.pending{border-style:dashed;color:#89918d}
+.object-head h2{margin:0;font-size:23px;line-height:1.4;font-weight:720}
 .object-nodes{border-top:1px solid var(--line)}
-.object-node{position:relative;padding:19px 2px 17px}
+.object-node{position:relative;padding:17px 2px 17px}
 .object-node + .object-node{border-top:1px dashed var(--line)}
-.node-title-row{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:9px}
-.type{color:var(--accent);font-weight:700;font-size:12px;white-space:nowrap}
-.object-node h3{margin:0;font-size:17px;line-height:1.5;font-weight:680}
+.node-meta{font-size:11px;font-weight:700;letter-spacing:.035em;color:var(--accent);margin-bottom:4px}
+.object-node h3.node-title{margin:0 0 11px;font-size:16px;line-height:1.55;font-weight:650;color:#2d3935}
 .node-fact,.node-judgment{display:grid;grid-template-columns:82px minmax(0,1fr);gap:12px;max-width:1320px}
 .node-fact{font-size:15px;line-height:1.74;color:var(--ink)}
 .node-judgment{margin-top:8px;color:#315a4e;font-size:14px;line-height:1.68}
@@ -71,7 +73,7 @@ h1{margin:4px 0 0;font:600 38px/1.2 Georgia,"Noto Serif SC",serif}
 footer{padding-top:20px;color:var(--muted);font-size:12px}
 @media(max-width:900px){
   .page{width:100%;padding:30px 20px 60px}.top{align-items:flex-start;flex-direction:column}
-  h1{font-size:32px}.object-head{flex-direction:column;gap:8px}.object-types{justify-content:flex-start}
+  h1{font-size:32px}.object-identity{gap:8px}.object-head h2{font-size:21px}
   .run-metrics{gap:13px 18px}.metric strong{font-size:16px}.object-card{padding:20px 18px 7px}
   .node-fact,.node-judgment{grid-template-columns:1fr;gap:2px}.node-source{justify-content:flex-start}
 }
