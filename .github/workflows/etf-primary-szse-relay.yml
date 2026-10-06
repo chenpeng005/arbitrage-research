@@ -27,7 +27,8 @@ on:
       - "tests/test_etf_primary_runtime_cycle.py"
   workflow_dispatch:
   schedule:
-    - cron: "10 0 * * *"
+    # 08:40 Asia/Shanghai: after the SSE PCF publication window and before open.
+    - cron: "40 0 * * 1-5"
 
 permissions:
   contents: write
@@ -126,7 +127,7 @@ jobs:
   merge_publish:
     needs: [prepare, szse_pcf]
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - name: Checkout application source
         uses: actions/checkout@v4
@@ -158,6 +159,57 @@ jobs:
             --output-dir /tmp/etf-primary-relay/etf_primary_relay \
             --minimum-szse-coverage 0.97
 
+      - name: Restore runtime history branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/etf-primary-runtime-state
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin refs/heads/etf-primary-runtime-data >/dev/null 2>&1; then
+            git fetch --depth=1 origin etf-primary-runtime-data
+            git worktree add --detach /tmp/etf-primary-runtime-state FETCH_HEAD
+          else
+            git worktree add --detach /tmp/etf-primary-runtime-state HEAD
+            (
+              cd /tmp/etf-primary-runtime-state
+              git checkout --orphan etf-primary-runtime-publish
+              git rm -rf .
+              mkdir -p etf_primary_runtime
+            )
+          fi
+
+      - name: Run daily snapshot and diff against merged relay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m http.server 8765 \
+            --bind 127.0.0.1 \
+            --directory /tmp/etf-primary-relay \
+            >/tmp/etf-primary-relay-http.log 2>&1 &
+          relay_pid=$!
+          trap 'kill "$relay_pid" 2>/dev/null || true' EXIT
+
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8765/etf_primary_relay/manifest.json >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 20 ]; then
+              cat /tmp/etf-primary-relay-http.log
+              exit 1
+            fi
+            sleep 0.25
+          done
+
+          python -m runtime.etf_primary.runtime_cycle \
+            --state-dir /tmp/etf-primary-runtime-state/etf_primary_runtime \
+            --relay-base-url http://127.0.0.1:8765/etf_primary_relay \
+            --timeout 20
+
+          kill "$relay_pid" 2>/dev/null || true
+          trap - EXIT
+
       - name: Publish last-good relay branch
         shell: bash
         run: |
@@ -173,3 +225,27 @@ jobs:
           git add etf_primary_relay
           git commit -m "ETF primary relay: update official snapshot"
           git push --force origin HEAD:etf-primary-data-relay
+
+      - name: Publish runtime history when market facts changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/etf-primary-runtime-state
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add etf_primary_runtime
+
+          if git diff --cached --quiet; then
+            echo "ETF primary runtime state unchanged; no data commit needed."
+            exit 0
+          fi
+
+          trade_date=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          payload = json.loads(Path("etf_primary_runtime/current.json").read_text(encoding="utf-8"))
+          print(payload["trade_date"])
+          PY
+          )
+          git commit -m "ETF primary runtime: ${trade_date}"
+          git push origin HEAD:etf-primary-runtime-data
