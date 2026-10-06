@@ -1,0 +1,13 @@
+[Unit]
+Description=Arbitrage Intelligence Radar Daily Formal Run (Jisilu + Xueqiu)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=admin
+WorkingDirectory=/home/admin/projects/arbitrage-runtime
+Environment=ARBITRAGE_RUNTIME_ROOT=/home/admin/projects/arbitrage-runtime
+Environment=RUNTIME_DATA_ROOT=/home/admin/projects/arbitrage-runtime/runtime_data
+ExecStart=/home/admin/bin/radar-daily-run.sh
+TimeoutStartSec=1800
