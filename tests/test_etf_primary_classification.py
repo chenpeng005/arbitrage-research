@@ -34,3 +34,24 @@ def test_mixed_hk_mainland_not_forced_to_qdii():
     )
     assert result["region_scope"] == "MIXED"
     assert result["qdii_flag"] is None
+
+
+def test_pure_hk_stock_connect_is_cross_border_not_qdii():
+    result = classify_etf(
+        name="港股通互联网ETF",
+        tracking_index="港股通互联网指数",
+        exchange="SZSE",
+    )
+    assert result["region_scope"] == "CROSS_BORDER"
+    assert result["asset_class"] == "EQUITY"
+    assert result["qdii_flag"] is False
+
+
+def test_szse_fast_cash_etf_is_money_market():
+    result = classify_etf(
+        name="招商快线ETF",
+        tracking_index=None,
+        exchange="SZSE",
+    )
+    assert result["asset_class"] == "MONEY_MARKET"
+    assert result["region_scope"] == "DOMESTIC"
