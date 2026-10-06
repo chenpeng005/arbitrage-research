@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="${ARBITRAGE_RUNTIME_ROOT:-/home/admin/projects/arbitrage-runtime}"
+cd "$ROOT"
+if [[ -f .runtime_env ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .runtime_env
+  set +a
+fi
+export PYTHONPATH="$ROOT"
+export RUNTIME_DATA_ROOT="${RUNTIME_DATA_ROOT:-$ROOT/runtime_data}"
+exec "$ROOT/.venv/bin/python" -m runtime.intelligence_radar.run_all --run-mode LIVE
