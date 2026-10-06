@@ -9,6 +9,24 @@ const typeLabels = {
   ANOMALY: "异常观察",
   OTHER: "其他"
 };
+const securityObjectNames = new Set([
+  "*ST康佳A", "岭南转债", "罗博特科", "002667", "Sigma Lithium",
+  "Summit Therapeutics", "会稽山", "侨银转债", "兴业银行可转债", "兴业银锡",
+  "南航转债", "圣晖集成", "宁德时代（300750.SZ）", "山西焦煤", "康佳B",
+  "彤程新材", "新城吾悦REIT(SH508610)", "普冉股份", "江山转债", "浪潮信息",
+  "渝水转债", "纳指科技ETF（159509）", "纳斯达克100场外A类基金", "绿茵转债",
+  "美光科技", "老铺黄金", "英伟达", "蔚来能源", "货币ETF（511800）",
+  "金川国际", "飞鹤（06186.HK）"
+]);
+
+const strategyObjectNames = new Set([
+  "中金三兄弟换股套利", "消费贷资金投资低波资产", "IM跨期套利", "内地身份港股账户",
+  "券商网格条件单", "券商返佣", "打新分账户策略", "港股ETF申赎",
+  "港股通与A股休市日历错配", "短融ETF季末融资套利", "纳指ETF溢价交易",
+  "纳指ETF溢价套利", "纳斯达克100场外A类基金申购限额", "茅台申购黄牛生态",
+  "规则型资产配置", "跨境QDII ETF申购套利", "跨境QDII ETF盘前申购套利",
+  "跨境QDII ETF高溢价", "面值退市股"
+]);
 
 const dateInput = document.getElementById("dateInput");
 const findingsEl = document.getElementById("findings");
@@ -18,6 +36,7 @@ const historyHint = document.getElementById("historyHint");
 const prevDayButton = document.getElementById("prevDay");
 const nextDayButton = document.getElementById("nextDay");
 let navigationLocked = false;
+let activeDate = "";
 
 function escapeHtml(value) {
   const div = document.createElement("div");
@@ -127,6 +146,17 @@ function groupFindingsByObject(findings) {
   return groups;
 }
 
+function objectKindLabel(name) {
+  if (securityObjectNames.has(name)) return {label: "标的", cls: "security"};
+  if (strategyObjectNames.has(name)) return {label: "策略", cls: "strategy"};
+  return {label: "待整理", cls: "pending"};
+}
+
+function nodeDateLabel(row) {
+  const value = String(row.run_date || activeDate || "");
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.slice(5).replace("-", "/") : "";
+}
+
 function primaryEvidence(row) {
   const evidence = Array.isArray(row.evidence) ? row.evidence : [];
   return evidence.find(function(item) { return item.is_primary; }) || evidence[0] || null;
@@ -165,12 +195,13 @@ function renderSource(row) {
 
 function renderNode(row) {
   const nodeTitle = row.node_title || row.title || "未命名节点";
+  const dateLabel = nodeDateLabel(row);
+  const typeLabel = typeLabels[row.finding_type] || row.finding_type;
+  const meta = [dateLabel, typeLabel].filter(Boolean).join(" · ");
   return (
     '<section class="object-node">' +
-      '<div class="node-title-row">' +
-        '<span class="type">' + escapeHtml(typeLabels[row.finding_type] || row.finding_type) + "</span>" +
-        '<h3>' + escapeHtml(nodeTitle) + "</h3>" +
-      "</div>" +
+      '<div class="node-meta">' + escapeHtml(meta) + "</div>" +
+      '<h3 class="node-title">' + escapeHtml(nodeTitle) + "</h3>" +
       '<div class="node-fact"><span class="node-label">今天新增</span><div>' +
         escapeHtml(row.what_happened) + "</div></div>" +
       '<div class="node-judgment"><span class="node-label">当前判断</span><div>' +
@@ -180,19 +211,15 @@ function renderNode(row) {
   );
 }
 
-function renderObjectGroup(group, index) {
-  const types = Array.from(new Set(group.rows.map(function(row) {
-    return typeLabels[row.finding_type] || row.finding_type;
-  })));
-  const typeTags = types.map(function(label) {
-    return '<span class="object-type-tag">' + escapeHtml(label) + "</span>";
-  }).join("");
+function renderObjectGroup(group) {
+  const kind = objectKindLabel(group.label);
   return (
     '<article class="object-card">' +
       '<div class="object-head">' +
-        '<div><div class="object-kicker">对象</div>' +
-        '<h2>' + escapeHtml((index + 1) + ". " + group.label) + "</h2></div>" +
-        '<div class="object-types">' + typeTags + "</div>" +
+        '<div class="object-identity">' +
+          '<span class="object-kind ' + kind.cls + '">' + escapeHtml(kind.label) + "</span>" +
+          '<h2>' + escapeHtml(group.label) + "</h2>" +
+        "</div>" +
       "</div>" +
       '<div class="object-nodes">' + group.rows.map(renderNode).join("") + "</div>" +
     "</article>"
@@ -207,6 +234,7 @@ async function loadDates() {
 }
 
 async function loadDay(dateValue) {
+  activeDate = dateValue;
   findingsEl.innerHTML = "";
   emptyEl.hidden = true;
   runlineEl.textContent = "读取中…";
@@ -247,7 +275,7 @@ function navigateToDate(value) {
   url.pathname = "/radar";
   url.search = "";
   url.searchParams.set("date", value);
-  url.searchParams.set("ui", "object-node-evidence-v2");
+  url.searchParams.set("ui", "attention-object-v1");
   window.location.assign(url.toString());
 }
 
@@ -259,7 +287,7 @@ async function init() {
   const selected = requested || dates[0] || localToday();
   dateInput.value = selected;
   historyHint.textContent = dates.length
-    ? "已保存 " + dates.length + " 个日期；对象、节点与来源证据由 Runtime 持久化。"
+    ? "已保存 " + dates.length + " 个日期；观察对象、节点与来源证据由 Runtime 持久化。"
     : "尚无历史记录。";
   await loadDay(selected);
 }
