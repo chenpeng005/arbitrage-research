@@ -166,6 +166,130 @@ ETF 一级市场项目正式采用统一三层知识结构：
 
 ---
 
+## 2026-10-06｜全市场 PCF 从“能抓”修到可审计 relay
+
+### 触发 / 问题
+
+SSE 批量 PCF 可以稳定获取，但 SZSE 若在同一 runner 对数百只 ETF 逐个请求 XML，会出现大量 `403 Forbidden`。单纯增加重试不仅不能解决问题，还会继续触发 CDN / WAF 限制。
+
+### 旧认识 / 原方案
+
+早期方案是：从 ETF universe 推导代码，再按照两种常见文件名逐只尝试下载；只要整体覆盖率超过一个较低门槛即可进入 merge。
+
+这个方案有两个问题：
+
+1. 猜文件名会制造不必要请求；
+2. “97% 覆盖就算通过”适合临时数据抓取，不适合用来生成市场变化事件——少掉的那部分可能恰好就是重要事件。
+
+### 证据 / 实测
+
+最终实跑确认：
+
+- 全市场 ETF universe：1693，只数为 SSE 944 + SZSE 749；
+- SSE PCF：944 / 944 找到；
+- SZSE PCF：749 / 749 最终找到；
+- 总 PCF：1693 / 1693；
+- SZSE 12 shard 架构下，偶尔仍会出现单点 403，但 merge 阶段从新 runner 对极少缺口做受限恢复后可以补齐；
+- 最新实跑曾有 1 个 SZSE shard 单点失败，被 sparse recovery 恢复；
+- 另有 1 只 SSE PCF 的交易日落后于目标交易日，因此应标记 `stale`，而不是算作 `missing` 或静默替换。
+
+### 舍弃路径
+
+- 不再把“对每个代码猜两个文件名”作为主要下载机制；
+- 403 后不继续在同一个 host 上盲目尝试更多候选文件名；
+- 不接受“高覆盖率但不知道缺谁、为什么缺”的模糊成功；
+- merge 不做第二次全市场抓取，只允许对极少数缺口做有上限的 sparse recovery。
+
+### 新认识 / 决策
+
+正式采用：
+
+**官方当日 PCF 索引 → 12 shard 分散请求 → merge 完整性校验 → 极少缺口受限恢复 → last-good relay。**
+
+同时把数据质量拆成两层：
+
+- `missing`：没有拿到 PCF；
+- `stale`：拿到了 PCF，但交易日不是目标交易日。
+
+这使“文件覆盖率”和“当日有效率”不再混在一起。
+
+### 未决问题
+
+- 当前那 1 只 stale ETF 需要在后续审计中确认它是正常的官方历史文件状态，还是某一特殊产品类型的发布时间差异；
+- 长期观察 WAF 失败率，若 sparse recovery 经常超过极少数，就应重新调整 shard 数 / runner 并发，而不是扩大重试上限。
+
+### 追溯
+
+- relay 分支：`etf-primary-data-relay`
+- relay version：`etf-primary-official-relay-v2`
+- 关键模块：`relay_prepare.py`、`pcf_shard.py`、`relay_merge.py`、`szse_relay.py`
+- 工作流：`.github/workflows/etf-primary-szse-relay.yml`
+
+---
+
+## 2026-10-06｜Runtime History 首次真实落盘，并解决休市日重复写入
+
+### 触发 / 问题
+
+relay 已经能每天生成全市场 PCF，但如果每次运行都覆盖同一个交易日的 gzip / `current.json` / `last_run.json`，国庆等长休市期会产生一串“市场事实完全没变”的 commit。gzip 自带写入时间也会让文件字节变化，进一步放大无意义历史。
+
+### 旧认识 / 原方案
+
+最初 `runtime_cycle.py` 对同一交易日统一视为 `SAME_TRADE_DATE_REFRESHED`：不制造市场事件，但仍重写快照和运行摘要。
+
+这在逻辑上避免了假事件，却没有做到存储层真正幂等。
+
+### 证据 / 实测
+
+2026-10-06 完成真实工作流：
+
+- relay merge 成功；
+- 新建独立运行数据分支 `etf-primary-runtime-data`；
+- 第一份 baseline 成功写入，交易日 `20260930`；
+- baseline PCF 1693 / 1693，stale 1，missing 0，event 0；
+- `current.json`、`last_run.json`、`snapshots/20260930.json.gz` 均已实际存在；
+- 新的幂等测试确认：同交易日且 `snapshot_sha256` 完全一致时，不重写三个文件；同交易日但事实摘要变化时，允许更新快照但仍不产生跨日事件。
+
+### 舍弃路径
+
+- 不把每次 workflow 运行都变成一条 Runtime History；
+- 不用“最后抓取时间变化”制造数据 commit；
+- 不把 Runtime History 和代码分支、relay 分支混在一起；
+- 暂不把这套事实层直接部署到现网服务器，先让 GitHub Actions + 独立数据分支形成可复核闭环。
+
+### 新认识 / 决策
+
+当前持久化分三条线：
+
+1. **代码 / 规则**：`feat/etf-primary-monitor-v0`；
+2. **最新官方数据 relay**：`etf-primary-data-relay`；
+3. **跨日运行历史**：`etf-primary-runtime-data`。
+
+Runtime 规则：
+
+- 首次只建 baseline；
+- 新交易日才与上一有效交易日做 diff；
+- 同日同摘要：`SAME_TRADE_DATE_NO_CHANGE`，文件和 git 历史均不动；
+- 同日摘要发生修正：`SAME_TRADE_DATE_REFRESHED`，更新快照，不产生跨日事件。
+
+定时点由原来的 08:10 北京时间调整为工作日 **08:40**，避免早于上交所盘前 PCF 正式披露窗口。
+
+### 未决问题
+
+- 还没有经历下一真实交易日，因此第一份真实 `events/YYYYMMDD.json` 仍待验证；
+- 第一轮跨日事件需要人工复核，看事件类型是否过密、是否存在产品特殊口径；
+- 功能分支与 `main` 已明显分叉，待事实层跨日验证后再设计安全整合路径，不直接硬合并。
+
+### 追溯
+
+- `runtime/etf_primary/runtime_cycle.py`
+- `tests/test_etf_primary_runtime_cycle.py`
+- `.github/workflows/etf-primary-szse-relay.yml`
+- 运行数据分支：`etf-primary-runtime-data`
+- 首次 baseline：`etf_primary_runtime/last_run.json`
+
+---
+
 ## 后续条目模板
 
 ### YYYY-MM-DD｜节点名称
