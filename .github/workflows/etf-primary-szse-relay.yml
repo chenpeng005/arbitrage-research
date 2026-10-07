@@ -18,6 +18,7 @@ on:
       - "runtime/etf_primary/monitor_view.py"
       - "runtime/etf_primary/relay_merge.py"
       - "runtime/etf_primary/runtime_cycle.py"
+      - "runtime/etf_primary/comparison_view.py"
       - "runtime/etf_primary/szse_relay.py"
       - "tests/test_etf_primary_classification.py"
       - "tests/test_etf_primary_monitor.py"
@@ -26,10 +27,14 @@ on:
       - "tests/test_etf_primary_pcf_shard.py"
       - "tests/test_etf_primary_relay_merge.py"
       - "tests/test_etf_primary_runtime_cycle.py"
+      - "tests/test_etf_primary_comparison_view.py"
   workflow_dispatch:
   schedule:
-    # 08:40 Asia/Shanghai: after the SSE PCF publication window and before open.
-    - cron: "40 0 * * 1-5"
+    # Pre-open refresh windows, Asia/Shanghai: 08:31 / 08:46 / 09:01.
+    # Multiple attempts tolerate PCF publication timing differences across funds.
+    - cron: "31 0 * * 1-5"
+    - cron: "46 0 * * 1-5"
+    - cron: "1 1 * * 1-5"
 
 permissions:
   contents: write
@@ -63,7 +68,8 @@ jobs:
             tests/test_etf_primary_pcf_bulk.py \
             tests/test_etf_primary_pcf_shard.py \
             tests/test_etf_primary_relay_merge.py \
-            tests/test_etf_primary_runtime_cycle.py
+            tests/test_etf_primary_runtime_cycle.py \
+            tests/test_etf_primary_comparison_view.py
 
       - name: Prepare universe, audit, and exchange PCF indexes
         run: |
@@ -207,6 +213,10 @@ jobs:
             --state-dir /tmp/etf-primary-runtime-state/etf_primary_runtime \
             --relay-base-url http://127.0.0.1:8765/etf_primary_relay \
             --timeout 20
+
+          python -m runtime.etf_primary.comparison_view \
+            --state-dir /tmp/etf-primary-runtime-state/etf_primary_runtime \
+            --output /tmp/etf-primary-relay/etf_primary_relay/comparison.json
 
           kill "$relay_pid" 2>/dev/null || true
           trap - EXIT
