@@ -33,17 +33,19 @@
     "extra_listener_check": "NONE",
     "production_runtime_etf_path": "ABSENT"
   },
-  "reading_surface": "PCF change first: previous valid trade-date baskets -> current baskets -> change; low-frequency eNAV reference premium for capacity-constrained cross-border ETFs; formal NAV fallback; realtime price/IOPV retired",
+  "reading_surface": "PCF change first: previous valid trade-date baskets -> current baskets -> change; low-frequency eNAV reference premium where trusted; formal NAV fallback for every cross-border/QDII ETF; realtime price/IOPV retired",
   "preopen_projection": "reads monitor_view.json + comparison.json directly from etf-primary-data-relay; reads cached eNAV/reference premium locally; does not wait for full runtime persistence",
-  "reference_premium": "auxiliary non-canonical: prefer eNAV = formal NAV anchor advanced by completed index/proxy-ETF return + FX proxy; Japan adds current-session index overlay; fallback = latest completed close / latest formal NAV - 1; cached, fail-open for display only",
+  "reference_premium": "auxiliary non-canonical: all 284 cross-border/QDII rows get latest completed close / latest formal NAV fallback; where an A/B benchmark mapping exists, page prefers eNAV = formal NAV anchor advanced by completed direct-index/proxy return + FX proxy; Japan adds current-session index overlay; cached, fail-open for display only",
   "enav": {
-    "scope": "28 capacity-constrained cross-border ETFs at current baseline",
-    "quality": "A=direct index; B=high-correlation ETF proxy/bridge",
+    "scope": "116 cross-border/QDII ETFs with trusted A/B mapping out of 284 formal-NAV anchors",
+    "quality": "A=direct index (37); B=high-correlation ETF/same-theme index proxy (79)",
+    "formal_fallback": "168 rows: 136 no trusted proxy yet + 32 mixed A/H market indices",
     "commodity_active_qdii": "not modeled; formal NAV fallback only",
-    "validation": "28/28 PASS on 2026-10-07; 0 errors",
+    "validation": "116/116 PASS on 2026-10-07; 0 errors",
     "examples": {
       "159501": "~11.90% estimated premium",
-      "159866": "~1.40% estimated premium"
+      "159866": "~1.40% estimated premium",
+      "159509": "~29.65% estimated premium"
     }
   }
 }
