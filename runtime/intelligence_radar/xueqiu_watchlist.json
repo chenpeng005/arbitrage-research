@@ -1,4 +1,14 @@
 {
-  "schema_version": 1,
-  "authors": []
+  "schema_version": 2,
+  "authors": [
+    {"label": "小明哥讲套利", "user_id": "7608049731"},
+    {"label": "woody1234", "user_id": "2244868365"},
+    {"label": "鑫爷低风险投资", "user_id": "7103273742"},
+    {"label": "MFGraham", "user_id": "1840107121"},
+    {"label": "蚂蚁三支刀", "user_id": "7885561788"},
+    {"label": "小黑黑小小", "user_id": "5525339011"},
+    {"label": "小鱼的储钱罐", "user_id": "9896517675"},
+    {"label": "ST小菜鸟", "user_id": "2817792171"},
+    {"label": "下雨0608", "user_id": "9691451375"}
+  ]
 }
