@@ -1,6 +1,10 @@
 name: ETF Primary Shadow Preopen
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/etf-primary-shadow-schedule.yml"
   workflow_dispatch:
   schedule:
     # Asia/Shanghai 08:32 / 08:42 / 08:52 on weekdays.
