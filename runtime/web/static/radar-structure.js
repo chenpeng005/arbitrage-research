@@ -4,34 +4,34 @@
 
   const categories = [
     {
-      key: "corporate-action",
-      label: "公司行动 / 特殊事件",
-      match: /要约|现金选择权|主动退市|退市|私有化|吸收合并|换股|并购|重组|收购|余股|特别股息|回购|定增|停产|股权|控制权|B转H|H股/
+      key: "convertible-bond",
+      label: "可转债",
+      objectMatch: /转债|可转债|配债/,
+      fallbackMatch: /转债|配债|强赎|不强赎|下修|回售/
     },
     {
       key: "fund-arbitrage",
       label: "ETF / LOF / QDII",
-      match: /ETF|LOF|QDII|纳指|标普|申赎|净值|场内基金|联接基金|基金溢价|折价赎回/
-    },
-    {
-      key: "convertible-bond",
-      label: "可转债",
-      match: /转债|配债|强赎|不强赎|下修|回售/
+      objectMatch: /ETF|LOF|QDII|纳指|标普|基金|联接基金|场内基金|货币ETF/,
+      fallbackMatch: /ETF|LOF|QDII|纳指|标普|申赎|净值|场内基金|联接基金|基金溢价|折价赎回/
     },
     {
       key: "new-issue",
       label: "北交所 / 新股",
-      match: /北交所|新股|打新|中签|申购门槛/
+      objectMatch: /北交所|新股|打新|中签/,
+      fallbackMatch: /北交所|新股|打新|中签|申购门槛/
     },
     {
-      key: "rules-execution",
-      label: "规则 / 账户 / 执行",
-      match: /券商|账户|交易限制|结算|申报|行权|数据异常|数据错误|规则变化|席位|通道/
+      key: "corporate-action",
+      label: "股票 / 公司行动",
+      objectMatch: /要约|现金选择权|主动退市|私有化|吸收合并|换股|并购|重组|收购|余股|特别股息|回购|定增|股权|控制权|B股|H股|A\/H|港股账户/,
+      fallbackMatch: /要约|现金选择权|主动退市|私有化|吸收合并|换股|并购|重组|收购|余股|特别股息|回购|定增|停产|股权|控制权|B转H|H股/
     },
     {
       key: "other",
       label: "其他机会 / 异常",
-      match: /.*/
+      objectMatch: /.*/,
+      fallbackMatch: /.*/
     }
   ];
 
@@ -42,19 +42,27 @@
       .trim();
   }
 
+  function objectTitle(card) {
+    return card.querySelector(".object-head h2")?.textContent || "";
+  }
+
   function cardSignal(card) {
-    const title = card.querySelector(".object-head h2")?.textContent || "";
     const nodes = Array.from(card.querySelectorAll(".node-title"))
       .map(function (node) { return node.textContent || ""; })
       .join(" ");
-    return title + " " + nodes;
+    return objectTitle(card) + " " + nodes;
   }
 
   function classify(card) {
+    const title = objectTitle(card);
+    for (const category of categories) {
+      if (category.key !== "other" && category.objectMatch.test(title)) return category;
+    }
     const signal = cardSignal(card);
-    return categories.find(function (category) {
-      return category.match.test(signal);
-    }) || categories[categories.length - 1];
+    for (const category of categories) {
+      if (category.fallbackMatch.test(signal)) return category;
+    }
+    return categories[categories.length - 1];
   }
 
   function mergeDuplicateObjectCards(cards) {
@@ -62,7 +70,7 @@
     const byTitle = new Map();
 
     cards.forEach(function (card) {
-      const title = normalized(card.querySelector(".object-head h2")?.textContent);
+      const title = normalized(objectTitle(card));
       if (!title || !byTitle.has(title)) {
         byTitle.set(title || String(kept.length), card);
         kept.push(card);
@@ -112,9 +120,79 @@
     });
   }
 
+  function nodeType(node) {
+    const meta = String(node.querySelector(".node-meta")?.textContent || "");
+    const pieces = meta.split("·").map(function (part) { return part.trim(); }).filter(Boolean);
+    return pieces.length ? pieces[pieces.length - 1] : "信息";
+  }
+
+  function sourcePreview(node) {
+    const source = node.querySelector(".node-source");
+    if (!source) return "";
+    const platform = source.querySelector(".source-platform")?.textContent?.trim() || "";
+    const plainSpans = Array.from(source.children).filter(function (child) {
+      return child.tagName === "SPAN" &&
+        !child.classList.contains("source-platform") &&
+        !child.classList.contains("source-sep");
+    });
+    const author = plainSpans.length ? plainSpans[0].textContent.trim() : "";
+    return [platform, author].filter(Boolean).join(" · ");
+  }
+
+  function compactNode(node) {
+    const details = document.createElement("details");
+    details.className = "compact-node";
+
+    const summary = document.createElement("summary");
+    summary.className = "compact-node-summary";
+
+    const type = document.createElement("span");
+    type.className = "compact-node-type";
+    type.textContent = nodeType(node);
+
+    const title = document.createElement("span");
+    title.className = "compact-node-title";
+    title.textContent = node.querySelector(".node-title")?.textContent || "未命名节点";
+
+    const source = document.createElement("span");
+    source.className = "compact-node-source";
+    source.textContent = sourcePreview(node);
+
+    summary.appendChild(type);
+    summary.appendChild(title);
+    summary.appendChild(source);
+    details.appendChild(summary);
+
+    const body = document.createElement("div");
+    body.className = "compact-node-detail";
+    const fact = node.querySelector(".node-fact");
+    const judgment = node.querySelector(".node-judgment");
+    if (fact) body.appendChild(fact);
+    if (judgment) body.appendChild(judgment);
+    Array.from(node.querySelectorAll(".node-source")).forEach(function (item) {
+      body.appendChild(item);
+    });
+    details.appendChild(body);
+
+    node.replaceWith(details);
+  }
+
+  function compactCard(card) {
+    card.classList.add("compact-object-card");
+    const nodes = Array.from(card.querySelectorAll(".object-node"));
+    const head = card.querySelector(".object-head");
+    if (head && !head.querySelector(".object-node-count")) {
+      const count = document.createElement("span");
+      count.className = "object-node-count";
+      count.textContent = nodes.length + " 条";
+      head.appendChild(count);
+    }
+    nodes.forEach(compactNode);
+  }
+
   function countNodes(cards) {
     return cards.reduce(function (sum, card) {
-      return sum + card.querySelectorAll(".object-node").length;
+      return sum + card.querySelectorAll(".compact-node, .object-node").length;
     }, 0);
   }
 
@@ -136,7 +214,7 @@
   }
 
   function structureFindings() {
-    if (findings.dataset.structured === "category-v1") return;
+    if (findings.dataset.structured === "category-v2") return;
     const rawCards = Array.from(findings.children).filter(function (node) {
       return node.classList && node.classList.contains("object-card");
     });
@@ -153,6 +231,8 @@
       const category = classify(card);
       grouped.get(category.key).cards.push(card);
     });
+
+    cards.forEach(compactCard);
 
     const activeGroups = categories
       .map(function (category) { return grouped.get(category.key); })
@@ -180,7 +260,7 @@
       findings.appendChild(section);
     });
 
-    findings.dataset.structured = "category-v1";
+    findings.dataset.structured = "category-v2";
   }
 
   let scheduled = false;
