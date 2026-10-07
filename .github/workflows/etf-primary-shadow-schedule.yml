@@ -1,0 +1,241 @@
+name: ETF Primary Shadow Preopen
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Asia/Shanghai 08:32 / 08:42 / 08:52 on weekdays.
+    - cron: "32,42,52 0 * * 1-5"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: etf-primary-official-relay
+  cancel-in-progress: true
+
+env:
+  ETF_SOURCE_REF: feat/etf-primary-monitor-v0
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout ETF shadow source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.ETF_SOURCE_REF }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install focused test dependency
+        run: python -m pip install pytest
+
+      - name: Run ETF primary focused tests
+        run: |
+          python -m pytest -q \
+            tests/test_etf_primary_classification.py \
+            tests/test_etf_primary_monitor.py \
+            tests/test_etf_primary_universe.py \
+            tests/test_etf_primary_pcf_bulk.py \
+            tests/test_etf_primary_pcf_shard.py \
+            tests/test_etf_primary_relay_merge.py \
+            tests/test_etf_primary_runtime_cycle.py \
+            tests/test_etf_primary_comparison_view.py
+
+      - name: Prepare universe, audit, and exchange PCF indexes
+        run: |
+          rm -rf /tmp/etf-primary-prepare
+          python -m runtime.etf_primary.relay_prepare \
+            --output-dir /tmp/etf-primary-prepare \
+            --timeout 20 \
+            --szse-throttle-seconds 0.20
+
+      - name: Upload prepared official data
+        uses: actions/upload-artifact@v4
+        with:
+          name: etf-primary-prepare
+          path: /tmp/etf-primary-prepare
+          retention-days: 1
+
+  szse_pcf:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    steps:
+      - name: Checkout ETF shadow source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.ETF_SOURCE_REF }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download prepared official data
+        uses: actions/download-artifact@v4
+        with:
+          name: etf-primary-prepare
+          path: /tmp/etf-primary-prepare
+
+      - name: Fetch SZSE official PCF shard
+        run: |
+          rm -rf /tmp/etf-primary-shard
+          mkdir -p /tmp/etf-primary-shard
+          python -m runtime.etf_primary.pcf_shard \
+            --full-universe /tmp/etf-primary-prepare/full_universe.json \
+            --prepare-manifest /tmp/etf-primary-prepare/prepare_manifest.json \
+            --szse-pcf-index /tmp/etf-primary-prepare/szse_pcf_index.json \
+            --output /tmp/etf-primary-shard/shard-${{ matrix.shard }}.json \
+            --shard-index ${{ matrix.shard }} \
+            --shard-count 12 \
+            --timeout 20 \
+            --workers 3
+
+      - name: Upload SZSE PCF shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: etf-primary-szse-pcf-${{ matrix.shard }}
+          path: /tmp/etf-primary-shard/shard-${{ matrix.shard }}.json
+          retention-days: 1
+
+  merge_publish:
+    needs: [prepare, szse_pcf]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout ETF shadow source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.ETF_SOURCE_REF }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download prepared official data
+        uses: actions/download-artifact@v4
+        with:
+          name: etf-primary-prepare
+          path: /tmp/etf-primary-prepare
+
+      - name: Download all SZSE PCF shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: etf-primary-szse-pcf-*
+          path: /tmp/etf-primary-shards
+          merge-multiple: true
+
+      - name: Merge and validate official relay snapshot
+        run: |
+          rm -rf /tmp/etf-primary-relay
+          python -m runtime.etf_primary.relay_merge \
+            --prepare-dir /tmp/etf-primary-prepare \
+            --shards-dir /tmp/etf-primary-shards \
+            --output-dir /tmp/etf-primary-relay/etf_primary_relay \
+            --minimum-szse-coverage 0.97
+
+      - name: Restore runtime history branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/etf-primary-runtime-state
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin refs/heads/etf-primary-runtime-data >/dev/null 2>&1; then
+            git fetch --depth=1 origin etf-primary-runtime-data
+            git worktree add --detach /tmp/etf-primary-runtime-state FETCH_HEAD
+          else
+            git worktree add --detach /tmp/etf-primary-runtime-state HEAD
+            (
+              cd /tmp/etf-primary-runtime-state
+              git checkout --orphan etf-primary-runtime-publish
+              git rm -rf .
+              mkdir -p etf_primary_runtime
+            )
+          fi
+
+      - name: Run daily snapshot and comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m http.server 8765 \
+            --bind 127.0.0.1 \
+            --directory /tmp/etf-primary-relay \
+            >/tmp/etf-primary-relay-http.log 2>&1 &
+          relay_pid=$!
+          trap 'kill "$relay_pid" 2>/dev/null || true' EXIT
+
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8765/etf_primary_relay/manifest.json >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 20 ]; then
+              cat /tmp/etf-primary-relay-http.log
+              exit 1
+            fi
+            sleep 0.25
+          done
+
+          python -m runtime.etf_primary.runtime_cycle \
+            --state-dir /tmp/etf-primary-runtime-state/etf_primary_runtime \
+            --relay-base-url http://127.0.0.1:8765/etf_primary_relay \
+            --timeout 20
+
+          python -m runtime.etf_primary.comparison_view \
+            --state-dir /tmp/etf-primary-runtime-state/etf_primary_runtime \
+            --output /tmp/etf-primary-relay/etf_primary_relay/comparison.json
+
+          kill "$relay_pid" 2>/dev/null || true
+          trap - EXIT
+
+      - name: Publish last-good relay branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout --orphan etf-primary-relay-publish
+          git rm -rf .
+          mkdir -p etf_primary_relay
+          cp -a /tmp/etf-primary-relay/etf_primary_relay/. etf_primary_relay/
+
+          git add etf_primary_relay
+          git commit -m "ETF primary relay: update official snapshot"
+          git push --force origin HEAD:etf-primary-data-relay
+
+      - name: Publish runtime history when market facts changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/etf-primary-runtime-state
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add etf_primary_runtime
+
+          if git diff --cached --quiet; then
+            echo "ETF primary runtime state unchanged; no data commit needed."
+            exit 0
+          fi
+
+          trade_date=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          payload = json.loads(Path("etf_primary_runtime/current.json").read_text(encoding="utf-8"))
+          print(payload["trade_date"])
+          PY
+          )
+          git commit -m "ETF primary runtime: ${trade_date}"
+          git push origin HEAD:etf-primary-runtime-data
