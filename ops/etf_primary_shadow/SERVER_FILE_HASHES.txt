@@ -1,0 +1,9 @@
+2026-10-07 runtime verification hashes
+
+1a278e0d7b380fe2b1d87267ced827c1a5f7e9f05997660dbeade3852b478452  /home/admin/projects/etf-primary-shadow/refresh_web_data.py
+5501bc75d37b03343fbbe74ef802d962483ddbc049601bf87af05cc270ca0546  /home/admin/projects/etf-primary-shadow/web/index.html
+85fc1126cc9e789cbdad0153d7a5a9097d6b9a9ad019290dfcbe5198a2324c78  /home/admin/bin/etf-primary-shadow-refresh.sh
+2c00fdfb01d6533c860288b213aaf6918f566a4882138c036898d1a11a300235  /home/admin/bin/etf-primary-shadow-premium-refresh.sh
+95b3e92652746f23112953f4a4f3c9582c65078054ec04583694059e79edd013  /home/admin/bin/etf-primary-shadow-run.sh
+
+These hashes identify the server-side files corresponding to the runtime contract in this directory. The web projection and reference-premium auxiliary layer must remain fail-open relative to the official PCF path.
