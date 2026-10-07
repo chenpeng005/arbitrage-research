@@ -5,7 +5,7 @@
   "app_current": "/home/admin/projects/etf-primary-shadow/releases/69da25647089cbebd0f06830395cab9bf3d0a71a",
   "runtime_data": "/home/admin/projects/etf-primary-shadow/runtime_data",
   "logs": "/home/admin/projects/etf-primary-shadow/logs",
-  "schedule": "GitHub official relay 08:32/08:42/08:52; auxiliary premium 08:35/08:55; lightweight web projection 08:38/08:48/08:58; full runtime persistence 09:08; auxiliary premium close refresh 16:20 Asia/Shanghai Mon-Fri",
+  "schedule": "GitHub official relay 08:32/08:42/08:52; formal NAV/close cache 08:35/08:55; eNAV 08:36/08:56; lightweight web projection 08:38/08:48/08:58; full runtime persistence 09:08; auxiliary close refresh 16:20 Asia/Shanghai Mon-Fri",
   "source": "official SSE+SZSE ETF PCF via etf-primary-data-relay",
   "read_only_web": true,
   "public_path": "/opportunity-portal/etf-shadow/",
@@ -33,7 +33,17 @@
     "extra_listener_check": "NONE",
     "production_runtime_etf_path": "ABSENT"
   },
-  "reading_surface": "PCF change first: previous valid trade-date baskets -> current baskets -> change; low-frequency reference premium only; realtime price/IOPV retired",
-  "preopen_projection": "reads monitor_view.json + comparison.json directly from etf-primary-data-relay; does not wait for full runtime persistence",
-  "reference_premium": "auxiliary non-canonical: latest completed close / latest formal NAV - 1; small-capacity cross-border pool + changed ETFs; cached, fail-open for display only"
+  "reading_surface": "PCF change first: previous valid trade-date baskets -> current baskets -> change; low-frequency eNAV reference premium for capacity-constrained cross-border ETFs; formal NAV fallback; realtime price/IOPV retired",
+  "preopen_projection": "reads monitor_view.json + comparison.json directly from etf-primary-data-relay; reads cached eNAV/reference premium locally; does not wait for full runtime persistence",
+  "reference_premium": "auxiliary non-canonical: prefer eNAV = formal NAV anchor advanced by completed index/proxy-ETF return + FX proxy; Japan adds current-session index overlay; fallback = latest completed close / latest formal NAV - 1; cached, fail-open for display only",
+  "enav": {
+    "scope": "28 capacity-constrained cross-border ETFs at current baseline",
+    "quality": "A=direct index; B=high-correlation ETF proxy/bridge",
+    "commodity_active_qdii": "not modeled; formal NAV fallback only",
+    "validation": "28/28 PASS on 2026-10-07; 0 errors",
+    "examples": {
+      "159501": "~11.90% estimated premium",
+      "159866": "~1.40% estimated premium"
+    }
+  }
 }
