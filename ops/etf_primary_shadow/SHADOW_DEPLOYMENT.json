@@ -1,0 +1,39 @@
+{
+  "mode": "SHADOW_ONLY",
+  "deployed_commit": "69da25647089cbebd0f06830395cab9bf3d0a71a",
+  "deployed_at": "2026-10-06T19:40:42+08:00",
+  "app_current": "/home/admin/projects/etf-primary-shadow/releases/69da25647089cbebd0f06830395cab9bf3d0a71a",
+  "runtime_data": "/home/admin/projects/etf-primary-shadow/runtime_data",
+  "logs": "/home/admin/projects/etf-primary-shadow/logs",
+  "schedule": "GitHub official relay 08:32/08:42/08:52; auxiliary premium 08:35/08:55; lightweight web projection 08:38/08:48/08:58; full runtime persistence 09:08; auxiliary premium close refresh 16:20 Asia/Shanghai Mon-Fri",
+  "source": "official SSE+SZSE ETF PCF via etf-primary-data-relay",
+  "read_only_web": true,
+  "public_path": "/opportunity-portal/etf-shadow/",
+  "web_transport": "existing nginx static alias only; no new listener",
+  "portal_navigation": false,
+  "portal_integration": false,
+  "alerts": false,
+  "auto_trading": false,
+  "validation": {
+    "compile": "PASS",
+    "first_cycle": {
+      "status": "BASELINE_CREATED",
+      "trade_date": "20260930",
+      "pcf_found_count": 1693,
+      "stale_count": 1,
+      "missing_count": 0,
+      "event_count": 0
+    },
+    "second_cycle": {
+      "status": "SAME_TRADE_DATE_NO_CHANGE",
+      "trade_date": "20260930",
+      "event_count": 0
+    },
+    "hidden_web_projection": "PASS",
+    "extra_listener_check": "NONE",
+    "production_runtime_etf_path": "ABSENT"
+  },
+  "reading_surface": "PCF change first: previous valid trade-date baskets -> current baskets -> change; low-frequency reference premium only; realtime price/IOPV retired",
+  "preopen_projection": "reads monitor_view.json + comparison.json directly from etf-primary-data-relay; does not wait for full runtime persistence",
+  "reference_premium": "auxiliary non-canonical: latest completed close / latest formal NAV - 1; small-capacity cross-border pool + changed ETFs; cached, fail-open for display only"
+}
