@@ -1,8 +1,12 @@
 {
-  "version": 1,
+  "version": 2,
   "authors": [
     {"user_name": "gaigai777", "uid": "1335908", "enabled": true},
     {"user_name": "东方龙2014", "uid": "232086", "enabled": true},
-    {"user_name": "帅牛", "uid": "7", "enabled": true}
+    {"user_name": "帅牛", "uid": "7", "enabled": true},
+    {"user_name": "孔曼子", "uid": "1677", "enabled": true},
+    {"user_name": "水龙啊", "uid": "124571", "enabled": true},
+    {"user_name": "日行一骟", "uid": "133873", "enabled": true},
+    {"user_name": "luckzpz", "uid": "858", "enabled": true}
   ]
 }
