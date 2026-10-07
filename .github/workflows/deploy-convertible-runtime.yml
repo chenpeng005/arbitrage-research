@@ -8,6 +8,7 @@ on:
       - "scripts/production/**"
       - "tests/**"
       - ".github/workflows/deploy-convertible-runtime.yml"
+      - ".github/workflows/etf-primary-shadow-schedule.yml"
   workflow_dispatch:
 
 concurrency:
@@ -59,4 +60,3 @@ jobs:
             python -m unittest discover -s tests -p "$pattern" -v
           done
           python -m unittest discover -s tests -p 'test_intelligence_radar_*.py' -v
-
