@@ -97,15 +97,9 @@ def reference_premium_targets(monitor, comparison):
     for row in monitor.get('rows') or []:
         if not isinstance(row, dict) or not is_focus_row(row):
             continue
-        key = (str(row.get('exchange') or ''), str(row.get('code') or ''))
-        executable_small_pool = (
-            isinstance(row.get('total_baskets'), int)
-            and row.get('total_baskets') > 0
-            and isinstance(row.get('account_baskets'), int)
-            and row.get('account_baskets') > 0
-        )
-        if executable_small_pool or key in changed:
-            targets.append(row)
+        # Every cross-border/QDII row gets a low-frequency formal-NAV fallback.
+        # eNAV is layered on top only where the benchmark/proxy model is trusted.
+        targets.append(row)
     targets.sort(key=lambda r: (
         0 if (str(r.get('exchange') or ''), str(r.get('code') or '')) in changed else 1,
         -(int(r.get('total_baskets') or 0)),
