@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "canonical_id": "etf-primary-shadow-ui-20261008-v1",
+  "established_at": "2026-10-08",
+  "source_file": "web/index.html",
+  "canonical_snapshot": "web/canonical/index_20261008.html",
+  "sha256": "3a774d7ce1d0b8661bbd52015d0b33eb5271c1db766572d984d45f0ae61821a6",
+  "bytes": 23771,
+  "policy": {
+    "data_refresh_must_not_change_ui": true,
+    "ui_publish_requires_hash_match": true,
+    "intentional_ui_change_requires_manifest_update": true,
+    "on_hash_mismatch": "preserve current public index.html; continue data refresh"
+  },
+  "surface": {
+    "layout": "wide dense table",
+    "max_width_px": 1880,
+    "recent_changes": "compact Chinese summary table; one ETF per row; top 12",
+    "columns": [
+      "代码/名称",
+      "层级",
+      "区域",
+      "资产",
+      "QDII",
+      "申赎清单状态",
+      "申购状态",
+      "申购容量口径",
+      "上一篮子",
+      "今日篮子",
+      "变化",
+      "单户篮子",
+      "最低账户数",
+      "单篮子资金",
+      "参考溢价",
+      "申赎清单日期",
+      "官方申赎清单"
+    ],
+    "premium": "prefer eNAV A/B; fallback formal NAV reference",
+    "realtime_iopv": "retired"
+  }
+}

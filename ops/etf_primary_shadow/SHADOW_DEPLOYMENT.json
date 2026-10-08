@@ -33,7 +33,7 @@
     "extra_listener_check": "NONE",
     "production_runtime_etf_path": "ABSENT"
   },
-  "reading_surface": "PCF change first: previous valid trade-date baskets -> current baskets -> change; low-frequency eNAV reference premium where trusted; formal NAV fallback for every cross-border/QDII ETF; realtime price/IOPV retired",
+  "reading_surface": "Canonical wide dense table (1880px): PCF previous/current/change + account/min-accounts/basket money + eNAV/formal-NAV reference premium; compact Chinese recent-change summary; realtime price/IOPV retired",
   "preopen_projection": "reads monitor_view.json + comparison.json directly from etf-primary-data-relay; reads cached eNAV/reference premium locally; does not wait for full runtime persistence",
   "reference_premium": "auxiliary non-canonical: all 284 cross-border/QDII rows get latest completed close / latest formal NAV fallback; where an A/B benchmark mapping exists, page prefers eNAV = formal NAV anchor advanced by completed direct-index/proxy return + FX proxy; Japan adds current-session index overlay; cached, fail-open for display only",
   "enav": {
@@ -47,5 +47,14 @@
       "159866": "~1.40% estimated premium",
       "159509": "~29.65% estimated premium"
     }
+  },
+  "ui_canonical": {
+    "id": "etf-primary-shadow-ui-20261008-v1",
+    "manifest": "web/UI_CANONICAL.json",
+    "snapshot": "web/canonical/index_20261008.html",
+    "sha256": "3a774d7ce1d0b8661bbd52015d0b33eb5271c1db766572d984d45f0ae61821a6",
+    "bytes": 23771,
+    "guard": "data refresh may update JSON but must not overwrite public index.html unless source hash matches canonical manifest",
+    "intentional_change": "update index.html + canonical snapshot + UI_CANONICAL.json together"
   }
 }
