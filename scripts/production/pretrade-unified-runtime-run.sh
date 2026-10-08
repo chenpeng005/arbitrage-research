@@ -81,7 +81,7 @@ poll_job() {
   return 1
 }
 
-market_payload=$(printf '{"snapshot_mode":"PRE_TRADE_CLOSE","market_cutoff":"%s","ai_execution_mode":"AUTO_API"}' "$market_cutoff")
+market_payload=$(printf '{"snapshot_mode":"CLOSE","market_cutoff":"%s","ai_execution_mode":"AUTO_API"}' "$market_cutoff")
 market_body=$(curl -fsS -X POST 'http://127.0.0.1:7080/api/market-map-runs' \
   -H 'Content-Type: application/json' \
   --data "$market_payload")
