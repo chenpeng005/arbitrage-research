@@ -17,8 +17,9 @@ from runtime.opportunity.maturity_discovery import run_maturity_discovery
 from runtime.opportunity.put_discovery import run_put_discovery
 from runtime.opportunity.revision_discovery import run_downward_revision_discovery
 
-CONTROLLER_VERSION = "opportunity-discovery-controller-v1"
+CONTROLLER_VERSION = "opportunity-discovery-controller-v1.1-path-isolation"
 ACTIVE_PATHS = ("MATURITY_CASH", "PUT", "DOWNWARD_REVISION")
+USABLE_CHILD_STATUSES = {"PASS", "INSUFFICIENT_DATA"}
 
 
 def _now() -> str:
@@ -32,6 +33,31 @@ def _write_json(path: Path, value: Any) -> None:
 
 def _index(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return {str(row["bond_code"]).zfill(6): row for row in rows}
+
+
+def _aggregate_runtime_status(
+    child_runs: dict[str, dict[str, Any]],
+) -> tuple[str, list[str]]:
+    """Separate runtime integrity from path-local economic uncertainty.
+
+    A child Path may legitimately contain row-level INSUFFICIENT_DATA while
+    still returning a complete, structurally usable judgment table. That
+    uncertainty must stay local to the affected bond/path and must not block
+    the other independent paths or the all-market projection.
+    """
+    degraded_paths = [
+        path_id
+        for path_id, child in child_runs.items()
+        if child.get("status") == "INSUFFICIENT_DATA"
+    ]
+    structurally_usable = all(
+        child.get("status") in USABLE_CHILD_STATUSES
+        for child in child_runs.values()
+    )
+    return (
+        "PASS" if structurally_usable else "INSUFFICIENT_DATA",
+        degraded_paths,
+    )
 
 
 def run_opportunity_discovery(
@@ -94,8 +120,7 @@ def run_opportunity_discovery(
             **child["judgment"]["summary"],
         }
 
-    all_pass = all(child["status"] == "PASS" for child in child_runs.values())
-    status = "PASS" if all_pass else "INSUFFICIENT_DATA"
+    status, degraded_paths = _aggregate_runtime_status(child_runs)
 
     any_keep = sum(
         any(path.get("economic_status") == "KEEP" for path in bond["paths"].values())
@@ -117,6 +142,7 @@ def run_opportunity_discovery(
         "active_paths": list(ACTIVE_PATHS),
         "connected_paths": list(ACTIVE_PATHS),
         "not_connected_paths": [],
+        "degraded_paths": degraded_paths,
         "path_summary": path_summary,
         "bonds_with_any_keep": any_keep,
         "bonds": bonds,
@@ -137,6 +163,7 @@ def run_opportunity_discovery(
             "market_cutoff": result["market_cutoff"],
             "application_commit_sha": result["application_commit_sha"],
             "knowledge_commit_sha": result["knowledge_commit_sha"],
+            "degraded_paths": degraded_paths,
             "child_runs": {
                 path_id: child["run_id"]
                 for path_id, child in child_runs.items()
@@ -160,6 +187,7 @@ def run_opportunity_discovery(
             "status": status,
             "connected_paths": result["connected_paths"],
             "not_connected_paths": result["not_connected_paths"],
+            "degraded_paths": degraded_paths,
             "bonds_with_any_keep": any_keep,
             "result_path": str(run_dir / "economic_path_registry.json"),
         },
