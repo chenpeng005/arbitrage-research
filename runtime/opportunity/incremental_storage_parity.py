@@ -11,7 +11,7 @@ from typing import Any
 from runtime.opportunity.incremental_storage import connect
 
 
-PARITY_VERSION = "incremental-storage-parity-v1"
+PARITY_VERSION = "incremental-storage-parity-v1.1-pending-retained-binding"
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -147,6 +147,7 @@ def audit_json_sqlite_parity(
         }
         ledger_results = ledger.get("results", {})
         current_json_results = {}
+        pending_retained_binding_keys: set[str] = set()
         for key, trigger_row in trigger.get("paths", {}).items():
             current_trigger_key = trigger_row.get("last_trigger_key")
             if not current_trigger_key:
@@ -154,6 +155,19 @@ def audit_json_sqlite_parity(
             row = ledger_results.get(current_trigger_key)
             if row is not None:
                 current_json_results[key] = row
+                continue
+
+            # A newly emitted state/event trigger can be PENDING before it has a
+            # replacement Result. SQLite deliberately retains the previous
+            # current binding so historical research remains addressable; the
+            # binding's checked state/research versions keep it from satisfying
+            # the new trigger through REUSE. This retained binding is therefore
+            # a legitimate current-binding row, not a parity leak.
+            if (
+                trigger_row.get("research_status") == "PENDING"
+                and key in current_bindings
+            ):
+                pending_retained_binding_keys.add(key)
 
         for key, row in current_json_results.items():
             db = current_bindings.get(key)
@@ -173,12 +187,29 @@ def audit_json_sqlite_parity(
                     actual=db["result_id"],
                 )
 
+        expected_binding_keys = (
+            set(current_json_results) | pending_retained_binding_keys
+        )
+        for key in sorted(set(current_bindings) - expected_binding_keys):
+            db = current_bindings[key]
+            add(
+                "UNEXPECTED_CURRENT_RESEARCH_BINDING",
+                bond_code=key.split(":", 1)[0],
+                path_id=key.split(":", 1)[1],
+                result_id=db.get("result_id"),
+                validity_status=db.get("validity_status"),
+            )
+
         metrics = {
             "json_market_rows": len(market.get("rows", [])),
             "sqlite_market_rows": len(db_market),
             "json_path_states": len(trigger.get("paths", {})),
             "sqlite_path_states": len(db_states),
             "json_research_results": len(current_json_results),
+            "json_pending_retained_bindings": len(
+                pending_retained_binding_keys
+            ),
+            "json_expected_current_bindings": len(expected_binding_keys),
             "json_research_history_results": len(ledger_results),
             "sqlite_current_bindings": len(current_bindings),
             "json_opportunity_bonds": int(registry.get("bonds_with_any_keep", 0)),
@@ -202,7 +233,11 @@ def audit_json_sqlite_parity(
         for left, right, label in [
             ("json_market_rows", "sqlite_market_rows", "MARKET_ROW_COUNT"),
             ("json_path_states", "sqlite_path_states", "PATH_STATE_COUNT"),
-            ("json_research_results", "sqlite_current_bindings", "RESEARCH_BINDING_COUNT"),
+            (
+                "json_expected_current_bindings",
+                "sqlite_current_bindings",
+                "RESEARCH_BINDING_COUNT",
+            ),
             ("json_opportunity_bonds", "sqlite_opportunity_bonds", "OPPORTUNITY_BOND_COUNT"),
             ("json_keep_paths", "sqlite_keep_paths", "KEEP_PATH_COUNT"),
         ]:
