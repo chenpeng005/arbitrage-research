@@ -21,7 +21,7 @@ from runtime.opportunity.evidence_sources import (
 )
 from runtime.opportunity.incremental_storage import connect
 
-INFORMATION_SCAN_VERSION = "incremental-information-scan-v1"
+INFORMATION_SCAN_VERSION = "incremental-information-scan-v1.1-empty-day-boundary"
 
 def put_notice_kind(title: str) -> str | None:
     if "回售" not in title:
@@ -46,6 +46,7 @@ def classify_relevant_notice(title: str) -> str | None:
     if is_maturity_research_notice(title):
         return maturity_notice_kind(title)
     return None
+
 def _normalize_date(value: Any) -> str:
     try:
         return pd.Timestamp(value).strftime("%Y-%m-%d")
@@ -83,7 +84,35 @@ def scan_daily_relevant_notices(
         raise ValueError("date must be YYYYMMDD")
     issuer_map = _issuer_map(target_db)
     fetcher = fetcher or ak.stock_notice_report
-    frame = fetcher(symbol="全部", date=date).copy()
+    source_empty_day_fallback = False
+    try:
+        frame = fetcher(symbol="全部", date=date).copy()
+    except KeyError as exc:
+        # AKShare/Eastmoney currently raises KeyError('代码') internally when
+        # a requested date has zero notice rows. This exact boundary is an
+        # empty official-notice day, not a source-integrity failure.
+        if exc.args != ("代码",):
+            raise
+        frame = pd.DataFrame()
+        source_empty_day_fallback = True
+
+    if frame.empty:
+        return {
+            "information_scan_version": INFORMATION_SCAN_VERSION,
+            "status": "PASS",
+            "scan_date": date,
+            "all_notice_count": 0,
+            "active_issuer_count": len(issuer_map),
+            "relevant_document_count": 0,
+            "affected_bond_count": 0,
+            "event_kind_summary": {},
+            "documents": [],
+            "source_empty_day_fallback": source_empty_day_fallback,
+        }
+    if "代码" not in frame.columns:
+        raise RuntimeError(
+            "announcement source returned non-empty data without required column: 代码"
+        )
 
     documents: list[dict[str, Any]] = []
     seen_keys: set[str] = set()
@@ -134,5 +163,5 @@ def scan_daily_relevant_notices(
         "affected_bond_count": len(affected_bond_codes),
         "event_kind_summary": dict(sorted(kinds.items())),
         "documents": documents,
+        "source_empty_day_fallback": source_empty_day_fallback,
     }
-
