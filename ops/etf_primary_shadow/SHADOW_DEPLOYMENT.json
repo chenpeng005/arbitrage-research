@@ -1,0 +1,60 @@
+{
+  "mode": "SHADOW_ONLY",
+  "deployed_commit": "69da25647089cbebd0f06830395cab9bf3d0a71a",
+  "deployed_at": "2026-10-06T19:40:42+08:00",
+  "app_current": "/home/admin/projects/etf-primary-shadow/releases/69da25647089cbebd0f06830395cab9bf3d0a71a",
+  "runtime_data": "/home/admin/projects/etf-primary-shadow/runtime_data",
+  "logs": "/home/admin/projects/etf-primary-shadow/logs",
+  "schedule": "GitHub official relay 08:32/08:42/08:52; formal NAV/close cache 08:35/08:55; eNAV 08:36/08:56; lightweight web projection 08:38/08:48/08:58; full runtime persistence 09:08; auxiliary close refresh 16:20 Asia/Shanghai Mon-Fri",
+  "source": "official SSE+SZSE ETF PCF via etf-primary-data-relay",
+  "read_only_web": true,
+  "public_path": "/opportunity-portal/etf-shadow/",
+  "web_transport": "existing nginx static alias only; no new listener",
+  "portal_navigation": false,
+  "portal_integration": false,
+  "alerts": false,
+  "auto_trading": false,
+  "validation": {
+    "compile": "PASS",
+    "first_cycle": {
+      "status": "BASELINE_CREATED",
+      "trade_date": "20260930",
+      "pcf_found_count": 1693,
+      "stale_count": 1,
+      "missing_count": 0,
+      "event_count": 0
+    },
+    "second_cycle": {
+      "status": "SAME_TRADE_DATE_NO_CHANGE",
+      "trade_date": "20260930",
+      "event_count": 0
+    },
+    "hidden_web_projection": "PASS",
+    "extra_listener_check": "NONE",
+    "production_runtime_etf_path": "ABSENT"
+  },
+  "reading_surface": "Canonical wide dense table (1880px): PCF previous/current/change + account/min-accounts/basket money + eNAV/formal-NAV reference premium; compact Chinese recent-change summary; realtime price/IOPV retired",
+  "preopen_projection": "reads monitor_view.json + comparison.json directly from etf-primary-data-relay; reads cached eNAV/reference premium locally; does not wait for full runtime persistence",
+  "reference_premium": "auxiliary non-canonical: all 284 cross-border/QDII rows get latest completed close / latest formal NAV fallback; where an A/B benchmark mapping exists, page prefers eNAV = formal NAV anchor advanced by completed direct-index/proxy return + FX proxy; Japan adds current-session index overlay; cached, fail-open for display only",
+  "enav": {
+    "scope": "116 cross-border/QDII ETFs with trusted A/B mapping out of 284 formal-NAV anchors",
+    "quality": "A=direct index (37); B=high-correlation ETF/same-theme index proxy (79)",
+    "formal_fallback": "168 rows: 136 no trusted proxy yet + 32 mixed A/H market indices",
+    "commodity_active_qdii": "not modeled; formal NAV fallback only",
+    "validation": "116/116 PASS on 2026-10-07; 0 errors",
+    "examples": {
+      "159501": "~11.90% estimated premium",
+      "159866": "~1.40% estimated premium",
+      "159509": "~29.65% estimated premium"
+    }
+  },
+  "ui_canonical": {
+    "id": "etf-primary-shadow-ui-20261008-v1",
+    "manifest": "web/UI_CANONICAL.json",
+    "snapshot": "web/canonical/index_20261008.html",
+    "sha256": "3a774d7ce1d0b8661bbd52015d0b33eb5271c1db766572d984d45f0ae61821a6",
+    "bytes": 23771,
+    "guard": "data refresh may update JSON but must not overwrite public index.html unless source hash matches canonical manifest",
+    "intentional_change": "update index.html + canonical snapshot + UI_CANONICAL.json together"
+  }
+}
