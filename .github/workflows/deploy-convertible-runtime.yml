@@ -55,7 +55,7 @@ jobs:
       - name: Run convertible deployment tests
         shell: bash
         run: |
-          for pattern in             test_daily_research_decoupling_v1.py             test_token_cost_gate_v1.py             test_reminder_policy_v2.py             test_information_change_source_fk_v1.py             test_discovery_controller_path_isolation_v1.py             test_deployment_gate.py
+          for pattern in             test_daily_research_decoupling_v1.py             test_token_cost_gate_v1.py             test_reminder_policy_v2.py             test_information_change_source_fk_v1.py             test_discovery_controller_path_isolation_v1.py             test_information_scan_empty_day_v1.py             test_deployment_gate.py
           do
             python -m unittest discover -s tests -p "$pattern" -v
           done
