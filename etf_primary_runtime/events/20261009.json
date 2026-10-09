@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "trade_date": "20261009",
+  "previous_trade_date": "20261008",
+  "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+  "generated_at": "2026-10-09T00:49:08.521534+00:00",
+  "event_count": 9,
+  "events": [
+    {
+      "code": "511200",
+      "exchange": "SSE",
+      "event_type": "TOTAL_CAPACITY_JUMP",
+      "severity": "HIGH",
+      "message": "Binding no-offset creation capacity (CUMULATIVE) increased from 100 to 700 whole baskets.",
+      "previous_value": 100,
+      "current_value": 700,
+      "trade_date": "20261009",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-09T00:49:07.356712+00:00"
+    },
+    {
+      "code": "513580",
+      "exchange": "SSE",
+      "event_type": "TOTAL_CAPACITY_JUMP",
+      "severity": "HIGH",
+      "message": "Binding no-offset creation capacity (CUMULATIVE) increased from 30 to 200 whole baskets.",
+      "previous_value": 30,
+      "current_value": 200,
+      "trade_date": "20261009",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-09T00:49:07.356712+00:00"
+    },
+    {
+      "code": "517900",
+      "exchange": "SSE",
+      "event_type": "TOTAL_CAPACITY_JUMP",
+      "severity": "HIGH",
+      "message": "Binding no-offset creation capacity (CUMULATIVE) increased from 2 to 100 whole baskets.",
+      "previous_value": 2,
+      "current_value": 100,
+      "trade_date": "20261009",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-09T00:49:07.356712+00:00"
+    },
+    {
+      "code": "159329",
+      "exchange": "SZSE",
+      "event_type": "CREATION_SUSPENDED",
+      "severity": "LOW",
+      "message": "ETF creation changed from open to closed.",
+      "previous_value": null,
+      "current_value": null,
+      "trade_date": "20261009",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-09T00:49:07.356712+00:00"
+    },
+    {
+      "code": "515180",
+      "exchange": "SSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from NONE to CUMULATIVE.",
+      "previous_value": null,
+      "current_value": "CUMULATIVE",
+      "trade_date": "20261009",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-09T00:49:07.356712+00:00"
+    },
+    {
+      "code": "517550",
+      "exchange": "SSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from CUMULATIVE to NONE.",
+      "previous_value": "CUMULATIVE",
+      "current_value": null,
+      "trade_date": "20261009",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-09T00:49:07.356712+00:00"
+    },
+    {
+      "code": "517850",
+      "exchange": "SSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from CUMULATIVE to NONE.",
+      "previous_value": "CUMULATIVE",
+      "current_value": null,
+      "trade_date": "20261009",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-09T00:49:07.356712+00:00"
+    },
+    {
+      "code": "517990",
+      "exchange": "SSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from CUMULATIVE to NONE.",
+      "previous_value": "CUMULATIVE",
+      "current_value": null,
+      "trade_date": "20261009",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-09T00:49:07.356712+00:00"
+    },
+    {
+      "code": "159273",
+      "exchange": "SZSE",
+      "event_type": "CREATION_UNIT_REDUCED",
+      "severity": "MEDIUM",
+      "message": "Creation unit fell from 2000000 to 1500000 shares.",
+      "previous_value": 2000000,
+      "current_value": 1500000,
+      "trade_date": "20261009",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-09T00:49:07.356712+00:00"
+    }
+  ]
+}
