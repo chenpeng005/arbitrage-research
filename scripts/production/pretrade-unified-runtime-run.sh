@@ -88,15 +88,32 @@ market_body=$(curl -fsS -X POST 'http://127.0.0.1:7080/api/market-map-runs' \
 market_job=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' <<<"$market_body")
 poll_job "$market_job" "MARKET_MAP"
 
-core_body=$(curl -fsS -X POST 'http://127.0.0.1:7080/api/opportunity/full-runs'   -H 'Content-Type: application/json'   --data '{"source_mode":"LATEST_FORMAL","run_research":false,"ai_execution_mode":"AUTO_API","research_batch_limit":5,"max_research_rounds":1}')
+core_body=$(curl -fsS -X POST 'http://127.0.0.1:7080/api/opportunity/full-runs' \
+  -H 'Content-Type: application/json' \
+  --data '{"source_mode":"LATEST_FORMAL","run_research":false,"ai_execution_mode":"AUTO_API","research_batch_limit":5,"max_research_rounds":1}')
 core_job=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' <<<"$core_body")
 poll_job "$core_job" "OPPORTUNITY_CORE"
 
-if /home/admin/bin/information-runtime-run.sh   --target-date "$today"   --execution-mode AUTO_API   --path-limit 5; then
+information_status="PASS"
+if /home/admin/bin/information-runtime-run.sh \
+  --target-date "$today" \
+  --execution-mode AUTO_API \
+  --path-limit 5; then
   echo "[$(date '+%F %T %Z')] INFORMATION_RESEARCH PASS"
 else
   rc=$?
+  information_status="WARNING"
   echo "[$(date '+%F %T %Z')] WARNING: information/research enrichment failed rc=$rc; core market/opportunity update remains valid"
+fi
+
+if .venv/bin/python -m runtime.opportunity.daily_notification_snapshot \
+  --data-root "$RUNTIME_DATA_ROOT" \
+  --snapshot-date "$today" \
+  --update-status "$information_status"; then
+  echo "[$(date '+%F %T %Z')] REMINDER_SNAPSHOT PASS: $today"
+else
+  snapshot_rc=$?
+  echo "[$(date '+%F %T %Z')] WARNING: reminder snapshot failed rc=$snapshot_rc; runtime result remains valid"
 fi
 
 echo "[$(date '+%F %T %Z')] PASS unified pre-trade update"
