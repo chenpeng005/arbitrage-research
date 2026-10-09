@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-https://github.com/chenpeng005/arbitrage-research.git}"
 REPO_API="${REPO_API:-https://api.github.com/repos/chenpeng005/arbitrage-research}"
 WORKFLOW_FILE="${WORKFLOW_FILE:-deploy-convertible-runtime.yml}"
 LIVE_ROOT="${LIVE_ROOT:-/home/admin/projects/arbitrage-runtime}"
@@ -32,13 +31,16 @@ if ! acquire_lock; then
 fi
 trap 'rm -rf "$LOCK_DIR"' EXIT
 
-if ! remote_line="$(
-  GIT_TERMINAL_PROMPT=0 timeout 15s git ls-remote "$REPO_URL" refs/heads/main
+if ! remote_json="$(
+  curl -fsSL --connect-timeout 5 --max-time 15 \
+    -H 'Accept: application/vnd.github+json' \
+    -H 'X-GitHub-Api-Version: 2022-11-28' \
+    "$REPO_API/branches/main"
 )"; then
-  echo "[autodeploy] GitHub HEAD check timed out/failed; defer to next timer"
+  echo "[autodeploy] GitHub HEAD API check timed out/failed; defer to next timer"
   exit 0
 fi
-remote_sha="$(awk 'NR==1 {print $1}' <<<"$remote_line")"
+remote_sha="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["commit"]["sha"])' <<<"$remote_json")"
 if [[ ! "$remote_sha" =~ ^[0-9a-f]{40}$ ]]; then
   echo "[autodeploy] invalid remote SHA: $remote_sha" >&2
   exit 2
