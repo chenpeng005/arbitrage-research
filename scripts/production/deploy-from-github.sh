@@ -19,7 +19,7 @@ fi
 
 echo "[deploy] validate staged source $APP_COMMIT_SHA"
 needle="\\[executed on dev""ice:"
-if grep -R "$needle"   "$STAGE_ROOT/runtime" "$STAGE_ROOT/scripts/production"   --include="*.py" --include="*.sh" -n; then
+if grep -R "$needle" "$STAGE_ROOT/runtime" "$STAGE_ROOT/scripts/production" --include="*.py" --include="*.sh" -n; then
   echo "source contamination detected" >&2
   exit 3
 fi
@@ -29,7 +29,12 @@ fi
 # live root can accidentally import the old live runtime while testing new files.
 (
   cd "$STAGE_ROOT"
-  PYTHONPATH="$STAGE_ROOT" "$PY" -m py_compile   "$STAGE_ROOT/runtime/opportunity/research_trigger.py"   "$STAGE_ROOT/runtime/opportunity/full_runtime_controller.py"   "$STAGE_ROOT/runtime/opportunity/incremental_information_controller.py"   "$STAGE_ROOT/runtime/web/app.py" \
+  PYTHONPATH="$STAGE_ROOT" "$PY" -m py_compile \
+    "$STAGE_ROOT/runtime/opportunity/research_trigger.py" \
+    "$STAGE_ROOT/runtime/opportunity/full_runtime_controller.py" \
+    "$STAGE_ROOT/runtime/opportunity/incremental_information_controller.py" \
+    "$STAGE_ROOT/runtime/opportunity/daily_notification_snapshot.py" \
+    "$STAGE_ROOT/runtime/web/app.py" \
     "$STAGE_ROOT/runtime/intelligence_radar/daily.py" \
     "$STAGE_ROOT/runtime/intelligence_radar/jisilu.py" \
     "$STAGE_ROOT/runtime/intelligence_radar/filtering.py" \
@@ -41,7 +46,13 @@ fi
     "$STAGE_ROOT/runtime/intelligence_radar/xueqiu_daily.py" \
     "$STAGE_ROOT/runtime/intelligence_radar/run_all.py"
 
-  for pattern in test_daily_research_decoupling_v1.py test_token_cost_gate_v1.py test_reminder_policy_v2.py test_information_change_source_fk_v1.py; do
+  for pattern in \
+    test_daily_research_decoupling_v1.py \
+    test_token_cost_gate_v1.py \
+    test_reminder_policy_v2.py \
+    test_information_change_source_fk_v1.py \
+    test_daily_notification_snapshot_v1.py
+  do
     PYTHONPATH="$STAGE_ROOT" "$PY" -m unittest discover -s "$STAGE_ROOT/tests" -p "$pattern" -v
   done
   PYTHONPATH="$STAGE_ROOT" "$PY" -m unittest discover \
@@ -54,7 +65,7 @@ mkdir -p "$backup"
 cp -a "$LIVE_ROOT/runtime" "$backup/runtime"
 cp -a "$LIVE_ROOT/scripts" "$backup/scripts"
 cp -a "$LIVE_ROOT/tests" "$backup/tests"
-cp -a "$LIVE_ROOT/runtime_data/deployment_manifest.json"   "$backup/deployment_manifest.json"
+cp -a "$LIVE_ROOT/runtime_data/deployment_manifest.json" "$backup/deployment_manifest.json"
 
 rollback() {
   rc=$?
@@ -66,7 +77,7 @@ rollback() {
   cp -a "$backup/runtime" "$LIVE_ROOT/runtime"
   cp -a "$backup/scripts" "$LIVE_ROOT/scripts"
   cp -a "$backup/tests" "$LIVE_ROOT/tests"
-  cp -a "$backup/deployment_manifest.json"     "$LIVE_ROOT/runtime_data/deployment_manifest.json"
+  cp -a "$backup/deployment_manifest.json" "$LIVE_ROOT/runtime_data/deployment_manifest.json"
   if [[ -x /home/admin/bin/arbitrage-web-runtime-start.sh ]]; then
     /home/admin/bin/arbitrage-web-runtime-start.sh || true
   fi
@@ -128,6 +139,8 @@ cd "$LIVE_ROOT"
 export PYTHONPATH="$LIVE_ROOT"
 export RUNTIME_DATA_ROOT="$LIVE_ROOT/runtime_data"
 "$PY" -m runtime.deployment_gate --data-root "$RUNTIME_DATA_ROOT"
+"$PY" -m runtime.opportunity.daily_notification_snapshot \
+  --data-root "$RUNTIME_DATA_ROOT" --publish-only
 
 /home/admin/bin/arbitrage-web-runtime-start.sh
 curl -fsS http://127.0.0.1:7080/api/opportunity/information-status >/dev/null
