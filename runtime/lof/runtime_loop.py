@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Callable
 from zoneinfo import ZoneInfo
 
+from .daily_reminder import LofDailyReminderStore
 from .nav import OfficialNavRecord, fetch_all_official_nav
 from .runtime_session import LofRuntimeSession
 from .snapshot_store import LofSnapshotStore
@@ -82,6 +83,7 @@ def run_runtime_loop(
 ) -> int:
     now_fn = now_fn or (lambda: datetime.now(SHANGHAI_TZ))
     store = LofSnapshotStore(data_root)
+    reminder_store = LofDailyReminderStore(data_root)
     stop_event = threading.Event()
 
     def request_stop(signum, frame) -> None:
@@ -184,6 +186,24 @@ def run_runtime_loop(
                 ),
                 path=str(path),
             )
+            try:
+                reminder_events = reminder_store.observe_snapshot(snapshot)
+                if reminder_events:
+                    _log(
+                        "daily_reminder_events_observed",
+                        count=len(reminder_events),
+                        event_types=[
+                            event.get("event_type")
+                            for event in reminder_events
+                        ],
+                    )
+            except Exception as exc:
+                # Reminder projection must never stop the primary market
+                # snapshot runtime. It has its own observable failure lane.
+                _log(
+                    "daily_reminder_observe_failed",
+                    error=f"{type(exc).__name__}:{exc}",
+                )
         except Exception as exc:
             _log(
                 "snapshot_failed",
