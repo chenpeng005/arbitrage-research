@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from runtime.lof.state import (
     normalize_redemption_status,
+    normalize_subscription_limit,
     normalize_subscription_status,
     parse_eastmoney_trade_state,
 )
@@ -82,6 +83,22 @@ class LofTradeStateTest(unittest.TestCase):
         self.assertEqual(row.subscription_status, "UNKNOWN")
         self.assertEqual(row.redemption_status, "UNKNOWN")
         self.assertEqual(row.error, "NO_STATE_DATA")
+
+    def test_subscription_limit_semantics_are_preserved(self) -> None:
+        limit_type, amount, raw = normalize_subscription_limit("不限额")
+        self.assertEqual(limit_type, "UNLIMITED")
+        self.assertIsNone(amount)
+        self.assertEqual(raw, "不限额")
+
+        limit_type, amount, raw = normalize_subscription_limit("999999999")
+        self.assertEqual(limit_type, "NUMERIC")
+        self.assertEqual(amount, Decimal("999999999"))
+        self.assertEqual(raw, "999999999")
+
+        limit_type, amount, raw = normalize_subscription_limit("not-a-number")
+        self.assertEqual(limit_type, "UNKNOWN")
+        self.assertIsNone(amount)
+        self.assertEqual(raw, "not-a-number")
 
     def test_normalizers_are_conservative(self) -> None:
         self.assertEqual(normalize_subscription_status("开放申购"), "OPEN")
