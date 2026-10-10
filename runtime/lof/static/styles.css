@@ -14,12 +14,13 @@ body { margin: 0; }
 h1 { margin: 0; font-size: 24px; }
 .subtitle { margin: 5px 0 0; color: #667085; font-size: 13px; }
 .top-actions { display: flex; align-items: center; gap: 10px; }
-button, select, input {
+button, select, input, .nav-link {
   border: 1px solid #d0d5dd; background: #fff; border-radius: 7px;
   padding: 8px 10px; font-size: 14px;
 }
 button { cursor: pointer; }
-button:hover { background: #f9fafb; }
+.nav-link { color: #344054; text-decoration: none; }
+button:hover, .nav-link:hover { background: #f9fafb; }
 button:disabled { opacity: .5; cursor: default; }
 .summary {
   display: grid; grid-template-columns: repeat(8, minmax(120px, 1fr));

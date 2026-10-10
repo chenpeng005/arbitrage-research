@@ -1,0 +1,12 @@
+[Unit]
+Description=LOF Daily Reminder Generator
+After=network-online.target lof-opportunity-updater.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=admin
+WorkingDirectory=/home/admin/projects/lof-opportunity-runtime/current
+Environment=PYTHONPATH=/home/admin/projects/lof-opportunity-runtime/current
+Environment=LOF_RUNTIME_DATA_ROOT=/home/admin/projects/lof-opportunity-runtime/runtime_data
+ExecStart=/home/admin/projects/lof-opportunity-runtime/.venv/bin/python -m runtime.lof.daily_reminder --data-root /home/admin/projects/lof-opportunity-runtime/runtime_data --skip-if-missing

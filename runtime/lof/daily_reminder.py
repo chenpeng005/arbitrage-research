@@ -367,11 +367,33 @@ class LofDailyReminderStore:
         self._atomic_write(self.latest_path, payload)
         return reminder
 
+    def load_daily_reminder(self, trade_date: str) -> dict | None:
+        path = self.daily_dir / f"{trade_date}.json"
+        if not path.exists():
+            return None
+        value = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(value, dict):
+            raise ValueError("daily reminder must be an object")
+        return value
+
+    def load_latest_daily_reminder(self) -> dict | None:
+        if not self.latest_path.exists():
+            return None
+        value = json.loads(self.latest_path.read_text(encoding="utf-8"))
+        if not isinstance(value, dict):
+            raise ValueError("latest daily reminder must be an object")
+        return value
+
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Build LOF daily reminder snapshot.")
     parser.add_argument("--data-root", required=True)
     parser.add_argument("--date", dest="trade_date")
+    parser.add_argument(
+        "--skip-if-missing",
+        action="store_true",
+        help="Exit successfully when the requested date has no reliable candidate.",
+    )
     return parser
 
 
@@ -379,7 +401,22 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     trade_date = args.trade_date or datetime.now(SHANGHAI_TZ).date().isoformat()
     store = LofDailyReminderStore(args.data_root)
-    reminder = store.build_daily_reminder(trade_date)
+    try:
+        reminder = store.build_daily_reminder(trade_date)
+    except FileNotFoundError as exc:
+        if not args.skip_if_missing:
+            raise
+        print(
+            json.dumps(
+                {
+                    "status": "SKIP_NO_CANDIDATE",
+                    "trade_date": trade_date,
+                    "detail": str(exc),
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 0
     print(json.dumps(reminder, ensure_ascii=False, default=_json_default))
     return 0
 

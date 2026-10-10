@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LOF 今日提醒</title>
+  <link rel="stylesheet" href="/static/reminder.css">
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>LOF 今日提醒</h1>
+        <p class="subtitle">20:55 自动收口 · 申购变化 · 折溢价排名</p>
+      </div>
+      <div class="top-actions">
+        <a class="nav-link" href="/">返回全市场</a>
+        <button id="refreshBtn" type="button">刷新</button>
+      </div>
+    </header>
+
+    <div id="statusBanner" class="banner loading">正在加载提醒…</div>
+
+    <section class="summary" aria-label="提醒概览">
+      <div class="card"><span>显示交易日</span><strong id="tradeDate">—</strong></div>
+      <div class="card"><span>申购状态变化</span><strong id="statusChangeCount">—</strong></div>
+      <div class="card"><span>申购限额变化</span><strong id="limitChangeCount">—</strong></div>
+      <div class="card"><span>收口快照</span><strong id="snapshotTime">—</strong></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <div><span class="section-key">A</span><h2>申购状态变化</h2></div>
+        <span id="statusChangeMeta" class="muted"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>序号</th><th>代码 / 名称</th><th>原状态</th><th>新状态</th><th>首次观察</th><th>来源</th></tr></thead>
+          <tbody id="statusChanges"></tbody>
+        </table>
+        <div id="statusEmpty" class="empty hidden">当日无申购状态变化。</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <div><span class="section-key">B</span><h2>申购限额变化</h2></div>
+        <span id="limitChangeMeta" class="muted"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>序号</th><th>代码 / 名称</th><th>原限额</th><th>新限额</th><th>首次观察</th><th>来源</th></tr></thead>
+          <tbody id="limitChanges"></tbody>
+        </table>
+        <div id="limitEmpty" class="empty hidden">当日无申购限额变化。</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title"><div><span class="section-key">C</span><h2>官方 NAV 折溢价 TOP5</h2></div><span class="muted">仅使用最后可靠快照；保留 T-1 / T-2 标识</span></div>
+      <div class="rank-grid">
+        <div class="rank-card">
+          <h3>溢价 TOP5</h3>
+          <div class="table-wrap compact"><table><thead><tr><th>#</th><th>代码 / 名称</th><th>现价</th><th>官方NAV</th><th>溢价</th><th>NAV日期</th></tr></thead><tbody id="officialPremium"></tbody></table><div id="officialPremiumEmpty" class="empty hidden">无可靠溢价候选。</div></div>
+        </div>
+        <div class="rank-card">
+          <h3>折价 TOP5</h3>
+          <div class="table-wrap compact"><table><thead><tr><th>#</th><th>代码 / 名称</th><th>现价</th><th>官方NAV</th><th>折价</th><th>NAV日期</th></tr></thead><tbody id="officialDiscount"></tbody></table><div id="officialDiscountEmpty" class="empty hidden">无可靠折价候选。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title"><div><span class="section-key">D</span><h2>估算 NAV 折溢价 TOP5</h2></div><span class="muted">STALE / UNAVAILABLE 不参与排名</span></div>
+      <div class="rank-grid">
+        <div class="rank-card">
+          <h3>溢价 TOP5</h3>
+          <div class="table-wrap compact"><table><thead><tr><th>#</th><th>代码 / 名称</th><th>现价</th><th>估算NAV</th><th>溢价</th><th>估值质量 / 方法</th></tr></thead><tbody id="estimatedPremium"></tbody></table><div id="estimatedPremiumEmpty" class="empty hidden">无可靠溢价候选。</div></div>
+        </div>
+        <div class="rank-card">
+          <h3>折价 TOP5</h3>
+          <div class="table-wrap compact"><table><thead><tr><th>#</th><th>代码 / 名称</th><th>现价</th><th>估算NAV</th><th>折价</th><th>估值质量 / 方法</th></tr></thead><tbody id="estimatedDiscount"></tbody></table><div id="estimatedDiscountEmpty" class="empty hidden">无可靠折价候选。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer"><span id="snapshotMeta">—</span></footer>
+  </main>
+  <script src="/static/reminder.js"></script>
+</body>
+</html>

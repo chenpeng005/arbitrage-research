@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from .daily_reminder import LofDailyReminderStore
 from .estimate_freshness_audit import load_freshness_audit
 from .estimate_validation import load_estimate_validation_summary
 from .nav_freshness import nav_freshness_summary
@@ -25,6 +28,8 @@ DATA_ROOT = Path(
 )
 
 store = LofSnapshotStore(DATA_ROOT)
+reminder_store = LofDailyReminderStore(DATA_ROOT)
+SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
 app = FastAPI(title="LOF Opportunity Monitor")
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -33,6 +38,29 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 @app.get("/")
 def index():
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/reminder")
+def reminder_page():
+    return FileResponse(STATIC_DIR / "reminder.html")
+
+
+@app.get("/api/lof/daily-reminder")
+def daily_reminder():
+    requested_date = datetime.now(SHANGHAI_TZ).date().isoformat()
+    today = reminder_store.load_daily_reminder(requested_date)
+    if today is not None:
+        return {
+            "status": "TODAY",
+            "requested_date": requested_date,
+            "reminder": today,
+        }
+    latest = reminder_store.load_latest_daily_reminder()
+    return {
+        "status": "LATEST" if latest is not None else "UNAVAILABLE",
+        "requested_date": requested_date,
+        "reminder": latest,
+    }
 
 
 @app.get("/api/health")
