@@ -1,9 +1,9 @@
 {
-  "status": "DIFF_COMPLETED",
+  "status": "SAME_TRADE_DATE_REFRESHED",
   "trade_date": "20261009",
-  "previous_trade_date": "20261008",
-  "event_count": 9,
-  "snapshot_sha256": "b7a5ac1e839a75af9065a8e48e38ec3ce077d3628cd97e8e1eebfc9200b7f505",
+  "previous_trade_date": "20261009",
+  "event_count": 0,
+  "snapshot_sha256": "f180cd0f04133d6e9c21358eb2cda7fa97d20d6020238d99656f056b59171a75",
   "pcf_found_count": 1694,
   "stale_count": 1,
   "missing_count": 0,
