@@ -17,6 +17,7 @@ LOF_REQUIRED_CANONICAL_PATHS = (
     "05 套利研究/LOF机会发现/00_当前有效/00_恢复入口.md",
     "05 套利研究/LOF机会发现/00_当前有效/01_LOF机会发现_Canonical.md",
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-Market-Snapshot-Contract-V1.md",
+    "05 套利研究/LOF机会发现/02_数据与监控/LOF-Daily-Reminder-Contract-V0.1.md",
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-Data-Source-Baseline-V1.md",
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-Web-View-Baseline-V0.1.md",
     "05 套利研究/LOF机会发现/02_数据与监控/LOF-Realtime-Estimated-NAV-Resolver-Classification-V0.1.md",
