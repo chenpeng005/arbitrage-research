@@ -9,7 +9,12 @@ from .nav import OfficialNavRecord, nav_age_days
 from .premium import premium_rate
 from .quote import QuoteRecord, is_quote_stale, quote_age_seconds
 from .resolver import EstimatedNavResult
-from .state import FundTradeStateRecord
+from .state import (
+    LIMIT_NOT_APPLICABLE,
+    LIMIT_UNKNOWN,
+    LIMIT_TYPES,
+    FundTradeStateRecord,
+)
 from .universe import LofIdentity
 
 
@@ -199,18 +204,24 @@ def build_market_snapshot(
             display_premium = None
             display_premium_basis = "UNAVAILABLE"
 
-        effective_daily_subscription_limit = (
-            None
-            if (
-                state_available
-                and state.subscription_status == "SUSPENDED"
+        if not state_available:
+            effective_daily_subscription_limit = None
+            effective_daily_subscription_limit_type = LIMIT_UNKNOWN
+            effective_daily_subscription_limit_raw = None
+        elif state.subscription_status == "SUSPENDED":
+            effective_daily_subscription_limit = None
+            effective_daily_subscription_limit_type = LIMIT_NOT_APPLICABLE
+            effective_daily_subscription_limit_raw = (
+                state.daily_subscription_limit_raw
             )
-            else (
-                state.daily_subscription_limit
-                if state_available
-                else None
+        else:
+            effective_daily_subscription_limit = state.daily_subscription_limit
+            effective_daily_subscription_limit_type = (
+                state.daily_subscription_limit_type
             )
-        )
+            effective_daily_subscription_limit_raw = (
+                state.daily_subscription_limit_raw
+            )
 
         row = {
             "code": identity.code,
@@ -262,6 +273,12 @@ def build_market_snapshot(
                 state.redemption_status if state_available else "UNKNOWN"
             ),
             "daily_subscription_limit": effective_daily_subscription_limit,
+            "daily_subscription_limit_type": (
+                effective_daily_subscription_limit_type
+            ),
+            "daily_subscription_limit_raw": (
+                effective_daily_subscription_limit_raw
+            ),
             "minimum_subscription_amount": (
                 state.minimum_subscription_amount if state_available else None
             ),
@@ -403,11 +420,20 @@ def validate_market_snapshot(
         else:
             raise ValueError(f"invalid display premium basis: {key}")
 
+        limit_type = row.get("daily_subscription_limit_type")
+        if limit_type is not None and limit_type not in LIMIT_TYPES:
+            raise ValueError(f"invalid subscription limit type: {key}")
         if (
             row.get("subscription_status") == "SUSPENDED"
             and row.get("daily_subscription_limit") is not None
         ):
             raise ValueError(f"suspended subscription exposes limit: {key}")
+        if (
+            row.get("subscription_status") == "SUSPENDED"
+            and limit_type is not None
+            and limit_type != LIMIT_NOT_APPLICABLE
+        ):
+            raise ValueError(f"suspended subscription limit type: {key}")
 
     summary = snapshot.get("quality_summary") or {}
     if summary.get("row_count") != len(rows):
