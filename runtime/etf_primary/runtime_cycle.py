@@ -44,6 +44,42 @@ def _read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _migrate_snapshot_payload(payload: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+    """Upgrade legacy archived snapshots to the current fact schema conservatively.
+
+    Old compact rows did not retain cap-field presence, so an open row with no
+    positive cap cannot be proven UNLIMITED retroactively. It is normalized as
+    UNKNOWN. Positive caps remain LIMITED and closed creation remains CLOSED.
+    """
+    if int(payload.get("schema_version") or 0) >= SNAPSHOT_SCHEMA_VERSION:
+        return payload, False
+    rows = payload.get("rows")
+    if not isinstance(rows, list):
+        return payload, False
+    normalized = _normalized_rows(rows)
+    migrated = dict(payload)
+    migrated["schema_version"] = SNAPSHOT_SCHEMA_VERSION
+    migrated["rows"] = normalized
+    migrated["snapshot_sha256"] = _snapshot_digest(normalized)
+    return migrated, True
+
+
+def _migrate_history_snapshots(state_dir: Path) -> int:
+    migrated_count = 0
+    snapshot_dir = state_dir / "snapshots"
+    if snapshot_dir.exists():
+        for path in sorted(snapshot_dir.glob("*.json.gz")):
+            with gzip.open(path, "rt", encoding="utf-8") as handle:
+                payload = json.load(handle)
+            if not isinstance(payload, dict):
+                continue
+            migrated, changed = _migrate_snapshot_payload(payload)
+            if changed:
+                _write_json_gz(path, migrated)
+                migrated_count += 1
+    return migrated_count
+
+
 def _snapshot_from_row(row: dict[str, Any]) -> PcfSnapshot:
     payload = {key: value for key, value in row.items() if key in _PCF_MODEL_FIELDS}
     return PcfSnapshot(**payload)
@@ -183,6 +219,7 @@ def run_cycle(
     if observed_at.tzinfo is None:
         observed_at = observed_at.replace(tzinfo=timezone.utc)
 
+    _migrate_history_snapshots(state_dir)
     bundle = fetch_etf_primary_relay_bundle(relay_base_url, timeout=timeout)
     relay_age_seconds = validate_relay_freshness(
         bundle,

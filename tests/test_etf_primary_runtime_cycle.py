@@ -255,3 +255,50 @@ def test_same_trade_date_changed_market_fact_is_refresh_not_false_event(tmp_path
     assert refreshed["event_count"] == 0
     assert refreshed["snapshot_sha256"] != first_digest
     assert not (tmp_path / "events" / "20261009.json").exists()
+
+
+def test_legacy_snapshot_migration_adds_explicit_fact_semantics(tmp_path):
+    from runtime.etf_primary.runtime_cycle import _migrate_history_snapshots
+
+    state = tmp_path / "state"
+    snapshots = state / "snapshots"
+    snapshots.mkdir(parents=True)
+    legacy = {
+        "schema_version": 3,
+        "trade_date": "20261008",
+        "rows": [
+            {
+                "exchange": "SSE", "code": "510300", "trade_date": "20261008",
+                "creation_allowed": True, "creation_redemption_unit": 900000,
+                "creation_limit": None, "net_creation_limit": None,
+                "account_creation_limit": None, "account_net_creation_limit": None,
+            },
+            {
+                "exchange": "SZSE", "code": "159501", "trade_date": "20261008",
+                "creation_allowed": True, "creation_redemption_unit": 1000000,
+                "creation_limit": 5000000, "account_creation_limit": 1000000,
+            },
+            {
+                "exchange": "SSE", "code": "513100", "trade_date": "20261008",
+                "creation_allowed": False, "creation_redemption_unit": 500000,
+            },
+        ],
+    }
+    import gzip, json
+    path = snapshots / "20261008.json.gz"
+    with gzip.open(path, "wt", encoding="utf-8") as handle:
+        json.dump(legacy, handle)
+    (state / "current.json").write_text(json.dumps(legacy), encoding="utf-8")
+
+    assert _migrate_history_snapshots(state) == 1
+    with gzip.open(path, "rt", encoding="utf-8") as handle:
+        migrated = json.load(handle)
+    assert migrated["schema_version"] == 4
+    rows = {row["code"]: row for row in migrated["rows"]}
+    assert rows["510300"]["nav_date"] is None
+    assert rows["510300"]["market_capacity_status"] == "UNKNOWN"
+    assert rows["510300"]["account_capacity_status"] == "UNKNOWN"
+    assert rows["159501"]["market_capacity_status"] == "LIMITED"
+    assert rows["159501"]["account_capacity_status"] == "LIMITED"
+    assert rows["513100"]["market_capacity_status"] == "CLOSED"
+    assert rows["513100"]["account_capacity_status"] == "CLOSED"

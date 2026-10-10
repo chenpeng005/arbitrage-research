@@ -83,6 +83,7 @@ def test_unlimited_to_limited_is_explicit_status_change():
     row = build_comparison(previous, current)["rows"][0]
     assert row["previous"]["market_capacity_status"] == "UNLIMITED"
     assert row["current"]["market_capacity_status"] == "LIMITED"
+    assert row["capacity_status_comparable"] is True
     assert row["capacity_status_changed"] is True
     assert row["account_capacity_status_changed"] is True
     assert row["capacity_comparable"] is False
@@ -101,6 +102,7 @@ def test_limited_to_unlimited_is_explicit_status_change():
     row = build_comparison(previous, current)["rows"][0]
     assert row["previous"]["market_capacity_status"] == "LIMITED"
     assert row["current"]["market_capacity_status"] == "UNLIMITED"
+    assert row["capacity_status_comparable"] is True
     assert row["capacity_status_changed"] is True
     assert row["changed"] is True
 
@@ -125,4 +127,6 @@ def test_legacy_null_capacity_is_unknown_not_assumed_unlimited():
     row = build_comparison(legacy, current)["rows"][0]
     assert row["previous"]["market_capacity_status"] == "UNKNOWN"
     assert row["current"]["market_capacity_status"] == "UNLIMITED"
-    assert row["capacity_status_changed"] is True
+    assert row["capacity_status_comparable"] is False
+    assert row["capacity_status_changed"] is False
+    assert row["changed"] is False

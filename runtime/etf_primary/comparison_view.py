@@ -135,12 +135,22 @@ def build_comparison(
             previous_fact is not None
             and previous_fact.get("account_capacity_kind") != current_fact.get("account_capacity_kind")
         )
-        capacity_status_changed = (
+        capacity_status_comparable = (
             previous_fact is not None
+            and previous_fact.get("market_capacity_status") != "UNKNOWN"
+            and current_fact.get("market_capacity_status") != "UNKNOWN"
+        )
+        account_capacity_status_comparable = (
+            previous_fact is not None
+            and previous_fact.get("account_capacity_status") != "UNKNOWN"
+            and current_fact.get("account_capacity_status") != "UNKNOWN"
+        )
+        capacity_status_changed = (
+            capacity_status_comparable
             and previous_fact.get("market_capacity_status") != current_fact.get("market_capacity_status")
         )
         account_capacity_status_changed = (
-            previous_fact is not None
+            account_capacity_status_comparable
             and previous_fact.get("account_capacity_status") != current_fact.get("account_capacity_status")
         )
         changed = bool(
@@ -166,6 +176,8 @@ def build_comparison(
                 "creation_changed": creation_changed,
                 "capacity_rule_changed": capacity_rule_changed,
                 "account_rule_changed": account_rule_changed,
+                "capacity_status_comparable": capacity_status_comparable,
+                "account_capacity_status_comparable": account_capacity_status_comparable,
                 "capacity_status_changed": capacity_status_changed,
                 "account_capacity_status_changed": account_capacity_status_changed,
                 "changed": changed,
