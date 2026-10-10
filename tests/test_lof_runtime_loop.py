@@ -44,6 +44,7 @@ class _FakeSession:
         self.collect_calls.append(kwargs)
         return {
             "snapshot_id": kwargs.get("snapshot_id"),
+            "market_cutoff": kwargs.get("market_cutoff"),
             "collector_status": "PASS",
             "universe_count": 1,
             "rows": [{"code": "501001"}],
