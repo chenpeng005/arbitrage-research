@@ -7,7 +7,7 @@ on:
       - ".github/workflows/etf-primary-shadow-schedule.yml"
   workflow_dispatch:
   schedule:
-    # Asia/Shanghai 08:32 / 08:42 / 08:52 on weekdays.
+    # Weekday preopen schedule, Asia/Shanghai 08:32 / 08:42 / 08:52.
     - cron: "32,42,52 0 * * 1-5"
 
 permissions:
