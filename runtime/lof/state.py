@@ -14,6 +14,17 @@ from .universe import LofIdentity
 
 EASTMONEY_RATE_URL = "https://fundmobapi.eastmoney.com/FundMApi/FundRateInfo.ashx"
 
+LIMIT_NUMERIC = "NUMERIC"
+LIMIT_UNLIMITED = "UNLIMITED"
+LIMIT_UNKNOWN = "UNKNOWN"
+LIMIT_NOT_APPLICABLE = "NOT_APPLICABLE"
+LIMIT_TYPES = {
+    LIMIT_NUMERIC,
+    LIMIT_UNLIMITED,
+    LIMIT_UNKNOWN,
+    LIMIT_NOT_APPLICABLE,
+}
+
 
 @dataclass(frozen=True)
 class FundTradeStateRecord:
@@ -32,6 +43,8 @@ class FundTradeStateRecord:
     fee_source: str
     state_source: str
     fetched_at: datetime
+    daily_subscription_limit_type: str = LIMIT_UNKNOWN
+    daily_subscription_limit_raw: str | None = None
     error: str | None = None
 
 
@@ -39,13 +52,42 @@ def _decimal_or_none(value: Any) -> Decimal | None:
     if value is None:
         return None
     text = str(value).strip().replace(",", "")
-    if not text or text in {"--", "-", "不限", "无限额"}:
+    if not text or text in {"--", "-", "不限", "无限额", "不限额", "无上限"}:
         return None
     try:
         number = Decimal(text)
     except (InvalidOperation, ValueError):
         return None
     return number if number >= 0 else None
+
+
+def normalize_subscription_limit(
+    raw: Any,
+) -> tuple[str, Decimal | None, str | None]:
+    """Normalize MAXSG without guessing undocumented numeric sentinels.
+
+    The raw text is retained for audit. Large numeric values remain NUMERIC
+    until a source-specific sentinel rule is independently verified.
+    """
+    if raw is None:
+        return LIMIT_UNKNOWN, None, None
+
+    raw_text = str(raw).strip()
+    if not raw_text or raw_text in {"--", "-"}:
+        return LIMIT_UNKNOWN, None, raw_text or None
+
+    if raw_text in {"不限", "无限额", "不限额", "无上限"}:
+        return LIMIT_UNLIMITED, None, raw_text
+
+    normalized = raw_text.replace(",", "")
+    try:
+        number = Decimal(normalized)
+    except (InvalidOperation, ValueError):
+        return LIMIT_UNKNOWN, None, raw_text
+
+    if number < 0:
+        return LIMIT_UNKNOWN, None, raw_text
+    return LIMIT_NUMERIC, number, raw_text
 
 
 def _int_or_none(value: Any) -> int | None:
@@ -104,11 +146,16 @@ def parse_eastmoney_trade_state(
             fee_source="EASTMONEY_CHANNEL_REFERENCE",
             state_source="EASTMONEY_FUND_MOBILE",
             fetched_at=fetched_at,
+            daily_subscription_limit_type=LIMIT_UNKNOWN,
+            daily_subscription_limit_raw=None,
             error="NO_STATE_DATA",
         )
 
     subscription_raw = str(data.get("SGZT") or "").strip() or None
     redemption_raw = str(data.get("SHZT") or "").strip() or None
+    limit_type, limit_amount, limit_raw = normalize_subscription_limit(
+        data.get("MAXSG")
+    )
 
     sg = data.get("sg")
     sh = data.get("sh")
@@ -121,7 +168,7 @@ def parse_eastmoney_trade_state(
         subscription_status_raw=subscription_raw,
         redemption_status=normalize_redemption_status(redemption_raw),
         redemption_status_raw=redemption_raw,
-        daily_subscription_limit=_decimal_or_none(data.get("MAXSG")),
+        daily_subscription_limit=limit_amount,
         minimum_subscription_amount=_decimal_or_none(data.get("MINSG")),
         # This source does not prove whether the limit is per investor,
         # per fund account, or channel-specific.
@@ -134,6 +181,8 @@ def parse_eastmoney_trade_state(
         fee_source="EASTMONEY_CHANNEL_REFERENCE",
         state_source="EASTMONEY_FUND_MOBILE",
         fetched_at=fetched_at,
+        daily_subscription_limit_type=limit_type,
+        daily_subscription_limit_raw=limit_raw,
         error=None,
     )
 
@@ -203,6 +252,8 @@ def fetch_all_trade_states(
                     fee_source="EASTMONEY_CHANNEL_REFERENCE",
                     state_source="EASTMONEY_FUND_MOBILE",
                     fetched_at=datetime.now(timezone.utc),
+                    daily_subscription_limit_type=LIMIT_UNKNOWN,
+                    daily_subscription_limit_raw=None,
                     error=f"FETCH_ERROR:{type(exc).__name__}",
                 )
 
