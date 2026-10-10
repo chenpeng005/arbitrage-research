@@ -1,0 +1,2002 @@
+{
+  "source": "SZSE_OFFICIAL",
+  "fetched_at": "2026-10-10T18:45:26.701339+00:00",
+  "count": 285,
+  "rows": [
+    {
+      "code": "160105",
+      "name": "南方积配LOF",
+      "manager": "南方基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160106",
+      "name": "南方高增LOF",
+      "manager": "南方基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160119",
+      "name": "500ETF联接LOF",
+      "manager": "南方基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160125",
+      "name": "南方香港LOF",
+      "manager": "南方基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160127",
+      "name": "南方消费LOF",
+      "manager": "南方基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160128",
+      "name": "南方金利定开",
+      "manager": "南方基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160133",
+      "name": "南方天元LOF",
+      "manager": "南方基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160135",
+      "name": "高铁基金LOF",
+      "manager": "南方基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160140",
+      "name": "美国REIT精选LOF",
+      "manager": "南方基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160142",
+      "name": "南方优势产业LOF",
+      "manager": "南方基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160143",
+      "name": "创业板定开南方",
+      "manager": "南方基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160211",
+      "name": "国泰小盘LOF",
+      "manager": "国泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160212",
+      "name": "国泰估值LOF",
+      "manager": "国泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160215",
+      "name": "国泰价值LOF",
+      "manager": "国泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160216",
+      "name": "国泰商品LOF",
+      "manager": "国泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160218",
+      "name": "房地产LOF",
+      "manager": "国泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160219",
+      "name": "医药LOF",
+      "manager": "国泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160220",
+      "name": "国泰民益LOF",
+      "manager": "国泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160221",
+      "name": "有色金属LOF",
+      "manager": "国泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160222",
+      "name": "食品LOF",
+      "manager": "国泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160223",
+      "name": "创业板LOF",
+      "manager": "国泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160225",
+      "name": "新能源汽车LOF",
+      "manager": "国泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160311",
+      "name": "华夏蓝筹LOF",
+      "manager": "华夏基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160314",
+      "name": "华夏行业LOF",
+      "manager": "华夏基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160322",
+      "name": "港股精选LOF",
+      "manager": "华夏基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160323",
+      "name": "华夏磐泰LOF",
+      "manager": "华夏基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160324",
+      "name": "华夏磐晟LOF",
+      "manager": "华夏基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160325",
+      "name": "华夏创业板定开",
+      "manager": "华夏基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160326",
+      "name": "优选配置FOF-LOF",
+      "manager": "华夏基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160416",
+      "name": "石油基金LOF",
+      "manager": "华安基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160421",
+      "name": "华安智增LOF",
+      "manager": "华安基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160505",
+      "name": "博时主题LOF",
+      "manager": "博时基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160512",
+      "name": "博时卓越LOF",
+      "manager": "博时基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160513",
+      "name": "稳健债LOF",
+      "manager": "博时基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160515",
+      "name": "安丰18定开",
+      "manager": "博时基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160518",
+      "name": "博时睿远LOF",
+      "manager": "博时基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160526",
+      "name": "博时优势企业",
+      "manager": "博时基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160527",
+      "name": "博时研究优选LOF",
+      "manager": "博时基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160529",
+      "name": "创业板博时定开",
+      "manager": "博时基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160607",
+      "name": "鹏华价值优势LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160610",
+      "name": "鹏华动力LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160611",
+      "name": "鹏华优质治理LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160613",
+      "name": "鹏华盛世创新LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160615",
+      "name": "鹏华300LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160616",
+      "name": "鹏华500LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160617",
+      "name": "鹏华丰润LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160618",
+      "name": "鹏华丰泽LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160620",
+      "name": "资源LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160621",
+      "name": "鹏华丰和LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160622",
+      "name": "鹏华丰利LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160625",
+      "name": "证保LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160626",
+      "name": "信息LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160628",
+      "name": "地产LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160629",
+      "name": "传媒LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160630",
+      "name": "国防LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160631",
+      "name": "银行LOF基金",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160632",
+      "name": "酒LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160633",
+      "name": "券商LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160635",
+      "name": "医药LOF基金",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160637",
+      "name": "创业板LOF基金",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160638",
+      "name": "带路LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160639",
+      "name": "高铁LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160641",
+      "name": "鹏华丰锐LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160642",
+      "name": "鹏华增瑞LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160643",
+      "name": "空天军工LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160644",
+      "name": "港美互联网LOF",
+      "manager": "鹏华基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160706",
+      "name": "沪深300LOF",
+      "manager": "嘉实基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160716",
+      "name": "基本面50LOF",
+      "manager": "嘉实基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160717",
+      "name": "H股LOF",
+      "manager": "嘉实基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160719",
+      "name": "嘉实黄金LOF",
+      "manager": "嘉实基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160722",
+      "name": "嘉实惠泽LOF",
+      "manager": "嘉实基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160723",
+      "name": "嘉实原油LOF",
+      "manager": "嘉实基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160726",
+      "name": "嘉实瑞享定开",
+      "manager": "嘉实基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160805",
+      "name": "长盛同智LOF",
+      "manager": "长盛基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160806",
+      "name": "长盛中证800LOF",
+      "manager": "长盛基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160807",
+      "name": "长盛沪深300LOF",
+      "manager": "长盛基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160812",
+      "name": "长盛同益LOF",
+      "manager": "长盛基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160813",
+      "name": "长盛同盛LOF",
+      "manager": "长盛基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160910",
+      "name": "创新成长LOF",
+      "manager": "大成基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160916",
+      "name": "优选LOF",
+      "manager": "大成基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160918",
+      "name": "中小盘LOF",
+      "manager": "大成基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160919",
+      "name": "产业升级LOF",
+      "manager": "大成基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160921",
+      "name": "多策略LOF",
+      "manager": "大成基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160924",
+      "name": "恒生指数LOF",
+      "manager": "大成基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160925",
+      "name": "沪深港300LOF",
+      "manager": "大成基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "160926",
+      "name": "创业板定开",
+      "manager": "大成基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161005",
+      "name": "富国天惠LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161010",
+      "name": "富国天丰LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161014",
+      "name": "富国汇利定开",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161015",
+      "name": "富国天盈LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161017",
+      "name": "500增强LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161019",
+      "name": "富国天锋LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161024",
+      "name": "军工LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161025",
+      "name": "互联网LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161026",
+      "name": "国企改革LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161027",
+      "name": "证券LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161028",
+      "name": "新能源车LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161029",
+      "name": "银行龙头LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161030",
+      "name": "体育LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161031",
+      "name": "工业40LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161032",
+      "name": "煤炭龙头LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161033",
+      "name": "智能汽车LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161035",
+      "name": "医药增强LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161036",
+      "name": "娱乐增强LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161037",
+      "name": "高端制造LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161038",
+      "name": "成长LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161039",
+      "name": "1000增强LOF",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161040",
+      "name": "创业富国定开",
+      "manager": "富国基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161115",
+      "name": "易基岁丰添利LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161116",
+      "name": "黄金主题LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161117",
+      "name": "易基永旭添利定开",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161118",
+      "name": "中小企业100LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161119",
+      "name": "易方达新综债LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161121",
+      "name": "银行LOF易方达",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161122",
+      "name": "生物科技LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161123",
+      "name": "并购重组LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161124",
+      "name": "港股小盘LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161125",
+      "name": "标普500LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161126",
+      "name": "标普医疗保健LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161127",
+      "name": "标普生物科技LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161128",
+      "name": "标普信息科技LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161129",
+      "name": "原油LOF易方达",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161130",
+      "name": "纳斯达克100LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161131",
+      "name": "易方达科润LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161132",
+      "name": "易方达科顺定开",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161133",
+      "name": "优势回报FOF-LOF",
+      "manager": "易方达基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161216",
+      "name": "国投双债LOF",
+      "manager": "国投瑞银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161217",
+      "name": "国投资源LOF",
+      "manager": "国投瑞银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161219",
+      "name": "国投新兴产业LOF",
+      "manager": "国投瑞银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161222",
+      "name": "国投瑞利LOF",
+      "manager": "国投瑞银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161224",
+      "name": "国投新丝路LOF",
+      "manager": "国投瑞银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161225",
+      "name": "国投瑞盈LOF",
+      "manager": "国投瑞银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161226",
+      "name": "国投白银LOF",
+      "manager": "国投瑞银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161227",
+      "name": "国投深证100LOF",
+      "manager": "国投瑞银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161229",
+      "name": "国投中国价值LOF",
+      "manager": "国投瑞银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161232",
+      "name": "国投瑞盛LOF",
+      "manager": "国投瑞银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161233",
+      "name": "国投瑞泰LOF",
+      "manager": "国投瑞银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161505",
+      "name": "银河通利债券LOF",
+      "manager": "银河基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161607",
+      "name": "巨潮100LOF",
+      "manager": "融通基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161610",
+      "name": "融通领先成长LOF",
+      "manager": "融通基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161614",
+      "name": "融通四季添利LOF",
+      "manager": "融通基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161626",
+      "name": "融通通福LOF",
+      "manager": "融通基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161631",
+      "name": "人工智能LOF",
+      "manager": "融通基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161706",
+      "name": "招商成长LOF",
+      "manager": "招商基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161713",
+      "name": "招商信用添利LOF",
+      "manager": "招商基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161715",
+      "name": "大宗商品LOF",
+      "manager": "招商基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161716",
+      "name": "招商双债LOF",
+      "manager": "招商基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161720",
+      "name": "证券基金LOF",
+      "manager": "招商基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161722",
+      "name": "招商丰泰LOF",
+      "manager": "招商基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161724",
+      "name": "煤炭等权LOF",
+      "manager": "招商基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161725",
+      "name": "白酒基金LOF",
+      "manager": "招商基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161726",
+      "name": "生物医药LOF",
+      "manager": "招商基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161727",
+      "name": "招商增荣LOF",
+      "manager": "招商基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161728",
+      "name": "招商优选LOF",
+      "manager": "招商基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161729",
+      "name": "招商瑞利LOF",
+      "manager": "招商基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161810",
+      "name": "银华内需LOF",
+      "manager": "银华基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161811",
+      "name": "沪深300LOF银华",
+      "manager": "银华基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161812",
+      "name": "深证100LOF",
+      "manager": "银华基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161815",
+      "name": "抗通胀LOF",
+      "manager": "银华基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161816",
+      "name": "中证90LOF",
+      "manager": "银华基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161820",
+      "name": "银华纯债LOF",
+      "manager": "银华基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161831",
+      "name": "恒生国企LOF",
+      "manager": "银华基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161834",
+      "name": "银华鑫锐LOF",
+      "manager": "银华基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161837",
+      "name": "银华大盘定开",
+      "manager": "银华基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161903",
+      "name": "万家行业优选LOF",
+      "manager": "万家基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161908",
+      "name": "万家添利LOF",
+      "manager": "万家基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161912",
+      "name": "社会责任定开",
+      "manager": "万家基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "161914",
+      "name": "创业板2年定开",
+      "manager": "万家基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162006",
+      "name": "长城久富LOF",
+      "manager": "长城基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162105",
+      "name": "金鹰持久增利LOF",
+      "manager": "金鹰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162108",
+      "name": "金鹰元盛债券LOF",
+      "manager": "金鹰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162207",
+      "name": "宏利效率混合LOF",
+      "manager": "宏利基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162215",
+      "name": "宏利聚利债券LOF",
+      "manager": "宏利基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162216",
+      "name": "宏利500增强LOF",
+      "manager": "宏利基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162307",
+      "name": "海富通A100LOF",
+      "manager": "海富通基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162411",
+      "name": "华宝油气LOF",
+      "manager": "华宝基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162412",
+      "name": "医疗基金LOF",
+      "manager": "华宝基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162414",
+      "name": "新机遇LOF",
+      "manager": "华宝基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162415",
+      "name": "美国消费LOF",
+      "manager": "华宝基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162509",
+      "name": "中证A100LOF",
+      "manager": "国联安基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162605",
+      "name": "景顺鼎益LOF",
+      "manager": "景顺长城基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162607",
+      "name": "景顺资源LOF",
+      "manager": "景顺长城基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162703",
+      "name": "广发小盘LOF",
+      "manager": "广发基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162711",
+      "name": "中证500LOF",
+      "manager": "广发基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162712",
+      "name": "广发聚利LOF",
+      "manager": "广发基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162715",
+      "name": "广发聚源LOF",
+      "manager": "广发基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162719",
+      "name": "石油LOF",
+      "manager": "广发基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162720",
+      "name": "广发创业板定开",
+      "manager": "广发基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "162721",
+      "name": "广发积极FOF-LOF",
+      "manager": "广发基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163001",
+      "name": "长信医疗LOF",
+      "manager": "长信基金管理有限责任公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163003",
+      "name": "长信利鑫LOF",
+      "manager": "长信基金管理有限责任公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163005",
+      "name": "长信利众LOF",
+      "manager": "长信基金管理有限责任公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163109",
+      "name": "申万深成LOF",
+      "manager": "申万菱信基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163110",
+      "name": "申万量化LOF",
+      "manager": "申万菱信基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163111",
+      "name": "申万中小LOF",
+      "manager": "申万菱信基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163113",
+      "name": "申万证券LOF",
+      "manager": "申万菱信基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163114",
+      "name": "申万环保LOF",
+      "manager": "申万菱信基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163115",
+      "name": "申万军工LOF",
+      "manager": "申万菱信基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163116",
+      "name": "申万电子LOF",
+      "manager": "申万菱信基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163118",
+      "name": "医药生物LOF",
+      "manager": "申万菱信基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163208",
+      "name": "全球油气能源LOF",
+      "manager": "诺安基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163302",
+      "name": "大摩资源LOF",
+      "manager": "摩根士丹利基金管理(中国)有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163402",
+      "name": "兴全趋势LOF",
+      "manager": "兴证全球基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163406",
+      "name": "兴全合润LOF",
+      "manager": "兴证全球基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163407",
+      "name": "兴全沪深300LOF",
+      "manager": "兴证全球基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163409",
+      "name": "兴全绿色LOF",
+      "manager": "兴证全球基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163412",
+      "name": "兴全轻资产LOF",
+      "manager": "兴证全球基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163415",
+      "name": "兴全商业模式LOF",
+      "manager": "兴证全球基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163417",
+      "name": "兴全合宜LOF",
+      "manager": "兴证全球基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163418",
+      "name": "兴全合兴LOF",
+      "manager": "兴证全球基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163503",
+      "name": "天治核心LOF",
+      "manager": "天治基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163801",
+      "name": "中银中国LOF",
+      "manager": "中银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163819",
+      "name": "中银信用增利LOF",
+      "manager": "中银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163821",
+      "name": "沪深300等权LOF",
+      "manager": "中银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "163907",
+      "name": "中海惠裕LOF",
+      "manager": "中海基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164105",
+      "name": "华富强债LOF",
+      "manager": "华富基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164206",
+      "name": "天弘添利LOF",
+      "manager": "天弘基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164208",
+      "name": "天弘丰利LOF",
+      "manager": "天弘基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164210",
+      "name": "天弘同利LOF",
+      "manager": "天弘基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164403",
+      "name": "农业精选LOF",
+      "manager": "前海开源基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164508",
+      "name": "国富中证A100LOF",
+      "manager": "国海富兰克林基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164509",
+      "name": "国富恒利债券LOF",
+      "manager": "国海富兰克林基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164606",
+      "name": "信用增利LOF",
+      "manager": "华泰柏瑞基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164701",
+      "name": "黄金LOF",
+      "manager": "汇添富基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164703",
+      "name": "汇添富纯债LOF",
+      "manager": "汇添富基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164705",
+      "name": "恒生LOF",
+      "manager": "汇添富基金管理股份有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164808",
+      "name": "工银四季LOF",
+      "manager": "工银瑞信基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164810",
+      "name": "工银纯债定开",
+      "manager": "工银瑞信基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164814",
+      "name": "工银双债LOF",
+      "manager": "工银瑞信基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164824",
+      "name": "印度基金LOF",
+      "manager": "工银瑞信基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164902",
+      "name": "交银添利LOF",
+      "manager": "交银施罗德基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "164906",
+      "name": "中概互联网LOF",
+      "manager": "交银施罗德基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165309",
+      "name": "沪深300LOF建信",
+      "manager": "建信基金管理有限责任公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165311",
+      "name": "信用债LOF",
+      "manager": "建信基金管理有限责任公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165313",
+      "name": "建信优势LOF",
+      "manager": "建信基金管理有限责任公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165508",
+      "name": "中信保诚深度LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165509",
+      "name": "中信保诚增强LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165511",
+      "name": "中信保诚500LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165512",
+      "name": "中信保诚机遇LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165513",
+      "name": "中信保诚商品LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165515",
+      "name": "中信保诚300LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165516",
+      "name": "中信保诚周期LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165517",
+      "name": "中信保诚双盈LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165519",
+      "name": "医药生物科技LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165520",
+      "name": "有色LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165521",
+      "name": "金融LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165522",
+      "name": "TMTLOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165525",
+      "name": "基建工程LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "165528",
+      "name": "中信保诚鼎利LOF",
+      "manager": "中信保诚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166001",
+      "name": "中欧趋势LOF",
+      "manager": "中欧基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166006",
+      "name": "中欧成长LOF",
+      "manager": "中欧基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166008",
+      "name": "中欧强债LOF",
+      "manager": "中欧基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166009",
+      "name": "中欧动力LOF",
+      "manager": "中欧基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166011",
+      "name": "中欧盛世LOF",
+      "manager": "中欧基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166016",
+      "name": "中欧纯债LOF",
+      "manager": "中欧基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166023",
+      "name": "中欧瑞丰LOF",
+      "manager": "中欧基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166024",
+      "name": "中欧恒利定开",
+      "manager": "中欧基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166025",
+      "name": "中欧远见定开",
+      "manager": "中欧基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166027",
+      "name": "中欧创业定开",
+      "manager": "中欧基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166105",
+      "name": "信澳鑫安LOF",
+      "manager": "信达澳亚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166107",
+      "name": "多因子LOF",
+      "manager": "信达澳亚基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "166401",
+      "name": "稳健增利LOF",
+      "manager": "浦银基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "167001",
+      "name": "鼎泰LOF",
+      "manager": "平安基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "167002",
+      "name": "鼎越LOF",
+      "manager": "平安基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "167003",
+      "name": "鼎弘LOF",
+      "manager": "平安基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "167301",
+      "name": "保险主题LOF",
+      "manager": "方正富邦基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "167302",
+      "name": "大湾区LOF",
+      "manager": "方正富邦基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "167501",
+      "name": "安信宝利债券LOF",
+      "manager": "安信基金管理有限责任公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "167506",
+      "name": "安信深圳科技LOF",
+      "manager": "安信基金管理有限责任公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "167508",
+      "name": "安信价值发现定开",
+      "manager": "安信基金管理有限责任公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "168101",
+      "name": "九泰锐智LOF",
+      "manager": "九泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "168102",
+      "name": "九泰锐富LOF",
+      "manager": "九泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "168103",
+      "name": "九泰锐益LOF",
+      "manager": "九泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "168104",
+      "name": "九泰锐丰LOF",
+      "manager": "九泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "168105",
+      "name": "九泰泰富LOF",
+      "manager": "九泰基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "168203",
+      "name": "钢铁LOF",
+      "manager": "国联基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "168204",
+      "name": "煤炭LOF",
+      "manager": "国联基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "168301",
+      "name": "东海祥龙LOF",
+      "manager": "东海基金管理有限责任公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "168401",
+      "name": "红土创新精选LOF",
+      "manager": "红土创新基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "168701",
+      "name": "金融科技LOF",
+      "manager": "合煦智远基金管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "169101",
+      "name": "东方红睿丰LOF",
+      "manager": "上海东方证券资产管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "169104",
+      "name": "东方红睿满LOF",
+      "manager": "上海东方证券资产管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "169105",
+      "name": "东方红睿华LOF",
+      "manager": "上海东方证券资产管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "169106",
+      "name": "东方红创优定开",
+      "manager": "上海东方证券资产管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "169201",
+      "name": "浙商鼎盈LOF",
+      "manager": "浙江浙商证券资产管理有限公司",
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    }
+  ]
+}
