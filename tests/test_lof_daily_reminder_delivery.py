@@ -49,8 +49,9 @@ class LofDailyReminderDeliveryTest(unittest.TestCase):
         timer = (root / "deploy/systemd/lof-daily-reminder.timer").read_text(encoding="utf-8")
         service = (root / "deploy/systemd/lof-daily-reminder.service").read_text(encoding="utf-8")
 
-        self.assertIn('href="/reminder"', index_html)
+        self.assertIn('href="reminder"', index_html)
         self.assertIn("今日提醒", index_html)
+        self.assertIn('href="./"', reminder_html)
         self.assertIn('id="statusChanges"', reminder_html)
         self.assertIn('id="limitChanges"', reminder_html)
         self.assertIn("officialPremium", reminder_js)
