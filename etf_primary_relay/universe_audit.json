@@ -1,0 +1,46 @@
+{
+  "total": 1694,
+  "duplicate_keys": [],
+  "counts": {
+    "exchange": {
+      "SSE": 944,
+      "SZSE": 750
+    },
+    "region_scope": {
+      "CROSS_BORDER": 245,
+      "DOMESTIC": 1417,
+      "MIXED": 32
+    },
+    "asset_class": {
+      "BOND": 53,
+      "COMMODITY": 12,
+      "EQUITY": 1602,
+      "MONEY_MARKET": 27
+    },
+    "strategy_style": {
+      "INDEX": 1659,
+      "UNKNOWN": 35
+    },
+    "qdii_flag": {
+      "False": 1548,
+      "None": 32,
+      "True": 114
+    },
+    "region_x_asset": {
+      "CROSS_BORDER": {
+        "EQUITY": 245
+      },
+      "DOMESTIC": {
+        "BOND": 53,
+        "COMMODITY": 12,
+        "EQUITY": 1325,
+        "MONEY_MARKET": 27
+      },
+      "MIXED": {
+        "EQUITY": 32
+      }
+    }
+  },
+  "problem_counts": {},
+  "problem_rows": []
+}

@@ -1,0 +1,6757 @@
+{
+  "source": "SZSE_OFFICIAL",
+  "fetched_at": "2026-10-10T04:47:36.559693+00:00",
+  "count": 750,
+  "rows": [
+    {
+      "code": "158000",
+      "name": "港股通金融ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "H11146",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158001",
+      "name": "价值ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "980081",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158003",
+      "name": "港股通医疗ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "932069",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158005",
+      "name": "工程机械ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "931752",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158006",
+      "name": "化工ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "000813",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158008",
+      "name": "储能电池ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "980027 CNIESBI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158009",
+      "name": "航空航天ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "CN5082",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158010",
+      "name": "医疗ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "399989 中证医疗",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158011",
+      "name": "创业板软件ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "399264 创业软件",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158012",
+      "name": "云计算ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "931469",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158013",
+      "name": "航空航天ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "CN5082",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158017",
+      "name": "化工ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "000813",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158019",
+      "name": "电池ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "931719",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158022",
+      "name": "创业板综增强ETF国联",
+      "manager": "国联基金管理有限公司",
+      "tracking_index": "399102 创业板综",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158023",
+      "name": "红利低波ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "931848",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158025",
+      "name": "创业板成长ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399667 创业成长",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158026",
+      "name": "大盘成长ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399372 大盘成长",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158027",
+      "name": "工业互联网ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "931495",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158028",
+      "name": "稀有金属ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "930632",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158030",
+      "name": "航空航天ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "CN5082",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158031",
+      "name": "创业板人工智能ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "970070 CNTAI50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158032",
+      "name": "化工ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "000813",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158038",
+      "name": "粮食ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "399365 国证粮食",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158039",
+      "name": "港股通红利低波ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "SPAHLVHP",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158041",
+      "name": "创业板算力ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "970083",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158042",
+      "name": "恒生科技ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "HSTECH",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158049",
+      "name": "创业板算力ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "970083",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158050",
+      "name": "创业板算力ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "970083",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158053",
+      "name": "创业板算力ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "970083",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158056",
+      "name": "创业板算力ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "970083",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158057",
+      "name": "创业板算力ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "970083",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158059",
+      "name": "创业板算力ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "970083",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158061",
+      "name": "创业板算力ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "970083",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "158063",
+      "name": "创业板算力ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "970083",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159001",
+      "name": "货币ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": null,
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159003",
+      "name": "招商快线ETF",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": null,
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159005",
+      "name": "快钱ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": null,
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159007",
+      "name": "养殖ETF华泰柏瑞",
+      "manager": "华泰柏瑞基金管理有限公司",
+      "tracking_index": "931946",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159008",
+      "name": "证券ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "399975 证券公司",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159009",
+      "name": "创业板新能源ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "399266 创新能源",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159010",
+      "name": "港股通科技ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "HSSCITI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159011",
+      "name": "养殖ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "931946",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159012",
+      "name": "科创创业50ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "931643",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159013",
+      "name": "工业互联网ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "931495",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159015",
+      "name": "恒生港股通科技ETF国联",
+      "manager": "国联基金管理有限公司",
+      "tracking_index": "HSSCITI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159016",
+      "name": "证券ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "931412",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159017",
+      "name": "石油ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "399439 国证油气",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159018",
+      "name": "石油ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "399439 国证油气",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159019",
+      "name": "石油ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "399439 国证油气",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159020",
+      "name": "养殖ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "931946",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159021",
+      "name": "大盘价值ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399373 大盘价值",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159022",
+      "name": "科创创业人工智能ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "932456",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159023",
+      "name": "养殖ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "931946",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159025",
+      "name": "家电ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "931021",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159026",
+      "name": "石油ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "399439 国证油气",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159027",
+      "name": "畜牧养殖ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "931946",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159028",
+      "name": "港股汽车ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "HSSCAM",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159029",
+      "name": "有色ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "931892",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159030",
+      "name": "粮食ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399365 国证粮食",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159031",
+      "name": "粮食ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "399365 国证粮食",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159032",
+      "name": "工业有色ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "H11059",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159033",
+      "name": "粮食ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "399365 国证粮食",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159035",
+      "name": "软件ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "930601",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159036",
+      "name": "软件开发ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "932094",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159037",
+      "name": "价值ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "980081",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159038",
+      "name": "粮食ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "399365 国证粮食",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159039",
+      "name": "机器人ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "980022 CNIROBOT",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159040",
+      "name": "港股通互联网ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "931637",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159041",
+      "name": "农业ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "000949",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159042",
+      "name": "价值ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "980081",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159043",
+      "name": "食品ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "H30192",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159045",
+      "name": "稀有金属ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "930632",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159046",
+      "name": "绿电ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "399438 绿色电力",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159048",
+      "name": "机器人ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "980022 CNIROBOT",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159049",
+      "name": "有色ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "931892",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159050",
+      "name": "机器人ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "980022 CNIROBOT",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159051",
+      "name": "医疗器械ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "H30217",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159052",
+      "name": "储能电池ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "980027 CNIESBI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159053",
+      "name": "稀有金属ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "930632",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159055",
+      "name": "稀有金属ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "930632",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159056",
+      "name": "医疗器械ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "H30217",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159057",
+      "name": "医疗器械ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "H30217",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159058",
+      "name": "证券ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "399975 证券公司",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159059",
+      "name": "电力ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "H30199",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159060",
+      "name": "粮食ETF浦银",
+      "manager": "浦银基金管理有限公司",
+      "tracking_index": "399365 国证粮食",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159061",
+      "name": "绿色电力ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "399438 绿色电力",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159062",
+      "name": "稀有金属ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "930632",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159063",
+      "name": "粮食ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "399365 国证粮食",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159065",
+      "name": "工程机械ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "931752",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159066",
+      "name": "A股ETF建信",
+      "manager": "建信基金管理有限责任公司",
+      "tracking_index": "930903",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159067",
+      "name": "绿色电力ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399438 绿色电力",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159068",
+      "name": "软件ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "H30202",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159069",
+      "name": "创业板新能源ETF华泰柏瑞",
+      "manager": "华泰柏瑞基金管理有限公司",
+      "tracking_index": "399266 创新能源",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159070",
+      "name": "工程机械ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "931752",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159071",
+      "name": "储能电池ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "980027 CNIESBI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159072",
+      "name": "粮食ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "399365 国证粮食",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159073",
+      "name": "粮食ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "399365 国证粮食",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159075",
+      "name": "工业互联网ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "931495",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159076",
+      "name": "创业板新能源ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "399266 创新能源",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159077",
+      "name": "电池ETF鑫元",
+      "manager": "鑫元基金管理有限公司",
+      "tracking_index": "931719",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159078",
+      "name": "A股ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "930903",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159079",
+      "name": "价值ETF兴全",
+      "manager": "兴证全球基金管理有限公司",
+      "tracking_index": "980081",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159082",
+      "name": "化工ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "000813",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159083",
+      "name": "红利低波100ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "930955",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159085",
+      "name": "价值ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "980081",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159086",
+      "name": "金融科技ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "930986",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159087",
+      "name": "化工ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "000813",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159091",
+      "name": "港股通金融ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "H11146",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159093",
+      "name": "化工ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "000813",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159095",
+      "name": "云计算ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "931469",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159096",
+      "name": "价值ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "980081",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159098",
+      "name": "价值ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "980081",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159099",
+      "name": "云计算ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "931469",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159100",
+      "name": "巴西ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "IBOVESPA",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159101",
+      "name": "港股通科技ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "987008",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159102",
+      "name": "港股通生物科技ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "HSBIO",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159103",
+      "name": "金融科技ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "930986",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159105",
+      "name": "恒生生物科技ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "HSBIO",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159106",
+      "name": "民企300ETF前海开源",
+      "manager": "前海开源基金管理有限公司",
+      "tracking_index": "931265",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159107",
+      "name": "创业板软件ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "399264 创业软件",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159108",
+      "name": "工业软件ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "980034",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159109",
+      "name": "恒生50ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "HSSC50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159110",
+      "name": "科创债ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "921130",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159111",
+      "name": "科创债ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "932160",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159112",
+      "name": "科创债ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "932160",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159113",
+      "name": "科创债ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "932160",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159115",
+      "name": "科创债ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "932160",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159116",
+      "name": "科创债ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "932160",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159117",
+      "name": "港股通红利低波ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "SPAHLVHP",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159118",
+      "name": "港股通红利低波ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "SPAHLVHP",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159119",
+      "name": "800现金流ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "932368",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159120",
+      "name": "港股通科技ETF国联安",
+      "manager": "国联安基金管理有限公司",
+      "tracking_index": "HSSCITI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159121",
+      "name": "港股通汽车ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "HSSCAM",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159122",
+      "name": "创业板新能源ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "399266 创新能源",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159123",
+      "name": "光伏ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "931151",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159125",
+      "name": "港股通科技ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "987008",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159126",
+      "name": "港股通50ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "930931",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159127",
+      "name": "港股通红利ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "930914",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159128",
+      "name": "港股科技ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "987008",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159129",
+      "name": "化工ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "000813",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159130",
+      "name": "恒生生物科技ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "HSBIO",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159131",
+      "name": "港股通信息技术ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "930967",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159132",
+      "name": "恒生生物科技ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "HSBIO",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159133",
+      "name": "化工ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "000813",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159135",
+      "name": "港股通科技ETF前海开源",
+      "manager": "前海开源基金管理有限公司",
+      "tracking_index": "HSSCITI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159136",
+      "name": "A50ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "930050",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159137",
+      "name": "港股通医疗ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "932069",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159138",
+      "name": "工程机械ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "931752",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159139",
+      "name": "科创创业人工智能ETF华泰柏瑞",
+      "manager": "华泰柏瑞基金管理有限公司",
+      "tracking_index": "932456",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159140",
+      "name": "科创创业人工智能ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "932456",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159141",
+      "name": "科创创业人工智能ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "932456",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159142",
+      "name": "科创创业人工智能ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "932456",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159143",
+      "name": "港股通央企红利ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "HSSCSOY",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159145",
+      "name": "工业软件ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "980034",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159146",
+      "name": "电力ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "H30199",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159147",
+      "name": "电池ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "931719",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159148",
+      "name": "石油ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "399439 国证油气",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159149",
+      "name": "创业板新能源ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "399266 创新能源",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159150",
+      "name": "深证50ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "399850 深证50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159151",
+      "name": "食品ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "H30192",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159152",
+      "name": "港股通科技ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "HSSCITI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159153",
+      "name": "消费电子ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "980030 消费电子",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159155",
+      "name": "电池ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "931719",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159156",
+      "name": "电池ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "980032 新能电池",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159157",
+      "name": "有色金属ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "H11059",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159158",
+      "name": "电力ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "H30199",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159159",
+      "name": "公用事业ETF国投瑞银",
+      "manager": "国投瑞银基金管理有限公司",
+      "tracking_index": "000995",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159160",
+      "name": "电池ETF东财",
+      "manager": "东财基金管理有限公司",
+      "tracking_index": "931719",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159161",
+      "name": "工程机械ETF东财",
+      "manager": "东财基金管理有限公司",
+      "tracking_index": "931752",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159162",
+      "name": "工业有色ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "H11059",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159163",
+      "name": "有色ETF泰康",
+      "manager": "泰康基金管理有限公司",
+      "tracking_index": "931892",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159165",
+      "name": "养殖ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "931946",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159166",
+      "name": "现金流ETF长城",
+      "manager": "长城基金管理有限公司",
+      "tracking_index": "980092 CNIFCF",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159167",
+      "name": "港股通医疗ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "932069",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159168",
+      "name": "有色ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "H11059",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159169",
+      "name": "恒生生物科技ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "HSBIO",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159170",
+      "name": "港股通互联网ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "987022",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159171",
+      "name": "工业有色ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "H11059",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159172",
+      "name": "养殖ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "931946",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159173",
+      "name": "农牧ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "930910",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159175",
+      "name": "电池ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "931719",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159176",
+      "name": "家电ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "930697",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159177",
+      "name": "工程机械ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "931752",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159178",
+      "name": "消费电子ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "980030 消费电子",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159179",
+      "name": "港股通互联网ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "931637",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159180",
+      "name": "软件ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "980034",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159181",
+      "name": "石油ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "399439 国证油气",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159182",
+      "name": "家电ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "930697",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159183",
+      "name": "新能源车ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "399976 CS新能车",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159185",
+      "name": "港股通信息技术ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "930967",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159186",
+      "name": "港股通汽车ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "HSSCAM",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159187",
+      "name": "创业板新能源ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "399266 创新能源",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159188",
+      "name": "红利100ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "SPCADMCP",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159189",
+      "name": "石油ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399439 国证油气",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159190",
+      "name": "创业板新能源ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "399266 创新能源",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159191",
+      "name": "港股通科技ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "987008",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159192",
+      "name": "家电ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "931021",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159193",
+      "name": "储能电池ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "980027 CNIESBI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159195",
+      "name": "石油ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "399439 国证油气",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159196",
+      "name": "港股通信息技术ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "930967",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159197",
+      "name": "石油ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "399439 国证油气",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159198",
+      "name": "港股通信息技术ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "930967",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159199",
+      "name": "石油ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "399439 国证油气",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159200",
+      "name": "科创债ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "932160",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159201",
+      "name": "自由现金流ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "980092 CNIFCF",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159202",
+      "name": "恒生互联网ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "HSIII",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159203",
+      "name": "大盘成长ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "399372 大盘成长",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159205",
+      "name": "创业板ETF东财",
+      "manager": "东财基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159206",
+      "name": "卫星ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "980018 卫星通信",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159207",
+      "name": "高股息ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "932305",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159208",
+      "name": "航空航天ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "CN5082",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159209",
+      "name": "红利质量ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "932315",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159210",
+      "name": "港股通汽车ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "931239",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159211",
+      "name": "深证100ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "399330 深证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159212",
+      "name": "深100ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "399330 深证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159213",
+      "name": "机器人ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "H30590",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159215",
+      "name": "A500ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159216",
+      "name": "深证100ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "399330 深证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159217",
+      "name": "港股通创新药ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "987018",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159218",
+      "name": "卫星ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "931594",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159219",
+      "name": "深证100ETF融通",
+      "manager": "融通基金管理有限公司",
+      "tracking_index": "399330 深证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159220",
+      "name": "港股通红利低波ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "SPAHLVCP",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159221",
+      "name": "现金流ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "980092 CNIFCF",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159222",
+      "name": "自由现金流ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "980092 CNIFCF",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159223",
+      "name": "现金流ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "980092 CNIFCF",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159225",
+      "name": "现金流ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "980092 CNIFCF",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159226",
+      "name": "中证A500增强ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159227",
+      "name": "航空航天ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "CN5082",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159228",
+      "name": "红利低波ETF长城",
+      "manager": "长城基金管理有限公司",
+      "tracking_index": "930955",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159229",
+      "name": "自由现金流ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "932368",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159230",
+      "name": "通用航空ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "980076 通用航空",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159231",
+      "name": "通用航空ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "980076 通用航空",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159232",
+      "name": "自由现金流ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "932365",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159233",
+      "name": "自由现金流ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "932365",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159235",
+      "name": "中证现金流ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "932365",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159236",
+      "name": "自由现金流ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "932365",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159237",
+      "name": "港股汽车ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "931239",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159238",
+      "name": "沪深300增强ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "000300",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159239",
+      "name": "港股通汽车ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "HSSCAM",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159240",
+      "name": "A500增强ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159241",
+      "name": "航空航天ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "CN5082",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159242",
+      "name": "创业板人工智能ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "970070 CNTAI50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159243",
+      "name": "创业板人工智能ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "970070 CNTAI50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159245",
+      "name": "港股通消费ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "987024",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159246",
+      "name": "创业板人工智能ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "970070 CNTAI50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159247",
+      "name": "创业板ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159248",
+      "name": "人工智能ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "930713",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159249",
+      "name": "A500增强ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159251",
+      "name": "港股通科技ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "987008",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159253",
+      "name": "银行ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "399986 中证银行",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159255",
+      "name": "通用航空ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "980076 通用航空",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159256",
+      "name": "创业板软件ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399264 创业软件",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159257",
+      "name": "航空ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "980076 通用航空",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159258",
+      "name": "机器人ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "H30590",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159259",
+      "name": "成长ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "980080",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159260",
+      "name": "证券ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "399975 证券公司",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159261",
+      "name": "创业板新能源ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399266 创新能源",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159262",
+      "name": "港股通科技ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "HSSCITI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159263",
+      "name": "价值ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "980081",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159265",
+      "name": "港股消费ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "987024",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159266",
+      "name": "港股央企红利ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "931233",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159267",
+      "name": "航天ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "CN5082",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159268",
+      "name": "港股通消费ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "987024",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159269",
+      "name": "港股通科技ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "931573",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159270",
+      "name": "创业板200ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "399019 创业200",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159271",
+      "name": "恒生ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "HSI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159272",
+      "name": "机器人ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "980022 CNIROBOT",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159273",
+      "name": "云计算ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "931470",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159275",
+      "name": "农牧渔ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "930910",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159276",
+      "name": "现金流ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "980092 CNIFCF",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159277",
+      "name": "港股通红利ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "930914",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159278",
+      "name": "机器人ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "980022 CNIROBOT",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159279",
+      "name": "创业板人工智能ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "970070 CNTAI50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159280",
+      "name": "港股通互联网ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "987022",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159281",
+      "name": "港股央企红利ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "931233",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159283",
+      "name": "通用航空ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "931855",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159285",
+      "name": "港股通消费ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "987024",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159286",
+      "name": "港股通创新药ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "987018",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159287",
+      "name": "创业板综ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "399102 创业板综",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159288",
+      "name": "创业板综ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "399102 创业板综",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159289",
+      "name": "创业板综指ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399102 创业板综",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159290",
+      "name": "创业板综指增强ETF东财",
+      "manager": "东财基金管理有限公司",
+      "tracking_index": "399102 创业板综",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159291",
+      "name": "创业板综增强ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "399102 创业板综",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159292",
+      "name": "创业板综增强ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "399102 创业板综",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159293",
+      "name": "创业板综增强ETF建信",
+      "manager": "建信基金管理有限责任公司",
+      "tracking_index": "399102 创业板综",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159295",
+      "name": "创业综指ETF西部利得",
+      "manager": "西部利得基金管理有限公司",
+      "tracking_index": "399102 创业板综",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159296",
+      "name": "A500红利低波ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "932422",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159297",
+      "name": "港股通创新药ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "987018",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159298",
+      "name": "创业板50ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "399673 创业板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159299",
+      "name": "金融科技ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "930986",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159300",
+      "name": "沪深300ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "000300",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159301",
+      "name": "公用事业ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "000995",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159302",
+      "name": "港股高股息ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "930915",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159303",
+      "name": "恒生医疗ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "HSHCI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159305",
+      "name": "储能电池ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "980027 CNIESBI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159306",
+      "name": "汽车零部件ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "931230",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159307",
+      "name": "红利低波100ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "930955",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159309",
+      "name": "油气ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "931248",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159310",
+      "name": "芯片ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "H30007",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159311",
+      "name": "数字经济ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "931582",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159312",
+      "name": "恒指港股通ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "HSISC",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159315",
+      "name": "黄金股ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "931238",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159316",
+      "name": "港股通创新药ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "HSSCID",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159318",
+      "name": "恒指港股通ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "HSISC",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159320",
+      "name": "电网设备ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "HSCAUPG",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159321",
+      "name": "黄金股ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "931238",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159322",
+      "name": "黄金股ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "931238",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159323",
+      "name": "港股通汽车ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "931239",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159325",
+      "name": "半导体ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "932066",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159326",
+      "name": "电网设备ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "931994",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159327",
+      "name": "半导体设备ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "931743",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159328",
+      "name": "家电ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "931021",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159329",
+      "name": "沙特ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "FSSAULM",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159330",
+      "name": "沪深300ETF东财",
+      "manager": "东财基金管理有限公司",
+      "tracking_index": "000300",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159331",
+      "name": "红利港股ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "930914",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159332",
+      "name": "央企红利ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "000825",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159333",
+      "name": "港股央企红利ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "931233",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159335",
+      "name": "央企科创ETF融通",
+      "manager": "融通基金管理有限公司",
+      "tracking_index": "932052",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159336",
+      "name": "央企红利ETF融通",
+      "manager": "融通基金管理有限公司",
+      "tracking_index": "931132",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159337",
+      "name": "中证500ETF东财",
+      "manager": "东财基金管理有限公司",
+      "tracking_index": "000905",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159338",
+      "name": "中证A500ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159339",
+      "name": "A500ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159350",
+      "name": "深证50ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "399850 深证50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159351",
+      "name": "A500ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159352",
+      "name": "A500ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159353",
+      "name": "中证A500ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159355",
+      "name": "800红利低波ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "931848",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159356",
+      "name": "A500ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159357",
+      "name": "A500ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159358",
+      "name": "中证A500ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159359",
+      "name": "A500ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159360",
+      "name": "A500ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159361",
+      "name": "A500ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159362",
+      "name": "A500ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159363",
+      "name": "创业板人工智能ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "970070 CNTAI50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159365",
+      "name": "恒指港股通ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "HSISC",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159366",
+      "name": "港股医疗ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "932069",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159367",
+      "name": "创业板50ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399673 创业板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159368",
+      "name": "创业板新能源ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399266 创新能源",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159369",
+      "name": "创业板50ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "399673 创业板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159370",
+      "name": "创50ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "399673 创业板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159371",
+      "name": "创业板50ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "399673 创业板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159372",
+      "name": "创业板50ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "399673 创业板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159373",
+      "name": "创业板50ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "399673 创业板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159375",
+      "name": "创业板50ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "399673 创业板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159376",
+      "name": "A500ETF浦银",
+      "manager": "浦银基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159377",
+      "name": "创业板医药ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "399275 创医药",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159378",
+      "name": "通用航空ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "980076 通用航空",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159379",
+      "name": "A500ETF融通",
+      "manager": "融通基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159380",
+      "name": "A500ETF东财",
+      "manager": "东财基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159381",
+      "name": "创业板人工智能ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "970070 CNTAI50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159382",
+      "name": "创业板人工智能ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "970070 CNTAI50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159383",
+      "name": "创业板50ETF华泰柏瑞",
+      "manager": "华泰柏瑞基金管理有限公司",
+      "tracking_index": "399673 创业板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159385",
+      "name": "数字经济ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "931529",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159386",
+      "name": "A500ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "000510",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159387",
+      "name": "创业板新能源ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "399266 创新能源",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159388",
+      "name": "创业板人工智能ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "970070 CNTAI50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159389",
+      "name": "数字经济ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "931529",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159390",
+      "name": "中证A50ETF国联",
+      "manager": "国联基金管理有限公司",
+      "tracking_index": "930050",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159391",
+      "name": "大盘价值ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "399373 大盘价值",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159392",
+      "name": "航空ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "980076 通用航空",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159393",
+      "name": "沪深300ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "000300",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159395",
+      "name": "信用债ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "921128",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159396",
+      "name": "信用债ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "921128",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159397",
+      "name": "信用债ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "921128",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159398",
+      "name": "信用债ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "921128",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159399",
+      "name": "现金流ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "FCFQCD",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159400",
+      "name": "科创债ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "921130",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159500",
+      "name": "中证500ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "000905",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159501",
+      "name": "纳指ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "NDX",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159502",
+      "name": "标普生物科技ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "SPSIBI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159505",
+      "name": "国证2000ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "399303 国证2000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159506",
+      "name": "港股通创新药医疗ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "HSSCHI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159507",
+      "name": "通信ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "399389 国证通信",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159508",
+      "name": "生物医药ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "399441 生物医药",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159509",
+      "name": "纳指科技ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "NDXTMC",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159510",
+      "name": "沪深300价值ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "931586",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159511",
+      "name": "通信ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "000936",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159512",
+      "name": "汽车ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "931008",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159513",
+      "name": "纳斯达克100ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "NDX",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159515",
+      "name": "国企红利ETF鹏扬",
+      "manager": "鹏扬基金管理有限公司",
+      "tracking_index": "000824",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159516",
+      "name": "半导体设备ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "931743",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159517",
+      "name": "中证800增强ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "000906",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159518",
+      "name": "标普油气ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "SPSIOP",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159519",
+      "name": "港股国企ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "H11153",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159520",
+      "name": "消费龙头ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "931068",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159521",
+      "name": "国证2000ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "399303 国证2000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159523",
+      "name": "沪深300成长ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "931589",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159525",
+      "name": "红利低波ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "H30269",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159526",
+      "name": "机器人ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "H30590",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159527",
+      "name": "云计算ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "930851",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159528",
+      "name": "国企改革ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "399974 国企改革",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159529",
+      "name": "标普消费ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "SP5CSSUP",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159530",
+      "name": "机器人ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "980022 CNIROBOT",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159531",
+      "name": "中证2000ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "932000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159532",
+      "name": "中证2000ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "932000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159533",
+      "name": "中证2000ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "932000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159535",
+      "name": "中证2000ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "932000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159536",
+      "name": "中证2000ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "932000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159537",
+      "name": "信创ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "CN5075",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159538",
+      "name": "信创ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "CN5075",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159539",
+      "name": "信创ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "CN5075",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159540",
+      "name": "信创ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "CN5075",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159541",
+      "name": "创业板综ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "399102 创业板综",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159542",
+      "name": "工程机械ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "931752",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159543",
+      "name": "国证2000ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "399303 国证2000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159545",
+      "name": "港股通红利低波ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "HSHYLV",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159546",
+      "name": "集成电路ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "932087",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159547",
+      "name": "红利低波ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "H30269",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159549",
+      "name": "红利低波ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "930955",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159550",
+      "name": "互联网ETF东财",
+      "manager": "东财基金管理有限公司",
+      "tracking_index": "930625",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159551",
+      "name": "机器人ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "H30590",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159552",
+      "name": "中证2000增强ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "932000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159553",
+      "name": "中证2000增强ETF海富通",
+      "manager": "海富通基金管理有限公司",
+      "tracking_index": "932000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159555",
+      "name": "中证2000增强ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "932000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159556",
+      "name": "中证2000增强ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "932000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159557",
+      "name": "恒生医疗ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "HSHCI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159558",
+      "name": "半导体设备ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "931743",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159559",
+      "name": "机器人ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "980022 CNIROBOT",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159560",
+      "name": "芯片ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "H30007",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159561",
+      "name": "德国ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "DAX",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159562",
+      "name": "黄金股ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "931238",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159563",
+      "name": "创业板综ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399102 创业板综",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159565",
+      "name": "汽车零部件ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "931230",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159566",
+      "name": "储能电池ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "980027 CNIESBI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159567",
+      "name": "港股创新药ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "987018",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159568",
+      "name": "港股互联网ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "931637",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159569",
+      "name": "港股红利低波ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "987016",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159570",
+      "name": "港股通创新药ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "987018",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159571",
+      "name": "创业板200ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "399019 创业200",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159572",
+      "name": "创业板200ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "399019 创业200",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159573",
+      "name": "创业板200ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399019 创业200",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159575",
+      "name": "创业板200ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "399019 创业200",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159576",
+      "name": "深证100ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "399330 深证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159577",
+      "name": "美国50ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "750108",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159578",
+      "name": "深证主板50ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "399750 深主板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159581",
+      "name": "红利ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "000922",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159582",
+      "name": "半导体ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "931865",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159583",
+      "name": "通信ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "931271",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159586",
+      "name": "计算机ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "H30182",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159587",
+      "name": "粮食ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "399365 国证粮食",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159588",
+      "name": "石油ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "399439 国证油气",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159589",
+      "name": "红利ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "000922",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159590",
+      "name": "软件ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "H30202",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159591",
+      "name": "A50ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "930050",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159592",
+      "name": "A50ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "930050",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159593",
+      "name": "A50ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "930050",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159595",
+      "name": "中证A50ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "930050",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159596",
+      "name": "A50ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "930050",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159597",
+      "name": "创业板成长ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "399667 创业成长",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159599",
+      "name": "芯片ETF东财",
+      "manager": "东财基金管理有限公司",
+      "tracking_index": "H30007",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159600",
+      "name": "科创债ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "932160",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159601",
+      "name": "A50ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "746059",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159602",
+      "name": "中国A50ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "746059",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159603",
+      "name": "科创创业ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "931643",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159605",
+      "name": "中概互联ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "930604",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159606",
+      "name": "中证500成长ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "930939",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159607",
+      "name": "中概互联网ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "930604",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159608",
+      "name": "稀有金属ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "930632",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159609",
+      "name": "光伏ETF浦银",
+      "manager": "浦银基金管理有限公司",
+      "tracking_index": "931151",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159610",
+      "name": "中证500增强ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "000905",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159611",
+      "name": "电力ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "H30199",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159612",
+      "name": "标普500ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "SPXNTR",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159613",
+      "name": "信息安全ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "399994 信息安全",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159615",
+      "name": "恒生生物科技ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "HSBIO",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159616",
+      "name": "农牧ETF建信",
+      "manager": "建信基金管理有限责任公司",
+      "tracking_index": "931778",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159617",
+      "name": "中证500价值ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "931587",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159618",
+      "name": "光伏ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "931151",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159619",
+      "name": "基建ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "930608",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159620",
+      "name": "中证500成长ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "931590",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159621",
+      "name": "ESGETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "721638",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159622",
+      "name": "创新药ETF东财",
+      "manager": "东财基金管理有限公司",
+      "tracking_index": "931409",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159623",
+      "name": "成渝经济圈ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "931695",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159625",
+      "name": "绿色电力ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "399438 绿色电力",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159627",
+      "name": "A100ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "000903",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159628",
+      "name": "国证2000ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "399303 国证2000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159629",
+      "name": "中证1000ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "000852",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159630",
+      "name": "A100ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "000903",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159631",
+      "name": "A100ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "000903",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159632",
+      "name": "纳斯达克ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "NDX",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159633",
+      "name": "中证1000ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "000852",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159635",
+      "name": "基建ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "930608",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159636",
+      "name": "港股通科技30ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "987008",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159637",
+      "name": "新能源车ETF东财",
+      "manager": "东财基金管理有限公司",
+      "tracking_index": "399976 CS新能车",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159638",
+      "name": "航空航天ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "931521",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159639",
+      "name": "碳中和ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "931755",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159640",
+      "name": "碳中和龙头ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "931755",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159641",
+      "name": "碳中和ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "931755",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159642",
+      "name": "碳中和ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "931755",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159643",
+      "name": "疫苗ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "980015 疫苗生科",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159645",
+      "name": "疫苗ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "980015 疫苗生科",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159647",
+      "name": "中药ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "930641",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159649",
+      "name": "国开债ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "CBA08303",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159650",
+      "name": "国开债ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "Y00198",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159651",
+      "name": "国开债ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "CBA11901",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159652",
+      "name": "有色ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "000811",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159653",
+      "name": "ESG300ETF国联安",
+      "manager": "国联安基金管理有限公司",
+      "tracking_index": "399378 ESG 300",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159655",
+      "name": "标普500ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "SPXNTR",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159656",
+      "name": "沪深300成长ETF万家",
+      "manager": "万家基金管理有限公司",
+      "tracking_index": "000918",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159657",
+      "name": "疫苗ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "980015 疫苗生科",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159658",
+      "name": "数字经济ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "931582",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159659",
+      "name": "纳斯达克100ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "NDX",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159660",
+      "name": "纳指ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "NDX",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159661",
+      "name": "A100ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "000903",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159662",
+      "name": "交运ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "399433 国证交运",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159663",
+      "name": "机床ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "931866",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159665",
+      "name": "半导体龙头ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "980017 国证芯片",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159666",
+      "name": "交通运输ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "H30171",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159667",
+      "name": "工业母机ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "931866",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159669",
+      "name": "绿色电力ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "399438 绿色电力",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159670",
+      "name": "消费50ETF国联安",
+      "manager": "国联安基金管理有限公司",
+      "tracking_index": "931139",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159671",
+      "name": "稀有金属ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "930632",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159672",
+      "name": "消费ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "000932",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159673",
+      "name": "沪深300ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399300 沪深300",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159675",
+      "name": "创业板增强ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159676",
+      "name": "创业板增强ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159677",
+      "name": "中证1000增强ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "000852",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159678",
+      "name": "500增强ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "000905",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159679",
+      "name": "中证1000增强ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "000852",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159680",
+      "name": "中证1000增强ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "000852",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159681",
+      "name": "创业板50ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399673 创业板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159682",
+      "name": "创业板50ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "399673 创业板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159685",
+      "name": "1000增强ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "000852",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159686",
+      "name": "A100ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "000903",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159687",
+      "name": "亚太精选ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "GPCSP006",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159688",
+      "name": "恒生互联网ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "HSIII",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159689",
+      "name": "消费ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "000932",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159690",
+      "name": "有色矿业ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "931892",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159691",
+      "name": "港股红利ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "930839",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159692",
+      "name": "证券ETF东财",
+      "manager": "东财基金管理有限公司",
+      "tracking_index": "931412",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159695",
+      "name": "通信ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "399389 国证通信",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159696",
+      "name": "纳指ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "NDX",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159697",
+      "name": "石油ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399439 国证油气",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159698",
+      "name": "粮食ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399365 国证粮食",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159699",
+      "name": "恒生消费ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "HSCGSI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159700",
+      "name": "科创债ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "932160",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159701",
+      "name": "物联网ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "930712",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159703",
+      "name": "新材料ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "H30597",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159706",
+      "name": "深证100ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "399330 深证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159707",
+      "name": "地产ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "399965 800地产",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159708",
+      "name": "红利ETF西部利得",
+      "manager": "西部利得基金管理有限公司",
+      "tracking_index": "399324 深证红利",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159709",
+      "name": "物联网ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "399285 物联网50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159711",
+      "name": "港股通50ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "930931",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159712",
+      "name": "港股通50ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "930931",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159713",
+      "name": "稀土ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "930598",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159715",
+      "name": "稀土ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "930598",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159716",
+      "name": "深证100ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "399330 深证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159717",
+      "name": "ESGETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399378 ESG 300",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159718",
+      "name": "港股医药ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "930975",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159719",
+      "name": "国企ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "GPCCH003",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159720",
+      "name": "智能车ETF泰康",
+      "manager": "泰康基金管理有限公司",
+      "tracking_index": "H11052",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159721",
+      "name": "深证100ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "399330 深证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159723",
+      "name": "科技龙头ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "931524",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159725",
+      "name": "线上消费ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "931480",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159726",
+      "name": "港股通红利ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "HSMCHYI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159728",
+      "name": "在线消费ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "399361 在线消费",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159729",
+      "name": "互联网ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "930625",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159730",
+      "name": "家电ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "980028 龙头家电",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159731",
+      "name": "石化ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "H11057",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159732",
+      "name": "消费电子ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "980030 消费电子",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159735",
+      "name": "港股消费ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "931455",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159736",
+      "name": "食品饮料ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "930653",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159738",
+      "name": "云计算ETF华泰柏瑞",
+      "manager": "华泰柏瑞基金管理有限公司",
+      "tracking_index": "931470",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159739",
+      "name": "云计算ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "930851",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159740",
+      "name": "恒生科技ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "HSTECH",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159741",
+      "name": "恒生科技ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "HSTECH",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159742",
+      "name": "恒生科技ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "HSTECH",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159743",
+      "name": "湖北ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "931393",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159745",
+      "name": "建材ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "931009",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159747",
+      "name": "香港科技ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "931574",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159748",
+      "name": "创新药ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "931409",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159750",
+      "name": "港股科技50ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "931574",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159751",
+      "name": "港股通科技ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "931573",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159752",
+      "name": "新能源ETF申万菱信",
+      "manager": "申万菱信基金管理有限公司",
+      "tracking_index": "000941",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159755",
+      "name": "电池ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "980032 新能电池",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159757",
+      "name": "电池ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "980032 新能电池",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159758",
+      "name": "红利质量ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "931468",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159760",
+      "name": "医疗健康ETF泰康",
+      "manager": "泰康基金管理有限公司",
+      "tracking_index": "980016 医疗健康",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159761",
+      "name": "新材料ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "H30597",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159763",
+      "name": "新材料ETF建信",
+      "manager": "建信基金管理有限责任公司",
+      "tracking_index": "H30597",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159766",
+      "name": "旅游ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "930633",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159767",
+      "name": "电池龙头ETF兴银",
+      "manager": "兴银基金管理有限责任公司",
+      "tracking_index": "980032 新能电池",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159768",
+      "name": "房地产ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "000948",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159770",
+      "name": "机器人ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "H30590",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159773",
+      "name": "创业板科技ETF华泰柏瑞",
+      "manager": "华泰柏瑞基金管理有限公司",
+      "tracking_index": "399276 创科技",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159775",
+      "name": "电池ETF建信",
+      "manager": "建信基金管理有限责任公司",
+      "tracking_index": "980032 新能电池",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159776",
+      "name": "港股医药ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "930975",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159777",
+      "name": "创科技ETF国联安",
+      "manager": "国联安基金管理有限公司",
+      "tracking_index": "399276 创科技",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159778",
+      "name": "工业互联网ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "931495",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159779",
+      "name": "消费电子ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "931494",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159780",
+      "name": "科创创业50ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "931643",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159781",
+      "name": "科创创业ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "931643",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159782",
+      "name": "双创50ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "931643",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159783",
+      "name": "科创创业50ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "931643",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159786",
+      "name": "VRETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "930821",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159787",
+      "name": "建材ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "931009",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159788",
+      "name": "港股通100ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "930957",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159790",
+      "name": "碳中和ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "000977",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159791",
+      "name": "300ESGETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "931463",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159792",
+      "name": "港股通互联网ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "931637",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159793",
+      "name": "线上消费ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "931481",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159795",
+      "name": "智能汽车ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "930721",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159796",
+      "name": "电池ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "931719",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159797",
+      "name": "医疗器械ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "H30217",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159798",
+      "name": "消费ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "931139",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159800",
+      "name": "中证800ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "000906",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159801",
+      "name": "芯片ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "980017 国证芯片",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159804",
+      "name": "创中盘88ETF国寿",
+      "manager": "国寿安保基金管理有限公司",
+      "tracking_index": "399291 创精选88",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159805",
+      "name": "传媒ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399971 中证传媒",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159806",
+      "name": "新能源车ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "399976 CS新能车",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159807",
+      "name": "科技ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "931380",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159808",
+      "name": "创100ETF融通",
+      "manager": "融通基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159810",
+      "name": "创业板ETF浦银",
+      "manager": "浦银基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159811",
+      "name": "5GETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "931406",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159812",
+      "name": "黄金ETF前海开源",
+      "manager": "前海开源基金管理有限公司",
+      "tracking_index": "AU9999",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159813",
+      "name": "半导体ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "980017 国证芯片",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159814",
+      "name": "创业大盘ETF西部利得",
+      "manager": "西部利得基金管理有限公司",
+      "tracking_index": "399293 创业大盘",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159816",
+      "name": "0-4年地方债ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "931161",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159819",
+      "name": "人工智能ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "930713",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159820",
+      "name": "中证500ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "399905 中证 500",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159821",
+      "name": "创业板ETF中银证券",
+      "manager": "中银国际证券股份有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159822",
+      "name": "新经济ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "SPNCSCHN",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159824",
+      "name": "新能源车ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "399976 CS新能车",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159825",
+      "name": "农业ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "000949",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159827",
+      "name": "农业ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "000949",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159828",
+      "name": "医疗ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "399989 中证医疗",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159830",
+      "name": "金ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "SHAU",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159831",
+      "name": "金ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "SHAU",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159834",
+      "name": "金ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "SHAU",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159835",
+      "name": "创新药ETF建信",
+      "manager": "建信基金管理有限责任公司",
+      "tracking_index": "931152",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159836",
+      "name": "创业板300ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "399012 创业300",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159837",
+      "name": "生物科技ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "930743",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159838",
+      "name": "医药50ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "931140",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159839",
+      "name": "生物医药ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "399441 生物医药",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159840",
+      "name": "锂电池ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "980032 新能电池",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159841",
+      "name": "证券ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "399975 证券公司",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159842",
+      "name": "券商ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "399975 证券公司",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159843",
+      "name": "食品饮料ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "399396 国证食品",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159845",
+      "name": "中证1000ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "000852",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159847",
+      "name": "医疗ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "399989 中证医疗",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159848",
+      "name": "证券ETF国联安",
+      "manager": "国联安基金管理有限公司",
+      "tracking_index": "399975 证券公司",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159849",
+      "name": "生物科技ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "930743",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159850",
+      "name": "恒生国企ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "HSCEI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159851",
+      "name": "金融科技ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "930986",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159852",
+      "name": "软件ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "930601",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159855",
+      "name": "影视ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "930781",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159856",
+      "name": "互联网龙头ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "930625",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159857",
+      "name": "光伏ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "931151",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159858",
+      "name": "创新药ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "931152",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159859",
+      "name": "生物医药ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "399441 生物医药",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159861",
+      "name": "碳中和50ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "930614",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159862",
+      "name": "食品饮料ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "000815",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159863",
+      "name": "光伏ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "931151",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159864",
+      "name": "光伏ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "931151",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159865",
+      "name": "养殖ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "930707",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159866",
+      "name": "日经ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "N225",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159867",
+      "name": "养殖ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "930707",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159869",
+      "name": "游戏ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "930901",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159870",
+      "name": "化工ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "000813",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159871",
+      "name": "有色ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "930708",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159872",
+      "name": "智能网联汽车ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "930725",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159873",
+      "name": "医疗设备ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "H30178",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159875",
+      "name": "新能源ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "399808 中证新能",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159876",
+      "name": "有色ETF华宝",
+      "manager": "华宝基金管理有限公司",
+      "tracking_index": "930708",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159877",
+      "name": "医疗ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "H30178",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159880",
+      "name": "有色ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399395 国证有色",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159881",
+      "name": "有色金属ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "930708",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159883",
+      "name": "医疗器械ETF永赢",
+      "manager": "永赢基金管理有限公司",
+      "tracking_index": "H30217",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159885",
+      "name": "碳中和ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "000977",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159886",
+      "name": "机械ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "000812",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159887",
+      "name": "银行ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "H30022",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159888",
+      "name": "智能汽车ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "930721",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159889",
+      "name": "智能汽车ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "930721",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159890",
+      "name": "云计算ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "930851",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159891",
+      "name": "医疗ETF建信",
+      "manager": "建信基金管理有限责任公司",
+      "tracking_index": "H30178",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159892",
+      "name": "恒生医药ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "HSBIO",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159895",
+      "name": "物联网ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "930712",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159896",
+      "name": "物联网ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "930712",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159898",
+      "name": "医疗器械ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "H30217",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159899",
+      "name": "软件ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "H30202",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159901",
+      "name": "深证100ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "399330 深证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159902",
+      "name": "中小100ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399005 中小100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159903",
+      "name": "深成ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "399001 深证成指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159905",
+      "name": "红利ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "399324 深证红利",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159906",
+      "name": "深成长ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "399326 成长40",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159907",
+      "name": "国证2000ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "399303 国证2000",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159908",
+      "name": "创业板ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159909",
+      "name": "TMT50ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "399610 TMT50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159910",
+      "name": "基本面120ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "399702 深证F120",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159912",
+      "name": "深300ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "399007 深证300",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159913",
+      "name": "深价值ETF交银",
+      "manager": "交银施罗德基金管理有限公司",
+      "tracking_index": "399348 深证价值",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159915",
+      "name": "创业板ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159916",
+      "name": "基本面ETF建信",
+      "manager": "建信基金管理有限责任公司",
+      "tracking_index": "399701 深证F60",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159918",
+      "name": "中创400ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "399624 中创400",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159919",
+      "name": "沪深300ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "399300 沪深300",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159920",
+      "name": "恒生ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "HSI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159922",
+      "name": "中证500ETF嘉实",
+      "manager": "嘉实基金管理有限公司",
+      "tracking_index": "399905 中证 500",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159923",
+      "name": "中证A100ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "399903 中证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159925",
+      "name": "沪深300ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "399300 沪深300",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159928",
+      "name": "消费ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "000932",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159929",
+      "name": "医药ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "000933",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159930",
+      "name": "能源ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "000928",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159931",
+      "name": "金融地产ETF汇添富",
+      "manager": "汇添富基金管理股份有限公司",
+      "tracking_index": "000934",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159933",
+      "name": "金融地产ETF国投瑞银",
+      "manager": "国投瑞银基金管理有限公司",
+      "tracking_index": "000914",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159934",
+      "name": "黄金ETF易方达",
+      "manager": "易方达基金管理有限公司",
+      "tracking_index": "AU9999",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159935",
+      "name": "中证500ETF景顺",
+      "manager": "景顺长城基金管理有限公司",
+      "tracking_index": "000905",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159936",
+      "name": "可选消费ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "000989",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159937",
+      "name": "黄金ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "AU9999",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159938",
+      "name": "医药ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "000991",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159939",
+      "name": "信息技术ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "000993",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159940",
+      "name": "金融地产ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "000992",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159941",
+      "name": "纳指ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "NDX",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159943",
+      "name": "深证成指ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "399001 深证成指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159944",
+      "name": "材料ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "000987",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159945",
+      "name": "能源ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "000986",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159948",
+      "name": "创业板ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159949",
+      "name": "创业板50ETF华安",
+      "manager": "华安基金管理有限公司",
+      "tracking_index": "399673 创业板50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159952",
+      "name": "创业板ETF广发",
+      "manager": "广发基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159954",
+      "name": "恒生中国企业ETF南方",
+      "manager": "南方基金管理股份有限公司",
+      "tracking_index": "HSCEI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159956",
+      "name": "创业板ETF建信",
+      "manager": "建信基金管理有限责任公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159957",
+      "name": "创业板ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159958",
+      "name": "创业板ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159959",
+      "name": "央企ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "000860",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159960",
+      "name": "恒生中国企业ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "HSCEI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159961",
+      "name": "深100ETF方正富邦",
+      "manager": "方正富邦基金管理有限公司",
+      "tracking_index": "399330 深证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159964",
+      "name": "创业板ETF平安",
+      "manager": "平安基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159965",
+      "name": "央视50ETF国联",
+      "manager": "国联基金管理有限公司",
+      "tracking_index": "399550 央视50",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159966",
+      "name": "创业板价值ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399295 创价值",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159967",
+      "name": "创业板成长ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "399296 创成长",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159968",
+      "name": "中证500ETF博时",
+      "manager": "博时基金管理有限公司",
+      "tracking_index": "399905 中证 500",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159970",
+      "name": "深100ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "399330 深证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159971",
+      "name": "创业板ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159972",
+      "name": "5年地方债ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "930865",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159973",
+      "name": "民企ETF弘毅远方",
+      "manager": "弘毅远方基金管理有限公司",
+      "tracking_index": "399362 民企100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159974",
+      "name": "央企创新ETF富国",
+      "manager": "富国基金管理有限公司",
+      "tracking_index": "000861",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159975",
+      "name": "深100ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "399330 深证100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159976",
+      "name": "湾创ETF工银",
+      "manager": "工银瑞信基金管理有限公司",
+      "tracking_index": "980001 湾创100",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159977",
+      "name": "创业板ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "399006 创业板指",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159980",
+      "name": "有色ETF大成",
+      "manager": "大成基金管理有限公司",
+      "tracking_index": "IMCI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159981",
+      "name": "能源化工ETF建信",
+      "manager": "建信基金管理有限责任公司",
+      "tracking_index": "000201",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159982",
+      "name": "中证500ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399905 中证 500",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159985",
+      "name": "豆粕ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "DCESMFI",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159991",
+      "name": "创业板大盘ETF招商",
+      "manager": "招商基金管理有限公司",
+      "tracking_index": "399293 创业大盘",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159992",
+      "name": "创新药ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "931152",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159993",
+      "name": "证券ETF鹏华",
+      "manager": "鹏华基金管理有限公司",
+      "tracking_index": "399437 证券龙头",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159994",
+      "name": "通信ETF银华",
+      "manager": "银华基金管理股份有限公司",
+      "tracking_index": "931079",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159995",
+      "name": "芯片ETF华夏",
+      "manager": "华夏基金管理有限公司",
+      "tracking_index": "980017 国证芯片",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159996",
+      "name": "家电ETF国泰",
+      "manager": "国泰基金管理有限公司",
+      "tracking_index": "930697",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159997",
+      "name": "电子ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "930652",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    },
+    {
+      "code": "159998",
+      "name": "计算机ETF天弘",
+      "manager": "天弘基金管理有限公司",
+      "tracking_index": "930651",
+      "listing_date": null,
+      "exchange": "SZSE",
+      "source": "SZSE_OFFICIAL"
+    }
+  ]
+}
