@@ -43,6 +43,13 @@ class PcfSnapshot:
 
     nav_per_cu: float | None = None
     nav_per_share: float | None = None
+    nav_date: str | None = None
+
+    # Explicit normalized capacity state. Parsers set UNLIMITED only when the
+    # official PCF actually contains the relevant cap fields with no positive
+    # cap. Missing evidence remains UNKNOWN.
+    market_capacity_status: str | None = None
+    account_capacity_status: str | None = None
 
     creation_limit: int | None = None
     redemption_limit: int | None = None
@@ -88,6 +95,41 @@ class PcfSnapshot:
             if value is not None
         ]
         return min(limits) if limits else None
+
+
+    @staticmethod
+    def _resolved_capacity_status(
+        explicit_status: str | None,
+        *,
+        creation_allowed: bool | None,
+        cumulative: int | None,
+        net: int | None,
+    ) -> str:
+        if creation_allowed is False:
+            return "CLOSED"
+        if creation_allowed is not True:
+            return "UNKNOWN"
+        if PcfSnapshot._binding_limit(cumulative, net) is not None:
+            return "LIMITED"
+        if explicit_status == "UNLIMITED":
+            return "UNLIMITED"
+        return "UNKNOWN"
+
+    def resolved_market_capacity_status(self) -> str:
+        return self._resolved_capacity_status(
+            self.market_capacity_status,
+            creation_allowed=self.creation_allowed,
+            cumulative=self.creation_limit,
+            net=self.net_creation_limit,
+        )
+
+    def resolved_account_capacity_status(self) -> str:
+        return self._resolved_capacity_status(
+            self.account_capacity_status,
+            creation_allowed=self.creation_allowed,
+            cumulative=self.account_creation_limit,
+            net=self.account_net_creation_limit,
+        )
 
     def market_capacity_kind(self) -> str | None:
         """Which market-wide rule binds a creation with no offsetting redemption."""
@@ -180,6 +222,8 @@ class PcfSnapshot:
                 "capacity_kind": market_kind,
                 "market_capacity_kind": market_kind,
                 "account_capacity_kind": self.account_capacity_kind(),
+                "market_capacity_status": self.resolved_market_capacity_status(),
+                "account_capacity_status": self.resolved_account_capacity_status(),
                 "market_limit_basket_equivalent": self.market_limit_basket_equivalent(),
                 "account_limit_basket_equivalent": self.account_limit_basket_equivalent(),
                 "total_baskets": self.total_baskets(),

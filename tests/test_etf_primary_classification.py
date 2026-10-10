@@ -65,3 +65,57 @@ def test_free_cash_flow_etf_remains_equity():
     )
     assert result["asset_class"] == "EQUITY"
     assert result["strategy_style"] == "INDEX"
+
+
+def test_sse_domestic_official_class_overrides_sp_provider_name():
+    result = classify_etf(
+        name="红利低波50ETF南方",
+        tracking_index="标普中国A股大盘红利低波50指数",
+        exchange="SSE",
+        raw_exchange_class="03",
+    )
+    assert result["region_scope"] == "DOMESTIC"
+    assert result["qdii_flag"] is False
+
+
+def test_sse_domestic_official_class_overrides_hang_seng_provider_name():
+    result = classify_etf(
+        name="电网设备ETF南方",
+        tracking_index="恒生A股电网设备指数",
+        exchange="SSE",
+        raw_exchange_class="03",
+    )
+    assert result["region_scope"] == "DOMESTIC"
+    assert result["qdii_flag"] is False
+
+
+def test_sse_domestic_sp_a_share_opportunity_not_qdii():
+    result = classify_etf(
+        name="标普A股红利ETF华宝",
+        tracking_index="标普中国A股红利机会指数",
+        exchange="SSE",
+        raw_exchange_class="03",
+    )
+    assert result["region_scope"] == "DOMESTIC"
+    assert result["qdii_flag"] is False
+
+
+def test_szse_official_pcf_cross_border_type_is_qdii():
+    result = classify_etf(
+        name="测试ETF",
+        tracking_index="TESTINDEX",
+        exchange="SZSE",
+        pcf_type="2",
+    )
+    assert result["region_scope"] == "CROSS_BORDER"
+    assert result["qdii_flag"] is True
+
+
+def test_provider_fallback_respects_explicit_a_share_scope():
+    result = classify_etf(
+        name="测试ETF",
+        tracking_index="恒生A股电网设备指数",
+        exchange="SZSE",
+    )
+    assert result["region_scope"] == "DOMESTIC"
+    assert result["qdii_flag"] is False

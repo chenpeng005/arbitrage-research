@@ -47,6 +47,60 @@ def _to_positive_int(value: Any) -> int | None:
     return int(number)
 
 
+def _find_present(mapping: dict[str, Any], *keys: str) -> tuple[bool, Any]:
+    for key in keys:
+        if key in mapping:
+            return True, mapping[key]
+    lower = {str(k).lower(): v for k, v in mapping.items()}
+    for key in keys:
+        if key.lower() in lower:
+            return True, lower[key.lower()]
+    return False, None
+
+
+def _normalize_ymd(value: Any) -> str | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    digits = re.sub(r"[^0-9]", "", text)
+    return digits if re.fullmatch(r"\d{8}", digits) else None
+
+
+def _is_unlimited_cap_value(value: Any) -> bool:
+    if value is None:
+        return True
+    text = str(value).strip().replace(",", "").replace("￥", "").replace("元", "")
+    if text in {"", "-", "--", "无", "不限", "不设上限", "None", "null", "NULL"}:
+        return True
+    try:
+        return float(text) <= 0
+    except ValueError:
+        return False
+
+
+def _capacity_status_from_raw(
+    mapping: dict[str, Any],
+    key_groups: tuple[tuple[str, ...], ...],
+    creation_allowed: bool | None,
+) -> str:
+    if creation_allowed is False:
+        return "CLOSED"
+    seen = False
+    all_unlimited_markers = True
+    for keys in key_groups:
+        present, value = _find_present(mapping, *keys)
+        if not present:
+            continue
+        seen = True
+        if _to_positive_int(value) is not None:
+            return "LIMITED" if creation_allowed is True else "UNKNOWN"
+        if not _is_unlimited_cap_value(value):
+            all_unlimited_markers = False
+    if creation_allowed is True and seen and all_unlimited_markers:
+        return "UNLIMITED"
+    return "UNKNOWN"
+
+
 def _pick(mapping: dict[str, Any], *keys: str) -> Any:
     for key in keys:
         if key in mapping and mapping[key] not in (None, ""):
@@ -106,6 +160,20 @@ def parse_sse_basic_row(
         ),
         nav_per_cu=_to_float(_pick(row, "NAVPERCU", "NAVperCU")),
         nav_per_share=_to_float(_pick(row, "NAV")),
+        nav_date=_normalize_ymd(_pick(row, "PRE_TRADING_DAY", "PreTradingDay")),
+        market_capacity_status=_capacity_status_from_raw(
+            row,
+            (("CREATION_LIMIT", "CreationLimit"), ("NET_CREATION_LIMIT", "NetCreationLimit")),
+            creation_allowed,
+        ),
+        account_capacity_status=_capacity_status_from_raw(
+            row,
+            (
+                ("CREATION_LIMIT_PER_ACCT", "CreationLimitPerAcct", "CreationLimitPerUser"),
+                ("NET_CREATION_LIMIT_PER_ACCT", "NetCreationLimitPerAcct", "NetCreationLimitPerUser"),
+            ),
+            creation_allowed,
+        ),
         creation_limit=_to_positive_int(_pick(row, "CREATION_LIMIT", "CreationLimit")),
         redemption_limit=_to_positive_int(_pick(row, "REDEMPTION_LIMIT", "RedemptionLimit")),
         net_creation_limit=_to_positive_int(
@@ -241,7 +309,7 @@ def _flatten_xml_header(root: ET.Element) -> dict[str, str]:
             continue
         name = _local_name(node.tag)
         text = (node.text or "").strip()
-        if text and name not in result:
+        if name not in result:
             result[name] = text
     return result
 
@@ -273,6 +341,17 @@ def parse_szse_xml(
         creation_redemption_unit=_to_positive_int(_pick(header, "CreationRedemptionUnit")),
         nav_per_cu=_to_float(_pick(header, "NAVperCU")),
         nav_per_share=_to_float(_pick(header, "NAV")),
+        nav_date=_normalize_ymd(_pick(header, "PreTradingDay")),
+        market_capacity_status=_capacity_status_from_raw(
+            header,
+            (("CreationLimit",), ("NetCreationLimit",)),
+            _parse_szse_bool(_pick(header, "Creation")),
+        ),
+        account_capacity_status=_capacity_status_from_raw(
+            header,
+            (("CreationLimitPerUser",), ("NetCreationLimitPerUser",)),
+            _parse_szse_bool(_pick(header, "Creation")),
+        ),
         creation_limit=_to_positive_int(_pick(header, "CreationLimit")),
         redemption_limit=_to_positive_int(_pick(header, "RedemptionLimit")),
         net_creation_limit=_to_positive_int(_pick(header, "NetCreationLimit")),

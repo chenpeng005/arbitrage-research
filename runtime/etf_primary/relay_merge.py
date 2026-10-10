@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError
 
+from .classification import classify_etf
 from .http import fetch_text
 from .monitor_view import build_monitor_view
 from .pcf import SZSE_PCF_PAGE, parse_szse_xml
@@ -27,6 +28,34 @@ def _compact_snapshot(snapshot) -> dict:
     row = snapshot.to_dict()
     row.pop("raw_header", None)
     return row
+
+
+def _reclassify_full_universe(full_universe: dict, combined_rows: list[dict]) -> None:
+    """Apply final classification with official PCF evidence where available."""
+    pcf_by_key = {
+        (str(row.get("exchange") or ""), str(row.get("code") or "")): row
+        for row in combined_rows
+        if isinstance(row, dict)
+    }
+    for row in full_universe.get("rows") or []:
+        if not isinstance(row, dict):
+            continue
+        exchange = str(row.get("exchange") or "")
+        code = str(row.get("code") or "")
+        pcf = pcf_by_key.get((exchange, code)) or {}
+        # SSE has an official universe subclass, which is stronger evidence than
+        # creation/redemption mechanism codes. SZSE can additionally use Type=2
+        # when it is present in the official PCF.
+        pcf_type = pcf.get("creation_redemption_mode") if exchange == "SZSE" else None
+        row.update(
+            classify_etf(
+                name=str(row.get("name") or ""),
+                tracking_index=str(row.get("tracking_index") or "") or None,
+                exchange=exchange,
+                raw_exchange_class=str(row.get("raw_exchange_class") or "") or None,
+                pcf_type=str(pcf_type) if pcf_type not in (None, "") else None,
+            )
+        )
 
 
 def _recover_sparse_szse_misses(
@@ -206,6 +235,7 @@ def merge_relay_snapshot(
     combined_rows = [sse_rows[code] for code in sorted(sse_rows)] + [
         szse_rows[code] for code in sorted(szse_rows)
     ]
+    _reclassify_full_universe(full_universe, combined_rows)
     stale_rows = sorted(
         (
             {
@@ -230,6 +260,7 @@ def merge_relay_snapshot(
     )
     for filename in prepared_files:
         shutil.copy2(prepare_dir / filename, output_dir / filename)
+    _write_json(output_dir / "full_universe.json", full_universe)
 
     pcf_snapshot = {
         "source": "SSE_OFFICIAL+SZSE_OFFICIAL",

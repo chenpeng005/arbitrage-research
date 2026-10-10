@@ -19,7 +19,7 @@ from .szse_relay import (
 )
 
 
-SNAPSHOT_SCHEMA_VERSION = 3
+SNAPSHOT_SCHEMA_VERSION = 4
 EVENT_SCHEMA_VERSION = 1
 _PCF_MODEL_FIELDS = {field.name for field in fields(PcfSnapshot)}
 _FACT_DIGEST_EXCLUDED_FIELDS = {"fetched_at", "source_url", "raw_header"}

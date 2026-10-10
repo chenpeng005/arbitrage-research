@@ -10,7 +10,7 @@ from typing import Any
 from .models import PcfSnapshot
 
 
-VIEW_SCHEMA_VERSION = 2
+VIEW_SCHEMA_VERSION = 3
 _PCF_MODEL_FIELDS = {field.name for field in fields(PcfSnapshot)}
 
 
@@ -89,6 +89,7 @@ def build_monitor_view(
             "creation_redemption_unit": pcf.get("creation_redemption_unit") if pcf else None,
             "nav_per_cu": pcf.get("nav_per_cu") if pcf else None,
             "nav_per_share": pcf.get("nav_per_share") if pcf else None,
+            "nav_date": pcf.get("nav_date") if pcf else None,
             "creation_limit": pcf.get("creation_limit") if pcf else None,
             "net_creation_limit": pcf.get("net_creation_limit") if pcf else None,
             "account_creation_limit": pcf.get("account_creation_limit") if pcf else None,
@@ -99,6 +100,8 @@ def build_monitor_view(
             "capacity_kind": pcf.get("capacity_kind") if pcf else None,
             "market_capacity_kind": pcf.get("market_capacity_kind") if pcf else None,
             "account_capacity_kind": pcf.get("account_capacity_kind") if pcf else None,
+            "market_capacity_status": pcf.get("market_capacity_status") if pcf else "UNKNOWN",
+            "account_capacity_status": pcf.get("account_capacity_status") if pcf else "UNKNOWN",
             "market_limit_basket_equivalent": pcf.get("market_limit_basket_equivalent") if pcf else None,
             "account_limit_basket_equivalent": pcf.get("account_limit_basket_equivalent") if pcf else None,
             "total_baskets": pcf.get("total_baskets") if pcf else None,

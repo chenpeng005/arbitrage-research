@@ -75,6 +75,7 @@ def test_sse_live_upper_snake_fields_are_normalized():
         "513100",
         {
             "TRADING_DAY": "20260930",
+            "PRE_TRADING_DAY": "20260929",
             "CREATION_REDEMPTION_UNIT": "500000",
             "NAVPERCU": "￥1016765.94",
             "NAV": "￥2.0335",
@@ -88,6 +89,9 @@ def test_sse_live_upper_snake_fields_are_normalized():
     )
     assert snapshot.creation_allowed is True
     assert snapshot.redemption_allowed is True
+    assert snapshot.nav_date == "20260929"
+    assert snapshot.resolved_market_capacity_status() == "LIMITED"
+    assert snapshot.resolved_account_capacity_status() == "LIMITED"
     assert snapshot.market_capacity_kind() == "CUMULATIVE"
     assert snapshot.total_baskets() == 5
     assert snapshot.account_baskets() == 1
@@ -99,6 +103,7 @@ def test_szse_limit_fields_are_normalized():
     <PCF xmlns="http://ts.szse.cn/Fund">
       <SecurityID>159501</SecurityID>
       <TradingDay>20260930</TradingDay>
+      <PreTradingDay>20260929</PreTradingDay>
       <Type>2</Type>
       <CreationRedemptionUnit>1000000</CreationRedemptionUnit>
       <NAVperCU>1914600</NAVperCU>
@@ -113,6 +118,9 @@ def test_szse_limit_fields_are_normalized():
     </PCF>
     """
     snapshot = parse_szse_xml("159501", xml)
+    assert snapshot.nav_date == "20260929"
+    assert snapshot.resolved_market_capacity_status() == "LIMITED"
+    assert snapshot.resolved_account_capacity_status() == "LIMITED"
     assert snapshot.market_capacity_kind() == "CUMULATIVE"
     assert snapshot.total_baskets() == 180
     assert snapshot.account_baskets() == 1
@@ -165,6 +173,11 @@ def test_monitor_view_joins_identity_and_pcf_with_freshness_gate():
                 "creation_allowed": True,
                 "redemption_allowed": True,
                 "creation_redemption_unit": 1_000_000,
+                "nav_per_share": 1.9146,
+                "nav_per_cu": 1_914_600.0,
+                "nav_date": "20260929",
+                "market_capacity_status": "LIMITED",
+                "account_capacity_status": "LIMITED",
                 "creation_limit": 180_000_000,
                 "account_creation_limit": 1_000_000,
                 # Deliberately stale legacy derived fields: the view must recompute them.
@@ -189,7 +202,7 @@ def test_monitor_view_joins_identity_and_pcf_with_freshness_gate():
     }
 
     view = build_monitor_view(full_universe=universe, pcf_snapshot=pcf)
-    assert view["schema_version"] == 2
+    assert view["schema_version"] == 3
     assert view["universe_count"] == 3
     assert view["fresh_count"] == 1
     assert view["stale_count"] == 1
@@ -200,7 +213,10 @@ def test_monitor_view_joins_identity_and_pcf_with_freshness_gate():
     assert fresh["pcf_status"] == "FRESH"
     assert fresh["event_eligible"] is True
     assert fresh["capacity_kind"] == "CUMULATIVE"
+    assert fresh["nav_date"] == "20260929"
     assert fresh["market_capacity_kind"] == "CUMULATIVE"
+    assert fresh["market_capacity_status"] == "LIMITED"
+    assert fresh["account_capacity_status"] == "LIMITED"
     assert fresh["total_baskets"] == 180
     assert fresh["account_baskets"] == 1
     assert fresh["minimum_accounts_to_fill"] == 180
@@ -216,4 +232,100 @@ def test_monitor_view_joins_identity_and_pcf_with_freshness_gate():
     assert missing["pcf_status"] == "MISSING"
     assert missing["event_eligible"] is False
     assert missing["creation_allowed"] is None
+    assert missing["market_capacity_status"] == "UNKNOWN"
+    assert missing["account_capacity_status"] == "UNKNOWN"
+    assert missing["nav_date"] is None
     assert missing["total_baskets"] is None
+
+
+def test_sse_open_zero_or_blank_caps_are_explicit_unlimited():
+    snapshot = parse_sse_basic_row(
+        "510300",
+        {
+            "TRADING_DAY": "20261009",
+            "PRE_TRADING_DAY": "20261008",
+            "CREATION_REDEMPTION": "申购和赎回皆允许",
+            "CREATION_REDEMPTION_UNIT": "1000000",
+            "CREATION_LIMIT": "0",
+            "NET_CREATION_LIMIT": "-",
+            "CREATION_LIMIT_PER_ACCT": "",
+            "NET_CREATION_LIMIT_PER_ACCT": "0",
+        },
+    )
+    row = snapshot.to_dict()
+    assert row["market_capacity_status"] == "UNLIMITED"
+    assert row["account_capacity_status"] == "UNLIMITED"
+    assert row["total_baskets"] is None
+    assert row["account_baskets"] is None
+
+
+def test_sse_closed_caps_are_closed_not_unlimited():
+    snapshot = parse_sse_basic_row(
+        "510300",
+        {
+            "TRADING_DAY": "20261009",
+            "CREATION_REDEMPTION": "0",
+            "CREATION_LIMIT": "0",
+            "NET_CREATION_LIMIT": "0",
+            "CREATION_LIMIT_PER_ACCT": "0",
+            "NET_CREATION_LIMIT_PER_ACCT": "0",
+        },
+    )
+    row = snapshot.to_dict()
+    assert row["market_capacity_status"] == "CLOSED"
+    assert row["account_capacity_status"] == "CLOSED"
+
+
+def test_sse_open_but_missing_cap_fields_is_unknown():
+    snapshot = parse_sse_basic_row(
+        "510300",
+        {
+            "TRADING_DAY": "20261009",
+            "CREATION_REDEMPTION": "申购和赎回皆允许",
+            "CREATION_REDEMPTION_UNIT": "1000000",
+        },
+    )
+    row = snapshot.to_dict()
+    assert row["market_capacity_status"] == "UNKNOWN"
+    assert row["account_capacity_status"] == "UNKNOWN"
+
+
+def test_market_and_account_capacity_status_are_independent():
+    snapshot = parse_sse_basic_row(
+        "510300",
+        {
+            "TRADING_DAY": "20261009",
+            "CREATION_REDEMPTION": "申购和赎回皆允许",
+            "CREATION_REDEMPTION_UNIT": "1000000",
+            "CREATION_LIMIT": "5000000",
+            "NET_CREATION_LIMIT": "0",
+            "CREATION_LIMIT_PER_ACCT": "0",
+            "NET_CREATION_LIMIT_PER_ACCT": "0",
+        },
+    )
+    row = snapshot.to_dict()
+    assert row["market_capacity_status"] == "LIMITED"
+    assert row["total_baskets"] == 5
+    assert row["account_capacity_status"] == "UNLIMITED"
+    assert row["account_baskets"] is None
+
+
+def test_szse_empty_or_zero_cap_elements_are_unlimited_not_missing():
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+    <PCF xmlns="http://ts.szse.cn/Fund">
+      <SecurityID>159999</SecurityID>
+      <TradingDay>20261009</TradingDay>
+      <PreTradingDay>20261008</PreTradingDay>
+      <CreationRedemptionUnit>1000000</CreationRedemptionUnit>
+      <Creation>Y</Creation>
+      <Redemption>Y</Redemption>
+      <CreationLimit>0</CreationLimit>
+      <NetCreationLimit>0</NetCreationLimit>
+      <CreationLimitPerUser></CreationLimitPerUser>
+      <NetCreationLimitPerUser>0</NetCreationLimitPerUser>
+    </PCF>
+    """
+    row = parse_szse_xml("159999", xml).to_dict()
+    assert row["nav_date"] == "20261008"
+    assert row["market_capacity_status"] == "UNLIMITED"
+    assert row["account_capacity_status"] == "UNLIMITED"

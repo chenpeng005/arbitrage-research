@@ -60,6 +60,10 @@ def normalize_relay_comparison(payload):
             'current_account_baskets': cur.get('account_baskets'),
             'previous_capacity_kind': prev.get('market_capacity_kind'),
             'current_capacity_kind': cur.get('market_capacity_kind'),
+            'previous_market_capacity_status': prev.get('market_capacity_status'),
+            'current_market_capacity_status': cur.get('market_capacity_status'),
+            'previous_account_capacity_status': prev.get('account_capacity_status'),
+            'current_account_capacity_status': cur.get('account_capacity_status'),
             'capacity_comparable': item.get('capacity_comparable', False),
             'basket_delta': item.get('basket_delta'),
             'basket_ratio': item.get('basket_ratio'),
@@ -67,6 +71,8 @@ def normalize_relay_comparison(payload):
             'creation_changed': item.get('creation_changed', False),
             'capacity_rule_changed': item.get('capacity_rule_changed', False),
             'account_rule_changed': item.get('account_rule_changed', False),
+            'capacity_status_changed': item.get('capacity_status_changed', False),
+            'account_capacity_status_changed': item.get('account_capacity_status_changed', False),
             'changed': item.get('changed', False),
         })
     return {
@@ -302,7 +308,9 @@ def build_comparison():
         prev = previous_map.get(key)
         prev_kind = prev.get('market_capacity_kind') if prev else None
         cur_kind = cur.get('market_capacity_kind')
-        comparable = prev is not None and prev_kind == cur_kind
+        prev_status = prev.get('market_capacity_status') if prev else None
+        cur_status = cur.get('market_capacity_status') or 'UNKNOWN'
+        comparable = prev is not None and prev_status == cur_status == 'LIMITED' and prev_kind == cur_kind
         prev_total = prev.get('total_baskets') if prev else None
         cur_total = cur.get('total_baskets')
         delta = None
@@ -321,7 +329,11 @@ def build_comparison():
         creation_changed = prev is not None and prev.get('creation_allowed') != cur.get('creation_allowed')
         capacity_rule_changed = prev is not None and prev_kind != cur_kind
         account_rule_changed = prev is not None and prev_account_kind != cur_account_kind
-        changed = bool(creation_changed or capacity_rule_changed or account_rule_changed or delta not in (None, 0) or account_delta not in (None, 0))
+        prev_account_status = prev.get('account_capacity_status') if prev else None
+        cur_account_status = cur.get('account_capacity_status') or 'UNKNOWN'
+        capacity_status_changed = prev is not None and prev_status != cur_status
+        account_capacity_status_changed = prev is not None and prev_account_status != cur_account_status
+        changed = bool(creation_changed or capacity_rule_changed or account_rule_changed or capacity_status_changed or account_capacity_status_changed or delta not in (None, 0) or account_delta not in (None, 0))
         rows.append({
             'exchange': key[0], 'code': key[1],
             'previous_total_baskets': prev_total,
@@ -330,6 +342,10 @@ def build_comparison():
             'current_account_baskets': cur_account,
             'previous_capacity_kind': prev_kind,
             'current_capacity_kind': cur_kind,
+            'previous_market_capacity_status': prev_status or ('UNKNOWN' if prev is not None else None),
+            'current_market_capacity_status': cur_status,
+            'previous_account_capacity_status': prev_account_status or ('UNKNOWN' if prev is not None else None),
+            'current_account_capacity_status': cur_account_status,
             'capacity_comparable': comparable,
             'basket_delta': delta,
             'basket_ratio': ratio,
@@ -337,6 +353,8 @@ def build_comparison():
             'creation_changed': creation_changed,
             'capacity_rule_changed': capacity_rule_changed,
             'account_rule_changed': account_rule_changed,
+            'capacity_status_changed': capacity_status_changed,
+            'account_capacity_status_changed': account_capacity_status_changed,
             'changed': changed,
         })
     return {

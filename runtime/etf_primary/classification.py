@@ -5,12 +5,21 @@ from typing import Any
 
 
 _CROSS_BORDER_WORDS = (
-    "纳斯达克", "纳指", "标普", "道琼斯", "美国", "日经", "日本", "东证",
+    "纳斯达克", "纳指", "道琼斯", "美国", "日经", "日本", "东证",
     "德国", "法国", "英国", "沙特", "印度", "韩国", "越南", "新加坡",
-    "海外", "全球", "恒生", "香港", "港股", "中概", "亚洲", "东南亚",
+    "海外", "全球", "香港", "港股", "中概", "亚洲", "东南亚",
 )
 _MIXED_WORDS = ("沪港深", "沪深港")
 _CONNECT_WORDS = ("港股通",)
+_DOMESTIC_SCOPE_WORDS = ("A股", "中国A股", "上证", "深证", "沪深", "创业板", "科创板", "北证")
+_PROVIDER_CROSS_BORDER_WORDS = ("恒生", "标普")
+
+# SSE fund subclasses are official product categories and must outrank index-provider
+# names. In particular, subclass 03 is a domestic equity ETF class even when an
+# index is branded by S&P or Hang Seng.
+_SSE_MIXED_CLASSES = {"08"}
+_SSE_CROSS_BORDER_CLASSES = {"04", "33"}
+_SSE_DOMESTIC_CLASSES = {"01", "02", "03", "05", "06", "09", "31", "32", "37"}
 _BOND_WORDS = ("债", "国开", "国债", "政金", "信用", "可转债", "城投", "同业存单")
 # Generic "现金" is intentionally excluded: many equity ETFs track free-cash-flow indices.
 _MONEY_WORDS = ("货币", "添益", "理财金", "快线", "快钱")
@@ -54,22 +63,50 @@ def classify_etf(
     else:
         asset_class = "OTHER"
 
-    if "08" in raw_classes or _contains(text, _MIXED_WORDS):
+    # Region/QDII classification is evidence-ranked: official exchange class first,
+    # then an explicit PCF type where the exchange supplies one, and only then
+    # textual investment-scope markers. Provider brands alone never override an
+    # official domestic class.
+    if exchange == "SSE" and raw_classes & _SSE_MIXED_CLASSES:
         region_scope = "MIXED"
         qdii_flag: bool | None = None
-        region_reason = "official mixed-market class or mainland-HK mixed marker"
+        region_reason = "official SSE mixed-market class"
+    elif exchange == "SSE" and raw_classes & _SSE_CROSS_BORDER_CLASSES:
+        region_scope = "CROSS_BORDER"
+        if _contains(text, _CONNECT_WORDS):
+            qdii_flag = False
+            region_reason = "official SSE cross-border class with Stock Connect scope"
+        else:
+            qdii_flag = True
+            region_reason = "official SSE cross-border class"
+    elif exchange == "SSE" and raw_classes & _SSE_DOMESTIC_CLASSES:
+        region_scope = "DOMESTIC"
+        qdii_flag = False
+        region_reason = "official SSE domestic class"
+    elif pcf == "2":
+        region_scope = "CROSS_BORDER"
+        qdii_flag = True
+        region_reason = "official PCF cross-border type"
+    elif _contains(text, _MIXED_WORDS):
+        region_scope = "MIXED"
+        qdii_flag = None
+        region_reason = "mainland-HK mixed investment scope"
     elif _contains(text, _CONNECT_WORDS):
         region_scope = "CROSS_BORDER"
         qdii_flag = False
         region_reason = "Hong Kong exposure through Stock Connect marker"
-    elif raw_classes & {"04", "33"} or pcf == "2" or _contains(text, _CROSS_BORDER_WORDS):
+    elif _contains(text, _DOMESTIC_SCOPE_WORDS):
+        region_scope = "DOMESTIC"
+        qdii_flag = False
+        region_reason = "explicit mainland/A-share investment scope"
+    elif _contains(text, _CROSS_BORDER_WORDS) or _contains(text, _PROVIDER_CROSS_BORDER_WORDS):
         region_scope = "CROSS_BORDER"
         qdii_flag = True
-        region_reason = "official cross-border class/PCF type or cross-border marker"
+        region_reason = "explicit overseas/HK investment scope fallback"
     elif exchange in {"SSE", "SZSE"}:
         region_scope = "DOMESTIC"
         qdii_flag = False
-        region_reason = "no cross-border marker in official metadata"
+        region_reason = "no cross-border evidence in official metadata or investment scope"
     else:
         region_scope = "UNKNOWN"
         qdii_flag = None
