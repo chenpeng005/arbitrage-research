@@ -2,10 +2,14 @@
 set -euo pipefail
 ROOT="${ARBITRAGE_RUNTIME_ROOT:-/home/admin/projects/arbitrage-runtime}"
 cd "$ROOT"
-if [[ -f .runtime_env ]]; then
+AI_ENV="$ROOT/.radar_ai_env"
+if [[ ! -f "$AI_ENV" ]]; then
+  AI_ENV="$ROOT/.runtime_env"
+fi
+if [[ -f "$AI_ENV" ]]; then
   set -a
   # shellcheck disable=SC1091
-  source .runtime_env
+  source "$AI_ENV"
   set +a
 fi
 export PYTHONPATH="$ROOT"

@@ -17,6 +17,7 @@ class DeepSeekProvider:
         *,
         api_key: str,
         base_url: str,
+        provider_name: str = "deepseek",
         timeout_seconds: int = 60,
         max_retries: int = 2,
     ):
@@ -26,6 +27,7 @@ class DeepSeekProvider:
             raise ValueError("DeepSeek base_url is required")
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
+        self.name = provider_name
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
 
@@ -246,7 +248,7 @@ class DeepSeekProvider:
                 )
 
         return ProviderResponse(
-            provider="deepseek",
+            provider=self.name,
             model=str(data.get("model") or model),
             request_id=data.get("id"),
             finish_reason=str(choice.get("finish_reason") or ""),

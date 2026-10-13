@@ -69,9 +69,8 @@ Storage:
 
 Manual unified formal run:
 
-    set -a
-    source .runtime_env
-    set +a
+    # Production launcher prefers .radar_ai_env and falls back to .runtime_env.
+    scripts/production/radar-daily-run.sh
     .venv/bin/python -m runtime.intelligence_radar.run_all --date YYYY-MM-DD --run-mode LIVE
 
 Jisilu-only manual run:

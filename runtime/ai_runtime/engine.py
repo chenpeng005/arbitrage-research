@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .deepseek_provider import DeepSeekProvider
 from .evidence_store import compact_completed_job_evidence
-from .mock_provider import MockProvider
-from .provider import AIProvider
+from .provider_factory import build_provider
 from .tasks import get_task_spec
 from .tools.evidence import (
     ToolContext,
@@ -38,24 +35,6 @@ def create_ai_job_id(task_type: str) -> str:
     suffix = uuid.uuid4().hex[:6]
     prefix = "semantic" if task_type == "MARKET_MAP_SEMANTIC_AUDIT" else "ai"
     return f"{ts}_{prefix}_{suffix}"
-
-
-def build_provider(provider_name: str, provider_config: dict[str, Any]) -> AIProvider:
-    if provider_name == "mock":
-        response_file = provider_config.get("response_file")
-        if not response_file:
-            raise ValueError("Mock provider requires response_file")
-        return MockProvider(Path(response_file))
-
-    if provider_name == "deepseek":
-        return DeepSeekProvider(
-            api_key=str(provider_config.get("api_key") or os.environ.get("AI_API_KEY") or ""),
-            base_url=str(provider_config.get("base_url") or os.environ.get("AI_BASE_URL") or ""),
-            timeout_seconds=int(provider_config.get("timeout_seconds") or 90),
-            max_retries=int(provider_config.get("max_retries") or 2),
-        )
-
-    raise ValueError(f"Unsupported AI provider: {provider_name}")
 
 
 def run_ai_job(

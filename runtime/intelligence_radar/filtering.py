@@ -102,6 +102,7 @@ def build_provider_from_env() -> DeepSeekProvider:
     return DeepSeekProvider(
         api_key=os.environ.get("AI_API_KEY", ""),
         base_url=os.environ.get("AI_BASE_URL", ""),
+        provider_name=os.environ.get("AI_PROVIDER", "deepseek"),
         timeout_seconds=120,
         max_retries=2,
     )

@@ -5,6 +5,10 @@ ROOT=/home/admin/projects/arbitrage-runtime
 LOG_DIR="$ROOT/runtime_data/logs"
 mkdir -p "$LOG_DIR"
 cd "$ROOT"
+AI_ENV="$ROOT/.convertible_ai_env"
+if [[ ! -f "$AI_ENV" ]]; then
+  AI_ENV="$ROOT/.runtime_env"
+fi
 export RUNTIME_DATA_ROOT="$ROOT/runtime_data"
 export PYTHONPATH="$ROOT"
 .venv/bin/python -m runtime.deployment_gate --data-root "$RUNTIME_DATA_ROOT"
@@ -20,7 +24,7 @@ echo "[$(date '+%F %T %Z')] START light daily close update (no Full V2 research)
 # 20:45 is deliberately the LIGHT daily close lane.
 # Information semantic audit + expensive research are isolated in the 03:00 lane.
 set -a
-source .runtime_env
+source "$AI_ENV"
 set +a
 
 response_file=$(mktemp)

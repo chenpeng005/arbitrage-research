@@ -329,3 +329,4 @@ AI 不直接启动或推进 Runtime；AI 只在程序显式请求的语义异常
 - 入口带服务器现有 Basic Auth；不在仓库保存密码。
 - 通过 Caddy 保护的 7080 监听可显式配置 `RUNTIME_TRUST_LOCAL_PROXY_AUTH=1`，仅信任来自本机回环地址的代理请求；直接启动的预览端口仍使用应用自己的 Basic Auth。
 - 当前证书为 Caddy internal TLS，浏览器可能显示自签名/不受信任提示。
+- 可转债 AI 入口优先读取项目根目录 `.convertible_ai_env`，缺失时回退 `.runtime_env`；情报雷达入口独立优先读取 `.radar_ai_env`。
