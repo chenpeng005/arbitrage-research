@@ -30,18 +30,18 @@ on:
       - "tests/test_etf_primary_comparison_view.py"
   workflow_dispatch:
   schedule:
-    # Pre-open refresh windows, Asia/Shanghai: 08:31 / 08:46 / 09:01.
-    # Multiple attempts tolerate PCF publication timing differences across funds.
-    - cron: "31 0 * * 1-5"
-    - cron: "46 0 * * 1-5"
-    - cron: "1 1 * * 1-5"
+    # Pre-open refresh windows, Asia/Shanghai: 08:25 / 08:35 / 08:45 / 08:55 / 09:05.
+    # Use several non-overlapping attempts because GitHub schedule delivery is best-effort
+    # and exchange endpoints can transiently reject a runner IP.
+    - cron: "25,35,45,55 0 * * 1-5"
+    - cron: "5 1 * * 1-5"
 
 permissions:
   contents: write
 
 concurrency:
   group: etf-primary-official-relay
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   prepare:
