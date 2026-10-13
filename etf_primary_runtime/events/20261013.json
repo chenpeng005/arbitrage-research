@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "trade_date": "20261013",
+  "previous_trade_date": "20261012",
+  "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+  "generated_at": "2026-10-13T01:49:31.256687+00:00",
+  "event_count": 9,
+  "events": [
+    {
+      "code": "513390",
+      "exchange": "SSE",
+      "event_type": "TOTAL_CAPACITY_JUMP",
+      "severity": "HIGH",
+      "message": "Binding no-offset creation capacity (CUMULATIVE) increased from 30 to 85 whole baskets.",
+      "previous_value": 30,
+      "current_value": 85,
+      "trade_date": "20261013",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-13T01:49:29.734119+00:00"
+    },
+    {
+      "code": "513500",
+      "exchange": "SSE",
+      "event_type": "TOTAL_CAPACITY_JUMP",
+      "severity": "HIGH",
+      "message": "Binding no-offset creation capacity (CUMULATIVE) increased from 10 to 20 whole baskets.",
+      "previous_value": 10,
+      "current_value": 20,
+      "trade_date": "20261013",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-13T01:49:29.734119+00:00"
+    },
+    {
+      "code": "159100",
+      "exchange": "SZSE",
+      "event_type": "CREATION_RESUMED",
+      "severity": "HIGH",
+      "message": "ETF creation changed from closed to open.",
+      "previous_value": null,
+      "current_value": null,
+      "trade_date": "20261013",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-13T01:49:29.734119+00:00"
+    },
+    {
+      "code": "159687",
+      "exchange": "SZSE",
+      "event_type": "CREATION_RESUMED",
+      "severity": "HIGH",
+      "message": "ETF creation changed from closed to open.",
+      "previous_value": null,
+      "current_value": null,
+      "trade_date": "20261013",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-13T01:49:29.734119+00:00"
+    },
+    {
+      "code": "159866",
+      "exchange": "SZSE",
+      "event_type": "CREATION_RESUMED",
+      "severity": "HIGH",
+      "message": "ETF creation changed from closed to open.",
+      "previous_value": null,
+      "current_value": null,
+      "trade_date": "20261013",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-13T01:49:29.734119+00:00"
+    },
+    {
+      "code": "511360",
+      "exchange": "SSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from NET to BOTH.",
+      "previous_value": "NET",
+      "current_value": "BOTH",
+      "trade_date": "20261013",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-13T01:49:29.734119+00:00"
+    },
+    {
+      "code": "513110",
+      "exchange": "SSE",
+      "event_type": "ACCOUNT_CAP_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding account creation-cap rule changed from NONE to CUMULATIVE.",
+      "previous_value": null,
+      "current_value": "CUMULATIVE",
+      "trade_date": "20261013",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-13T01:49:29.734119+00:00"
+    },
+    {
+      "code": "513390",
+      "exchange": "SSE",
+      "event_type": "ACCOUNT_DISTRIBUTION_IMPROVED",
+      "severity": "MEDIUM",
+      "message": "Minimum accounts required to fill no-offset executable capacity rose from 30 to 85.",
+      "previous_value": 30,
+      "current_value": 85,
+      "trade_date": "20261013",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-13T01:49:29.734119+00:00"
+    },
+    {
+      "code": "513500",
+      "exchange": "SSE",
+      "event_type": "ACCOUNT_DISTRIBUTION_IMPROVED",
+      "severity": "MEDIUM",
+      "message": "Minimum accounts required to fill no-offset executable capacity rose from 10 to 20.",
+      "previous_value": 10,
+      "current_value": 20,
+      "trade_date": "20261013",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-13T01:49:29.734119+00:00"
+    }
+  ]
+}
