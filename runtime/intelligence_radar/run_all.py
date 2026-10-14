@@ -11,7 +11,14 @@ from runtime.intelligence_radar.xueqiu_daily import run_xueqiu_daily
 from runtime.intelligence_radar.xueqiu_shadow_archive import run_shadow_accumulation
 
 
-def run_all(*, data_root: Path, run_date: str, run_mode: str | None = None) -> dict[str, Any]:
+def run_all(
+    *,
+    data_root: Path,
+    run_date: str,
+    run_mode: str | None = None,
+    jisilu_batch_size: int | None = None,
+    xueqiu_batch_size: int | None = None,
+) -> dict[str, Any]:
     today = china_now().date().isoformat()
     shadow = None
     shadow_error = None
@@ -20,8 +27,25 @@ def run_all(*, data_root: Path, run_date: str, run_mode: str | None = None) -> d
             shadow = run_shadow_accumulation(data_root=data_root)
         except Exception as exc:
             shadow_error = f"{type(exc).__name__}: {exc}"
-    jisilu = run_jisilu_daily(data_root=data_root, run_date=run_date, run_mode=run_mode)
-    xueqiu = run_xueqiu_daily(data_root=data_root, run_date=run_date, run_mode=run_mode)
+
+    jisilu_kwargs: dict[str, Any] = {
+        "data_root": data_root,
+        "run_date": run_date,
+        "run_mode": run_mode,
+    }
+    if jisilu_batch_size is not None:
+        jisilu_kwargs["batch_size"] = max(1, int(jisilu_batch_size))
+
+    xueqiu_kwargs: dict[str, Any] = {
+        "data_root": data_root,
+        "run_date": run_date,
+        "run_mode": run_mode,
+    }
+    if xueqiu_batch_size is not None:
+        xueqiu_kwargs["batch_size"] = max(1, int(xueqiu_batch_size))
+
+    jisilu = run_jisilu_daily(**jisilu_kwargs)
+    xueqiu = run_xueqiu_daily(**xueqiu_kwargs)
     return {
         "run_date": run_date,
         "status": "OK" if jisilu.get("status") == "OK" and xueqiu.get("status") == "OK" else "PARTIAL",
