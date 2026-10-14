@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "trade_date": "20261014",
+  "previous_trade_date": "20261013",
+  "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+  "generated_at": "2026-10-14T01:13:32.622546+00:00",
+  "event_count": 3,
+  "events": [
+    {
+      "code": "513500",
+      "exchange": "SSE",
+      "event_type": "TOTAL_CAPACITY_JUMP",
+      "severity": "HIGH",
+      "message": "Binding no-offset creation capacity (CUMULATIVE) increased from 20 to 90 whole baskets.",
+      "previous_value": 20,
+      "current_value": 90,
+      "trade_date": "20261014",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-14T01:13:31.088299+00:00"
+    },
+    {
+      "code": "513500",
+      "exchange": "SSE",
+      "event_type": "ACCOUNT_DISTRIBUTION_IMPROVED",
+      "severity": "MEDIUM",
+      "message": "Minimum accounts required to fill no-offset executable capacity rose from 20 to 90.",
+      "previous_value": 20,
+      "current_value": 90,
+      "trade_date": "20261014",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-14T01:13:31.088299+00:00"
+    },
+    {
+      "code": "159332",
+      "exchange": "SZSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from NONE to CUMULATIVE.",
+      "previous_value": null,
+      "current_value": "CUMULATIVE",
+      "trade_date": "20261014",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-14T01:13:31.088299+00:00"
+    }
+  ]
+}
