@@ -13,9 +13,17 @@ fi
 set -a
 source "$AI_ENV"
 set +a
+# Resolve transport from the shared mode file rather than cron-injected env.
+# shellcheck disable=SC1091
+source "$ROOT/scripts/production/nightly-ai-mode-env.sh"
 export RUNTIME_DATA_ROOT="$ROOT/runtime_data"
 export PYTHONPATH="$ROOT"
-AI_EXECUTION_MODE="${AI_EXECUTION_MODE:-AUTO_API}"
+if [[ "$NIGHTLY_AI_MODE" == "CHAT" ]]; then
+  AI_EXECUTION_MODE="INTERACTIVE_CHAT"
+else
+  AI_EXECUTION_MODE="AUTO_API"
+fi
+export AI_EXECUTION_MODE
 
 .venv/bin/python -m runtime.deployment_gate --data-root "$RUNTIME_DATA_ROOT"
 
