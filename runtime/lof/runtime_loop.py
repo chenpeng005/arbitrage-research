@@ -16,6 +16,7 @@ from .nav import OfficialNavRecord, fetch_all_official_nav
 from .runtime_session import LofRuntimeSession
 from .snapshot_store import LofSnapshotStore
 from .state import FundTradeStateRecord, fetch_all_trade_states
+from .wechat_snapshot import LofWechatSnapshotStore
 
 
 SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
@@ -128,6 +129,7 @@ def run_runtime_loop(
     now_fn = now_fn or (lambda: datetime.now(SHANGHAI_TZ))
     store = LofSnapshotStore(data_root)
     reminder_store = LofDailyReminderStore(data_root)
+    wechat_store = LofWechatSnapshotStore(data_root)
     stop_event = threading.Event()
 
     def request_stop(signum, frame) -> None:
@@ -139,7 +141,11 @@ def run_runtime_loop(
         signal.signal(signal.SIGINT, request_stop)
 
     now = now_fn()
-    session = LofRuntimeSession.build(as_of=now, timeout=timeout, runtime_data_root=data_root)
+    session = LofRuntimeSession.build(
+        as_of=now,
+        timeout=timeout,
+        runtime_data_root=data_root,
+    )
     nav_cache = _refresh_nav(
         session,
         timeout=timeout,
@@ -259,11 +265,38 @@ def run_runtime_loop(
                     _log(
                         "daily_reminder_events_observed",
                         count=len(reminder_events),
-                        event_types=[event.get("event_type") for event in reminder_events],
+                        event_types=[
+                            event.get("event_type")
+                            for event in reminder_events
+                        ],
                     )
             except Exception as exc:
                 _log(
                     "daily_reminder_observe_failed",
+                    error=f"{type(exc).__name__}:{exc}",
+                )
+
+            try:
+                wechat_payload, wechat_path = wechat_store.build_and_persist(
+                    snapshot,
+                    generated_at=now,
+                )
+                _log(
+                    "wechat_snapshot_persisted",
+                    status=wechat_payload.get("status"),
+                    logical_date=wechat_payload.get("logical_date"),
+                    eligible_count=wechat_payload.get("eligible_count"),
+                    row_count=len(wechat_payload.get("rows") or []),
+                    source_snapshot_id=wechat_payload.get(
+                        "source_snapshot_id"
+                    ),
+                    path=str(wechat_path),
+                )
+            except Exception as exc:
+                # The compact downstream projection is observable but must
+                # never stop the primary LOF market snapshot runtime.
+                _log(
+                    "wechat_snapshot_persist_failed",
                     error=f"{type(exc).__name__}:{exc}",
                 )
         except Exception as exc:
