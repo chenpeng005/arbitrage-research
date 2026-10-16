@@ -5,6 +5,7 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
+import re
 import tempfile
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -181,6 +182,7 @@ class LofWechatSnapshotStore:
     def __init__(self, data_root: str | Path):
         self.data_root = Path(data_root)
         self.root = self.data_root / "wechat_snapshot"
+        self.snapshots_dir = self.root / "snapshots"
         self.daily_dir = self.root / "daily"
         self.latest_path = self.root / "latest.json"
 
@@ -202,15 +204,44 @@ class LofWechatSnapshotStore:
             if os.path.exists(temp_name):
                 os.unlink(temp_name)
 
+    @staticmethod
+    def _archive_id(payload: dict) -> str:
+        raw = str(payload.get("source_snapshot_id") or "").strip()
+        if not raw:
+            raw = str(payload.get("source_snapshot_sha256") or "")[:24]
+        safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", raw).strip("._")
+        if not safe:
+            raise ValueError("source snapshot identity is required")
+        return safe
+
     def persist(self, payload: dict) -> Path:
         logical_date = str(payload.get("logical_date") or "").strip()
         if not logical_date:
             raise ValueError("logical_date is required")
         json_text = json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n"
+        archive_path = self.snapshots_dir / f"{self._archive_id(payload)}.json"
         daily_path = self.daily_dir / f"{logical_date}.json"
+        self._atomic_write(archive_path, json_text)
         self._atomic_write(daily_path, json_text)
         self._atomic_write(self.latest_path, json_text)
-        return daily_path
+        return archive_path
+
+    def load_latest_at_or_before(self, cutoff: datetime) -> dict | None:
+        cutoff_dt = _parse_datetime(cutoff)
+        if cutoff_dt is None or not self.snapshots_dir.exists():
+            return None
+        best: tuple[datetime, dict] | None = None
+        for path in self.snapshots_dir.glob("*.json"):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            generated = _parse_datetime(payload.get("generated_at"))
+            if generated is None or generated > cutoff_dt:
+                continue
+            if best is None or generated > best[0]:
+                best = (generated, payload)
+        return best[1] if best is not None else None
 
     def build_and_persist(
         self,
