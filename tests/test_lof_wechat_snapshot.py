@@ -48,10 +48,10 @@ def _row(
     }
 
 
-def _snapshot(rows: list[dict]) -> dict:
+def _snapshot(rows: list[dict], *, snapshot_id: str = "runtime-20261016T150000") -> dict:
     return {
         "contract_version": "LOF_MARKET_SNAPSHOT_V1",
-        "snapshot_id": "runtime-20261016T150000",
+        "snapshot_id": snapshot_id,
         "generated_at": "2026-10-16T15:00:01+08:00",
         "market_cutoff": "2026-10-16T15:00:01+08:00",
         "universe_count": len(rows),
@@ -138,27 +138,47 @@ class LofWechatSnapshotTest(unittest.TestCase):
         )
         self.assertEqual(len(payload["rows"]), 2)
 
-    def test_persistence_writes_small_latest_and_daily_projection(self) -> None:
+    def test_persistence_archives_cutoff_safe_snapshots(self) -> None:
         rows = [
             _row(f"50100{idx}", premium=10.0 - idx)
             for idx in range(1, 7)
         ]
-        source = _snapshot(rows)
         with tempfile.TemporaryDirectory() as tmp:
             store = LofWechatSnapshotStore(tmp)
-            payload, path = store.build_and_persist(
-                source,
-                generated_at=datetime(
-                    2026, 10, 16, 15, 1, tzinfo=TZ
-                ),
+            first_source = _snapshot(rows, snapshot_id="runtime-20261016T150000")
+            first_payload, first_path = store.build_and_persist(
+                first_source,
+                generated_at=datetime(2026, 10, 16, 15, 1, tzinfo=TZ),
             )
+            second_source = _snapshot(rows, snapshot_id="runtime-20261016T152000")
+            second_payload, second_path = store.build_and_persist(
+                second_source,
+                generated_at=datetime(2026, 10, 16, 15, 21, tzinfo=TZ),
+            )
+
             latest = Path(tmp) / "wechat_snapshot" / "latest.json"
-            self.assertTrue(path.exists())
+            daily = Path(tmp) / "wechat_snapshot" / "daily" / "2026-10-16.json"
+            self.assertTrue(first_path.exists())
+            self.assertTrue(second_path.exists())
             self.assertTrue(latest.exists())
+            self.assertTrue(daily.exists())
+            self.assertNotEqual(first_path, second_path)
+
             loaded = json.loads(latest.read_text(encoding="utf-8"))
-            self.assertEqual(loaded["source_snapshot_id"], source["snapshot_id"])
-            self.assertEqual(loaded["rows"], payload["rows"])
+            self.assertEqual(
+                loaded["source_snapshot_id"], second_source["snapshot_id"]
+            )
+            self.assertEqual(loaded["rows"], second_payload["rows"])
             self.assertLess(latest.stat().st_size, 100_000)
+
+            asof = store.load_latest_at_or_before(
+                datetime(2026, 10, 16, 15, 10, tzinfo=TZ)
+            )
+            self.assertIsNotNone(asof)
+            self.assertEqual(
+                asof["source_snapshot_id"],
+                first_payload["source_snapshot_id"],
+            )
 
 
 if __name__ == "__main__":
