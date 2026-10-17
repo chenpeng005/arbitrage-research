@@ -6,6 +6,7 @@ on:
       - chat-bridge-phase-e-convertible-adapter
     paths:
       - 'runtime/ai_runtime/server_control_chat_adapter.py'
+      - 'runtime/ai_runtime/CHAT_EXECUTION_PROFILE.md'
       - 'tests/test_server_control_chat_adapter.py'
       - '.github/workflows/chat-bridge-phase-e-adapter-tests.yml'
   workflow_dispatch:
