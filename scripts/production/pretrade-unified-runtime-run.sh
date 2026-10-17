@@ -36,51 +36,52 @@ fi
 gate_json=$(
   .venv/bin/python - <<'PY'
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
 import akshare as ak
 import pandas as pd
+from runtime.opportunity.pretrade_schedule_gate import decide_schedule
 
 now = datetime.now(ZoneInfo("Asia/Shanghai"))
 today = now.date()
-tomorrow = today + timedelta(days=1)
 cal = ak.tool_trade_date_hist_sina().copy()
 dates = {
     d for d in pd.to_datetime(cal["trade_date"], errors="coerce").dt.date.dropna()
 }
-latest = max(d for d in dates if d <= today)
+decision = decide_schedule(today, dates)
 print(json.dumps({
-    "today": today.isoformat(),
-    "tomorrow": tomorrow.isoformat(),
-    "tomorrow_is_trade_day": tomorrow in dates,
-    "latest_completed_trade_day": latest.isoformat(),
+    "today": decision.today.isoformat(),
+    "tomorrow": decision.tomorrow.isoformat(),
+    "today_is_trade_day": decision.today_is_trade_day,
+    "tomorrow_is_trade_day": decision.tomorrow_is_trade_day,
+    "latest_completed_trade_day": decision.latest_completed_trade_day.isoformat(),
+    "run_intent": decision.run_intent,
 }, ensure_ascii=False))
 PY
 )
 
-tomorrow_trade=$(python3 -c 'import json,sys; print(str(json.load(sys.stdin)["tomorrow_is_trade_day"]).lower())' <<<"$gate_json")
 today=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["today"])' <<<"$gate_json")
 market_cutoff=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["latest_completed_trade_day"])' <<<"$gate_json")
+run_intent=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["run_intent"])' <<<"$gate_json")
 
-if [[ "$tomorrow_trade" != "true" ]]; then
-  # The trading-day update may be skipped, but publishing still needs an
-  # upstream-owned daily fact snapshot (e.g. Friday evening before a weekend).
-  # Capture the current formal Runtime view without collecting/researching new facts.
+if [[ "$run_intent" == "SKIP" ]]; then
+  # Neither today nor tomorrow is a trading day. Keep a publishing snapshot of
+  # the current formal Runtime view, but do not run market/research refreshes.
   if .venv/bin/python -m runtime.opportunity.daily_notification_snapshot \
     --data-root "$RUNTIME_DATA_ROOT" \
     --snapshot-date "$today" \
-    --update-status "SKIPPED_NO_NEXT_TRADE_DAY" \
+    --update-status "SKIPPED_NO_TRADE_DAY_CONTEXT" \
     --source "PRETRADE_SCHEDULE_SKIP"; then
     echo "[$(date '+%F %T %Z')] REMINDER_SNAPSHOT PASS_ON_SKIP: $today"
   else
     snapshot_rc=$?
     echo "[$(date '+%F %T %Z')] WARNING: reminder snapshot on skip failed rc=$snapshot_rc"
   fi
-  echo "[$(date '+%F %T %Z')] SKIP: next calendar day is not an A-share trading day: $gate_json"
+  echo "[$(date '+%F %T %Z')] SKIP: neither today nor next calendar day is an A-share trading day: $gate_json"
   exit 0
 fi
 
-echo "[$(date '+%F %T %Z')] START unified pre-trade update mode=$AI_EXECUTION_MODE: $gate_json"
+echo "[$(date '+%F %T %Z')] START unified convertible update intent=$run_intent mode=$AI_EXECUTION_MODE: $gate_json"
 
 poll_job() {
   local job_id="$1"
@@ -187,14 +188,19 @@ else
   echo "[$(date '+%F %T %Z')] WARNING: information/research enrichment failed rc=$rc; core market/opportunity update remains valid"
 fi
 
+snapshot_source="PRETRADE_UNIFIED_UPDATE"
+if [[ "$run_intent" == "SAME_DAY_CLOSE_REFRESH" ]]; then
+  snapshot_source="SAME_DAY_CLOSE_REFRESH"
+fi
 if .venv/bin/python -m runtime.opportunity.daily_notification_snapshot \
   --data-root "$RUNTIME_DATA_ROOT" \
   --snapshot-date "$today" \
-  --update-status "$information_status"; then
-  echo "[$(date '+%F %T %Z')] REMINDER_SNAPSHOT PASS: $today"
+  --update-status "$information_status" \
+  --source "$snapshot_source"; then
+  echo "[$(date '+%F %T %Z')] REMINDER_SNAPSHOT PASS: $today source=$snapshot_source"
 else
   snapshot_rc=$?
   echo "[$(date '+%F %T %Z')] WARNING: reminder snapshot failed rc=$snapshot_rc; runtime result remains valid"
 fi
 
-echo "[$(date '+%F %T %Z')] PASS unified pre-trade update mode=$AI_EXECUTION_MODE"
+echo "[$(date '+%F %T %Z')] PASS unified convertible update intent=$run_intent mode=$AI_EXECUTION_MODE"
