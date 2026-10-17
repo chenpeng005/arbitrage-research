@@ -2,6 +2,7 @@
 Description=Run formal Intelligence Radar daily at 21:03 Asia/Shanghai
 
 [Timer]
+# Production schedule: formal API-mode Radar run after daytime Xueqiu accumulation.
 OnCalendar=*-*-* 21:03:00 Asia/Shanghai
 Persistent=true
 AccuracySec=1min
