@@ -403,16 +403,21 @@ def submit_task(
     if task.get("status") not in {"WAITING_FOR_CHAT", "CLAIMED_BY_CHAT"}:
         raise ValueError("convertible CHAT task is not waiting for CHAT")
 
-    claim_id = _ensure_claim(runtime_data, native_task_id)
     spec = _task_spec(runtime_root, task)
-
+    normalized_tool_calls: list[dict[str, Any]] = []
     if normalized["tool_calls"]:
         allowed = {str(tool.get("name") or "") for tool in spec.allowed_tools}
-        tool_results: list[dict[str, Any]] = []
         for raw_call in normalized["tool_calls"]:
             call = _normalize_tool_call(raw_call)
             if call["name"] not in allowed:
                 raise ValueError(f"tool is not allowed for this task: {call['name']}")
+            normalized_tool_calls.append(call)
+
+    claim_id = _ensure_claim(runtime_data, native_task_id)
+
+    if normalized_tool_calls:
+        tool_results: list[dict[str, Any]] = []
+        for call in normalized_tool_calls:
             result = native.run_tool(
                 data_root=runtime_data,
                 task_id=native_task_id,
