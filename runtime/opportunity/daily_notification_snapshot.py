@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -57,8 +58,15 @@ def _attach_event_occurred_at(
     therefore detect an older event today. The event_update row already carries the
     business occurred_at value; expose it only on the presentation snapshot copy so
     downstream WeChat projection does not mistake repair time for event time.
+
+    This enrichment is presentation-only. Tests and callers may provide a placeholder
+    database while mocking the feed; in that case retain the original feed and let the
+    projection fall back to detected_at rather than changing Runtime truth semantics.
     """
-    conn = connect(target_db)
+    try:
+        conn = connect(target_db)
+    except sqlite3.DatabaseError:
+        return feed
     cache: dict[str, str | None] = {}
     try:
         for collection in ("items", "other_items"):
