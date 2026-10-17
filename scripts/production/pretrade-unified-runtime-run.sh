@@ -33,18 +33,10 @@ if ! flock -n 9; then
   exit 0
 fi
 
-MANUAL_CHAT_TEST="${CONVERTIBLE_MANUAL_CHAT_GATE_TEST:-0}"
-if [[ "$MANUAL_CHAT_TEST" == "1" && "$NIGHTLY_AI_MODE" != "CHAT" ]]; then
-  echo "[$(date '+%F %T %Z')] REFUSE manual CHAT gate test because NIGHTLY_AI_MODE=$NIGHTLY_AI_MODE"
-  exit 64
-fi
-
 gate_json=$(
   .venv/bin/python - <<'PY'
 import json
-import os
-from datetime import date, datetime
-from pathlib import Path
+from datetime import datetime
 from zoneinfo import ZoneInfo
 import akshare as ak
 import pandas as pd
@@ -56,33 +48,13 @@ cal = ak.tool_trade_date_hist_sina().copy()
 dates = {
     d for d in pd.to_datetime(cal["trade_date"], errors="coerce").dt.date.dropna()
 }
-status_path = Path(os.environ["RUNTIME_DATA_ROOT"]) / "registry" / "incremental_storage_status.json"
-last_successful = None
-try:
-    status = json.loads(status_path.read_text(encoding="utf-8"))
-    raw = str(status.get("last_successful_notice_scan_date") or "").strip()
-    if raw:
-        last_successful = date.fromisoformat(raw)
-except Exception:
-    last_successful = None
-
-decision = decide_schedule(
-    today,
-    dates,
-    last_successful_notice_scan_date=last_successful,
-)
+decision = decide_schedule(today, dates)
 print(json.dumps({
     "today": decision.today.isoformat(),
     "tomorrow": decision.tomorrow.isoformat(),
     "today_is_trade_day": decision.today_is_trade_day,
     "tomorrow_is_trade_day": decision.tomorrow_is_trade_day,
     "latest_completed_trade_day": decision.latest_completed_trade_day.isoformat(),
-    "last_successful_notice_scan_date": (
-        decision.last_successful_notice_scan_date.isoformat()
-        if decision.last_successful_notice_scan_date else None
-    ),
-    "freshness_lag_detected": decision.freshness_lag_detected,
-    "information_target_date": decision.information_target_date.isoformat(),
     "run_intent": decision.run_intent,
 }, ensure_ascii=False))
 PY
@@ -90,22 +62,11 @@ PY
 
 today=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["today"])' <<<"$gate_json")
 market_cutoff=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["latest_completed_trade_day"])' <<<"$gate_json")
-information_target_date=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["information_target_date"])' <<<"$gate_json")
 run_intent=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["run_intent"])' <<<"$gate_json")
 
-# A governed manual test may bypass only the outer calendar gate. It reuses the
-# latest completed market cutoff and information target selected by the normal
-# gate. Normal scheduled runs never set this flag.
-if [[ "$MANUAL_CHAT_TEST" == "1" && "$run_intent" == "SKIP" ]]; then
-  echo "[$(date '+%F %T %Z')] MANUAL_CHAT_GATE_TEST bypass=1 original_intent=SKIP market_cutoff=$market_cutoff information_target_date=$information_target_date"
-  run_intent="MANUAL_CHAT_GATE_TEST"
-elif [[ "$MANUAL_CHAT_TEST" == "1" ]]; then
-  echo "[$(date '+%F %T %Z')] MANUAL_CHAT_GATE_TEST bypass=0 normal_intent=$run_intent market_cutoff=$market_cutoff information_target_date=$information_target_date"
-fi
-
 if [[ "$run_intent" == "SKIP" ]]; then
-  # Neither today nor tomorrow is a trading day and the latest completed trading
-  # day is already covered by the formal notice checkpoint.
+  # Neither today nor tomorrow is a trading day. Keep a publishing snapshot of
+  # the current formal Runtime view, but do not run market/research refreshes.
   if .venv/bin/python -m runtime.opportunity.daily_notification_snapshot \
     --data-root "$RUNTIME_DATA_ROOT" \
     --snapshot-date "$today" \
@@ -116,7 +77,7 @@ if [[ "$run_intent" == "SKIP" ]]; then
     snapshot_rc=$?
     echo "[$(date '+%F %T %Z')] WARNING: reminder snapshot on skip failed rc=$snapshot_rc"
   fi
-  echo "[$(date '+%F %T %Z')] SKIP: no trading-day work and no freshness lag: $gate_json"
+  echo "[$(date '+%F %T %Z')] SKIP: neither today nor next calendar day is an A-share trading day: $gate_json"
   exit 0
 fi
 
@@ -213,11 +174,11 @@ poll_job "$core_job" "OPPORTUNITY_CORE"
 information_status="PASS"
 information_started=$(date +%s)
 if /home/admin/bin/information-runtime-run.sh \
-  --target-date "$information_target_date" \
+  --target-date "$today" \
   --execution-mode "$AI_EXECUTION_MODE" \
   --path-limit 5; then
   if wait_for_new_chat_tasks "$information_started"; then
-    echo "[$(date '+%F %T %Z')] INFORMATION_RESEARCH PASS target=$information_target_date"
+    echo "[$(date '+%F %T %Z')] INFORMATION_RESEARCH PASS"
   else
     information_status="WARNING"
   fi
@@ -228,14 +189,9 @@ else
 fi
 
 snapshot_source="PRETRADE_UNIFIED_UPDATE"
-case "$run_intent" in
-  SAME_DAY_CLOSE_REFRESH)
-    snapshot_source="SAME_DAY_CLOSE_REFRESH"
-    ;;
-  CATCH_UP_REFRESH)
-    snapshot_source="CATCH_UP_REFRESH"
-    ;;
-esac
+if [[ "$run_intent" == "SAME_DAY_CLOSE_REFRESH" ]]; then
+  snapshot_source="SAME_DAY_CLOSE_REFRESH"
+fi
 if .venv/bin/python -m runtime.opportunity.daily_notification_snapshot \
   --data-root "$RUNTIME_DATA_ROOT" \
   --snapshot-date "$today" \
