@@ -33,6 +33,12 @@ if ! flock -n 9; then
   exit 0
 fi
 
+MANUAL_CHAT_TEST="${CONVERTIBLE_MANUAL_CHAT_GATE_TEST:-0}"
+if [[ "$MANUAL_CHAT_TEST" == "1" && "$NIGHTLY_AI_MODE" != "CHAT" ]]; then
+  echo "[$(date '+%F %T %Z')] REFUSE manual CHAT gate test because NIGHTLY_AI_MODE=$NIGHTLY_AI_MODE"
+  exit 64
+fi
+
 gate_json=$(
   .venv/bin/python - <<'PY'
 import json
@@ -87,12 +93,14 @@ market_cutoff=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["latest_
 information_target_date=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["information_target_date"])' <<<"$gate_json")
 run_intent=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["run_intent"])' <<<"$gate_json")
 
-# One-shot governed CHAT validation on 2026-10-17 only. The normal calendar
-# decision remains unchanged for every other date/mode; this block is reverted
-# after the validation run completes.
-if [[ "$run_intent" == "SKIP" && "$today" == "2026-10-17" && "$NIGHTLY_AI_MODE" == "CHAT" ]]; then
-  echo "[$(date '+%F %T %Z')] MANUAL_CHAT_GATE_TEST bypass original_intent=SKIP market_cutoff=$market_cutoff"
+# A governed manual test may bypass only the outer calendar gate. It reuses the
+# latest completed market cutoff and information target selected by the normal
+# gate. Normal scheduled runs never set this flag.
+if [[ "$MANUAL_CHAT_TEST" == "1" && "$run_intent" == "SKIP" ]]; then
+  echo "[$(date '+%F %T %Z')] MANUAL_CHAT_GATE_TEST bypass=1 original_intent=SKIP market_cutoff=$market_cutoff information_target_date=$information_target_date"
   run_intent="MANUAL_CHAT_GATE_TEST"
+elif [[ "$MANUAL_CHAT_TEST" == "1" ]]; then
+  echo "[$(date '+%F %T %Z')] MANUAL_CHAT_GATE_TEST bypass=0 normal_intent=$run_intent market_cutoff=$market_cutoff information_target_date=$information_target_date"
 fi
 
 if [[ "$run_intent" == "SKIP" ]]; then
