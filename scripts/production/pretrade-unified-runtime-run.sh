@@ -63,6 +63,19 @@ today=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["today"])' <<<"$
 market_cutoff=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["latest_completed_trade_day"])' <<<"$gate_json")
 
 if [[ "$tomorrow_trade" != "true" ]]; then
+  # The trading-day update may be skipped, but publishing still needs an
+  # upstream-owned daily fact snapshot (e.g. Friday evening before a weekend).
+  # Capture the current formal Runtime view without collecting/researching new facts.
+  if .venv/bin/python -m runtime.opportunity.daily_notification_snapshot \
+    --data-root "$RUNTIME_DATA_ROOT" \
+    --snapshot-date "$today" \
+    --update-status "SKIPPED_NO_NEXT_TRADE_DAY" \
+    --source "PRETRADE_SCHEDULE_SKIP"; then
+    echo "[$(date '+%F %T %Z')] REMINDER_SNAPSHOT PASS_ON_SKIP: $today"
+  else
+    snapshot_rc=$?
+    echo "[$(date '+%F %T %Z')] WARNING: reminder snapshot on skip failed rc=$snapshot_rc"
+  fi
   echo "[$(date '+%F %T %Z')] SKIP: next calendar day is not an A-share trading day: $gate_json"
   exit 0
 fi
