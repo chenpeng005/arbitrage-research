@@ -1,0 +1,33 @@
+name: CHAT Bridge Phase E Convertible Adapter Tests
+
+on:
+  push:
+    branches:
+      - chat-bridge-phase-e-convertible-adapter
+    paths:
+      - 'runtime/ai_runtime/server_control_chat_adapter.py'
+      - 'tests/test_server_control_chat_adapter.py'
+      - '.github/workflows/chat-bridge-phase-e-adapter-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  adapter-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chat-bridge-phase-e-convertible-adapter
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: runtime/requirements.txt
+      - name: Install runtime dependencies
+        run: python -m pip install -r runtime/requirements.txt
+      - name: Compile adapter
+        run: python -m py_compile runtime/ai_runtime/server_control_chat_adapter.py
+      - name: Run adapter contract tests
+        run: python -m unittest tests.test_server_control_chat_adapter -v
