@@ -56,6 +56,17 @@ class ConvertibleWechatSnapshotTest(unittest.TestCase):
         self.assertNotIn("source_url", payload)
         self.assertTrue(all(row["event_time"] for row in payload["rows"]))
 
+    def test_business_event_time_precedes_repair_detection_time(self) -> None:
+        source = _source("2026-10-17T12:00:00+08:00")
+        source["snapshot_date"] = "2026-10-16"
+        source["feed"]["items"][0]["changes"][0]["occurred_at"] = "2026-10-16"
+        payload = build_convertible_wechat_snapshot(source)
+        self.assertEqual(
+            payload["rows"][0]["event_time"],
+            "2026-10-16T00:00:00+08:00",
+        )
+        self.assertEqual(payload["generated_at"], "2026-10-17T12:00:00+08:00")
+
     def test_zero_event_day_is_valid_ready_snapshot(self) -> None:
         payload = build_convertible_wechat_snapshot(
             _source("2026-10-16T21:10:00+08:00", rows=0)
