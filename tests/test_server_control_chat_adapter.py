@@ -138,6 +138,33 @@ class ServerControlChatAdapterTest(unittest.TestCase):
             )
         self.assertFalse((self.task_dir / "claim.json").exists())
 
+    def test_max_tool_rounds_is_rejected_without_claiming_task(self) -> None:
+        task_path = self.task_dir / "chat_task.json"
+        task = json.loads(task_path.read_text(encoding="utf-8"))
+        task["server_control_tool_rounds"] = adapter._task_spec(
+            REPO_ROOT, task
+        ).max_tool_rounds
+        self._write(task_path, task)
+        response = {
+            "structured_output": None,
+            "tool_calls": [
+                {
+                    "id": "tc1",
+                    "name": "path_evidence_search",
+                    "arguments": {"keyword": "synthetic"},
+                }
+            ],
+            "finish_reason": "tool_calls",
+        }
+        with self.assertRaisesRegex(ValueError, "max_tool_rounds"):
+            adapter.submit_task(
+                task_id=self.public_id,
+                response=response,
+                root=REPO_ROOT,
+                data_root=self.data_root,
+            )
+        self.assertFalse((self.task_dir / "claim.json").exists())
+
     def test_allowed_tool_call_is_idempotent(self) -> None:
         response = {
             "structured_output": None,
@@ -181,6 +208,8 @@ class ServerControlChatAdapterTest(unittest.TestCase):
         self.assertTrue(first["continuation"])
         self.assertTrue(second["idempotent"])
         self.assertEqual(len(calls), 1)
+        latest_task = json.loads((self.task_dir / "chat_task.json").read_text(encoding="utf-8"))
+        self.assertEqual(latest_task["server_control_tool_rounds"], 1)
 
         meta = adapter.read_task(
             task_id=self.public_id,
