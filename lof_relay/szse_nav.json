@@ -1,0 +1,2287 @@
+{
+  "source": "SZSE_OFFICIAL",
+  "fetched_at": "2026-10-17T17:25:24.191483+00:00",
+  "count": 285,
+  "rows": [
+    {
+      "code": "160105",
+      "exchange": "SZSE",
+      "nav": "1.1689",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:25:58.896023+00:00"
+    },
+    {
+      "code": "160106",
+      "exchange": "SZSE",
+      "nav": "1.4009",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:25:58.924420+00:00"
+    },
+    {
+      "code": "160119",
+      "exchange": "SZSE",
+      "nav": "1.9425",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:25:58.898144+00:00"
+    },
+    {
+      "code": "160125",
+      "exchange": "SZSE",
+      "nav": "1.4518",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:25:58.921570+00:00"
+    },
+    {
+      "code": "160127",
+      "exchange": "SZSE",
+      "nav": "0.8052",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:25:58.947483+00:00"
+    },
+    {
+      "code": "160128",
+      "exchange": "SZSE",
+      "nav": "1.0290",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:25:58.897205+00:00"
+    },
+    {
+      "code": "160133",
+      "exchange": "SZSE",
+      "nav": "4.0239",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:01.052897+00:00"
+    },
+    {
+      "code": "160135",
+      "exchange": "SZSE",
+      "nav": "1.0010",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:01.037181+00:00"
+    },
+    {
+      "code": "160140",
+      "exchange": "SZSE",
+      "nav": "1.3439",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:02.469844+00:00"
+    },
+    {
+      "code": "160142",
+      "exchange": "SZSE",
+      "nav": "0.9661",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:01.417106+00:00"
+    },
+    {
+      "code": "160143",
+      "exchange": "SZSE",
+      "nav": "1.3981",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:01.150264+00:00"
+    },
+    {
+      "code": "160211",
+      "exchange": "SZSE",
+      "nav": "2.5330",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:01.135500+00:00"
+    },
+    {
+      "code": "160212",
+      "exchange": "SZSE",
+      "nav": "3.0252",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:03.399903+00:00"
+    },
+    {
+      "code": "160215",
+      "exchange": "SZSE",
+      "nav": "3.3240",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:03.135612+00:00"
+    },
+    {
+      "code": "160216",
+      "exchange": "SZSE",
+      "nav": "0.6130",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:03.253831+00:00"
+    },
+    {
+      "code": "160218",
+      "exchange": "SZSE",
+      "nav": "0.5675",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:03.316538+00:00"
+    },
+    {
+      "code": "160219",
+      "exchange": "SZSE",
+      "nav": "0.5535",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:03.720760+00:00"
+    },
+    {
+      "code": "160220",
+      "exchange": "SZSE",
+      "nav": "4.2325",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:04.608614+00:00"
+    },
+    {
+      "code": "160221",
+      "exchange": "SZSE",
+      "nav": "1.9327",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:05.384683+00:00"
+    },
+    {
+      "code": "160222",
+      "exchange": "SZSE",
+      "nav": "0.6575",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:05.412016+00:00"
+    },
+    {
+      "code": "160223",
+      "exchange": "SZSE",
+      "nav": "1.5799",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:05.653912+00:00"
+    },
+    {
+      "code": "160225",
+      "exchange": "SZSE",
+      "nav": "1.4848",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:05.553634+00:00"
+    },
+    {
+      "code": "160311",
+      "exchange": "SZSE",
+      "nav": "1.3010",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:05.808164+00:00"
+    },
+    {
+      "code": "160314",
+      "exchange": "SZSE",
+      "nav": "1.1480",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:06.804855+00:00"
+    },
+    {
+      "code": "160322",
+      "exchange": "SZSE",
+      "nav": "0.9284",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:07.869882+00:00"
+    },
+    {
+      "code": "160323",
+      "exchange": "SZSE",
+      "nav": "1.7419",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:08.728393+00:00"
+    },
+    {
+      "code": "160324",
+      "exchange": "SZSE",
+      "nav": "2.8937",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:07.641402+00:00"
+    },
+    {
+      "code": "160325",
+      "exchange": "SZSE",
+      "nav": "1.3451",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:07.758152+00:00"
+    },
+    {
+      "code": "160326",
+      "exchange": "SZSE",
+      "nav": "0.8667",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:07.875430+00:00"
+    },
+    {
+      "code": "160416",
+      "exchange": "SZSE",
+      "nav": "2.3052",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:08.876688+00:00"
+    },
+    {
+      "code": "160421",
+      "exchange": "SZSE",
+      "nav": "1.4912",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:11.057671+00:00"
+    },
+    {
+      "code": "160505",
+      "exchange": "SZSE",
+      "nav": "0.9760",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:11.107071+00:00"
+    },
+    {
+      "code": "160512",
+      "exchange": "SZSE",
+      "nav": "2.5230",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:09.974806+00:00"
+    },
+    {
+      "code": "160513",
+      "exchange": "SZSE",
+      "nav": "2.1936",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:10.074980+00:00"
+    },
+    {
+      "code": "160515",
+      "exchange": "SZSE",
+      "nav": "1.0413",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:12.135950+00:00"
+    },
+    {
+      "code": "160518",
+      "exchange": "SZSE",
+      "nav": "2.2400",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:11.075265+00:00"
+    },
+    {
+      "code": "160526",
+      "exchange": "SZSE",
+      "nav": "1.2185",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:12.315739+00:00"
+    },
+    {
+      "code": "160527",
+      "exchange": "SZSE",
+      "nav": "0.7276",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:12.164568+00:00"
+    },
+    {
+      "code": "160529",
+      "exchange": "SZSE",
+      "nav": "1.2601",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:14.519661+00:00"
+    },
+    {
+      "code": "160607",
+      "exchange": "SZSE",
+      "nav": "0.7360",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:13.282563+00:00"
+    },
+    {
+      "code": "160610",
+      "exchange": "SZSE",
+      "nav": "1.1490",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:13.283484+00:00"
+    },
+    {
+      "code": "160611",
+      "exchange": "SZSE",
+      "nav": "1.2679",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:15.451945+00:00"
+    },
+    {
+      "code": "160613",
+      "exchange": "SZSE",
+      "nav": "1.1962",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:14.360966+00:00"
+    },
+    {
+      "code": "160615",
+      "exchange": "SZSE",
+      "nav": "1.2856",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:14.403189+00:00"
+    },
+    {
+      "code": "160616",
+      "exchange": "SZSE",
+      "nav": "2.0352",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:15.396010+00:00"
+    },
+    {
+      "code": "160617",
+      "exchange": "SZSE",
+      "nav": "1.1110",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:16.710642+00:00"
+    },
+    {
+      "code": "160618",
+      "exchange": "SZSE",
+      "nav": "1.6339",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:16.711808+00:00"
+    },
+    {
+      "code": "160620",
+      "exchange": "SZSE",
+      "nav": "2.5522",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:16.761971+00:00"
+    },
+    {
+      "code": "160621",
+      "exchange": "SZSE",
+      "nav": "1.4007",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:16.637928+00:00"
+    },
+    {
+      "code": "160622",
+      "exchange": "SZSE",
+      "nav": "1.1428",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:17.511304+00:00"
+    },
+    {
+      "code": "160625",
+      "exchange": "SZSE",
+      "nav": "0.8046",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:17.756336+00:00"
+    },
+    {
+      "code": "160626",
+      "exchange": "SZSE",
+      "nav": "1.3580",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:18.961538+00:00"
+    },
+    {
+      "code": "160628",
+      "exchange": "SZSE",
+      "nav": "0.4926",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:18.887935+00:00"
+    },
+    {
+      "code": "160629",
+      "exchange": "SZSE",
+      "nav": "1.0270",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:18.863006+00:00"
+    },
+    {
+      "code": "160630",
+      "exchange": "SZSE",
+      "nav": "0.9192",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:18.951301+00:00"
+    },
+    {
+      "code": "160631",
+      "exchange": "SZSE",
+      "nav": "1.4499",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:19.641724+00:00"
+    },
+    {
+      "code": "160632",
+      "exchange": "SZSE",
+      "nav": "0.2614",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:19.888237+00:00"
+    },
+    {
+      "code": "160633",
+      "exchange": "SZSE",
+      "nav": "1.0262",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:21.215372+00:00"
+    },
+    {
+      "code": "160635",
+      "exchange": "SZSE",
+      "nav": "0.8654",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:22.257206+00:00"
+    },
+    {
+      "code": "160637",
+      "exchange": "SZSE",
+      "nav": "1.3068",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:21.126284+00:00"
+    },
+    {
+      "code": "160638",
+      "exchange": "SZSE",
+      "nav": "2.7314",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:21.158626+00:00"
+    },
+    {
+      "code": "160639",
+      "exchange": "SZSE",
+      "nav": "0.8435",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:22.149312+00:00"
+    },
+    {
+      "code": "160641",
+      "exchange": "SZSE",
+      "nav": "102.6264",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:22.148063+00:00"
+    },
+    {
+      "code": "160642",
+      "exchange": "SZSE",
+      "nav": "2.4181",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:23.442432+00:00"
+    },
+    {
+      "code": "160643",
+      "exchange": "SZSE",
+      "nav": "1.0813",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:24.576099+00:00"
+    },
+    {
+      "code": "160644",
+      "exchange": "SZSE",
+      "nav": "1.7847",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:23.307164+00:00"
+    },
+    {
+      "code": "160706",
+      "exchange": "SZSE",
+      "nav": "1.0873",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:24.481411+00:00"
+    },
+    {
+      "code": "160716",
+      "exchange": "SZSE",
+      "nav": "2.1169",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:24.427913+00:00"
+    },
+    {
+      "code": "160717",
+      "exchange": "SZSE",
+      "nav": "0.6941",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:24.470638+00:00"
+    },
+    {
+      "code": "160719",
+      "exchange": "SZSE",
+      "nav": "1.8050",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:26.960838+00:00"
+    },
+    {
+      "code": "160722",
+      "exchange": "SZSE",
+      "nav": "1.9049",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:25.589323+00:00"
+    },
+    {
+      "code": "160723",
+      "exchange": "SZSE",
+      "nav": "2.4220",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:26.517351+00:00"
+    },
+    {
+      "code": "160726",
+      "exchange": "SZSE",
+      "nav": "1.0081",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:26.637079+00:00"
+    },
+    {
+      "code": "160805",
+      "exchange": "SZSE",
+      "nav": "0.6680",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:26.593312+00:00"
+    },
+    {
+      "code": "160806",
+      "exchange": "SZSE",
+      "nav": "1.8865",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:26.749046+00:00"
+    },
+    {
+      "code": "160807",
+      "exchange": "SZSE",
+      "nav": "1.6898",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:29.016604+00:00"
+    },
+    {
+      "code": "160812",
+      "exchange": "SZSE",
+      "nav": "2.1200",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:28.860706+00:00"
+    },
+    {
+      "code": "160813",
+      "exchange": "SZSE",
+      "nav": "1.5430",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:28.768842+00:00"
+    },
+    {
+      "code": "160910",
+      "exchange": "SZSE",
+      "nav": "0.9180",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:28.747767+00:00"
+    },
+    {
+      "code": "160916",
+      "exchange": "SZSE",
+      "nav": "4.4270",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:29.031009+00:00"
+    },
+    {
+      "code": "160918",
+      "exchange": "SZSE",
+      "nav": "2.5056",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:29.081178+00:00"
+    },
+    {
+      "code": "160919",
+      "exchange": "SZSE",
+      "nav": "3.1330",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:32.092753+00:00"
+    },
+    {
+      "code": "160921",
+      "exchange": "SZSE",
+      "nav": "1.3204",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:31.167647+00:00"
+    },
+    {
+      "code": "160924",
+      "exchange": "SZSE",
+      "nav": "0.9495",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:31.339272+00:00"
+    },
+    {
+      "code": "160925",
+      "exchange": "SZSE",
+      "nav": "1.2162",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:31.090079+00:00"
+    },
+    {
+      "code": "160926",
+      "exchange": "SZSE",
+      "nav": "0.9296",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:31.123081+00:00"
+    },
+    {
+      "code": "161005",
+      "exchange": "SZSE",
+      "nav": "2.6631",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:31.195932+00:00"
+    },
+    {
+      "code": "161010",
+      "exchange": "SZSE",
+      "nav": "1.0651",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:34.449867+00:00"
+    },
+    {
+      "code": "161014",
+      "exchange": "SZSE",
+      "nav": "1.4505",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:33.191749+00:00"
+    },
+    {
+      "code": "161015",
+      "exchange": "SZSE",
+      "nav": "1.3101",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:33.331432+00:00"
+    },
+    {
+      "code": "161017",
+      "exchange": "SZSE",
+      "nav": "2.2170",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:33.305682+00:00"
+    },
+    {
+      "code": "161019",
+      "exchange": "SZSE",
+      "nav": "1.1926",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:33.431614+00:00"
+    },
+    {
+      "code": "161024",
+      "exchange": "SZSE",
+      "nav": "1.0100",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:34.451704+00:00"
+    },
+    {
+      "code": "161025",
+      "exchange": "SZSE",
+      "nav": "1.2480",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:35.313893+00:00"
+    },
+    {
+      "code": "161026",
+      "exchange": "SZSE",
+      "nav": "1.1300",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:35.422591+00:00"
+    },
+    {
+      "code": "161027",
+      "exchange": "SZSE",
+      "nav": "0.9910",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:35.714906+00:00"
+    },
+    {
+      "code": "161028",
+      "exchange": "SZSE",
+      "nav": "0.8580",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:35.596621+00:00"
+    },
+    {
+      "code": "161029",
+      "exchange": "SZSE",
+      "nav": "1.8840",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:36.581287+00:00"
+    },
+    {
+      "code": "161030",
+      "exchange": "SZSE",
+      "nav": "0.9670",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:36.543148+00:00"
+    },
+    {
+      "code": "161031",
+      "exchange": "SZSE",
+      "nav": "1.2540",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:37.435904+00:00"
+    },
+    {
+      "code": "161032",
+      "exchange": "SZSE",
+      "nav": "2.2950",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:37.533635+00:00"
+    },
+    {
+      "code": "161033",
+      "exchange": "SZSE",
+      "nav": "1.5110",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:37.714835+00:00"
+    },
+    {
+      "code": "161035",
+      "exchange": "SZSE",
+      "nav": "1.2420",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:37.822316+00:00"
+    },
+    {
+      "code": "161036",
+      "exchange": "SZSE",
+      "nav": "0.6473",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:39.879085+00:00"
+    },
+    {
+      "code": "161037",
+      "exchange": "SZSE",
+      "nav": "2.4016",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:38.641197+00:00"
+    },
+    {
+      "code": "161038",
+      "exchange": "SZSE",
+      "nav": "1.4003",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:39.851079+00:00"
+    },
+    {
+      "code": "161039",
+      "exchange": "SZSE",
+      "nav": "2.3193",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:39.593501+00:00"
+    },
+    {
+      "code": "161040",
+      "exchange": "SZSE",
+      "nav": "1.8040",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:39.846313+00:00"
+    },
+    {
+      "code": "161115",
+      "exchange": "SZSE",
+      "nav": "1.7538",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:39.957345+00:00"
+    },
+    {
+      "code": "161116",
+      "exchange": "SZSE",
+      "nav": "1.5014",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:40.845931+00:00"
+    },
+    {
+      "code": "161117",
+      "exchange": "SZSE",
+      "nav": "1.0450",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:41.682596+00:00"
+    },
+    {
+      "code": "161118",
+      "exchange": "SZSE",
+      "nav": "1.3535",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:41.983958+00:00"
+    },
+    {
+      "code": "161119",
+      "exchange": "SZSE",
+      "nav": "1.8137",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:42.014501+00:00"
+    },
+    {
+      "code": "161121",
+      "exchange": "SZSE",
+      "nav": "1.7253",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:42.216423+00:00"
+    },
+    {
+      "code": "161122",
+      "exchange": "SZSE",
+      "nav": "0.5544",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:42.169714+00:00"
+    },
+    {
+      "code": "161123",
+      "exchange": "SZSE",
+      "nav": "1.2978",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:42.919128+00:00"
+    },
+    {
+      "code": "161124",
+      "exchange": "SZSE",
+      "nav": "0.8199",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:44.016147+00:00"
+    },
+    {
+      "code": "161125",
+      "exchange": "SZSE",
+      "nav": "3.1448",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:45.320734+00:00"
+    },
+    {
+      "code": "161126",
+      "exchange": "SZSE",
+      "nav": "2.1898",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:44.213785+00:00"
+    },
+    {
+      "code": "161127",
+      "exchange": "SZSE",
+      "nav": "1.9297",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:44.334450+00:00"
+    },
+    {
+      "code": "161128",
+      "exchange": "SZSE",
+      "nav": "6.8671",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:44.326236+00:00"
+    },
+    {
+      "code": "161129",
+      "exchange": "SZSE",
+      "nav": "2.0206",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:45.009751+00:00"
+    },
+    {
+      "code": "161130",
+      "exchange": "SZSE",
+      "nav": "4.4806",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:46.315609+00:00"
+    },
+    {
+      "code": "161131",
+      "exchange": "SZSE",
+      "nav": "0.9483",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:47.547109+00:00"
+    },
+    {
+      "code": "161132",
+      "exchange": "SZSE",
+      "nav": "2.5285",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:46.659126+00:00"
+    },
+    {
+      "code": "161133",
+      "exchange": "SZSE",
+      "nav": "1.5689",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:46.425843+00:00"
+    },
+    {
+      "code": "161216",
+      "exchange": "SZSE",
+      "nav": "1.3807",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:47.362930+00:00"
+    },
+    {
+      "code": "161217",
+      "exchange": "SZSE",
+      "nav": "2.0299",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:47.420189+00:00"
+    },
+    {
+      "code": "161219",
+      "exchange": "SZSE",
+      "nav": "3.1428",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:48.402041+00:00"
+    },
+    {
+      "code": "161222",
+      "exchange": "SZSE",
+      "nav": "2.7776",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:48.601672+00:00"
+    },
+    {
+      "code": "161224",
+      "exchange": "SZSE",
+      "nav": "1.0666",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:48.904600+00:00"
+    },
+    {
+      "code": "161225",
+      "exchange": "SZSE",
+      "nav": "2.3797",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:49.570917+00:00"
+    },
+    {
+      "code": "161226",
+      "exchange": "SZSE",
+      "nav": "1.5441",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:49.750102+00:00"
+    },
+    {
+      "code": "161227",
+      "exchange": "SZSE",
+      "nav": "1.3889",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:49.769437+00:00"
+    },
+    {
+      "code": "161229",
+      "exchange": "SZSE",
+      "nav": "1.3789",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:50.502207+00:00"
+    },
+    {
+      "code": "161232",
+      "exchange": "SZSE",
+      "nav": "1.2673",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:50.709145+00:00"
+    },
+    {
+      "code": "161233",
+      "exchange": "SZSE",
+      "nav": "1.7305",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:50.988180+00:00"
+    },
+    {
+      "code": "161505",
+      "exchange": "SZSE",
+      "nav": "1.3100",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:51.666001+00:00"
+    },
+    {
+      "code": "161607",
+      "exchange": "SZSE",
+      "nav": "1.0860",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:52.085425+00:00"
+    },
+    {
+      "code": "161610",
+      "exchange": "SZSE",
+      "nav": "1.5370",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:51.943521+00:00"
+    },
+    {
+      "code": "161614",
+      "exchange": "SZSE",
+      "nav": "1.1298",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:53.867147+00:00"
+    },
+    {
+      "code": "161626",
+      "exchange": "SZSE",
+      "nav": "1.0351",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:52.800127+00:00"
+    },
+    {
+      "code": "161631",
+      "exchange": "SZSE",
+      "nav": "2.3167",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:53.088341+00:00"
+    },
+    {
+      "code": "161706",
+      "exchange": "SZSE",
+      "nav": "3.8988",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:53.994998+00:00"
+    },
+    {
+      "code": "161713",
+      "exchange": "SZSE",
+      "nav": "1.0523",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:54.238683+00:00"
+    },
+    {
+      "code": "161715",
+      "exchange": "SZSE",
+      "nav": "2.0407",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:54.297365+00:00"
+    },
+    {
+      "code": "161716",
+      "exchange": "SZSE",
+      "nav": "1.6524",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:54.979845+00:00"
+    },
+    {
+      "code": "161720",
+      "exchange": "SZSE",
+      "nav": "1.1057",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:55.191703+00:00"
+    },
+    {
+      "code": "161722",
+      "exchange": "SZSE",
+      "nav": "1.3860",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:57.230684+00:00"
+    },
+    {
+      "code": "161724",
+      "exchange": "SZSE",
+      "nav": "2.3467",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:56.203134+00:00"
+    },
+    {
+      "code": "161725",
+      "exchange": "SZSE",
+      "nav": "0.5334",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:56.332461+00:00"
+    },
+    {
+      "code": "161726",
+      "exchange": "SZSE",
+      "nav": "0.3859",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:56.386289+00:00"
+    },
+    {
+      "code": "161727",
+      "exchange": "SZSE",
+      "nav": "1.6590",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:57.073638+00:00"
+    },
+    {
+      "code": "161728",
+      "exchange": "SZSE",
+      "nav": "1.4014",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:57.280184+00:00"
+    },
+    {
+      "code": "161729",
+      "exchange": "SZSE",
+      "nav": "1.8308",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:59.508646+00:00"
+    },
+    {
+      "code": "161810",
+      "exchange": "SZSE",
+      "nav": "4.2410",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:58.437606+00:00"
+    },
+    {
+      "code": "161811",
+      "exchange": "SZSE",
+      "nav": "0.9730",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:58.649666+00:00"
+    },
+    {
+      "code": "161812",
+      "exchange": "SZSE",
+      "nav": "1.1830",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:59.191044+00:00"
+    },
+    {
+      "code": "161815",
+      "exchange": "SZSE",
+      "nav": "1.1410",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:59.388423+00:00"
+    },
+    {
+      "code": "161816",
+      "exchange": "SZSE",
+      "nav": "0.8818",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:26:59.443680+00:00"
+    },
+    {
+      "code": "161820",
+      "exchange": "SZSE",
+      "nav": "1.1669",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:00.528078+00:00"
+    },
+    {
+      "code": "161831",
+      "exchange": "SZSE",
+      "nav": "0.6891",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:00.985517+00:00"
+    },
+    {
+      "code": "161834",
+      "exchange": "SZSE",
+      "nav": "1.8290",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:01.322173+00:00"
+    },
+    {
+      "code": "161837",
+      "exchange": "SZSE",
+      "nav": "1.0486",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:02.834525+00:00"
+    },
+    {
+      "code": "161903",
+      "exchange": "SZSE",
+      "nav": "1.5043",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:01.747003+00:00"
+    },
+    {
+      "code": "161908",
+      "exchange": "SZSE",
+      "nav": "1.2017",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:01.659939+00:00"
+    },
+    {
+      "code": "161912",
+      "exchange": "SZSE",
+      "nav": "3.8071",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:02.781849+00:00"
+    },
+    {
+      "code": "161914",
+      "exchange": "SZSE",
+      "nav": "0.7948",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:03.093635+00:00"
+    },
+    {
+      "code": "162006",
+      "exchange": "SZSE",
+      "nav": "1.6016",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:03.533771+00:00"
+    },
+    {
+      "code": "162105",
+      "exchange": "SZSE",
+      "nav": "1.3746",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:03.946619+00:00"
+    },
+    {
+      "code": "162108",
+      "exchange": "SZSE",
+      "nav": "1.3500",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:03.852212+00:00"
+    },
+    {
+      "code": "162207",
+      "exchange": "SZSE",
+      "nav": "1.2283",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:06.165862+00:00"
+    },
+    {
+      "code": "162215",
+      "exchange": "SZSE",
+      "nav": "1.0790",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:05.186114+00:00"
+    },
+    {
+      "code": "162216",
+      "exchange": "SZSE",
+      "nav": "1.4592",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:05.192865+00:00"
+    },
+    {
+      "code": "162307",
+      "exchange": "SZSE",
+      "nav": "1.4002",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:05.679162+00:00"
+    },
+    {
+      "code": "162411",
+      "exchange": "SZSE",
+      "nav": "1.0257",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:05.981981+00:00"
+    },
+    {
+      "code": "162412",
+      "exchange": "SZSE",
+      "nav": "0.5763",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:06.038909+00:00"
+    },
+    {
+      "code": "162414",
+      "exchange": "SZSE",
+      "nav": "1.9022",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:07.531660+00:00"
+    },
+    {
+      "code": "162415",
+      "exchange": "SZSE",
+      "nav": "2.7190",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:07.419221+00:00"
+    },
+    {
+      "code": "162509",
+      "exchange": "SZSE",
+      "nav": "0.8966",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:08.042028+00:00"
+    },
+    {
+      "code": "162605",
+      "exchange": "SZSE",
+      "nav": "1.3060",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:08.427355+00:00"
+    },
+    {
+      "code": "162607",
+      "exchange": "SZSE",
+      "nav": "0.4770",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:08.331190+00:00"
+    },
+    {
+      "code": "162703",
+      "exchange": "SZSE",
+      "nav": "1.9800",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:08.263494+00:00"
+    },
+    {
+      "code": "162711",
+      "exchange": "SZSE",
+      "nav": "1.6329",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:09.588419+00:00"
+    },
+    {
+      "code": "162712",
+      "exchange": "SZSE",
+      "nav": "1.4262",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:09.717609+00:00"
+    },
+    {
+      "code": "162715",
+      "exchange": "SZSE",
+      "nav": "1.1733",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:10.192406+00:00"
+    },
+    {
+      "code": "162719",
+      "exchange": "SZSE",
+      "nav": "3.3378",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:10.332216+00:00"
+    },
+    {
+      "code": "162720",
+      "exchange": "SZSE",
+      "nav": "1.1406",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:10.415180+00:00"
+    },
+    {
+      "code": "162721",
+      "exchange": "SZSE",
+      "nav": "1.1698",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:10.626696+00:00"
+    },
+    {
+      "code": "163001",
+      "exchange": "SZSE",
+      "nav": "1.3350",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:12.957872+00:00"
+    },
+    {
+      "code": "163003",
+      "exchange": "SZSE",
+      "nav": "0.6757",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:11.926742+00:00"
+    },
+    {
+      "code": "163005",
+      "exchange": "SZSE",
+      "nav": "1.0337",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:12.284623+00:00"
+    },
+    {
+      "code": "163109",
+      "exchange": "SZSE",
+      "nav": "0.6676",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:12.405671+00:00"
+    },
+    {
+      "code": "163110",
+      "exchange": "SZSE",
+      "nav": "2.1343",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:12.509190+00:00"
+    },
+    {
+      "code": "163111",
+      "exchange": "SZSE",
+      "nav": "1.3323",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:12.751021+00:00"
+    },
+    {
+      "code": "163113",
+      "exchange": "SZSE",
+      "nav": "0.8881",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:14.234958+00:00"
+    },
+    {
+      "code": "163114",
+      "exchange": "SZSE",
+      "nav": "1.0913",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:15.608199+00:00"
+    },
+    {
+      "code": "163115",
+      "exchange": "SZSE",
+      "nav": "1.0321",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:14.522182+00:00"
+    },
+    {
+      "code": "163116",
+      "exchange": "SZSE",
+      "nav": "1.5986",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:14.566149+00:00"
+    },
+    {
+      "code": "163118",
+      "exchange": "SZSE",
+      "nav": "0.6541",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:14.906673+00:00"
+    },
+    {
+      "code": "163208",
+      "exchange": "SZSE",
+      "nav": "1.4890",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:15.357534+00:00"
+    },
+    {
+      "code": "163302",
+      "exchange": "SZSE",
+      "nav": "0.9606",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:16.311948+00:00"
+    },
+    {
+      "code": "163402",
+      "exchange": "SZSE",
+      "nav": "0.7586",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:16.634555+00:00"
+    },
+    {
+      "code": "163406",
+      "exchange": "SZSE",
+      "nav": "2.0028",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:16.732002+00:00"
+    },
+    {
+      "code": "163407",
+      "exchange": "SZSE",
+      "nav": "2.5107",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:17.018223+00:00"
+    },
+    {
+      "code": "163409",
+      "exchange": "SZSE",
+      "nav": "1.3150",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:17.492411+00:00"
+    },
+    {
+      "code": "163412",
+      "exchange": "SZSE",
+      "nav": "3.3650",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:17.718490+00:00"
+    },
+    {
+      "code": "163415",
+      "exchange": "SZSE",
+      "nav": "4.4220",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:18.408803+00:00"
+    },
+    {
+      "code": "163417",
+      "exchange": "SZSE",
+      "nav": "1.8107",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:18.713324+00:00"
+    },
+    {
+      "code": "163418",
+      "exchange": "SZSE",
+      "nav": "0.7754",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:18.832841+00:00"
+    },
+    {
+      "code": "163503",
+      "exchange": "SZSE",
+      "nav": "0.3612",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:19.516576+00:00"
+    },
+    {
+      "code": "163801",
+      "exchange": "SZSE",
+      "nav": "0.7225",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:19.865416+00:00"
+    },
+    {
+      "code": "163819",
+      "exchange": "SZSE",
+      "nav": "1.2011",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:19.846138+00:00"
+    },
+    {
+      "code": "163821",
+      "exchange": "SZSE",
+      "nav": "1.9314",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:20.516606+00:00"
+    },
+    {
+      "code": "163907",
+      "exchange": "SZSE",
+      "nav": "0.8000",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:20.817313+00:00"
+    },
+    {
+      "code": "164105",
+      "exchange": "SZSE",
+      "nav": "1.5702",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:20.914475+00:00"
+    },
+    {
+      "code": "164206",
+      "exchange": "SZSE",
+      "nav": "1.6289",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:21.619995+00:00"
+    },
+    {
+      "code": "164208",
+      "exchange": "SZSE",
+      "nav": "1.4083",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:21.967075+00:00"
+    },
+    {
+      "code": "164210",
+      "exchange": "SZSE",
+      "nav": "1.2624",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:22.010172+00:00"
+    },
+    {
+      "code": "164403",
+      "exchange": "SZSE",
+      "nav": "0.8625",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:22.584524+00:00"
+    },
+    {
+      "code": "164508",
+      "exchange": "SZSE",
+      "nav": "1.1750",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:23.090338+00:00"
+    },
+    {
+      "code": "164509",
+      "exchange": "SZSE",
+      "nav": "0.7321",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:23.222484+00:00"
+    },
+    {
+      "code": "164606",
+      "exchange": "SZSE",
+      "nav": "1.2286",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:24.929135+00:00"
+    },
+    {
+      "code": "164701",
+      "exchange": "SZSE",
+      "nav": "1.5770",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:24.263450+00:00"
+    },
+    {
+      "code": "164703",
+      "exchange": "SZSE",
+      "nav": "0.8793",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:24.168030+00:00"
+    },
+    {
+      "code": "164705",
+      "exchange": "SZSE",
+      "nav": "1.0743",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:24.653892+00:00"
+    },
+    {
+      "code": "164808",
+      "exchange": "SZSE",
+      "nav": "1.1010",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:26.509994+00:00"
+    },
+    {
+      "code": "164810",
+      "exchange": "SZSE",
+      "nav": "1.0344",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:25.554085+00:00"
+    },
+    {
+      "code": "164814",
+      "exchange": "SZSE",
+      "nav": "0.9350",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:26.508748+00:00"
+    },
+    {
+      "code": "164824",
+      "exchange": "SZSE",
+      "nav": "1.2370",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:26.362001+00:00"
+    },
+    {
+      "code": "164902",
+      "exchange": "SZSE",
+      "nav": "1.1393",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:26.781558+00:00"
+    },
+    {
+      "code": "164906",
+      "exchange": "SZSE",
+      "nav": "0.8814",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:27.313848+00:00"
+    },
+    {
+      "code": "165309",
+      "exchange": "SZSE",
+      "nav": "1.7797",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:27.760741+00:00"
+    },
+    {
+      "code": "165311",
+      "exchange": "SZSE",
+      "nav": "1.7445",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:28.732643+00:00"
+    },
+    {
+      "code": "165313",
+      "exchange": "SZSE",
+      "nav": "3.5440",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:28.709178+00:00"
+    },
+    {
+      "code": "165508",
+      "exchange": "SZSE",
+      "nav": "2.1329",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:28.707026+00:00"
+    },
+    {
+      "code": "165509",
+      "exchange": "SZSE",
+      "nav": "1.2077",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:29.137284+00:00"
+    },
+    {
+      "code": "165511",
+      "exchange": "SZSE",
+      "nav": "1.9494",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:29.402063+00:00"
+    },
+    {
+      "code": "165512",
+      "exchange": "SZSE",
+      "nav": "1.2837",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:29.841858+00:00"
+    },
+    {
+      "code": "165513",
+      "exchange": "SZSE",
+      "nav": "0.9469",
+      "nav_date": "2026-10-14",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:31.028581+00:00"
+    },
+    {
+      "code": "165515",
+      "exchange": "SZSE",
+      "nav": "1.2028",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:30.895438+00:00"
+    },
+    {
+      "code": "165516",
+      "exchange": "SZSE",
+      "nav": "6.1546",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:30.879334+00:00"
+    },
+    {
+      "code": "165517",
+      "exchange": "SZSE",
+      "nav": "1.0205",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:31.470546+00:00"
+    },
+    {
+      "code": "165519",
+      "exchange": "SZSE",
+      "nav": "1.0289",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:31.857900+00:00"
+    },
+    {
+      "code": "165520",
+      "exchange": "SZSE",
+      "nav": "2.4082",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:32.050302+00:00"
+    },
+    {
+      "code": "165521",
+      "exchange": "SZSE",
+      "nav": "1.2751",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:33.187280+00:00"
+    },
+    {
+      "code": "165522",
+      "exchange": "SZSE",
+      "nav": "1.2296",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:32.995963+00:00"
+    },
+    {
+      "code": "165525",
+      "exchange": "SZSE",
+      "nav": "0.6676",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:33.117445+00:00"
+    },
+    {
+      "code": "165528",
+      "exchange": "SZSE",
+      "nav": "2.0781",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:33.984379+00:00"
+    },
+    {
+      "code": "166001",
+      "exchange": "SZSE",
+      "nav": "1.4286",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:34.204805+00:00"
+    },
+    {
+      "code": "166006",
+      "exchange": "SZSE",
+      "nav": "2.2117",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:34.200506+00:00"
+    },
+    {
+      "code": "166008",
+      "exchange": "SZSE",
+      "nav": "1.1465",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:35.342897+00:00"
+    },
+    {
+      "code": "166009",
+      "exchange": "SZSE",
+      "nav": "3.1350",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:35.363435+00:00"
+    },
+    {
+      "code": "166011",
+      "exchange": "SZSE",
+      "nav": "1.5972",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:35.264293+00:00"
+    },
+    {
+      "code": "166016",
+      "exchange": "SZSE",
+      "nav": "1.1373",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:36.259996+00:00"
+    },
+    {
+      "code": "166023",
+      "exchange": "SZSE",
+      "nav": "1.1511",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:36.307609+00:00"
+    },
+    {
+      "code": "166024",
+      "exchange": "SZSE",
+      "nav": "0.9345",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:36.384293+00:00"
+    },
+    {
+      "code": "166025",
+      "exchange": "SZSE",
+      "nav": "0.6743",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:37.343643+00:00"
+    },
+    {
+      "code": "166027",
+      "exchange": "SZSE",
+      "nav": "0.7471",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:38.763784+00:00"
+    },
+    {
+      "code": "166105",
+      "exchange": "SZSE",
+      "nav": "1.0030",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:37.697905+00:00"
+    },
+    {
+      "code": "166107",
+      "exchange": "SZSE",
+      "nav": "1.2751",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:38.344480+00:00"
+    },
+    {
+      "code": "166401",
+      "exchange": "SZSE",
+      "nav": "1.1479",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:38.408236+00:00"
+    },
+    {
+      "code": "167001",
+      "exchange": "SZSE",
+      "nav": "1.8573",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:38.550096+00:00"
+    },
+    {
+      "code": "167002",
+      "exchange": "SZSE",
+      "nav": "4.6310",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:39.913301+00:00"
+    },
+    {
+      "code": "167003",
+      "exchange": "SZSE",
+      "nav": "1.1660",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:39.770909+00:00"
+    },
+    {
+      "code": "167301",
+      "exchange": "SZSE",
+      "nav": "1.0250",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:40.698773+00:00"
+    },
+    {
+      "code": "167302",
+      "exchange": "SZSE",
+      "nav": "0.9238",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:40.635178+00:00"
+    },
+    {
+      "code": "167501",
+      "exchange": "SZSE",
+      "nav": "1.0497",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:40.663842+00:00"
+    },
+    {
+      "code": "167506",
+      "exchange": "SZSE",
+      "nav": "1.4369",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:40.909193+00:00"
+    },
+    {
+      "code": "167508",
+      "exchange": "SZSE",
+      "nav": "1.6354",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:43.102483+00:00"
+    },
+    {
+      "code": "168101",
+      "exchange": "SZSE",
+      "nav": "1.2310",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:41.995662+00:00"
+    },
+    {
+      "code": "168102",
+      "exchange": "SZSE",
+      "nav": "1.0800",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:42.934364+00:00"
+    },
+    {
+      "code": "168103",
+      "exchange": "SZSE",
+      "nav": "1.2700",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:43.120575+00:00"
+    },
+    {
+      "code": "168104",
+      "exchange": "SZSE",
+      "nav": "0.8455",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:42.810334+00:00"
+    },
+    {
+      "code": "168105",
+      "exchange": "SZSE",
+      "nav": "1.9230",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:42.977081+00:00"
+    },
+    {
+      "code": "168203",
+      "exchange": "SZSE",
+      "nav": "1.0910",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:44.287795+00:00"
+    },
+    {
+      "code": "168204",
+      "exchange": "SZSE",
+      "nav": "2.1140",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:46.157068+00:00"
+    },
+    {
+      "code": "168301",
+      "exchange": "SZSE",
+      "nav": "0.8358",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:45.032446+00:00"
+    },
+    {
+      "code": "168401",
+      "exchange": "SZSE",
+      "nav": "4.6235",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:45.096987+00:00"
+    },
+    {
+      "code": "168701",
+      "exchange": "SZSE",
+      "nav": "0.9239",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:45.375937+00:00"
+    },
+    {
+      "code": "169101",
+      "exchange": "SZSE",
+      "nav": "1.6340",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:45.203090+00:00"
+    },
+    {
+      "code": "169104",
+      "exchange": "SZSE",
+      "nav": "2.6200",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:46.385653+00:00"
+    },
+    {
+      "code": "169105",
+      "exchange": "SZSE",
+      "nav": "1.8954",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:47.179592+00:00"
+    },
+    {
+      "code": "169106",
+      "exchange": "SZSE",
+      "nav": "1.0964",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:47.192752+00:00"
+    },
+    {
+      "code": "169201",
+      "exchange": "SZSE",
+      "nav": "1.5676",
+      "nav_date": "2026-10-15",
+      "source": "SZSE_OFFICIAL",
+      "fetched_at": "2026-10-17T17:27:47.531435+00:00"
+    }
+  ]
+}

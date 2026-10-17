@@ -1,0 +1,17 @@
+{
+  "relay_version": "lof-szse-official-relay-v1",
+  "fetched_at": "2026-10-17T17:25:24.191483+00:00",
+  "source": "SZSE_OFFICIAL",
+  "universe_count": 285,
+  "nav_count": 285,
+  "files": {
+    "universe": {
+      "filename": "szse_universe.json",
+      "sha256": "5df352b4b7ba54f454dcd0b71af30eb7f7f79394785a3d8d21ec5040580146ec"
+    },
+    "nav": {
+      "filename": "szse_nav.json",
+      "sha256": "672fa4db17a0f6bf57bd749f8f30a4f9bda454aea1225f44ccea52dde616f540"
+    }
+  }
+}
