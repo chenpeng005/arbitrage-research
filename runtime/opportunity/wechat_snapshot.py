@@ -34,17 +34,23 @@ def _parse_time(value: Any) -> datetime | None:
 
 
 def _event_time(item: dict[str, Any]) -> str | None:
-    candidates: list[datetime] = []
+    occurred: list[datetime] = []
+    detected: list[datetime] = []
     for change in item.get("changes") or []:
         if not isinstance(change, dict):
             continue
-        value = _parse_time(change.get("detected_at"))
-        if value is not None:
-            candidates.append(value)
+        business_time = _parse_time(change.get("occurred_at"))
+        if business_time is not None:
+            occurred.append(business_time)
+        detection_time = _parse_time(change.get("detected_at"))
+        if detection_time is not None:
+            detected.append(detection_time)
+    if occurred:
+        return max(occurred).isoformat()
     created = _parse_time(item.get("created_at"))
     if created is not None:
-        candidates.append(created)
-    return max(candidates).isoformat() if candidates else None
+        detected.append(created)
+    return max(detected).isoformat() if detected else None
 
 
 def _project_item(item: dict[str, Any], *, attention_tier: str) -> dict[str, Any]:
