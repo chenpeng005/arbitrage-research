@@ -31,3 +31,22 @@ jobs:
         run: python -m py_compile runtime/ai_runtime/server_control_chat_adapter.py
       - name: Run adapter contract tests
         run: python -m unittest tests.test_server_control_chat_adapter -v
+      - name: Run convertible production regression suite
+        run: |
+          python -m unittest \
+            tests.test_opportunity_current_status_view \
+            tests.test_incremental_storage_pending_binding_parity \
+            tests.test_web_deployment_manifest_projection \
+            tests.test_daily_research_decoupling_v1 \
+            tests.test_token_cost_gate_v1 \
+            tests.test_daily_notification_snapshot_v1 \
+            tests.test_convertible_wechat_snapshot \
+            tests.test_notification_reminder_v2 \
+            tests.test_reminder_policy_v2 \
+            tests.test_arbitrage_github_autodeploy_v1 \
+            tests.test_pretrade_schedule_gate_v1 \
+            tests.test_ai_evidence_store \
+            tests.test_ai_provider_alias \
+            tests.test_intelligence_radar_nightly_mode_launch \
+            tests.test_intelligence_radar_nightly_mode_switch \
+            -v
