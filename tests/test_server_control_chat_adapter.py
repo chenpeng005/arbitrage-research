@@ -123,6 +123,29 @@ class ServerControlChatAdapterTest(unittest.TestCase):
         self.assertFalse(nxt["found"])
         self.assertEqual(nxt["stale_skipped"], 1)
 
+    def test_adapter_owned_claim_is_resumable_as_waiting(self) -> None:
+        adapter.native.claim_task(
+            self.data_root, self.native_id, claimant=adapter.CLAIMANT
+        )
+        nxt = adapter.next_task(root=REPO_ROOT, data_root=self.data_root)
+        self.assertTrue(nxt["found"])
+        self.assertEqual(nxt["task"]["task_id"], self.public_id)
+        self.assertEqual(nxt["task"]["status"], "WAITING_FOR_CHAT")
+        self.assertEqual(nxt["task"]["native_status"], "CLAIMED_BY_CHAT")
+        meta = adapter.read_task(
+            task_id=self.public_id,
+            section="meta",
+            root=REPO_ROOT,
+            data_root=self.data_root,
+        )
+        self.assertEqual(meta["task"]["status"], "WAITING_FOR_CHAT")
+        self.assertEqual(meta["task"]["native_status"], "CLAIMED_BY_CHAT")
+
+    def test_foreign_claim_is_hidden_from_bridge_queue(self) -> None:
+        adapter.native.claim_task(self.data_root, self.native_id, claimant="other-chat")
+        nxt = adapter.next_task(root=REPO_ROOT, data_root=self.data_root)
+        self.assertFalse(nxt["found"])
+
     def test_disallowed_tool_is_rejected_without_claiming_task(self) -> None:
         response = {
             "structured_output": None,
@@ -211,6 +234,11 @@ class ServerControlChatAdapterTest(unittest.TestCase):
         latest_task = json.loads((self.task_dir / "chat_task.json").read_text(encoding="utf-8"))
         self.assertEqual(latest_task["server_control_tool_rounds"], 1)
 
+        resumed = adapter.next_task(root=REPO_ROOT, data_root=self.data_root)
+        self.assertTrue(resumed["found"])
+        self.assertEqual(resumed["task"]["task_id"], self.public_id)
+        self.assertEqual(resumed["task"]["status"], "WAITING_FOR_CHAT")
+
         meta = adapter.read_task(
             task_id=self.public_id,
             section="meta",
@@ -218,6 +246,7 @@ class ServerControlChatAdapterTest(unittest.TestCase):
             data_root=self.data_root,
         )
         self.assertEqual(meta["task"]["message_count"], 2)
+        self.assertEqual(meta["task"]["tool_rounds"], 1)
         tool_message = adapter.read_task(
             task_id=self.public_id,
             section="message",
