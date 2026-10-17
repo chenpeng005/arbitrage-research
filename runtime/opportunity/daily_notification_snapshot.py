@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 from runtime.opportunity.incremental_notification_delivery import build_notification_feed
 from runtime.opportunity.incremental_read_source import load_opportunity_records
+from runtime.opportunity.incremental_storage import connect
 from runtime.opportunity.wechat_snapshot import ConvertibleWechatSnapshotStore
 
 SNAPSHOT_VERSION = "daily-reminder-snapshot-v1"
@@ -45,6 +46,51 @@ def _atomic_write(path: Path, payload: dict[str, Any]) -> None:
         encoding="utf-8",
     )
     tmp.replace(path)
+
+
+def _attach_event_occurred_at(
+    *, target_db: Path, feed: dict[str, Any]
+) -> dict[str, Any]:
+    """Attach business event time to snapshot-only change copies.
+
+    Change Ledger intentionally records detection time. Historical repair runs can
+    therefore detect an older event today. The event_update row already carries the
+    business occurred_at value; expose it only on the presentation snapshot copy so
+    downstream WeChat projection does not mistake repair time for event time.
+    """
+    conn = connect(target_db)
+    cache: dict[str, str | None] = {}
+    try:
+        for collection in ("items", "other_items"):
+            rows = feed.get(collection)
+            if not isinstance(rows, list):
+                continue
+            for item in rows:
+                if not isinstance(item, dict):
+                    continue
+                changes = item.get("changes")
+                if not isinstance(changes, list):
+                    continue
+                for change in changes:
+                    if not isinstance(change, dict):
+                        continue
+                    event_id = str(change.get("source_event_update_id") or "").strip()
+                    if not event_id:
+                        continue
+                    if event_id not in cache:
+                        row = conn.execute(
+                            "SELECT occurred_at FROM event_update WHERE event_update_id=?",
+                            (event_id,),
+                        ).fetchone()
+                        cache[event_id] = (
+                            str(row["occurred_at"]) if row is not None and row["occurred_at"] else None
+                        )
+                    occurred_at = cache[event_id]
+                    if occurred_at:
+                        change["occurred_at"] = occurred_at
+    finally:
+        conn.close()
+    return feed
 
 
 def list_daily_notification_snapshots(
@@ -127,6 +173,7 @@ def capture_daily_notification_snapshot(
         include_sent=True,
         limit=500,
     )
+    feed = _attach_event_occurred_at(target_db=db_path, feed=feed)
     try:
         records = load_opportunity_records(data_root=data_root)
     except Exception:
