@@ -79,6 +79,7 @@ class LofRuntimeLoopTest(unittest.TestCase):
             )
         )
 
+    @patch("runtime.lof.runtime_loop.LofWechatSnapshotStore")
     @patch("runtime.lof.runtime_loop.LofSnapshotStore")
     @patch("runtime.lof.runtime_loop.fetch_all_trade_states")
     @patch("runtime.lof.runtime_loop.fetch_all_official_nav")
@@ -89,6 +90,7 @@ class LofRuntimeLoopTest(unittest.TestCase):
         nav_mock,
         state_mock,
         store_cls,
+        wechat_store_cls,
     ) -> None:
         session = _FakeSession()
         build_mock.return_value = session
@@ -97,6 +99,16 @@ class LofRuntimeLoopTest(unittest.TestCase):
         nav_mock.return_value = nav_cache
         state_mock.return_value = state_cache
         store_cls.return_value.persist.return_value = "snapshot.json"
+        wechat_store_cls.return_value.build_and_persist.return_value = (
+            {
+                "status": "READY",
+                "logical_date": "2026-09-29",
+                "eligible_count": 5,
+                "rows": [{"code": "501001"}] * 5,
+                "source_snapshot_id": "runtime-test",
+            },
+            "wechat.json",
+        )
 
         with tempfile.TemporaryDirectory() as tmp:
             result = run_runtime_loop(
@@ -119,6 +131,10 @@ class LofRuntimeLoopTest(unittest.TestCase):
         self.assertEqual(nav_mock.call_count, 1)
         self.assertEqual(state_mock.call_count, 1)
         self.assertEqual(len(session.collect_calls), 2)
+        self.assertEqual(
+            wechat_store_cls.return_value.build_and_persist.call_count,
+            2,
+        )
         for call in session.collect_calls:
             self.assertIs(call["official_nav_override"], nav_cache)
             self.assertIs(call["trade_states_override"], state_cache)
