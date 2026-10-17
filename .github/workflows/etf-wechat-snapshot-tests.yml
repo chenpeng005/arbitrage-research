@@ -1,0 +1,37 @@
+name: ETF WeChat Snapshot Tests
+
+on:
+  push:
+    branches:
+      - etf-production-base-20261010
+    paths:
+      - "ops/etf_primary_shadow/**"
+      - "runtime/etf_primary/**"
+      - "tests/test_etf_*.py"
+      - ".github/workflows/etf-wechat-snapshot-tests.yml"
+  pull_request:
+    paths:
+      - "ops/etf_primary_shadow/**"
+      - "runtime/etf_primary/**"
+      - "tests/test_etf_*.py"
+      - ".github/workflows/etf-wechat-snapshot-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile snapshot exporter
+        run: python -m py_compile ops/etf_primary_shadow/wechat_snapshot.py
+      - name: Validate refresh scripts
+        run: |
+          bash -n ops/etf_primary_shadow/bin/etf-primary-shadow-refresh.sh
+          bash -n ops/etf_primary_shadow/bin/etf-primary-shadow-premium-refresh.sh
+      - name: Run WeChat snapshot tests
+        run: python -m unittest tests.test_etf_wechat_snapshot -v
+      - name: Run ETF primary regression
+        run: python -m unittest discover -s tests -p 'test_etf_primary_*.py' -v
