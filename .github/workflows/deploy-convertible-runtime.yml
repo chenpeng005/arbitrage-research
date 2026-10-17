@@ -55,6 +55,7 @@ jobs:
             runtime/opportunity/full_runtime_controller.py \
             runtime/opportunity/incremental_information_controller.py \
             runtime/opportunity/daily_notification_snapshot.py \
+            runtime/opportunity/wechat_snapshot.py \
             runtime/market_map/acquisition.py \
             runtime/market_map/calculation.py \
             runtime/web/app.py \
@@ -76,6 +77,7 @@ jobs:
             test_information_scan_empty_day_v1.py \
             test_incremental_storage_pending_binding_parity.py \
             test_daily_notification_snapshot_v1.py \
+            test_convertible_wechat_snapshot.py \
             test_deployment_gate.py
           do
             python -m unittest discover -s tests -p "$pattern" -v
