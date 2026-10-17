@@ -2,12 +2,12 @@
 set -euo pipefail
 
 REPO_API="${REPO_API:-https://api.github.com/repos/chenpeng005/arbitrage-research}"
-REPO_GIT_URL="${REPO_GIT_URL:-https://github.com/chenpeng005/arbitrage-research.git}"
 WORKFLOW_FILE="${WORKFLOW_FILE:-deploy-convertible-runtime.yml}"
 LIVE_ROOT="${LIVE_ROOT:-/home/admin/projects/arbitrage-runtime}"
 STATE_ROOT="${STATE_ROOT:-/home/admin/.local/state/arbitrage-autodeploy}"
 STAGING_ROOT="${STAGING_ROOT:-/home/admin/deploy-staging/arbitrage-runtime}"
 LOCK_DIR="${LOCK_DIR:-/tmp/arbitrage-github-autodeploy.lock.d}"
+HEAD_POLL_SECONDS="${HEAD_POLL_SECONDS:-300}"
 VALIDATION_RETRY_SECONDS="${VALIDATION_RETRY_SECONDS:-300}"
 VALIDATION_BLOCK_RETRY_SECONDS="${VALIDATION_BLOCK_RETRY_SECONDS:-900}"
 
@@ -34,21 +34,6 @@ if ! acquire_lock; then
 fi
 trap 'rm -rf "$LOCK_DIR"' EXIT
 
-# HEAD discovery is intentionally Git-native rather than GitHub REST. The timer
-# runs every minute; polling /branches/main through the unauthenticated REST API
-# would consume the shared 60-request/hour IP budget even when nothing changed.
-if ! remote_line="$(
-  timeout 20s git ls-remote --exit-code "$REPO_GIT_URL" refs/heads/main 2>/dev/null
-)"; then
-  echo "[autodeploy] Git HEAD check timed out/failed; defer to next timer"
-  exit 0
-fi
-remote_sha="$(awk 'NR==1 {print $1}' <<<"$remote_line")"
-if [[ ! "$remote_sha" =~ ^[0-9a-f]{40}$ ]]; then
-  echo "[autodeploy] invalid remote SHA: $remote_sha" >&2
-  exit 2
-fi
-
 current_sha="$(
   python3 - "$LIVE_ROOT/runtime_data/deployment_manifest.json" <<'PY'
 import json, pathlib, sys
@@ -59,6 +44,80 @@ except Exception:
     print("")
 PY
 )"
+
+# The systemd timer runs every minute, but unauthenticated GitHub REST is shared
+# per source IP. Cache the last observed main SHA and poll /branches/main at most
+# once every HEAD_POLL_SECONDS (default 5 minutes). This preserves fast-enough
+# deployment discovery without exhausting the hourly REST budget.
+remote_sha_file="$STATE_ROOT/last_remote_sha"
+head_next_file="$STATE_ROOT/head-next-check.epoch"
+head_headers="$STATE_ROOT/head.headers"
+head_body="$STATE_ROOT/head.json"
+now_epoch="$(date +%s)"
+remote_sha=""
+head_due=1
+if [[ -f "$head_next_file" ]]; then
+  head_next="$(tr -dc '0-9' < "$head_next_file")"
+  if [[ "$head_next" =~ ^[0-9]+$ ]] && (( now_epoch < head_next )); then
+    head_due=0
+  fi
+fi
+
+schedule_head_retry() {
+  local delay="$1"
+  local reason="$2"
+  local next_epoch=$(( $(date +%s) + delay ))
+  printf '%s\n' "$next_epoch" > "$head_next_file"
+  echo "[autodeploy] HEAD retry scheduled in ${delay}s reason=$reason"
+}
+
+if (( head_due == 1 )); then
+  http_code="$(
+    curl -sS --connect-timeout 5 --max-time 20 \
+      -D "$head_headers" \
+      -H 'Accept: application/vnd.github+json' \
+      -H 'X-GitHub-Api-Version: 2022-11-28' \
+      "$REPO_API/branches/main" \
+      -o "$head_body" \
+      -w '%{http_code}' || true
+  )"
+  if [[ "$http_code" == "200" ]]; then
+    remote_sha="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["commit"]["sha"])' < "$head_body")"
+    if [[ ! "$remote_sha" =~ ^[0-9a-f]{40}$ ]]; then
+      echo "[autodeploy] invalid remote SHA: $remote_sha" >&2
+      rm -f "$head_headers" "$head_body"
+      exit 2
+    fi
+    printf '%s\n' "$remote_sha" > "$remote_sha_file"
+    schedule_head_retry "$HEAD_POLL_SECONDS" "normal-poll"
+  else
+    delay="$HEAD_POLL_SECONDS"
+    remaining="$(awk -F': *' 'tolower($1)=="x-ratelimit-remaining" {gsub("\\r","",$2); print $2}' "$head_headers" 2>/dev/null | tail -n1)"
+    reset_epoch="$(awk -F': *' 'tolower($1)=="x-ratelimit-reset" {gsub("\\r","",$2); print $2}' "$head_headers" 2>/dev/null | tail -n1)"
+    retry_after="$(awk -F': *' 'tolower($1)=="retry-after" {gsub("\\r","",$2); print $2}' "$head_headers" 2>/dev/null | tail -n1)"
+    now_epoch="$(date +%s)"
+    if [[ "$retry_after" =~ ^[0-9]+$ ]] && (( retry_after > delay )); then
+      delay="$retry_after"
+    fi
+    if [[ "$remaining" == "0" && "$reset_epoch" =~ ^[0-9]+$ && "$reset_epoch" -gt "$now_epoch" ]]; then
+      until_reset=$(( reset_epoch - now_epoch + 15 ))
+      if (( until_reset > delay )); then
+        delay="$until_reset"
+      fi
+    fi
+    schedule_head_retry "$delay" "github-http-$http_code"
+    echo "[autodeploy] GitHub HEAD API unavailable http=$http_code remaining=${remaining:-unknown} reset=${reset_epoch:-unknown}; using cached SHA if available"
+  fi
+  rm -f "$head_headers" "$head_body"
+fi
+
+if [[ -z "$remote_sha" && -f "$remote_sha_file" ]]; then
+  remote_sha="$(tr -dc '0-9a-f' < "$remote_sha_file")"
+fi
+if [[ ! "$remote_sha" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "[autodeploy] no valid cached remote SHA yet; defer"
+  exit 0
+fi
 
 if [[ "$remote_sha" == "$current_sha" ]]; then
   exit 0
@@ -76,7 +135,7 @@ if [[ -f "$retry_file" ]]; then
   fi
 fi
 
-schedule_retry() {
+schedule_validation_retry() {
   local delay="$1"
   local reason="$2"
   local next_epoch=$(( $(date +%s) + delay ))
@@ -111,7 +170,7 @@ if [[ "$http_code" != "200" ]]; then
       delay="$until_reset"
     fi
   fi
-  schedule_retry "$delay" "github-http-$http_code"
+  schedule_validation_retry "$delay" "github-http-$http_code"
   echo "[autodeploy] GitHub validation API unavailable http=$http_code remaining=${remaining:-unknown} reset=${reset_epoch:-unknown}; defer"
   rm -f "$workflow_file" "$headers_file"
   exit 0
@@ -155,12 +214,12 @@ case "$gate" in
     rm -f "$retry_file"
     ;;
   WAIT:*)
-    schedule_retry "$VALIDATION_RETRY_SECONDS" "$gate"
+    schedule_validation_retry "$VALIDATION_RETRY_SECONDS" "$gate"
     echo "[autodeploy] validation not complete: $gate"
     exit 0
     ;;
   BLOCK:*)
-    schedule_retry "$VALIDATION_BLOCK_RETRY_SECONDS" "$gate"
+    schedule_validation_retry "$VALIDATION_BLOCK_RETRY_SECONDS" "$gate"
     echo "[autodeploy] validation failed; deployment blocked: $gate"
     exit 0
     ;;
