@@ -146,13 +146,24 @@ def _messages(data_root: Path, native_task_id: str, task: dict[str, Any]) -> lis
     return messages
 
 
+def _bridge_status(task: dict[str, Any]) -> str | None:
+    native_status = task.get("status")
+    if native_status == "WAITING_FOR_CHAT":
+        return "WAITING_FOR_CHAT"
+    if native_status == "CLAIMED_BY_CHAT":
+        claim = task.get("claim") or {}
+        if isinstance(claim, dict) and claim.get("claimant") == CLAIMANT:
+            return "WAITING_FOR_CHAT"
+    return native_status
+
+
 def _summary(root: Path, data_root: Path, native_task_id: str, task: dict[str, Any]) -> dict[str, Any]:
     messages = _messages(data_root, native_task_id, task)
     spec = _task_spec(root, task)
     return {
         "task_id": _public_id(native_task_id),
         "scope": "convertible",
-        "status": task.get("status"),
+        "status": _bridge_status(task),
         "created_at": task.get("created_at"),
         "provider": "convertible-native-chat",
         "response_exists": task.get("status") == "PASS",
@@ -174,7 +185,19 @@ def _summary(root: Path, data_root: Path, native_task_id: str, task: dict[str, A
         "has_output_schema": spec.output_schema is not None,
         "native_task_type": task.get("task_type"),
         "native_status": task.get("status"),
+        "tool_rounds": int(task.get("server_control_tool_rounds") or 0),
+        "max_tool_rounds": spec.max_tool_rounds,
     }
+
+
+def _eligible_task(task: dict[str, Any]) -> bool:
+    status = task.get("status")
+    if status == "WAITING_FOR_CHAT":
+        return True
+    if status != "CLAIMED_BY_CHAT":
+        return False
+    claim = task.get("claim") or {}
+    return isinstance(claim, dict) and claim.get("claimant") == CLAIMANT
 
 
 def next_task(*, root: Path | None = None, data_root: Path | None = None) -> dict[str, Any]:
@@ -183,7 +206,9 @@ def next_task(*, root: Path | None = None, data_root: Path | None = None) -> dic
     rows: list[tuple[str, str, dict[str, Any]]] = []
     stale_skipped = 0
     current = datetime.now(timezone.utc)
-    for task in native.list_tasks(runtime_data, status="WAITING_FOR_CHAT"):
+    for task in native.list_tasks(runtime_data, status=None):
+        if not _eligible_task(task):
+            continue
         native_task_id = str(task.get("task_id") or "")
         if not native_task_id or not TASK_ID_RE.fullmatch(native_task_id):
             continue
@@ -242,6 +267,10 @@ def read_task(
     runtime_data = (data_root or _data_root(runtime_root)).resolve()
     native_task_id = _native_id(task_id)
     task = _load_task(runtime_data, native_task_id)
+    active_claim = native.read_active_claim(runtime_data, native_task_id)
+    if active_claim is not None:
+        task["status"] = "CLAIMED_BY_CHAT"
+        task["claim"] = active_claim
     if section == "meta":
         return {
             "ok": True,
@@ -405,6 +434,9 @@ def submit_task(
 
     spec = _task_spec(runtime_root, task)
     normalized_tool_calls: list[dict[str, Any]] = []
+    current_tool_rounds = int(task.get("server_control_tool_rounds") or 0)
+    if current_tool_rounds < 0:
+        raise ValueError("invalid server_control_tool_rounds")
     if normalized["tool_calls"]:
         allowed = {str(tool.get("name") or "") for tool in spec.allowed_tools}
         for raw_call in normalized["tool_calls"]:
@@ -412,10 +444,16 @@ def submit_task(
             if call["name"] not in allowed:
                 raise ValueError(f"tool is not allowed for this task: {call['name']}")
             normalized_tool_calls.append(call)
+        if current_tool_rounds >= spec.max_tool_rounds:
+            raise ValueError("AI Runtime reached max_tool_rounds")
 
     claim_id = _ensure_claim(runtime_data, native_task_id)
 
     if normalized_tool_calls:
+        latest = _load_task(runtime_data, native_task_id)
+        latest["server_control_tool_rounds"] = current_tool_rounds + 1
+        native.write_json(native.task_path(runtime_data, native_task_id), latest)
+
         tool_results: list[dict[str, Any]] = []
         for call in normalized_tool_calls:
             result = native.run_tool(
@@ -437,7 +475,10 @@ def submit_task(
             "action": "chat-task-submit",
             "task_id": task_id,
             "status": "WAITING_FOR_CHAT",
+            "native_status": "CLAIMED_BY_CHAT",
             "continuation": True,
+            "tool_rounds": current_tool_rounds + 1,
+            "max_tool_rounds": spec.max_tool_rounds,
             "tool_results": tool_results,
             "idempotent": False,
         }
