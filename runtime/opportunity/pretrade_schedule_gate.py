@@ -9,6 +9,9 @@ SAME_DAY_CLOSE_REFRESH = "SAME_DAY_CLOSE_REFRESH"
 CATCH_UP_REFRESH = "CATCH_UP_REFRESH"
 SKIP = "SKIP"
 
+CLOSE = "CLOSE"
+PRE_TRADE_CLOSE = "PRE_TRADE_CLOSE"
+
 
 @dataclass(frozen=True)
 class ScheduleDecision:
@@ -21,6 +24,17 @@ class ScheduleDecision:
     freshness_lag_detected: bool
     information_target_date: date
     run_intent: str
+    market_snapshot_mode: str | None
+
+
+def market_snapshot_mode_for(run_intent: str) -> str | None:
+    if run_intent == SAME_DAY_CLOSE_REFRESH:
+        return CLOSE
+    if run_intent in {PRE_TRADE, CATCH_UP_REFRESH}:
+        return PRE_TRADE_CLOSE
+    if run_intent == SKIP:
+        return None
+    raise ValueError(f"unsupported run_intent={run_intent}")
 
 
 def decide_schedule(
@@ -31,10 +45,10 @@ def decide_schedule(
 ) -> ScheduleDecision:
     """Classify the nightly convertible run without conflating responsibilities.
 
-    PRE_TRADE prepares for the next trading day.
-    SAME_DAY_CLOSE_REFRESH makes the just-completed trading day's formal facts
-    fresh even when the next calendar day is closed (for example Friday).
-    CATCH_UP_REFRESH repairs a missed completed trading day on a later closed day.
+    PRE_TRADE prepares for the next trading day from the latest completed close,
+    so it must use PRE_TRADE_CLOSE rather than today's CLOSE gate.
+    SAME_DAY_CLOSE_REFRESH freezes the just-completed trading day's CLOSE.
+    CATCH_UP_REFRESH repairs a missed completed trading day using PRE_TRADE_CLOSE.
     SKIP is allowed only when there is no trading-day work and no freshness lag.
     """
     dates = set(trade_dates)
@@ -74,4 +88,5 @@ def decide_schedule(
         freshness_lag_detected=freshness_lag,
         information_target_date=information_target,
         run_intent=run_intent,
+        market_snapshot_mode=market_snapshot_mode_for(run_intent),
     )
