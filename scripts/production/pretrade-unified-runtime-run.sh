@@ -64,6 +64,14 @@ today=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["today"])' <<<"$
 market_cutoff=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["latest_completed_trade_day"])' <<<"$gate_json")
 run_intent=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["run_intent"])' <<<"$gate_json")
 
+# One-shot governed CHAT validation on 2026-10-17 only. The normal calendar
+# decision remains unchanged for every other date/mode; this block is reverted
+# after the validation run completes.
+if [[ "$run_intent" == "SKIP" && "$today" == "2026-10-17" && "$NIGHTLY_AI_MODE" == "CHAT" ]]; then
+  echo "[$(date '+%F %T %Z')] MANUAL_CHAT_GATE_TEST bypass original_intent=SKIP market_cutoff=$market_cutoff"
+  run_intent="MANUAL_CHAT_GATE_TEST"
+fi
+
 if [[ "$run_intent" == "SKIP" ]]; then
   # Neither today nor tomorrow is a trading day. Keep a publishing snapshot of
   # the current formal Runtime view, but do not run market/research refreshes.
