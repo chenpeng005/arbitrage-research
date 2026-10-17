@@ -36,7 +36,7 @@ jobs:
       - name: Source sanitation
         shell: bash
         run: |
-          if grep -R "\[executed on device:" runtime scripts/production \
+          if grep -R "\[executed on dev""ice:" runtime scripts/production \
             --include='*.py' --include='*.sh' -n; then
             echo "Remote wrapper contamination detected"
             exit 1
@@ -80,7 +80,8 @@ jobs:
             test_daily_notification_snapshot_v1.py \
             test_convertible_wechat_snapshot.py \
             test_pretrade_schedule_gate_v1.py \
-            test_deployment_gate.py
+            test_deployment_gate.py \
+            test_arbitrage_github_autodeploy_v1.py
           do
             python -m unittest discover -s tests -p "$pattern" -v
           done
