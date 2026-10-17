@@ -5,7 +5,9 @@ from datetime import date
 
 from runtime.opportunity.pretrade_schedule_gate import (
     CATCH_UP_REFRESH,
+    CLOSE,
     PRE_TRADE,
+    PRE_TRADE_CLOSE,
     SAME_DAY_CLOSE_REFRESH,
     SKIP,
     decide_schedule,
@@ -26,6 +28,7 @@ class PretradeScheduleGateTests(unittest.TestCase):
         self.assertEqual(decision.latest_completed_trade_day, friday)
         self.assertEqual(decision.information_target_date, friday)
         self.assertEqual(decision.run_intent, SAME_DAY_CLOSE_REFRESH)
+        self.assertEqual(decision.market_snapshot_mode, CLOSE)
 
     def test_saturday_catches_up_missed_friday(self) -> None:
         thursday = date(2026, 10, 15)
@@ -42,6 +45,7 @@ class PretradeScheduleGateTests(unittest.TestCase):
         self.assertEqual(decision.latest_completed_trade_day, friday)
         self.assertEqual(decision.information_target_date, friday)
         self.assertEqual(decision.run_intent, CATCH_UP_REFRESH)
+        self.assertEqual(decision.market_snapshot_mode, PRE_TRADE_CLOSE)
 
     def test_saturday_skips_after_friday_was_already_scanned(self) -> None:
         friday = date(2026, 10, 16)
@@ -53,6 +57,7 @@ class PretradeScheduleGateTests(unittest.TestCase):
         )
         self.assertFalse(decision.freshness_lag_detected)
         self.assertEqual(decision.run_intent, SKIP)
+        self.assertIsNone(decision.market_snapshot_mode)
 
     def test_missing_checkpoint_catches_up_instead_of_silent_skip(self) -> None:
         friday = date(2026, 10, 16)
@@ -61,8 +66,9 @@ class PretradeScheduleGateTests(unittest.TestCase):
         self.assertTrue(decision.freshness_lag_detected)
         self.assertEqual(decision.information_target_date, friday)
         self.assertEqual(decision.run_intent, CATCH_UP_REFRESH)
+        self.assertEqual(decision.market_snapshot_mode, PRE_TRADE_CLOSE)
 
-    def test_sunday_before_monday_keeps_pretrade_behavior(self) -> None:
+    def test_sunday_before_monday_uses_latest_completed_close(self) -> None:
         thursday = date(2026, 10, 15)
         friday = date(2026, 10, 16)
         sunday = date(2026, 10, 18)
@@ -76,8 +82,9 @@ class PretradeScheduleGateTests(unittest.TestCase):
         self.assertEqual(decision.latest_completed_trade_day, friday)
         self.assertEqual(decision.information_target_date, sunday)
         self.assertEqual(decision.run_intent, PRE_TRADE)
+        self.assertEqual(decision.market_snapshot_mode, PRE_TRADE_CLOSE)
 
-    def test_trade_day_before_another_trade_day_is_pretrade(self) -> None:
+    def test_trade_day_before_another_trade_day_uses_pretrade_close(self) -> None:
         monday = date(2026, 10, 19)
         tuesday = date(2026, 10, 20)
         decision = decide_schedule(
@@ -89,6 +96,7 @@ class PretradeScheduleGateTests(unittest.TestCase):
         self.assertTrue(decision.tomorrow_is_trade_day)
         self.assertEqual(decision.information_target_date, monday)
         self.assertEqual(decision.run_intent, PRE_TRADE)
+        self.assertEqual(decision.market_snapshot_mode, PRE_TRADE_CLOSE)
 
     def test_calendar_without_completed_trade_day_fails_closed(self) -> None:
         with self.assertRaises(ValueError):

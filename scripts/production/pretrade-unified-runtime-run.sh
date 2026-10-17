@@ -84,6 +84,7 @@ print(json.dumps({
     "freshness_lag_detected": decision.freshness_lag_detected,
     "information_target_date": decision.information_target_date.isoformat(),
     "run_intent": decision.run_intent,
+    "market_snapshot_mode": decision.market_snapshot_mode,
 }, ensure_ascii=False))
 PY
 )
@@ -92,13 +93,16 @@ today=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["today"])' <<<"$
 market_cutoff=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["latest_completed_trade_day"])' <<<"$gate_json")
 information_target_date=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["information_target_date"])' <<<"$gate_json")
 run_intent=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["run_intent"])' <<<"$gate_json")
+market_snapshot_mode=$(python3 -c 'import json,sys; v=json.load(sys.stdin)["market_snapshot_mode"]; print(v or "")' <<<"$gate_json")
 
 # A governed manual test may bypass only the outer calendar gate. It reuses the
 # latest completed market cutoff and information target selected by the normal
-# gate. Normal scheduled runs never set this flag.
+# gate. Normal scheduled runs never set this flag. On a closed day the only
+# valid formal market mode is PRE_TRADE_CLOSE, never today's CLOSE.
 if [[ "$MANUAL_CHAT_TEST" == "1" && "$run_intent" == "SKIP" ]]; then
   echo "[$(date '+%F %T %Z')] MANUAL_CHAT_GATE_TEST bypass=1 original_intent=SKIP market_cutoff=$market_cutoff information_target_date=$information_target_date"
   run_intent="MANUAL_CHAT_GATE_TEST"
+  market_snapshot_mode="PRE_TRADE_CLOSE"
 elif [[ "$MANUAL_CHAT_TEST" == "1" ]]; then
   echo "[$(date '+%F %T %Z')] MANUAL_CHAT_GATE_TEST bypass=0 normal_intent=$run_intent market_cutoff=$market_cutoff information_target_date=$information_target_date"
 fi
@@ -120,7 +124,12 @@ if [[ "$run_intent" == "SKIP" ]]; then
   exit 0
 fi
 
-echo "[$(date '+%F %T %Z')] START unified convertible update intent=$run_intent mode=$AI_EXECUTION_MODE: $gate_json"
+if [[ -z "$market_snapshot_mode" ]]; then
+  echo "[$(date '+%F %T %Z')] FAIL: non-skip run has no market_snapshot_mode intent=$run_intent"
+  exit 65
+fi
+
+echo "[$(date '+%F %T %Z')] START unified convertible update intent=$run_intent market_snapshot_mode=$market_snapshot_mode mode=$AI_EXECUTION_MODE: $gate_json"
 
 poll_job() {
   local job_id="$1"
@@ -196,7 +205,7 @@ PY
   return 1
 }
 
-market_payload=$(printf '{"snapshot_mode":"CLOSE","market_cutoff":"%s","ai_execution_mode":"%s"}' "$market_cutoff" "$AI_EXECUTION_MODE")
+market_payload=$(printf '{"snapshot_mode":"%s","market_cutoff":"%s","ai_execution_mode":"%s"}' "$market_snapshot_mode" "$market_cutoff" "$AI_EXECUTION_MODE")
 market_body=$(curl -fsS -X POST 'http://127.0.0.1:7080/api/market-map-runs' \
   -H 'Content-Type: application/json' \
   --data "$market_payload")
@@ -247,4 +256,4 @@ else
   echo "[$(date '+%F %T %Z')] WARNING: reminder snapshot failed rc=$snapshot_rc; runtime result remains valid"
 fi
 
-echo "[$(date '+%F %T %Z')] PASS unified convertible update intent=$run_intent mode=$AI_EXECUTION_MODE"
+echo "[$(date '+%F %T %Z')] PASS unified convertible update intent=$run_intent market_snapshot_mode=$market_snapshot_mode mode=$AI_EXECUTION_MODE"
