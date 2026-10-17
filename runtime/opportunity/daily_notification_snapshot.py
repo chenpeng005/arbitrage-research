@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 from runtime.opportunity.incremental_notification_delivery import build_notification_feed
 from runtime.opportunity.incremental_read_source import load_opportunity_records
+from runtime.opportunity.wechat_snapshot import ConvertibleWechatSnapshotStore
 
 SNAPSHOT_VERSION = "daily-reminder-snapshot-v1"
 CHINA_TZ = ZoneInfo("Asia/Shanghai")
@@ -146,6 +147,9 @@ def capture_daily_notification_snapshot(
         "feed": feed,
     }
     _atomic_write(_path(data_root, day), payload)
+    # The WeChat projection is produced inside the upstream Runtime. Downstream
+    # never re-collects or substitutes facts when this compact interface exists.
+    ConvertibleWechatSnapshotStore(data_root).build_and_persist(payload)
     publish_notification_history_static(data_root=data_root)
     return payload
 
