@@ -107,21 +107,28 @@ The formal launcher is:
 
 `scripts/production/radar-daily-run.sh`
 
-It reads the shared nightly mode state through `nightly-ai-mode-env.sh`.
+Radar owns its AI transport state independently through:
 
 ```text
-NIGHTLY_AI_MODE=API
+scripts/production/radar-ai-mode-env.sh
+server-control/state/radar-ai-mode.env
+```
+
+```text
+RADAR_AI_MODE=API
 → runtime.intelligence_radar.run_all --run-mode LIVE
 
-NIGHTLY_AI_MODE=CHAT
+RADAR_AI_MODE=CHAT
 → runtime.intelligence_radar.chat_runner
 ```
+
+Changing Stock or Convertible AI mode must not change Radar AI mode, and changing Radar AI mode must not change either of the other systems.
 
 Current governance direction:
 
 > **API primary; CHAT remains available as a backup / debugging transport.**
 
-The actual current mode is a server runtime fact. Do not infer it from old documentation or old conversations.
+The actual current Radar mode is a server runtime fact. Do not infer it from old documentation, old conversations, or the retired shared nightly mode.
 
 Radar-specific API environment loading prefers:
 
@@ -309,8 +316,8 @@ GitHub main
 runtime_data/deployment_manifest.json
 → deployed application commit
 
-server-control/state/nightly-ai-mode.env
-→ current shared AI mode
+server-control/state/radar-ai-mode.env
+→ current Radar AI mode
 
 systemd / Server Control
 → live timer and service state
@@ -318,5 +325,7 @@ systemd / Server Control
 SQLite / archive / logs
 → what actually happened
 ```
+
+Stock, Convertible and Radar each own their own AI mode state. The retired shared nightly mode must not be used as authority for Radar.
 
 This README describes the current architecture and contracts; live operational state belongs to the runtime.
