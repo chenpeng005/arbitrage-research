@@ -83,6 +83,7 @@ jobs:
             test_pretrade_schedule_gate_v1.py \
             test_chat_to_api_recovery_v1.py \
             test_nightly_ai_mode_switch_recovery_v1.py \
+            test_system_ai_mode_decoupling_v1.py \
             test_deployment_gate.py \
             test_arbitrage_github_autodeploy_v1.py
           do
