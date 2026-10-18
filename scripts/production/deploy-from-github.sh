@@ -124,7 +124,11 @@ sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-radar-d
 sudo -n install -m 0644 "$LIVE_ROOT/scripts/production/systemd/arbitrage-radar-daily.timer" /etc/systemd/system/arbitrage-radar-daily.timer
 sudo -n systemctl daemon-reload
 sudo -n systemctl enable arbitrage-web-local.service arbitrage-github-autodeploy.timer >/dev/null
-sudo -n systemctl enable --now arbitrage-xueqiu-shadow.timer arbitrage-radar-daily.timer >/dev/null
+sudo -n systemctl enable --now arbitrage-xueqiu-shadow.timer >/dev/null
+# A timer can already be active when its unit file changes. Explicitly restart
+# Radar so the newly deployed OnCalendar schedule is re-armed immediately.
+sudo -n systemctl enable arbitrage-radar-daily.timer >/dev/null
+sudo -n systemctl restart arbitrage-radar-daily.timer
 
 "$PY" - <<'PY'
 import datetime, json, os, pathlib
