@@ -1,0 +1,108 @@
+name: One-shot Pretrade Close CLI Hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/hotfix-pretrade-close-cli.yml"
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply exact hotfix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          acq = Path("runtime/market_map/acquisition.py")
+          text = acq.read_text(encoding="utf-8")
+          old = 'choices=["CLOSE", "LIVE_TEST", "REPLAY_TEST", "HISTORICAL_REPLAY"],'
+          new = 'choices=["CLOSE", "PRE_TRADE_CLOSE", "LIVE_TEST", "REPLAY_TEST", "HISTORICAL_REPLAY"],'
+          if text.count(old) != 1:
+              raise SystemExit(f"acquisition choices precondition failed: {text.count(old)}")
+          acq.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          runner = Path("scripts/production/pretrade-unified-runtime-run.sh")
+          text = runner.read_text(encoding="utf-8")
+          block = '''# PRE_TRADE_CLOSE is a scheduler intent: before a trading day, refresh using
+          # the latest completed formal close. Market Map / Acquisition already models
+          # that underlying data contract as CLOSE, so translate only at this boundary.
+          market_api_snapshot_mode="$market_snapshot_mode"
+          if [[ "$market_api_snapshot_mode" == "PRE_TRADE_CLOSE" ]]; then
+            market_api_snapshot_mode="CLOSE"
+          fi
+
+          '''
+          if text.count(block) != 1:
+              raise SystemExit(f"runner mapping block precondition failed: {text.count(block)}")
+          text = text.replace(block, "", 1)
+          old_start = 'echo "[$(date \'+%F %T %Z\')] START unified convertible update intent=$run_intent market_snapshot_mode=$market_snapshot_mode market_api_snapshot_mode=$market_api_snapshot_mode mode=$AI_EXECUTION_MODE: $gate_json"'
+          new_start = 'echo "[$(date \'+%F %T %Z\')] START unified convertible update intent=$run_intent market_snapshot_mode=$market_snapshot_mode mode=$AI_EXECUTION_MODE: $gate_json"'
+          if text.count(old_start) != 1:
+              raise SystemExit("runner START precondition failed")
+          text = text.replace(old_start, new_start, 1)
+          old_payload = 'market_payload=$(printf \'{"snapshot_mode":"%s","market_cutoff":"%s","ai_execution_mode":"%s"}\' "$market_api_snapshot_mode" "$market_cutoff" "$AI_EXECUTION_MODE")'
+          new_payload = 'market_payload=$(printf \'{"snapshot_mode":"%s","market_cutoff":"%s","ai_execution_mode":"%s"}\' "$market_snapshot_mode" "$market_cutoff" "$AI_EXECUTION_MODE")'
+          if text.count(old_payload) != 1:
+              raise SystemExit("runner payload precondition failed")
+          text = text.replace(old_payload, new_payload, 1)
+          old_pass = 'echo "[$(date \'+%F %T %Z\')] PASS unified convertible update intent=$run_intent market_snapshot_mode=$market_snapshot_mode market_api_snapshot_mode=$market_api_snapshot_mode mode=$AI_EXECUTION_MODE"'
+          new_pass = 'echo "[$(date \'+%F %T %Z\')] PASS unified convertible update intent=$run_intent market_snapshot_mode=$market_snapshot_mode mode=$AI_EXECUTION_MODE"'
+          if text.count(old_pass) != 1:
+              raise SystemExit("runner PASS precondition failed")
+          runner.write_text(text.replace(old_pass, new_pass, 1), encoding="utf-8")
+
+          test = Path("tests/test_pretrade_schedule_gate_v1.py")
+          text = test.read_text(encoding="utf-8")
+          marker = '    def test_calendar_without_completed_trade_day_fails_closed(self) -> None:\n'
+          if text.count(marker) != 1:
+              raise SystemExit("test insertion precondition failed")
+          method = '''    def test_pretrade_mode_contract_reaches_acquisition_cli(self) -> None:
+              root = __import__("pathlib").Path(__file__).resolve().parents[1]
+              acquisition = (root / "runtime/market_map/acquisition.py").read_text(encoding="utf-8")
+              runner = (root / "scripts/production/pretrade-unified-runtime-run.sh").read_text(encoding="utf-8")
+              self.assertIn(
+                  'choices=["CLOSE", "PRE_TRADE_CLOSE", "LIVE_TEST", "REPLAY_TEST", "HISTORICAL_REPLAY"],',
+                  acquisition,
+              )
+              self.assertIn('"$market_snapshot_mode" "$market_cutoff" "$AI_EXECUTION_MODE"', runner)
+              self.assertNotIn("market_api_snapshot_mode", runner)
+
+          '''
+          test.write_text(text.replace(marker, method + marker, 1), encoding="utf-8")
+          PY
+
+      - name: Validate hotfix locally
+        shell: bash
+        run: |
+          bash -n scripts/production/pretrade-unified-runtime-run.sh
+          python -m py_compile runtime/market_map/acquisition.py
+          python -m unittest discover -s tests -p 'test_pretrade_schedule_gate_v1.py' -v
+
+      - name: Commit final hotfix and remove one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/hotfix-pretrade-close-cli.yml
+          git add runtime/market_map/acquisition.py scripts/production/pretrade-unified-runtime-run.sh tests/test_pretrade_schedule_gate_v1.py
+          git commit -m "fix(convertible): support pretrade close end to end"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Trigger formal convertible validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh api -X POST "repos/${{ github.repository }}/actions/workflows/deploy-convertible-runtime.yml/dispatches" -f ref=main
