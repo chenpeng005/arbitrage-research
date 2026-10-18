@@ -12,13 +12,12 @@ set -a
 source "$AI_ENV"
 set +a
 
-# The shared nightly mode is the single source of truth for normal Information
-# Runtime execution. Legacy callers may still pass --execution-mode; those
-# arguments are intentionally ignored here so a stale typed Job cannot bypass
-# the shared API/CHAT switch and recreate abandoned CHAT work.
+# Convertible owns its transport state. Legacy callers may still pass
+# --execution-mode; those arguments are intentionally ignored so stale typed
+# jobs cannot bypass the convertible-specific API/CHAT switch.
 # shellcheck disable=SC1091
-source "$ROOT/scripts/production/nightly-ai-mode-env.sh"
-if [[ "$NIGHTLY_AI_MODE" == "CHAT" ]]; then
+source "$ROOT/scripts/production/convertible-ai-mode-env.sh"
+if [[ "$CONVERTIBLE_AI_MODE" == "CHAT" ]]; then
   AI_EXECUTION_MODE="INTERACTIVE_CHAT"
 else
   AI_EXECUTION_MODE="AUTO_API"
@@ -33,11 +32,11 @@ while (( "$#" )); do
         echo "missing value after --execution-mode" >&2
         exit 2
       fi
-      echo "[$(date '+%F %T %Z')] INFO: ignoring legacy --execution-mode=$2; shared NIGHTLY_AI_MODE=$NIGHTLY_AI_MODE is authoritative" >&2
+      echo "[$(date '+%F %T %Z')] INFO: ignoring legacy --execution-mode=$2; CONVERTIBLE_AI_MODE=$CONVERTIBLE_AI_MODE is authoritative" >&2
       shift 2
       ;;
     --execution-mode=*)
-      echo "[$(date '+%F %T %Z')] INFO: ignoring legacy $1; shared NIGHTLY_AI_MODE=$NIGHTLY_AI_MODE is authoritative" >&2
+      echo "[$(date '+%F %T %Z')] INFO: ignoring legacy $1; CONVERTIBLE_AI_MODE=$CONVERTIBLE_AI_MODE is authoritative" >&2
       shift
       ;;
     *)
