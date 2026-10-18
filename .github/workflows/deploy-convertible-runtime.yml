@@ -54,6 +54,7 @@ jobs:
             runtime/opportunity/research_trigger.py \
             runtime/opportunity/full_runtime_controller.py \
             runtime/opportunity/incremental_information_controller.py \
+            runtime/opportunity/chat_to_api_recovery.py \
             runtime/opportunity/daily_notification_snapshot.py \
             runtime/opportunity/wechat_snapshot.py \
             runtime/opportunity/pretrade_schedule_gate.py \
@@ -80,6 +81,7 @@ jobs:
             test_daily_notification_snapshot_v1.py \
             test_convertible_wechat_snapshot.py \
             test_pretrade_schedule_gate_v1.py \
+            test_chat_to_api_recovery_v1.py \
             test_deployment_gate.py \
             test_arbitrage_github_autodeploy_v1.py
           do
