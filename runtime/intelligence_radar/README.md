@@ -1,100 +1,322 @@
-# Intelligence Radar V0.3
+# Intelligence Radar
 
-Goal: scan a small set of high-value investment communities, use AI to keep meaningful daily information increments, persist the daily record, and show it through a stable web page.
+Current production role: upstream opportunity discovery for Chinese-market event-driven / rule-driven ideas.
 
-Current production AI sources: Jisilu + Xueqiu. Both feed the same Broad → Final → Object / Node / Evidence pipeline while retaining source provenance. Xueqiu discovery currently combines public anonymous Author Shadow + public Hot Exploration; the Hot lane is explicitly platform-ranking-biased and is not full-site coverage.
+The Radar is **discovery-first**. Its primary job is to surface previously unknown opportunities, mechanisms, anomalies, rule changes, real-money tests, failures and falsifications from high-value communities. It is not a long-running Thread / Topic research system for already-known opportunities.
 
-Runtime chain:
-1. Read the latest-activity feed and the new-topic feed.
-2. In parallel, read the Author Lane for a small explicit watchlist of seed authors. This lane is only for coverage and gives no AI priority or score boost.
-3. Merge/dedupe global-feed and author-lane question refs, then fetch each candidate detail page once.
-4. Keep the original post as context and extract target-day replies as daily increments.
-5. Run a deliberately broad AI screen in small batches.
-6. Run a second final gate that selects only items worth appearing in the user's daily page.
-7. Persist final findings as Object → Information Node → Evidence in SQLite.
-8. Export one lightweight daily JSON archive plus one Author Lane shadow audit.
-9. Serve the daily record through /radar and /api/radar/*.
+## Formal production sources
 
-Increment / token-control layer:
-- `source_item_version` is a source-agnostic ledger keyed by `source + item_type + item_id + content_hash`. It stores fingerprints and timing metadata, not full raw pages.
-- `source_item_analysis` records which exact content version has already been processed by a named `analysis_version`. Same version + same hash is never sent to Broad AI again. A content edit or an intentional analysis-version change is eligible again.
-- LIVE reruns merge new Final nodes into the existing same-day snapshot instead of erasing earlier nodes. AI usage is accumulated for the day, while `run_ai_usage` still reports the current invocation only.
-- `thread_context_capsule` is a small reusable context layer derived from retained Final nodes with no extra AI call. When present, Broad receives the capsule + only new daily segments instead of resending the long original post.
-- BACKFILL keeps full historical semantics and bypasses incremental skipping.
-- Raw candidate bodies are not permanently mirrored; the durable ledger stores hashes/IDs/times, and Final Evidence remains the long-term factual record.
+Current formal AI sources:
 
-Persistence principles:
-- Object is a stable noun-like identity: a security/target or a stable strategy name.
-- Node is the dated increment about that object; one node should normally have one main object.
-- Evidence stores platform, evidence author, time, source title, source URL, reply/comment locator and excerpt.
-- AI interpretation fields can evolve; source evidence is the harder factual layer.
-- Broad-screen intermediate findings are not persisted.
-- A successful scan with zero final findings is still persisted.
-- Raw web pages, all comments, images and attachments are not mirrored.
-- LIVE reruns merge only genuinely new Final nodes into the same-day snapshot; BACKFILL retains replace-style historical rebuild semantics.
-- Run mode is recorded as LIVE or BACKFILL.
-- Extractor/schema versions are recorded for future reinterpretation and migration.
+```text
+Jisilu
+Xueqiu
+```
 
-Xueqiu Source V1:
-- Adapter: `runtime/intelligence_radar/xueqiu.py`; formal daily adapter: `runtime/intelligence_radar/xueqiu_daily.py`; watchlist: `runtime/intelligence_radar/xueqiu_watchlist.json` (initially empty; probe accounts are never promoted automatically).
-- Uses normal anonymous public `www.xueqiu.com` sessions; it does not attempt to solve or bypass WAF challenges.
-- `XUEQIU_AUTHOR_SHADOW` reads watched-user timelines and distinguishes POST / REPLY / REPOST using stable source identity fields.
-- `XUEQIU_HOT_EXPLORATION` is a non-keyword discovery lane based on the public hot feed; it is explicitly biased by platform ranking and is NOT full-site coverage.
-- Public comments expose stable comment IDs / parent relationships; bounded comment scanning exists but is off by default.
-- Timeline/hot rows marked `truncated=true` are hydrated through the public status-detail endpoint before hashing.
-- Reply items prefer `commentId` as the durable item identity while retaining the standalone status URL; edits are handled later by the existing content hash.
-- Same item found by multiple Xueqiu lanes is deduplicated once while preserving all discovery paths.
-- The adapter maps directly to the existing Increment Ledger candidate shape. No Xueqiu-specific persistence schema is introduced.
-- Xueqiu collection remains lightweight during the day; the 21:20 formal run sends only Increment-Ledger-eligible Xueqiu items into the same Broad / Final pipeline as Jisilu and persists Final nodes into the production Radar DB.
-- Shadow accumulation runs at 07:30 / 12:30 / 17:00 Asia/Shanghai. The 21:20 formal Radar run performs one fresh Xueqiu collection before AI, so there is no competing 21:20 collect-only process.
-- The 07:30 run also revisits the previous logical date so the 21:20 → 07:30 overnight gap can be recovered in the lightweight archive; late-catchup AI scheduling can be added separately if needed.
-- Archive: `runtime_data/intelligence_radar/xueqiu_shadow/YYYY/MM/YYYY-MM-DD.json`. It keeps IDs, author/time/link, content SHA-256, short excerpt, discovery paths and seen/edit counts; it does not mirror full candidate bodies.
-- Repeated observations update `seen_count`; edits update the hash/excerpt and retain a small prior-hash trail.
-- A formal Radar timer runs daily at 21:20 Asia/Shanghai and executes Jisilu + Xueqiu together. Same-version increments already analyzed are skipped by the shared Increment Ledger.
-- Explicit negative rule currently confirmed by the user: pure technical-indicator / price-chart timing (moving averages, MACD, KDJ, RSI, Bollinger bands, K-line patterns, support/resistance, breakout/pullback) is excluded. Institutional price/time rules such as delisting thresholds, abnormal-move windows, tender deadlines, index effective dates and settlement dates are not technical-analysis exclusions.
+Other historical probes such as Eastmoney Guba or public-account ecosystems are not formal production sources unless explicitly promoted again.
 
-Author Lane Shadow:
-- Config: `runtime/intelligence_radar/author_watchlist.json`
-- Current seed authors: `gaigai777`, `东方龙2014`, `帅牛`.
-- It watches each author's newly published topics and newly posted answers, including answers added to old threads.
-- Author identity/discovery path is deliberately NOT included in the AI prompt, so being on the watchlist cannot make a candidate easier to pass Broad or Final Gate.
-- Author-only refs bypass the global-feed question cap and are merged/deduped by question ID before detail fetch.
-- Shadow audit: `runtime_data/intelligence_radar/author_lane/YYYY/MM/YYYY-MM-DD.json` records overlap, author-only candidates, Broad retention and Final retention without mirroring full raw pages.
-- The watchlist is intentionally small and editable; it is not a ranking of authors.
+Both formal sources feed the same pipeline while retaining provenance:
 
-Storage:
-- Runtime DB: `runtime_data/intelligence_radar/radar.sqlite3`
-- Daily archive: `runtime_data/intelligence_radar/archive/YYYY/MM/YYYY-MM-DD.json`
-- HTML is only a view and can be rebuilt from the database/archive.
+```text
+Acquisition
+→ Increment Ledger
+→ Broad
+→ Final
+→ Object / Information Node / Evidence
+→ Radar Web
+```
 
-Manual unified formal run:
+## Acquisition
 
-    # Production launcher prefers .radar_ai_env and falls back to .runtime_env.
-    scripts/production/radar-daily-run.sh
-    .venv/bin/python -m runtime.intelligence_radar.run_all --date YYYY-MM-DD --run-mode LIVE
+### Jisilu
 
-Jisilu-only manual run:
+Jisilu uses:
 
-    .venv/bin/python -m runtime.intelligence_radar.daily --date YYYY-MM-DD
+```text
+Global activity / new-topic feeds
++
+Author Lane
+```
 
-Xueqiu-only formal run from accumulated archive:
+The formal daily run fetches target-day Jisilu content live. Jisilu does not use the Xueqiu-style 07:30 / 12:30 / 17:00 accumulation schedule.
 
-    .venv/bin/python -m runtime.intelligence_radar.xueqiu_daily --date YYYY-MM-DD
+Author Lane only improves coverage. Author identity / watchlist membership must not make an item easier to pass Broad or Final.
 
-Historical Jisilu backfill run:
+Current Jisilu production watchlist:
 
-    .venv/bin/python -m runtime.intelligence_radar.daily --date YYYY-MM-DD --run-mode BACKFILL
+`runtime/intelligence_radar/author_watchlist.json`
 
-Collector-only Jisilu smoke test:
+Current configured count: **7**.
 
-    .venv/bin/python -m runtime.intelligence_radar.daily --date YYYY-MM-DD --collect-only
+### Xueqiu
 
-Xueqiu collect-only Shadow smoke test:
+Xueqiu uses:
 
-    .venv/bin/python -m runtime.intelligence_radar.xueqiu --date YYYY-MM-DD
+```text
+XUEQIU_HOT_EXPLORATION
++
+XUEQIU_AUTHOR_SHADOW
+```
 
-Xueqiu Shadow accumulation run:
+Hot Exploration is ranking-biased and is **not full-site coverage**.
 
-    .venv/bin/python -m runtime.intelligence_radar.xueqiu_shadow_archive
+Current Xueqiu production watchlist:
 
-Formal Radar AI scheduling is enabled daily at 21:20 Asia/Shanghai for Jisilu + Xueqiu. Xueqiu collect-only observations remain enabled at 07:30 / 12:30 / 17:00.
+`runtime/intelligence_radar/xueqiu_watchlist.json`
+
+Current configured count: **9**.
+
+Daytime Xueqiu collection is lightweight and AI-free:
+
+```text
+07:30 Asia/Shanghai
+12:30 Asia/Shanghai
+17:00 Asia/Shanghai
+```
+
+The formal daily run performs another fresh Xueqiu collection before AI, so **17:00 is not the daily cutoff**.
+
+Archive:
+
+`runtime_data/intelligence_radar/xueqiu_shadow/YYYY/MM/YYYY-MM-DD.json`
+
+The archive keeps stable identity, timestamps, links, short excerpts, content hashes, discovery paths and lightweight observation metadata. It does not mirror every raw candidate body.
+
+## Formal production schedule
+
+Current formal Radar timer:
+
+```text
+21:03 Asia/Shanghai
+```
+
+Systemd definitions:
+
+```text
+scripts/production/systemd/arbitrage-xueqiu-shadow.timer
+scripts/production/systemd/arbitrage-radar-daily.timer
+```
+
+`arbitrage-radar-daily.timer` triggers the unified Jisilu + Xueqiu run.
+
+Whether a timer is currently enabled / active is a live server fact and should be checked on the server rather than inferred from this README.
+
+## API / CHAT transport
+
+The formal launcher is:
+
+`scripts/production/radar-daily-run.sh`
+
+It reads the shared nightly mode state through `nightly-ai-mode-env.sh`.
+
+```text
+NIGHTLY_AI_MODE=API
+→ runtime.intelligence_radar.run_all --run-mode LIVE
+
+NIGHTLY_AI_MODE=CHAT
+→ runtime.intelligence_radar.chat_runner
+```
+
+Current governance direction:
+
+> **API primary; CHAT remains available as a backup / debugging transport.**
+
+The actual current mode is a server runtime fact. Do not infer it from old documentation or old conversations.
+
+Radar-specific API environment loading prefers:
+
+```text
+.radar_ai_env
+```
+
+and falls back to:
+
+```text
+.runtime_env
+```
+
+Secrets are not documented here.
+
+## Increment / token-control layer
+
+The shared source-agnostic identity is:
+
+```text
+source + item_type + item_id + content_hash
+```
+
+`source_item_version` stores version fingerprints and timing metadata.
+
+`source_item_analysis` records which exact content version has already been processed by an `analysis_version`.
+
+LIVE behavior:
+
+- same version + same analysis version is not re-sent to Broad AI;
+- content edits create a new eligible version;
+- intentional analysis-version changes can trigger controlled re-analysis;
+- AI / Final failure does not mark the version analyzed;
+- same-day LIVE reruns merge new Final nodes instead of erasing earlier valid nodes;
+- BACKFILL keeps historical-rebuild semantics rather than pretending to be LIVE.
+
+Cross-platform rule:
+
+> **Exact dedupe within a platform; no premature semantic dedupe across Jisilu and Xueqiu before Broad.**
+
+The same event on another platform may add execution evidence, counterexamples, broker differences or independent real-money tests.
+
+## Context Capsule
+
+For an old long thread with new increments, Broad can receive:
+
+```text
+Context Capsule + new daily_segments
+```
+
+The capsule is reusable context derived from retained history. It is **not Evidence** and cannot be cited by `supporting_segment_ids`.
+
+## Broad / Final
+
+Broad is recall-oriented.
+
+Final decides what deserves daily attention.
+
+The current business direction is discovery-first: missing a genuinely new mechanism / opportunity / anomaly is more serious than omitting routine follow-up on a known topic.
+
+One known alignment item remains for a later dedicated change: production prompts still retain some older language that allows certain known-play new cases / execution increments through Final. This README documents that as an implementation-alignment item; it does **not** silently change production prompt behavior.
+
+Confirmed negative rule:
+
+> Pure technical-indicator / price-chart timing is excluded.
+
+Examples: moving averages, MACD, KDJ, RSI, Bollinger bands, K-line patterns, support / resistance, breakout / pullback when used to predict direction and time entries/exits.
+
+Institutional time / price rules such as tender deadlines, delisting thresholds, settlement dates, index effective dates and ETF T+N mechanics are not technical-analysis exclusions.
+
+## Persistence
+
+Production DB:
+
+`runtime_data/intelligence_radar/radar.sqlite3`
+
+Long-term semantic structure:
+
+```text
+Object
+→ Information Node
+→ Evidence
+```
+
+`Object` is a stable attention object — usually a security + event/mechanism or a stable strategy/mechanism — not merely a bare ticker.
+
+Examples:
+
+```text
+*ST康佳A现金选择权
+华锡有色要约收购
+跨境QDII ETF盘前申购套利
+```
+
+Evidence preserves platform, author, time, title, URL, locator and necessary excerpt.
+
+AI interpretation can evolve; source evidence is the harder factual layer.
+
+## Renderer / reading structure
+
+The current web view is organized for **dedupe + categorization + hierarchy**, not Top-N ranking.
+
+Current view categories:
+
+```text
+可转债
+ETF / LOF / QDII
+北交所 / 新股
+股票 / 公司行动
+其他机会 / 异常
+```
+
+These categories are renderer logic, not immutable storage schema.
+
+Main view:
+
+`/radar`
+
+Main API family:
+
+`/api/radar/*`
+
+## Main runtime modules
+
+```text
+runtime/intelligence_radar/jisilu.py
+runtime/intelligence_radar/xueqiu.py
+runtime/intelligence_radar/xueqiu_shadow_archive.py
+runtime/intelligence_radar/xueqiu_daily.py
+runtime/intelligence_radar/increments.py
+runtime/intelligence_radar/filtering.py
+runtime/intelligence_radar/final_gate.py
+runtime/intelligence_radar/run_all.py
+runtime/intelligence_radar/chat_runner.py
+```
+
+## Manual commands
+
+Unified formal-style run:
+
+```bash
+scripts/production/radar-daily-run.sh
+```
+
+Direct API pipeline:
+
+```bash
+.venv/bin/python -m runtime.intelligence_radar.run_all --date YYYY-MM-DD --run-mode LIVE
+```
+
+Jisilu-only:
+
+```bash
+.venv/bin/python -m runtime.intelligence_radar.daily --date YYYY-MM-DD
+```
+
+Xueqiu formal processing from accumulated archive:
+
+```bash
+.venv/bin/python -m runtime.intelligence_radar.xueqiu_daily --date YYYY-MM-DD
+```
+
+Xueqiu collect-only accumulation:
+
+```bash
+.venv/bin/python -m runtime.intelligence_radar.xueqiu_shadow_archive
+```
+
+Historical Jisilu backfill:
+
+```bash
+.venv/bin/python -m runtime.intelligence_radar.daily --date YYYY-MM-DD --run-mode BACKFILL
+```
+
+## State-authority rule
+
+Do not hard-code current deployed commit, live timer state or current API / CHAT mode into this README.
+
+Use:
+
+```text
+GitHub main
+→ executable source truth
+
+runtime_data/deployment_manifest.json
+→ deployed application commit
+
+server-control/state/nightly-ai-mode.env
+→ current shared AI mode
+
+systemd / Server Control
+→ live timer and service state
+
+SQLite / archive / logs
+→ what actually happened
+```
+
+This README describes the current architecture and contracts; live operational state belongs to the runtime.
