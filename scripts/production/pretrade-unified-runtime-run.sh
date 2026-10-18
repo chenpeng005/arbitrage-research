@@ -91,15 +91,7 @@ if [[ -z "$market_snapshot_mode" ]]; then
   exit 65
 fi
 
-# PRE_TRADE_CLOSE is a scheduler intent: before a trading day, refresh using
-# the latest completed formal close. Market Map / Acquisition already models
-# that underlying data contract as CLOSE, so translate only at this boundary.
-market_api_snapshot_mode="$market_snapshot_mode"
-if [[ "$market_api_snapshot_mode" == "PRE_TRADE_CLOSE" ]]; then
-  market_api_snapshot_mode="CLOSE"
-fi
-
-echo "[$(date '+%F %T %Z')] START unified convertible update intent=$run_intent market_snapshot_mode=$market_snapshot_mode market_api_snapshot_mode=$market_api_snapshot_mode mode=$AI_EXECUTION_MODE: $gate_json"
+echo "[$(date '+%F %T %Z')] START unified convertible update intent=$run_intent market_snapshot_mode=$market_snapshot_mode mode=$AI_EXECUTION_MODE: $gate_json"
 
 poll_job() {
   local job_id="$1"
@@ -175,7 +167,7 @@ PY
   return 1
 }
 
-market_payload=$(printf '{"snapshot_mode":"%s","market_cutoff":"%s","ai_execution_mode":"%s"}' "$market_api_snapshot_mode" "$market_cutoff" "$AI_EXECUTION_MODE")
+market_payload=$(printf '{"snapshot_mode":"%s","market_cutoff":"%s","ai_execution_mode":"%s"}' "$market_snapshot_mode" "$market_cutoff" "$AI_EXECUTION_MODE")
 market_body=$(curl -fsS -X POST 'http://127.0.0.1:7080/api/market-map-runs' \
   -H 'Content-Type: application/json' \
   --data "$market_payload")
@@ -221,4 +213,4 @@ else
   echo "[$(date '+%F %T %Z')] WARNING: reminder snapshot failed rc=$snapshot_rc; runtime result remains valid"
 fi
 
-echo "[$(date '+%F %T %Z')] PASS unified convertible update intent=$run_intent market_snapshot_mode=$market_snapshot_mode market_api_snapshot_mode=$market_api_snapshot_mode mode=$AI_EXECUTION_MODE"
+echo "[$(date '+%F %T %Z')] PASS unified convertible update intent=$run_intent market_snapshot_mode=$market_snapshot_mode mode=$AI_EXECUTION_MODE"

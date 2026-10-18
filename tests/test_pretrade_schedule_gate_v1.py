@@ -58,6 +58,17 @@ class PretradeScheduleGateTests(unittest.TestCase):
         self.assertEqual(decision.run_intent, PRE_TRADE)
         self.assertEqual(decision.market_snapshot_mode, PRE_TRADE_CLOSE)
 
+    def test_pretrade_mode_contract_reaches_acquisition_cli(self) -> None:
+        root = __import__("pathlib").Path(__file__).resolve().parents[1]
+        acquisition = (root / "runtime/market_map/acquisition.py").read_text(encoding="utf-8")
+        runner = (root / "scripts/production/pretrade-unified-runtime-run.sh").read_text(encoding="utf-8")
+        self.assertIn(
+            'choices=["CLOSE", "PRE_TRADE_CLOSE", "LIVE_TEST", "REPLAY_TEST", "HISTORICAL_REPLAY"],',
+            acquisition,
+        )
+        self.assertIn('"$market_snapshot_mode" "$market_cutoff" "$AI_EXECUTION_MODE"', runner)
+        self.assertNotIn("market_api_snapshot_mode", runner)
+
     def test_calendar_without_completed_trade_day_fails_closed(self) -> None:
         with self.assertRaises(ValueError):
             decide_schedule(date(2026, 1, 1), {date(2026, 1, 2)})

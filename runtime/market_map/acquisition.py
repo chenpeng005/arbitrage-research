@@ -1503,7 +1503,7 @@ def main() -> None:
     parser.add_argument("--output", default="./runtime_data/latest")
     parser.add_argument(
         "--snapshot-mode",
-        choices=["CLOSE", "LIVE_TEST", "REPLAY_TEST", "HISTORICAL_REPLAY"],
+        choices=["CLOSE", "PRE_TRADE_CLOSE", "LIVE_TEST", "REPLAY_TEST", "HISTORICAL_REPLAY"],
         default="LIVE_TEST",
     )
     parser.add_argument("--market-cutoff", default=datetime.now().date().isoformat())
