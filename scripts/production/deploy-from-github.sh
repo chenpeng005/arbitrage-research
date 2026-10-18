@@ -57,7 +57,8 @@ fi
     test_incremental_storage_pending_binding_parity.py \
     test_daily_notification_snapshot_v1.py \
     test_chat_to_api_recovery_v1.py \
-    test_nightly_ai_mode_switch_recovery_v1.py
+    test_nightly_ai_mode_switch_recovery_v1.py \
+    test_system_ai_mode_decoupling_v1.py
   do
     PYTHONPATH="$STAGE_ROOT" "$PY" -m unittest discover -s "$STAGE_ROOT/tests" -p "$pattern" -v
   done
@@ -104,6 +105,10 @@ install -m 0755 "$LIVE_ROOT/scripts/production/pretrade-unified-runtime-run.sh" 
 install -m 0755 "$LIVE_ROOT/scripts/production/arbitrage-github-autodeploy.sh" /home/admin/bin/arbitrage-github-autodeploy.sh
 install -m 0755 "$LIVE_ROOT/scripts/production/xueqiu-shadow-collect.sh" /home/admin/bin/xueqiu-shadow-collect.sh
 install -m 0755 "$LIVE_ROOT/scripts/production/radar-daily-run.sh" /home/admin/bin/radar-daily-run.sh
+install -m 0755 "$LIVE_ROOT/scripts/production/convertible-ai-mode-switch.sh" /home/admin/bin/convertible-ai-mode-switch.sh
+install -m 0755 "$LIVE_ROOT/scripts/production/radar-ai-mode-switch.sh" /home/admin/bin/radar-ai-mode-switch.sh
+# Retained only as a rollback/compatibility tool. CURRENT production launchers
+# no longer read the shared nightly mode file.
 install -m 0755 "$LIVE_ROOT/scripts/production/nightly-ai-mode-switch.sh" /home/admin/bin/nightly-ai-mode-switch.sh
 
 sudo -n systemctl disable --now arbitrage-web-public.service >/dev/null 2>&1 || true

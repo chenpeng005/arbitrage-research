@@ -13,12 +13,13 @@ fi
 set -a
 source "$AI_ENV"
 set +a
-# Resolve transport from the shared mode file rather than cron-injected env.
+# Convertible owns its transport state. Stock and Radar switches must not alter
+# this production runner.
 # shellcheck disable=SC1091
-source "$ROOT/scripts/production/nightly-ai-mode-env.sh"
+source "$ROOT/scripts/production/convertible-ai-mode-env.sh"
 export RUNTIME_DATA_ROOT="$ROOT/runtime_data"
 export PYTHONPATH="$ROOT"
-if [[ "$NIGHTLY_AI_MODE" == "CHAT" ]]; then
+if [[ "$CONVERTIBLE_AI_MODE" == "CHAT" ]]; then
   AI_EXECUTION_MODE="INTERACTIVE_CHAT"
 else
   AI_EXECUTION_MODE="AUTO_API"
