@@ -35,9 +35,10 @@ echo "[$(date '+%F %T %Z')] START LEGACY light daily close update"
 set -a
 source "$AI_ENV"
 set +a
+# Even this legacy wrapper follows only the convertible system mode.
 # shellcheck disable=SC1091
-source "$ROOT/scripts/production/nightly-ai-mode-env.sh"
-if [[ "$NIGHTLY_AI_MODE" == "CHAT" ]]; then
+source "$ROOT/scripts/production/convertible-ai-mode-env.sh"
+if [[ "$CONVERTIBLE_AI_MODE" == "CHAT" ]]; then
   AI_EXECUTION_MODE="INTERACTIVE_CHAT"
 else
   AI_EXECUTION_MODE="AUTO_API"
