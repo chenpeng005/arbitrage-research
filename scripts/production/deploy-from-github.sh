@@ -33,6 +33,7 @@ fi
     "$STAGE_ROOT/runtime/opportunity/research_trigger.py" \
     "$STAGE_ROOT/runtime/opportunity/full_runtime_controller.py" \
     "$STAGE_ROOT/runtime/opportunity/incremental_information_controller.py" \
+    "$STAGE_ROOT/runtime/opportunity/chat_to_api_recovery.py" \
     "$STAGE_ROOT/runtime/opportunity/daily_notification_snapshot.py" \
     "$STAGE_ROOT/runtime/web/app.py" \
     "$STAGE_ROOT/runtime/intelligence_radar/daily.py" \
@@ -54,7 +55,9 @@ fi
     test_discovery_controller_path_isolation_v1.py \
     test_information_scan_empty_day_v1.py \
     test_incremental_storage_pending_binding_parity.py \
-    test_daily_notification_snapshot_v1.py
+    test_daily_notification_snapshot_v1.py \
+    test_chat_to_api_recovery_v1.py \
+    test_nightly_ai_mode_switch_recovery_v1.py
   do
     PYTHONPATH="$STAGE_ROOT" "$PY" -m unittest discover -s "$STAGE_ROOT/tests" -p "$pattern" -v
   done
