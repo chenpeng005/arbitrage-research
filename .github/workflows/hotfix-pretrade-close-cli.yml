@@ -67,18 +67,19 @@ jobs:
           marker = '    def test_calendar_without_completed_trade_day_fails_closed(self) -> None:\n'
           if text.count(marker) != 1:
               raise SystemExit("test insertion precondition failed")
-          method = '''    def test_pretrade_mode_contract_reaches_acquisition_cli(self) -> None:
-              root = __import__("pathlib").Path(__file__).resolve().parents[1]
-              acquisition = (root / "runtime/market_map/acquisition.py").read_text(encoding="utf-8")
-              runner = (root / "scripts/production/pretrade-unified-runtime-run.sh").read_text(encoding="utf-8")
-              self.assertIn(
-                  'choices=["CLOSE", "PRE_TRADE_CLOSE", "LIVE_TEST", "REPLAY_TEST", "HISTORICAL_REPLAY"],',
-                  acquisition,
-              )
-              self.assertIn('"$market_snapshot_mode" "$market_cutoff" "$AI_EXECUTION_MODE"', runner)
-              self.assertNotIn("market_api_snapshot_mode", runner)
-
-          '''
+          method = (
+              '    def test_pretrade_mode_contract_reaches_acquisition_cli(self) -> None:\n'
+              '        root = __import__("pathlib").Path(__file__).resolve().parents[1]\n'
+              '        acquisition = (root / "runtime/market_map/acquisition.py").read_text(encoding="utf-8")\n'
+              '        runner = (root / "scripts/production/pretrade-unified-runtime-run.sh").read_text(encoding="utf-8")\n'
+              '        self.assertIn(\n'
+              '            \'choices=["CLOSE", "PRE_TRADE_CLOSE", "LIVE_TEST", "REPLAY_TEST", "HISTORICAL_REPLAY"],\',\n'
+              '            acquisition,\n'
+              '        )\n'
+              '        self.assertIn(\'"$market_snapshot_mode" "$market_cutoff" "$AI_EXECUTION_MODE"\', runner)\n'
+              '        self.assertNotIn("market_api_snapshot_mode", runner)\n'
+              '\n'
+          )
           test.write_text(text.replace(marker, method + marker, 1), encoding="utf-8")
           PY
 
