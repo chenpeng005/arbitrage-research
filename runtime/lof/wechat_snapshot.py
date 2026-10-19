@@ -172,7 +172,12 @@ def build_lof_wechat_snapshot(
     )
     display_rows = premium_eligible[:ranking_limit]
     discount_rows = discount_eligible[:ranking_limit]
-    status = "READY" if len(display_rows) == ranking_limit else "BLOCKED"
+    status = (
+        "READY"
+        if len(display_rows) == ranking_limit
+        and len(discount_rows) == ranking_limit
+        else "BLOCKED"
+    )
     block_reason = None if status == "READY" else "INSUFFICIENT_ELIGIBLE_ROWS"
     discount_ranking_status = (
         "READY"
