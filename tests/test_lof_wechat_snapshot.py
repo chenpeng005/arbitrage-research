@@ -86,6 +86,11 @@ class LofWechatSnapshotTest(unittest.TestCase):
                 status="LIMITED",
                 limit_amount=2000.0,
             ),
+            _row("501010", premium=-1.0),
+            _row("501011", premium=-2.0),
+            _row("501012", premium=-3.0),
+            _row("501013", premium=-4.0),
+            _row("501014", premium=-5.0),
         ]
         payload = build_lof_wechat_snapshot(_snapshot(rows))
 
@@ -176,6 +181,10 @@ class LofWechatSnapshotTest(unittest.TestCase):
             )
             for idx in range(1, 6)
         ]
+        rows.extend(
+            _row(f"50110{idx}", premium=-float(idx))
+            for idx in range(1, 6)
+        )
         payload = build_lof_wechat_snapshot(_snapshot(rows))
         self.assertEqual(payload["status"], "READY")
         unlimited = next(row for row in payload["rows"] if row["code"] == "501001")
