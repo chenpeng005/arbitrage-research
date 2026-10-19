@@ -140,11 +140,28 @@ class LofWechatSnapshotTest(unittest.TestCase):
             self.assertTrue(row["eligible_for_wechat_table"])
             self.assertGreater(row["turnover_cny"], 0)
 
+    def test_insufficient_discount_rows_fail_closed(self) -> None:
+        rows = [
+            *[_row(f"50100{idx}", premium=11.0 - idx) for idx in range(1, 6)],
+            _row("501101", premium=-1.0),
+            _row("501102", premium=-2.0),
+            _row("501103", premium=-3.0),
+            _row("501104", premium=-4.0),
+        ]
+        payload = build_lof_wechat_snapshot(_snapshot(rows))
+
+        self.assertEqual(payload["status"], "BLOCKED")
+        self.assertEqual(payload["block_reason"], "INSUFFICIENT_ELIGIBLE_ROWS")
+        self.assertEqual(len(payload["rows"]), 5)
+        self.assertEqual(len(payload["discount_rows"]), 4)
+        self.assertEqual(payload["discount_ranking_status"], "PARTIAL")
+
     def test_no_qualifying_discount_rows_are_explicitly_empty(self) -> None:
         rows = [_row(f"50100{idx}", premium=11.0 - idx) for idx in range(1, 6)]
         payload = build_lof_wechat_snapshot(_snapshot(rows))
 
-        self.assertEqual(payload["status"], "READY")
+        self.assertEqual(payload["status"], "BLOCKED")
+        self.assertEqual(payload["block_reason"], "INSUFFICIENT_ELIGIBLE_ROWS")
         self.assertEqual(payload["discount_rows"], [])
         self.assertEqual(payload["discount_eligible_count"], 0)
         self.assertEqual(payload["discount_ranking_status"], "NO_QUALIFYING_ROWS")
