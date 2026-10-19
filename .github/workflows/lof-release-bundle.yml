@@ -2,8 +2,16 @@ name: LOF Release Bundle
 
 on:
   push:
+    branches:
+      - "lof-wechat-snapshot-v01-20261017"
+      - "fix/lof-wechat-discount-snapshot-20261019"
     paths:
       - ".github/workflows/lof-release-bundle.yml"
+      - "runtime/lof/**"
+      - "tests/test_lof_*.py"
+      - "tests/test_deployment_gate.py"
+      - "tests/fixtures/lof_golden_replay_v1.json"
+      - "scripts/lof_golden_replay.py"
   workflow_dispatch:
 
 jobs:
