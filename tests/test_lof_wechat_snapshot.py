@@ -105,6 +105,50 @@ class LofWechatSnapshotTest(unittest.TestCase):
             )
         )
 
+    def test_premium_and_discount_rankings_are_separate_and_share_source_fields(self) -> None:
+        rows = [
+            _row("501001", premium=6.0),
+            _row("501002", premium=5.0),
+            _row("501003", premium=4.0),
+            _row("501004", premium=3.0),
+            _row("501005", premium=2.0),
+            _row("501006", premium=-1.0),
+            _row("501007", premium=-2.0),
+            _row("501008", premium=-3.0),
+            _row("501009", premium=-4.0),
+            _row("501010", premium=-5.0),
+            _row("501011", premium=-6.0),
+            _row("501012", premium=0.0),
+            _row("501013", premium=-20.0, status="SUSPENDED"),
+            _row("501014", premium=-19.0, amount=0.0),
+        ]
+        payload = build_lof_wechat_snapshot(_snapshot(rows))
+
+        self.assertEqual(payload["status"], "READY")
+        self.assertEqual(
+            [row["official_premium_rate"] for row in payload["rows"]],
+            [6.0, 5.0, 4.0, 3.0, 2.0],
+        )
+        self.assertEqual(
+            [row["official_premium_rate"] for row in payload["discount_rows"]],
+            [-6.0, -5.0, -4.0, -3.0, -2.0],
+        )
+        self.assertEqual(payload["premium_eligible_count"], 5)
+        self.assertEqual(payload["discount_eligible_count"], 6)
+        self.assertEqual(payload["discount_ranking_status"], "READY")
+        for row in payload["rows"] + payload["discount_rows"]:
+            self.assertTrue(row["eligible_for_wechat_table"])
+            self.assertGreater(row["turnover_cny"], 0)
+
+    def test_no_qualifying_discount_rows_are_explicitly_empty(self) -> None:
+        rows = [_row(f"50100{idx}", premium=11.0 - idx) for idx in range(1, 6)]
+        payload = build_lof_wechat_snapshot(_snapshot(rows))
+
+        self.assertEqual(payload["status"], "READY")
+        self.assertEqual(payload["discount_rows"], [])
+        self.assertEqual(payload["discount_eligible_count"], 0)
+        self.assertEqual(payload["discount_ranking_status"], "NO_QUALIFYING_ROWS")
+
     def test_unlimited_limit_is_eligible_without_numeric_amount(self) -> None:
         rows = [
             _row(
@@ -169,6 +213,7 @@ class LofWechatSnapshotTest(unittest.TestCase):
                 loaded["source_snapshot_id"], second_source["snapshot_id"]
             )
             self.assertEqual(loaded["rows"], second_payload["rows"])
+            self.assertEqual(loaded["discount_rows"], second_payload["discount_rows"])
             self.assertLess(latest.stat().st_size, 100_000)
 
             asof = store.load_latest_at_or_before(
