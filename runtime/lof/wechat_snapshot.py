@@ -148,15 +148,39 @@ def build_lof_wechat_snapshot(
         projected.append(row)
 
     eligible = [row for row in projected if row["eligible_for_wechat_table"]]
-    eligible.sort(
+    premium_eligible = [
+        row
+        for row in eligible
+        if float(row["official_premium_rate"]) > 0
+    ]
+    discount_eligible = [
+        row
+        for row in eligible
+        if float(row["official_premium_rate"]) < 0
+    ]
+    premium_eligible.sort(
         key=lambda row: (
             -float(row["official_premium_rate"]),
             row["code"],
         )
     )
-    display_rows = eligible[:ranking_limit]
+    discount_eligible.sort(
+        key=lambda row: (
+            float(row["official_premium_rate"]),
+            row["code"],
+        )
+    )
+    display_rows = premium_eligible[:ranking_limit]
+    discount_rows = discount_eligible[:ranking_limit]
     status = "READY" if len(display_rows) == ranking_limit else "BLOCKED"
     block_reason = None if status == "READY" else "INSUFFICIENT_ELIGIBLE_ROWS"
+    discount_ranking_status = (
+        "READY"
+        if len(discount_rows) == ranking_limit
+        else "PARTIAL"
+        if discount_rows
+        else "NO_QUALIFYING_ROWS"
+    )
 
     return {
         "contract_version": CONTRACT_VERSION,
@@ -172,7 +196,11 @@ def build_lof_wechat_snapshot(
         "ranking_limit": ranking_limit,
         "evaluated_count": len(projected),
         "eligible_count": len(eligible),
+        "premium_eligible_count": len(premium_eligible),
+        "discount_eligible_count": len(discount_eligible),
+        "discount_ranking_status": discount_ranking_status,
         "rows": display_rows,
+        "discount_rows": discount_rows,
         "delta_items": [],
         "critical_empty_fields": [] if logical_date is not None else ["logical_date"],
     }
