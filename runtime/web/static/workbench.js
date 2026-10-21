@@ -347,6 +347,26 @@ function renderReminderChangeLine(line){
     +'</div>';
 }
 
+function reminderSourceTimeHtml(p){
+  const ev=p.event||{};
+  if(!ev.published_at)return "";
+  const pub=new Date(ev.published_at);
+  if(Number.isNaN(pub.getTime()))return "";
+  const pubText=new Intl.DateTimeFormat("zh-CN",{
+    timeZone:"Asia/Shanghai",month:"2-digit",day:"2-digit",
+    hour:"2-digit",minute:"2-digit",hour12:false
+  }).format(pub);
+  const pubDate=new Intl.DateTimeFormat("en-CA",{
+    timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"
+  }).format(pub);
+  // 公告日期是交易所文件日期；发布时间早于它（多为前一晚披露）时给出提示，
+  // 避免把"昨晚已公开的信息"误读成今晚的新增。
+  const lag=ev.notice_date&&pubDate<ev.notice_date
+    ?' <span class="badge warn">昨夜发布</span>':"";
+  return '<div class="reminder-source-time">公告发布：'+esc(pubText)+lag
+    +(ev.notice_date?' · 公告日期：'+esc(ev.notice_date):"")+'</div>';
+}
+
 function renderReminderFallback(item){
   return (item.changes||[]).map(c=>{
     const research=notificationResearchText(c.research_action);
@@ -376,6 +396,7 @@ function renderReminderItem(item){
     +esc(item.bond_name)+' '+esc(item.bond_code)+'</a>'
     +'<span class="badge '+(item.level==="IMMEDIATE"?"warn":"idle")+'">'+level+'</span></div>'
     +(p.title?'<div class="reminder-headline">'+esc(p.title)+'</div>':"")
+    +reminderSourceTimeHtml(p)
     +'</div>'
     +'<div class="notification-time">'+esc(notificationTimeText(item.created_at))+'</div>'
     +'</div>'

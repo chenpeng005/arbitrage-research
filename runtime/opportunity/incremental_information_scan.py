@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
@@ -52,6 +53,25 @@ def _normalize_date(value: Any) -> str:
         return pd.Timestamp(value).strftime("%Y-%m-%d")
     except Exception:
         return str(value or "")
+
+_PUBLISHED_AT_RE = re.compile(r"AN(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})\d{6}")
+
+def extract_published_at(url: str) -> str | None:
+    """Eastmoney announcement ids embed the publish minute (Asia/Shanghai).
+
+    Example: AN202610201830722252 -> published 2026-10-20 18:30. The exchange
+    document date (公告日期) can be the next trading day, so this field is the
+    only minute-level "when did the market actually see it" signal we have.
+    Unparseable ids degrade to None; callers must tolerate that.
+    """
+    m = _PUBLISHED_AT_RE.search(str(url or ""))
+    if not m:
+        return None
+    try:
+        dt = datetime(*(int(g) for g in m.groups()))
+    except ValueError:
+        return None
+    return dt.strftime("%Y-%m-%dT%H:%M:00+08:00")
 
 def _issuer_map(target_db: Path) -> dict[str, list[dict[str, str]]]:
     conn = connect(target_db)
@@ -136,6 +156,7 @@ def scan_daily_relevant_notices(
                 "issuer_stock_code": stock_code,
                 "issuer_name": str(row.get("名称") or ""),
                 "notice_date": notice_date,
+                "published_at": extract_published_at(url),
                 "title": title,
                 "notice_type": str(row.get("公告类型") or ""),
                 "url": url,

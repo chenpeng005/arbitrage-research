@@ -302,6 +302,8 @@ def _event_context(conn: Any, event_update_id: str | None) -> dict[str, Any]:
         "fact_summary": payload.get("fact_summary"),
         "source_title": first_document.get("title"),
         "source_url": first_document.get("url"),
+        "published_at": first_document.get("published_at"),
+        "notice_date": first_document.get("notice_date"),
     }
 
 

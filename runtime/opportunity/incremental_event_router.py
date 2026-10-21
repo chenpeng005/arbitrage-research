@@ -30,12 +30,18 @@ def _evidence_id(doc: dict[str, Any]) -> str:
         return m.group(1)
     raw = "|".join(
         [
-            str(doc.get("notice_date") or doc.get("published_at") or ""),
+            _document_date(doc),
             str(doc.get("title") or ""),
             url,
         ]
     )
     return "EVID_" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
+
+
+def _document_date(doc: dict[str, Any]) -> str:
+    # published_at is a minute-level ISO timestamp; event identity must stay
+    # date-granular, so only its date part may feed id/grouping fallbacks.
+    return str(doc.get("notice_date") or str(doc.get("published_at") or "")[:10])
 
 
 def _event_update_id(
@@ -106,7 +112,8 @@ def canonicalize_evidence_document(
     title = str(document.get("title") or "")
     kind = str(document.get("event_kind") or "OTHER")
     evidence_id = _evidence_id(document)
-    notice_date = str(document.get("notice_date") or document.get("published_at") or "")
+    notice_date = _document_date(document)
+    published_at = str(document.get("published_at") or "") or None
     url = str(document.get("url") or document.get("detail_url") or "")
 
     event_family: str | None = None
@@ -172,6 +179,7 @@ def canonicalize_evidence_document(
         "bond_name": bond_name,
         "evidence_id": evidence_id,
         "notice_date": notice_date,
+        "published_at": published_at,
         "title": title,
         "url": url,
         "source_event_kind": kind,
