@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "trade_date": "20261022",
+  "previous_trade_date": "20261021",
+  "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+  "generated_at": "2026-10-22T00:35:23.331625+00:00",
+  "event_count": 3,
+  "events": [
+    {
+      "code": "511150",
+      "exchange": "SSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from CUMULATIVE to NONE.",
+      "previous_value": "CUMULATIVE",
+      "current_value": null,
+      "trade_date": "20261022",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-22T00:35:22.108840+00:00"
+    },
+    {
+      "code": "511520",
+      "exchange": "SSE",
+      "event_type": "ACCOUNT_CAP_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding account creation-cap rule changed from NONE to NET.",
+      "previous_value": null,
+      "current_value": "NET",
+      "trade_date": "20261022",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-22T00:35:22.108840+00:00"
+    },
+    {
+      "code": "513870",
+      "exchange": "SSE",
+      "event_type": "ACCOUNT_DISTRIBUTION_IMPROVED",
+      "severity": "MEDIUM",
+      "message": "Minimum accounts required to fill no-offset executable capacity rose from 1 to 5.",
+      "previous_value": 1,
+      "current_value": 5,
+      "trade_date": "20261022",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-22T00:35:22.108840+00:00"
+    }
+  ]
+}
