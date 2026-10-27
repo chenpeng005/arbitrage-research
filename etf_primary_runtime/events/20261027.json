@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "trade_date": "20261027",
+  "previous_trade_date": "20261026",
+  "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+  "generated_at": "2026-10-27T00:30:55.265663+00:00",
+  "event_count": 1,
+  "events": [
+    {
+      "code": "512890",
+      "exchange": "SSE",
+      "event_type": "TOTAL_CAPACITY_JUMP",
+      "severity": "HIGH",
+      "message": "Binding no-offset creation capacity (CUMULATIVE) increased from 1000 to 2000 whole baskets.",
+      "previous_value": 1000,
+      "current_value": 2000,
+      "trade_date": "20261027",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-10-27T00:30:54.323446+00:00"
+    }
+  ]
+}
