@@ -1,11 +1,12 @@
 [Unit]
-Description=Run formal Intelligence Radar daily at 23:03 Asia/Shanghai
+Description=Run formal Intelligence Radar daily at 23:20 Asia/Shanghai
 
 [Timer]
 # Production schedule: formal API-mode Radar run after daytime Xueqiu accumulation.
-# 23:03 (moved from 21:03 on 2026-10-27) keeps the run on the same calendar day
-# while capturing evening disclosures up to 23:00.
-OnCalendar=*-*-* 23:03:00 Asia/Shanghai
+# 23:20 (moved from 21:03 -> 23:03 on 2026-10-27, then to 23:20 on 2026-10-29)
+# staggers the three nightly batches (23:00 convertible / 23:20 radar / 23:40 stock)
+# to avoid the memory-peak pile-up that thrashed the 1.6GB host on 10-26..10-28.
+OnCalendar=*-*-* 23:20:00 Asia/Shanghai
 Persistent=true
 AccuracySec=1min
 Unit=arbitrage-radar-daily.service
