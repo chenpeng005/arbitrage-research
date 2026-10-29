@@ -93,7 +93,7 @@ def run_opportunity_full_downstream(
     ai_execution_mode: str = "AUTO_API",
     research_batch_limit: int = 5,
     max_research_rounds: int = 20,
-    wall_timeout_seconds: int = 180,
+    wall_timeout_seconds: int = 600,
     run_research: bool = True,
     stage_callback: StageCallback | None = None,
 ) -> dict[str, Any]:

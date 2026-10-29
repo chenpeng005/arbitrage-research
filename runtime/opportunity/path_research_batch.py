@@ -151,7 +151,7 @@ def _run_path_research_batch_unlocked(
     limit: int = 5,
     path_id: str | None = None,
     retry_once: bool = False,
-    wall_timeout_seconds: int = 180,
+    wall_timeout_seconds: int = 600,
 ) -> dict[str, Any]:
     if execution_mode not in {"AUTO_API", "INTERACTIVE_CHAT"}:
         raise ValueError(f"unsupported execution_mode={execution_mode}")
@@ -295,7 +295,7 @@ def run_path_research_batch(
     limit: int = 5,
     path_id: str | None = None,
     retry_once: bool = False,
-    wall_timeout_seconds: int = 180,
+    wall_timeout_seconds: int = 600,
 ) -> dict[str, Any]:
     with _exclusive_batch_lock(data_root):
         return _run_path_research_batch_unlocked(
