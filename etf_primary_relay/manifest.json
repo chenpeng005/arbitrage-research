@@ -1,0 +1,140 @@
+{
+  "relay_version": "etf-primary-official-relay-v2",
+  "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+  "fetched_at": "2026-10-30T00:31:18.447352+00:00",
+  "target_trade_date": "20261030",
+  "full_universe_count": 1715,
+  "pcf_found_count": 1715,
+  "latest_trade_date_count": 1715,
+  "stale_count": 0,
+  "missing_count": 0,
+  "recovered_szse_count": 0,
+  "monitor_view": {
+    "universe_count": 1715,
+    "fresh_count": 1715,
+    "stale_count": 0,
+    "missing_count": 0
+  },
+  "coverage": {
+    "SSE": {
+      "universe": 947,
+      "found": 947,
+      "missing": 0
+    },
+    "SZSE": {
+      "universe": 768,
+      "found": 768,
+      "missing": 0,
+      "ratio": 1.0
+    }
+  },
+  "shards": [
+    {
+      "shard_index": 0,
+      "requested_count": 64,
+      "official_index_count": 64,
+      "success_count": 64,
+      "error_count": 0
+    },
+    {
+      "shard_index": 1,
+      "requested_count": 64,
+      "official_index_count": 64,
+      "success_count": 64,
+      "error_count": 0
+    },
+    {
+      "shard_index": 2,
+      "requested_count": 64,
+      "official_index_count": 64,
+      "success_count": 64,
+      "error_count": 0
+    },
+    {
+      "shard_index": 3,
+      "requested_count": 64,
+      "official_index_count": 64,
+      "success_count": 64,
+      "error_count": 0
+    },
+    {
+      "shard_index": 4,
+      "requested_count": 64,
+      "official_index_count": 64,
+      "success_count": 64,
+      "error_count": 0
+    },
+    {
+      "shard_index": 5,
+      "requested_count": 64,
+      "official_index_count": 64,
+      "success_count": 64,
+      "error_count": 0
+    },
+    {
+      "shard_index": 6,
+      "requested_count": 64,
+      "official_index_count": 64,
+      "success_count": 64,
+      "error_count": 0
+    },
+    {
+      "shard_index": 7,
+      "requested_count": 64,
+      "official_index_count": 64,
+      "success_count": 64,
+      "error_count": 0
+    },
+    {
+      "shard_index": 8,
+      "requested_count": 64,
+      "official_index_count": 64,
+      "success_count": 64,
+      "error_count": 0
+    },
+    {
+      "shard_index": 9,
+      "requested_count": 64,
+      "official_index_count": 64,
+      "success_count": 64,
+      "error_count": 0
+    },
+    {
+      "shard_index": 10,
+      "requested_count": 64,
+      "official_index_count": 64,
+      "success_count": 64,
+      "error_count": 0
+    },
+    {
+      "shard_index": 11,
+      "requested_count": 64,
+      "official_index_count": 64,
+      "success_count": 64,
+      "error_count": 0
+    }
+  ],
+  "files": {
+    "szse_etf_universe.json": {
+      "sha256": "fae565355cb9caf4548953848fb5108863dbe23993b2bd66b90d3af6de32a52e"
+    },
+    "full_universe.json": {
+      "sha256": "cb4cb098fb3cd5e077a1361c440ec60ae47891bf5cfdf442cef0cdc603efe369"
+    },
+    "universe_audit.json": {
+      "sha256": "7a3772d9e356458611b06b721f6b76816bf3df921f2dce3a68517b9f5a08f393"
+    },
+    "sse_pcf.json": {
+      "sha256": "f578d32da0a3c45fe856c9c11c2b0cd855ea39f9ce699080ac7f39323c37c54b"
+    },
+    "szse_pcf_index.json": {
+      "sha256": "3aaecfe839611b0f1bcf0c1a5d6a015a5da1652a168ed3789f2641f5d1be6001"
+    },
+    "pcf_snapshot.json": {
+      "sha256": "687d5c04122d9b2fb04a3a1938c4a3937b003ab340b76e1947d0724c5fdbfeb1"
+    },
+    "monitor_view.json": {
+      "sha256": "59cdcb838f629e51e43fe4bd3cca3134d9f0438da8752e6be241946cf37e830e"
+    }
+  }
+}
