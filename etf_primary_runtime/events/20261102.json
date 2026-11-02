@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "trade_date": "20261102",
+  "previous_trade_date": "20261030",
+  "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+  "generated_at": "2026-11-02T00:33:15.101839+00:00",
+  "event_count": 4,
+  "events": [
+    {
+      "code": "511110",
+      "exchange": "SSE",
+      "event_type": "TOTAL_CAPACITY_JUMP",
+      "severity": "HIGH",
+      "message": "Binding no-offset creation capacity (CUMULATIVE) increased from 70 to 150 whole baskets.",
+      "previous_value": 70,
+      "current_value": 150,
+      "trade_date": "20261102",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-02T00:33:14.180234+00:00"
+    },
+    {
+      "code": "159329",
+      "exchange": "SZSE",
+      "event_type": "CREATION_RESUMED",
+      "severity": "HIGH",
+      "message": "ETF creation changed from closed to open.",
+      "previous_value": null,
+      "current_value": null,
+      "trade_date": "20261102",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-02T00:33:14.180234+00:00"
+    },
+    {
+      "code": "159100",
+      "exchange": "SZSE",
+      "event_type": "CREATION_SUSPENDED",
+      "severity": "LOW",
+      "message": "ETF creation changed from open to closed.",
+      "previous_value": null,
+      "current_value": null,
+      "trade_date": "20261102",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-02T00:33:14.180234+00:00"
+    },
+    {
+      "code": "511520",
+      "exchange": "SSE",
+      "event_type": "ACCOUNT_CAP_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding account creation-cap rule changed from NET to NONE.",
+      "previous_value": "NET",
+      "current_value": null,
+      "trade_date": "20261102",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-02T00:33:14.180234+00:00"
+    }
+  ]
+}
