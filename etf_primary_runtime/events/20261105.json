@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "trade_date": "20261105",
+  "previous_trade_date": "20261104",
+  "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+  "generated_at": "2026-11-05T07:03:11.945078+00:00",
+  "event_count": 1,
+  "events": [
+    {
+      "code": "588170",
+      "exchange": "SSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from CUMULATIVE to NET.",
+      "previous_value": "CUMULATIVE",
+      "current_value": "NET",
+      "trade_date": "20261105",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-05T07:03:10.725291+00:00"
+    }
+  ]
+}
