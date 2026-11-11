@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "trade_date": "20261111",
+  "previous_trade_date": "20261110",
+  "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+  "generated_at": "2026-11-11T06:47:46.481391+00:00",
+  "event_count": 6,
+  "events": [
+    {
+      "code": "159530",
+      "exchange": "SZSE",
+      "event_type": "TOTAL_CAPACITY_JUMP",
+      "severity": "HIGH",
+      "message": "Binding no-offset creation capacity (NET) increased from 2000 to 4000 whole baskets.",
+      "previous_value": 2000,
+      "current_value": 4000,
+      "trade_date": "20261111",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-11T06:47:45.259239+00:00"
+    },
+    {
+      "code": "530080",
+      "exchange": "SSE",
+      "event_type": "CREATION_SUSPENDED",
+      "severity": "LOW",
+      "message": "ETF creation changed from open to closed.",
+      "previous_value": null,
+      "current_value": null,
+      "trade_date": "20261111",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-11T06:47:45.259239+00:00"
+    },
+    {
+      "code": "511520",
+      "exchange": "SSE",
+      "event_type": "CREATION_UNIT_REDUCED",
+      "severity": "MEDIUM",
+      "message": "Creation unit fell from 10000 to 1000 shares.",
+      "previous_value": 10000,
+      "current_value": 1000,
+      "trade_date": "20261111",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-11T06:47:45.259239+00:00"
+    },
+    {
+      "code": "560020",
+      "exchange": "SSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from CUMULATIVE to NONE.",
+      "previous_value": "CUMULATIVE",
+      "current_value": null,
+      "trade_date": "20261111",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-11T06:47:45.259239+00:00"
+    },
+    {
+      "code": "560070",
+      "exchange": "SSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from CUMULATIVE to NONE.",
+      "previous_value": "CUMULATIVE",
+      "current_value": null,
+      "trade_date": "20261111",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-11T06:47:45.259239+00:00"
+    },
+    {
+      "code": "159118",
+      "exchange": "SZSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from CUMULATIVE to NONE.",
+      "previous_value": "CUMULATIVE",
+      "current_value": null,
+      "trade_date": "20261111",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-11T06:47:45.259239+00:00"
+    }
+  ]
+}
