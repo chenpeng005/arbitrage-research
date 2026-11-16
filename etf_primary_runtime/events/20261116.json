@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "trade_date": "20261116",
+  "previous_trade_date": "20261113",
+  "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+  "generated_at": "2026-11-16T06:50:10.190142+00:00",
+  "event_count": 3,
+  "events": [
+    {
+      "code": "159329",
+      "exchange": "SZSE",
+      "event_type": "CREATION_RESUMED",
+      "severity": "HIGH",
+      "message": "ETF creation changed from closed to open.",
+      "previous_value": null,
+      "current_value": null,
+      "trade_date": "20261116",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-16T06:50:08.774921+00:00"
+    },
+    {
+      "code": "158042",
+      "exchange": "SZSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from NONE to CUMULATIVE.",
+      "previous_value": null,
+      "current_value": "CUMULATIVE",
+      "trade_date": "20261116",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-16T06:50:08.774921+00:00"
+    },
+    {
+      "code": "159209",
+      "exchange": "SZSE",
+      "event_type": "CAPACITY_RULE_CHANGED",
+      "severity": "MEDIUM",
+      "message": "Binding market creation-cap rule changed from CUMULATIVE to NONE.",
+      "previous_value": "CUMULATIVE",
+      "current_value": null,
+      "trade_date": "20261116",
+      "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+      "relay_fetched_at": "2026-11-16T06:50:08.774921+00:00"
+    }
+  ]
+}
