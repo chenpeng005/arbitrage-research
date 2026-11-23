@@ -1,12 +1,12 @@
 {
   "status": "DIFF_COMPLETED",
-  "trade_date": "20261120",
-  "previous_trade_date": "20261119",
-  "event_count": 2,
-  "snapshot_sha256": "a10e578f11dce0f36b56a574d35638ded9018ea1191bb2c1b9900bbc0cad65af",
-  "pcf_found_count": 1723,
+  "trade_date": "20261123",
+  "previous_trade_date": "20261120",
+  "event_count": 5,
+  "snapshot_sha256": "2ae9af10a6a8c629b65857b5f7b3a7b3a0f10cf975d3073627a50dd95dbdab4b",
+  "pcf_found_count": 1741,
   "stale_count": 1,
   "missing_count": 0,
   "relay_age_seconds": 1,
-  "archive_path": "/tmp/etf-primary-runtime-state/etf_primary_runtime/snapshots/20261120.json.gz"
+  "archive_path": "/tmp/etf-primary-runtime-state/etf_primary_runtime/snapshots/20261123.json.gz"
 }
