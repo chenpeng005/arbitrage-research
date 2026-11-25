@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "trade_date": "20261125",
+  "previous_trade_date": "20261124",
+  "source": "SSE_OFFICIAL+SZSE_OFFICIAL",
+  "generated_at": "2026-11-25T08:53:33.107650+00:00",
+  "event_count": 0,
+  "events": []
+}
